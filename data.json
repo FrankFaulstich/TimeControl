@@ -1,0 +1,100 @@
+{
+  "projects": [
+    {
+      "main_project_name": "Website Relaunch",
+      "sub_projects": [
+        {
+          "sub_project_name": "Design and UX Concept",
+          "time_entries": [
+            {
+              "start_time": "2025-09-10T09:00:00",
+              "end_time": "2025-09-10T11:30:00"
+            },
+            {
+              "start_time": "2025-09-11T13:00:00",
+              "end_time": "2025-09-11T16:45:00"
+            }
+          ]
+        },
+        {
+          "sub_project_name": "Frontend Development",
+          "time_entries": [
+            {
+              "start_time": "2025-09-12T08:30:00",
+              "end_time": "2025-09-12T12:00:00"
+            },
+            {
+              "start_time": "2025-09-13T09:00:00",
+              "end_time": "2025-09-13T12:00:00"
+            },
+            {
+              "start_time": "2025-09-13T13:00:00",
+              "end_time": "2025-09-13T17:00:00"
+            }
+          ]
+        },
+        {
+          "sub_project_name": "Backend API Creation",
+          "time_entries": [
+            {
+              "start_time": "2025-09-14T10:00:00",
+              "end_time": "2025-09-14T15:30:00"
+            },
+            {
+              "start_time": "2025-09-15T09:30:00",
+              "end_time": "2025-09-15T12:30:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "main_project_name": "Internal Training Platform",
+      "sub_projects": [
+        {
+          "sub_project_name": "Conception and Structure",
+          "time_entries": [
+            {
+              "start_time": "2025-09-16T14:00:00",
+              "end_time": "2025-09-16T16:00:00"
+            },
+            {
+              "start_time": "2025-09-17T09:00:00",
+              "end_time": "2025-09-17T11:00:00"
+            }
+          ]
+        },
+        {
+          "sub_project_name": "Python Learning Module",
+          "time_entries": [
+            {
+              "start_time": "2025-09-18T08:00:00",
+              "end_time": "2025-09-18T10:30:00"
+            },
+            {
+              "start_time": "2025-09-18T13:30:00",
+              "end_time": "2025-09-18T15:00:00"
+            },
+            {
+              "start_time": "2025-09-19T09:00:00",
+              "end_time": "2025-09-19T12:00:00"
+            }
+          ]
+        },
+        {
+          "sub_project_name": "Git Learning Module",
+          "time_entries": [
+            {
+              "start_time": "2025-09-20T10:00:00",
+              "end_time": "2025-09-20T12:00:00"
+            },
+            {
+              "start_time": "2025-09-21T09:00:00",
+              "end_time": "2025-09-21T11:45:00"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
