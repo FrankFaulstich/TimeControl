@@ -14,10 +14,12 @@ def run_menu():
         print("4 Add new sub-project")
         print("5 List sub-projects")
         print("6 Delete sub-project")
+        print("7 Start work on sub-project")  # Neue Option
+        print("8 Stop current work")        # Neue Option
         print("0 Exit")
         print("--------------------------")
         
-        choice = input("Choice: ") # 'auswahl' wurde durch 'choice' ersetzt
+        choice = input("Choice: ")
 
         if choice == '1':
             print("\n--- Add New Main Project ---")
@@ -71,12 +73,29 @@ def run_menu():
             else:
                 print(f"Error: Main project or sub-project not found.")
 
+        # Neue Optionen für Zeiterfassung
+        elif choice == '7':
+            print("\n--- Start Work ---")
+            main_project_name = input('Name of the main project: ')
+            sub_project_name = input('Name of the sub-project to start working on: ')
+            if tt.start_work(main_project_name, sub_project_name):
+                print(f"Started working on sub-project '{sub_project_name}' in main project '{main_project_name}'.")
+            else:
+                print(f"Error starting work. Project/Sub-project not found or an entry is already open.")
+
+        elif choice == '8':
+            print("\n--- Stop Work ---")
+            if tt.stop_work():
+                print("Work has been stopped and end time recorded.")
+            else:
+                print("No active work session found to stop.")
+
         elif choice == '0':
             print("Exiting application. Goodbye!")
             break
             
         else:
-            print("Invalid choice. Please enter a number from 0 to 6.")
+            print("Invalid choice. Please enter a number from 0 to 8.")
 
 if __name__ == '__main__':
     run_menu()
