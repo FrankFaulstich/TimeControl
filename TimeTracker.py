@@ -4,176 +4,99 @@ from datetime import datetime
 
 class TimeTracker:
     def __init__(self, file_path='data.json'):
-        """
-        Initialisiert die Klasse und lädt die Daten aus der JSON-Datei.
-        Wenn die Datei nicht existiert, wird eine leere Struktur erstellt.
-        """
         self.file_path = file_path
         self.data = self._load_data()
 
     def _load_data(self):
-        """
-        Liest die Daten aus der data.json-Datei.
-        """
         if os.path.exists(self.file_path):
             with open(self.file_path, 'r', encoding='utf-8') as f:
-                try:
-                    return json.load(f)
-                except json.JSONDecodeError:
-                    # Falls die Datei leer oder beschädigt ist
-                    return {"projects": []}
+                return json.load(f)
         else:
             return {"projects": []}
 
     def _save_data(self):
-        """
-        Speichert die aktuellen Daten in der data.json-Datei.
-        """
         with open(self.file_path, 'w', encoding='utf-8') as f:
-            json.dump(self.data, f, indent=4, ensure_ascii=False)
+            json.dump(self.data, f, indent=2)
 
     def add_main_project(self, main_project_name):
-        """
-        Fügt ein neues Hauptprojekt hinzu.
-        """
-        # Prüfen, ob das Projekt bereits existiert
-        if any(p['main_project_name'] == main_project_name for p in self.data.get('projects', [])):
-            print(f"Fehler: Hauptprojekt '{main_project_name}' existiert bereits.")
-            return
-
         new_project = {
             "main_project_name": main_project_name,
             "sub_projects": []
         }
-        self.data.get('projects', []).append(new_project)
+        self.data["projects"].append(new_project)
         self._save_data()
-        print(f"Hauptprojekt '{main_project_name}' erfolgreich hinzugefügt.")
 
     def list_main_projects(self):
-        """
-        Listet alle Hauptprojekte auf.
-        Gibt eine Liste der Namen der Hauptprojekte zurück.
-        """
-        projects = self.data.get('projects', [])
-        if not projects:
-            return "Keine Hauptprojekte vorhanden."
-        return [p['main_project_name'] for p in projects]
+        return [project["main_project_name"] for project in self.data["projects"]]
 
     def delete_main_project(self, main_project_name):
-        """
-        Löscht ein Hauptprojekt anhand seines Namens.
-        """
-        projects = self.data.get('projects', [])
-        initial_count = len(projects)
-        # Filtern, um das Projekt mit dem gegebenen Namen zu entfernen
-        self.data['projects'] = [p for p in projects if p['main_project_name'] != main_project_name]
-        
-        if len(self.data['projects']) < initial_count:
+        initial_count = len(self.data["projects"])
+        self.data["projects"] = [
+            project for project in self.data["projects"] if project["main_project_name"] != main_project_name
+        ]
+        if len(self.data["projects"]) < initial_count:
             self._save_data()
-            print(f"Hauptprojekt '{main_project_name}' erfolgreich gelöscht.")
-        else:
-            print(f"Fehler: Hauptprojekt '{main_project_name}' nicht gefunden.")
-
-    # --- Methoden für Unterprojekte ---
+            return True
+        return False
 
     def add_sub_project(self, main_project_name, sub_project_name):
-        """
-        Fügt ein neues Unterprojekt zu einem bestehenden Hauptprojekt hinzu.
-        """
-        for project in self.data.get('projects', []):
-            if project['main_project_name'] == main_project_name:
-                # Prüfen, ob das Unterprojekt bereits existiert
-                if any(sp['sub_project_name'] == sub_project_name for sp in project.get('sub_projects', [])):
-                    print(f"Fehler: Unterprojekt '{sub_project_name}' existiert bereits in '{main_project_name}'.")
-                    return
-
+        for project in self.data["projects"]:
+            if project["main_project_name"] == main_project_name:
                 new_sub_project = {
                     "sub_project_name": sub_project_name,
                     "time_entries": []
                 }
-                project.get('sub_projects', []).append(new_sub_project)
+                project["sub_projects"].append(new_sub_project)
                 self._save_data()
-                print(f"Unterprojekt '{sub_project_name}' erfolgreich zu '{main_project_name}' hinzugefügt.")
-                return
-        print(f"Fehler: Hauptprojekt '{main_project_name}' nicht gefunden.")
+                return True
+        return False
 
     def list_sub_projects(self, main_project_name):
-        """
-        Listet alle Unterprojekte eines bestimmten Hauptprojekts auf.
-        """
-        for project in self.data.get('projects', []):
-            if project['main_project_name'] == main_project_name:
-                sub_projects = project.get('sub_projects', [])
-                if not sub_projects:
-                    return f"Keine Unterprojekte für '{main_project_name}' vorhanden."
-                return [sp['sub_project_name'] for sp in sub_projects]
-        return f"Fehler: Hauptprojekt '{main_project_name}' nicht gefunden."
+        for project in self.data["projects"]:
+            if project["main_project_name"] == main_project_name:
+                return [sub_project["sub_project_name"] for sub_project in project["sub_projects"]]
+        return None
 
     def delete_sub_project(self, main_project_name, sub_project_name):
-        """
-        Löscht ein Unterprojekt aus einem bestimmten Hauptprojekt.
-        """
-        for project in self.data.get('projects', []):
-            if project['main_project_name'] == main_project_name:
-                sub_projects = project.get('sub_projects', [])
-                initial_count = len(sub_projects)
-                project['sub_projects'] = [sp for sp in sub_projects if sp['sub_project_name'] != sub_project_name]
-
-                if len(project['sub_projects']) < initial_count:
+        for project in self.data["projects"]:
+            if project["main_project_name"] == main_project_name:
+                initial_count = len(project["sub_projects"])
+                project["sub_projects"] = [
+                    sp for sp in project["sub_projects"] if sp["sub_project_name"] != sub_project_name
+                ]
+                if len(project["sub_projects"]) < initial_count:
                     self._save_data()
-                    print(f"Unterprojekt '{sub_project_name}' erfolgreich aus '{main_project_name}' gelöscht.")
-                else:
-                    print(f"Fehler: Unterprojekt '{sub_project_name}' nicht in '{main_project_name}' gefunden.")
-                return
-        print(f"Fehler: Hauptprojekt '{main_project_name}' nicht gefunden.")
+                    return True
+        return False
 
-    # --- Methode zum Erfassen von Zeiten ---
-
-    def add_time_entry(self, main_project_name, sub_project_name, start_time_str, end_time_str):
+    def start_work(self, main_project_name, sub_project_name):
         """
-        Fügt einen Zeiteintrag zu einem Unterprojekt hinzu.
-        Zeiten werden als ISO 8601 Strings erwartet.
+        Startet die Arbeit an einem Unterprojekt. Beendet automatisch
+        ein vorheriges, falls es noch offen ist.
         """
-        try:
-            # Versuchen, die Strings in datetime-Objekte zu parsen, um das Format zu validieren
-            start_time = datetime.fromisoformat(start_time_str)
-            end_time = datetime.fromisoformat(end_time_str)
-            if start_time >= end_time:
-                print("Fehler: Startzeit muss vor Endzeit liegen.")
-                return
-        except ValueError:
-            print("Fehler: Ungültiges Zeitformat. Bitte verwenden Sie das ISO 8601 Format (z.B. YYYY-MM-DDTHH:MM:SS).")
-            return
-
-        for project in self.data.get('projects', []):
-            if project['main_project_name'] == main_project_name:
-                for sub_project in project.get('sub_projects', []):
-                    if sub_project['sub_project_name'] == sub_project_name:
-                        time_entry = {
-                            "start_time": start_time_str,
-                            "end_time": end_time_str
+        # Beende zuerst ein eventuell noch offenes Projekt
+        self.stop_work()
+        
+        for project in self.data["projects"]:
+            if project["main_project_name"] == main_project_name:
+                for sub_project in project["sub_projects"]:
+                    if sub_project["sub_project_name"] == sub_project_name:
+                        new_entry = {
+                            "start_time": datetime.now().isoformat()
                         }
-                        sub_project.get('time_entries', []).append(time_entry)
+                        sub_project["time_entries"].append(new_entry)
                         self._save_data()
-                        print(f"Zeiteintrag für '{sub_project_name}' erfolgreich hinzugefügt.")
-                        return
-                print(f"Fehler: Unterprojekt '{sub_project_name}' nicht in '{main_project_name}' gefunden.")
-                return
-        print(f"Fehler: Hauptprojekt '{main_project_name}' nicht gefunden.")
+                        return True
+        return False
 
-    def list_time_entries(self, main_project_name, sub_project_name):
+    def stop_work(self):
         """
-        Listet alle Zeiteinträge für ein bestimmtes Unterprojekt auf.
+        Beendet die Arbeit am zuletzt gestarteten Subprojekt, indem die Endzeit hinzugefügt wird.
         """
-        for project in self.data.get('projects', []):
-            if project['main_project_name'] == main_project_name:
-                for sub_project in project.get('sub_projects', []):
-                    if sub_project['sub_project_name'] == sub_project_name:
-                        time_entries = sub_project.get('time_entries', [])
-                        if not time_entries:
-                            return f"Keine Zeiteinträge für '{sub_project_name}' in '{main_project_name}' vorhanden."
-                        return time_entries
-                print(f"Fehler: Unterprojekt '{sub_project_name}' nicht in '{main_project_name}' gefunden.")
-                return
-        print(f"Fehler: Hauptprojekt '{main_project_name}' nicht gefunden.")
-    
+        for project in reversed(self.data["projects"]):
+            for sub_project in reversed(project["sub_projects"]):
+                if sub_project["time_entries"] and "end_time" not in sub_project["time_entries"][-1]:
+                    sub_project["time_entries"][-1]["end_time"] = datetime.now().isoformat()
+                    self._save_data()
+                    return True
+        return False

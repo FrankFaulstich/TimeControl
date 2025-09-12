@@ -1,21 +1,39 @@
 {
-    "projects": [
+  "projects": [
+    {
+      "main_project_name": "Test 2",
+      "sub_projects": [
         {
-            "main_project_name": "Test 2",
-            "sub_projects": [
-                {
-                    "sub_project_name": "Sub Test 1",
-                    "time_entries": []
-                }
-            ]
-        },
-        {
-            "main_project_name": "Test 3",
-            "sub_projects": []
-        },
-        {
-            "main_project_name": "Test 4",
-            "sub_projects": []
+          "sub_project_name": "Sub Test 1",
+          "time_entries": [
+            {
+              "start_time": "2025-09-12T14:59:56.164582",
+              "end_time": "2025-09-12T15:03:57.621970"
+            },
+            {
+              "start_time": "2025-09-12T15:06:24.656467"
+            }
+          ]
         }
-    ]
+      ]
+    },
+    {
+      "main_project_name": "Test 3",
+      "sub_projects": [
+        {
+          "sub_project_name": "Sub Test 2",
+          "time_entries": [
+            {
+              "start_time": "2025-09-12T15:03:57.623331",
+              "end_time": "2025-09-12T15:05:02.930081"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "main_project_name": "Test 4",
+      "sub_projects": []
+    }
+  ]
 }
