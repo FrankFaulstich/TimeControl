@@ -70,11 +70,7 @@ class TimeTracker:
         return False
 
     def start_work(self, main_project_name, sub_project_name):
-        """
-        Startet die Arbeit an einem Unterprojekt. Beendet automatisch
-        ein vorheriges, falls es noch offen ist.
-        """
-        self.stop_work() # Stoppt vorherige Arbeit, falls vorhanden
+        self.stop_work()
         
         for project in self.data["projects"]:
             if project["main_project_name"] == main_project_name:
@@ -89,9 +85,6 @@ class TimeTracker:
         return False
 
     def stop_work(self):
-        """
-        Beendet die Arbeit am zuletzt gestarteten Subprojekt, indem die Endzeit hinzugefügt wird.
-        """
         for project in reversed(self.data["projects"]):
             for sub_project in reversed(project["sub_projects"]):
                 if sub_project["time_entries"] and "end_time" not in sub_project["time_entries"][-1]:
@@ -101,61 +94,48 @@ class TimeTracker:
         return False
 
     def generate_daily_report(self):
-        """
-        Generiert einen täglichen Bericht im Markdown-Format.
-        Listet Hauptprojekte und die zugehörigen Unterprojekte auf, an denen gearbeitet wurde.
-        Zeigt die benötigte Zeit pro Unterprojekt an.
-        """
-        report = "# Daily Report\n\n"
+        report = []
         today = datetime.now().date()
-        total_project_time = timedelta()
-
-        projects_with_work = {}
+        total_daily_time = timedelta()
 
         for project in self.data["projects"]:
-            main_project_name = project["main_project_name"]
             main_project_total_time = timedelta()
-            sub_projects_with_time = []
+            sub_project_details = []
 
             for sub_project in project["sub_projects"]:
-                sub_project_name = sub_project["sub_project_name"]
-                current_sub_project_time = timedelta()
-
-                for entry in sub_project["time_entries"]:
-                    start_time_str = entry.get("start_time")
-                    end_time_str = entry.get("end_time")
-
-                    if start_time_str:
-                        start_time = datetime.fromisoformat(start_time_str)
-                        # Überprüfe, ob der Eintrag für den heutigen Tag ist
-                        if start_time.date() == today:
-                            if end_time_str:
-                                end_time = datetime.fromisoformat(end_time_str)
-                            else:
-                                # Wenn kein Enddatum vorhanden, nehme aktuelle Zeit als Ende
-                                end_time = datetime.now() 
-                            
-                            duration = end_time - start_time
-                            current_sub_project_time += duration
-                            main_project_total_time += duration
-                            total_project_time += duration
+                sub_project_total_time = timedelta()
                 
-                # Nur Unterprojekte auflisten, wenn gearbeitet wurde
-                if current_sub_project_time > timedelta():
-                    hours = current_sub_project_time.total_seconds() / 3600
-                    sub_projects_with_time.append(
-                        f"- {sub_project_name}: {hours:.3f} hours"
-                    )
-            
-            # Nur Hauptprojekte auflisten, wenn Unterprojekte mit Zeit gefunden wurden
-            if sub_projects_with_time:
-                projects_with_work[main_project_name] = sub_projects_with_time
+                for entry in sub_project["time_entries"]:
+                    try:
+                        start_time = datetime.fromisoformat(entry["start_time"])
+                        if "end_time" in entry:
+                            end_time = datetime.fromisoformat(entry["end_time"])
+                            # Check if the entry is from today
+                            if start_time.date() == today:
+                                duration = end_time - start_time
+                                sub_project_total_time += duration
+                    except (ValueError, KeyError):
+                        continue
 
-        if not projects_with_work:
-            report += "No work recorded for today.\n"
+                # Add to report only if time was tracked for this sub-project today
+                if sub_project_total_time.total_seconds() > 0:
+                    hours = sub_project_total_time.total_seconds() / 3600
+                    sub_project_details.append(f"- {sub_project['sub_project_name']}: {hours:.3f} hours")
+                    main_project_total_time += sub_project_total_time
+
+            # Add main project and its sub-projects to report if it has entries for today
+            if main_project_total_time.total_seconds() > 0:
+                total_daily_time += main_project_total_time
+                hours = main_project_total_time.total_seconds() / 3600
+                report.append(f"## {project['main_project_name']} ({hours:.3f} hours)")
+                report.extend(sub_project_details)
+        
+        # Add total daily time to the report
+        if total_daily_time.total_seconds() > 0:
+            total_hours = total_daily_time.total_seconds() / 3600
+            report.insert(0, f"# Daily Time Report: {today.strftime('%Y-%m-%d')}")
+            report.append(f"\n**Total Daily Time: {total_hours:.3f} hours**")
         else:
-            for main_project_name, sub_entries in projects_with_work.items():
-                report += f"## {main_project_name}\n"
-                report += "\n".join(sub_entries) + "\n\n"
-
-        return report
+            report.append(f"No time tracked for {today.strftime('%Y-%m-%d')}.")
+        
+        return "\n".join(report)
