@@ -127,13 +127,13 @@ class TimeTracker:
             if main_project_total_time.total_seconds() > 0:
                 total_daily_time += main_project_total_time
                 hours = main_project_total_time.total_seconds() / 3600
-                report.append(f"## {project['main_project_name']} ({hours:.3f} hours)")
+                report.append(f"## {project['main_project_name']} ({hours:.3f} hours)\n")
                 report.extend(sub_project_details)
         
         # Add total daily time to the report
         if total_daily_time.total_seconds() > 0:
             total_hours = total_daily_time.total_seconds() / 3600
-            report.insert(0, f"# Daily Time Report: {today.strftime('%Y-%m-%d')}")
+            report.insert(0, f"# Daily Time Report: {today.strftime('%Y-%m-%d')}\n")
             report.append(f"\n**Total Daily Time: {total_hours:.3f} hours**")
         else:
             report.append(f"No time tracked for {today.strftime('%Y-%m-%d')}.")
