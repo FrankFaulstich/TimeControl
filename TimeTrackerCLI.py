@@ -9,21 +9,22 @@ def run_menu():
 
     while True:
         print("\n--- Time Tracking Menu ---")
-        print("1 Add new main project")
-        print("2 List main projects")
-        print("3 Delete main project")
-        print("--------------------------")
-        print("4 Add new sub-project")
-        print("5 List sub-projects")
-        print("6 Delete sub-project")
-        print("--------------------------")
-        print("7 Start work on sub-project")
-        print("8 Stop current work")
-        print("--------------------------")
-        print("9 Generate daily report")
-        print("--------------------------")
+        print("1  Add new main project")
+        print("2  List main projects")
+        print("3  Delete main project")
+        print("------------------------------------------------")
+        print("4  Add new sub-project")
+        print("5  List sub-projects")
+        print("6  Delete sub-project")
+        print("------------------------------------------------")
+        print("7  Start work on sub-project")
+        print("8  Stop current work")
+        print("------------------------------------------------")
+        print("9  Generate daily report")
+        print("10 Generate a daily report for a specific day")
+        print("------------------------------------------------")
         print("0 Exit")
-        print("--------------------------")
+        print("------------------------------------------------")
         
         choice = input("Choice: ")
 
@@ -196,6 +197,17 @@ def run_menu():
             print("\n--- Generate Daily Report ---")
             report_text = tt.generate_daily_report()
             print(report_text)
+
+        elif choice == '10':
+            print("\n--- Generate Daily Report for a specific Day ---")
+            specific_date = input("Enter the date (YYYY-MM-DD): ")
+            try:
+                specific_date = datetime.strptime(specific_date, "%Y-%m-%d").date()
+                report_text = tt.generate_daily_report(specific_date)
+                print(report_text)
+            except ValueError:
+                print("Invalid date format. Please use YYYY-MM-DD.")
+
         
         elif choice == '0':
             print("Exiting application. Goodbye!")
