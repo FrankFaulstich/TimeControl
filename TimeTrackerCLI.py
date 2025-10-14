@@ -20,7 +20,7 @@ def run_menu():
         print("7  Start work on sub-project")
         print("8  Stop current work")
         print("------------------------------------------------")
-        print("9  Generate daily report")
+        print("9  Generate daily report (Today)")
         print("10 Generate a daily report for a specific day")
         print("------------------------------------------------")
         print("0 Exit")
@@ -194,27 +194,28 @@ def run_menu():
                 print("No active work session to stop.")
 
         elif choice == '9':
-            print("\n--- Generate Daily Report ---")
+            print("\n--- Generate Daily Report (Today) ---")
             report_text = tt.generate_daily_report()
             print(report_text)
 
         elif choice == '10':
             print("\n--- Generate Daily Report for a specific Day ---")
-            specific_date = input("Enter the date (YYYY-MM-DD): ")
+            specific_date_str = input("Enter the date (YYYY-MM-DD): ")
             try:
-                specific_date = datetime.strptime(specific_date, "%Y-%m-%d").date()
+                # Wichtig: Konvertierung in ein date-Objekt
+                specific_date = datetime.strptime(specific_date_str, "%Y-%m-%d").date()
                 report_text = tt.generate_daily_report(specific_date)
                 print(report_text)
             except ValueError:
                 print("Invalid date format. Please use YYYY-MM-DD.")
-
         
         elif choice == '0':
             print("Exiting application. Goodbye!")
             break
             
         else:
-            print("Invalid choice. Please enter a number from 0 to 9.")
+            # Korrigierte Logik, um auch '10' und andere mögliche Eingaben abzudecken
+            print("Invalid choice. Please enter a number from 0 to 10.")
 
 if __name__ == '__main__':
     run_menu()
