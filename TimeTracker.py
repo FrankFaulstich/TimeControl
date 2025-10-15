@@ -3,11 +3,29 @@ import os
 from datetime import datetime, timedelta
 
 class TimeTracker:
+    """
+    Manages time tracking for various main and sub-projects.
+    
+    The data is loaded from and saved to a JSON file.
+    """
     def __init__(self, file_path='data.json'):
+        """
+        Initializes the TimeTracker and loads data from the JSON file.
+
+        :param file_path: The path to the JSON file where data is stored. Defaults to 'data.json'.
+        :type file_path: str
+        """
         self.file_path = file_path
         self.data = self._load_data()
 
     def _load_data(self):
+        """
+        Loads the project data from the configured JSON file.
+        If the file does not exist, an empty data dictionary is returned.
+
+        :return: A dictionary containing the loaded project data.
+        :rtype: dict
+        """
         if os.path.exists(self.file_path):
             with open(self.file_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
@@ -15,10 +33,19 @@ class TimeTracker:
             return {"projects": []}
 
     def _save_data(self):
+        """
+        Saves the current project data to the configured JSON file.
+        """
         with open(self.file_path, 'w', encoding='utf-8') as f:
             json.dump(self.data, f, indent=2)
 
     def add_main_project(self, main_project_name):
+        """
+        Adds a new main project.
+
+        :param main_project_name: The name of the main project to add.
+        :type main_project_name: str
+        """
         new_project = {
             "main_project_name": main_project_name,
             "sub_projects": []
@@ -27,9 +54,23 @@ class TimeTracker:
         self._save_data()
 
     def list_main_projects(self):
+        """
+        Returns a list of all main project names.
+
+        :return: A list of main project names.
+        :rtype: list[str]
+        """
         return [project["main_project_name"] for project in self.data["projects"]]
 
     def delete_main_project(self, main_project_name):
+        """
+        Deletes a main project along with all associated sub-projects and time entries.
+
+        :param main_project_name: The name of the main project to delete.
+        :type main_project_name: str
+        :return: True if the project was successfully deleted, otherwise False.
+        :rtype: bool
+        """
         initial_count = len(self.data["projects"])
         self.data["projects"] = [
             project for project in self.data["projects"] if project["main_project_name"] != main_project_name
@@ -40,6 +81,16 @@ class TimeTracker:
         return False
 
     def add_sub_project(self, main_project_name, sub_project_name):
+        """
+        Adds a new sub-project to a specified main project.
+
+        :param main_project_name: The name of the main project to add the sub-project to.
+        :type main_project_name: str
+        :param sub_project_name: The name of the sub-project to add.
+        :type sub_project_name: str
+        :return: True if the sub-project was added successfully, otherwise False (if main project not found).
+        :rtype: bool
+        """
         for project in self.data["projects"]:
             if project["main_project_name"] == main_project_name:
                 new_sub_project = {
@@ -52,12 +103,30 @@ class TimeTracker:
         return False
 
     def list_sub_projects(self, main_project_name):
+        """
+        Returns a list of all sub-project names for a given main project.
+
+        :param main_project_name: The name of the main project.
+        :type main_project_name: str
+        :return: A list of sub-project names or None if the main project was not found.
+        :rtype: list[str] or None
+        """
         for project in self.data["projects"]:
             if project["main_project_name"] == main_project_name:
                 return [sub_project["sub_project_name"] for sub_project in project["sub_projects"]]
         return None
 
     def delete_sub_project(self, main_project_name, sub_project_name):
+        """
+        Deletes a sub-project from a main project.
+
+        :param main_project_name: The name of the main project.
+        :type main_project_name: str
+        :param sub_project_name: The name of the sub-project to delete.
+        :type sub_project_name: str
+        :return: True if the sub-project was deleted, otherwise False.
+        :rtype: bool
+        """
         for project in self.data["projects"]:
             if project["main_project_name"] == main_project_name:
                 initial_count = len(project["sub_projects"])
@@ -70,6 +139,17 @@ class TimeTracker:
         return False
 
     def start_work(self, main_project_name, sub_project_name):
+        """
+        Starts a new time tracking session for a sub-project by saving the start time.
+        Any currently active session is stopped before starting the new one.
+
+        :param main_project_name: The parent main project name.
+        :type main_project_name: str
+        :param sub_project_name: The sub-project for which work is being started.
+        :type sub_project_name: str
+        :return: True if work was started successfully, otherwise False.
+        :rtype: bool
+        """
         self.stop_work()
         
         for project in self.data["projects"]:
@@ -85,6 +165,13 @@ class TimeTracker:
         return False
 
     def stop_work(self):
+        """
+        Stops the currently active time tracking session by adding the end time 
+        to the most recently started entry.
+
+        :return: True if a session was stopped successfully, otherwise False.
+        :rtype: bool
+        """
         for project in reversed(self.data["projects"]):
             for sub_project in reversed(project["sub_projects"]):
                 if sub_project["time_entries"] and "end_time" not in sub_project["time_entries"][-1]:
@@ -95,9 +182,16 @@ class TimeTracker:
 
     def generate_daily_report(self, report_date=None):
         """
-        Generiert einen Tagesbericht im Markdown-Format.
-        Akzeptiert ein optionales Datum, um den Bericht für einen bestimmten Tag zu erstellen.
-        Die Zeiten werden mit Komma als Dezimaltrennzeichen formatiert.
+        Generates a daily report in Markdown format, listing only projects 
+        with time entries for the specified day.
+
+        Time durations are formatted as decimal numbers using a comma as the decimal separator.
+
+        :param report_date: Optional. The date (as a datetime.date object) for which the report should be generated. 
+                            If None, today's date is used.
+        :type report_date: datetime.date or None
+        :return: The formatted daily report as a Markdown string.
+        :rtype: str
         """
         report = []
         today = report_date if report_date else datetime.now().date()
@@ -125,7 +219,7 @@ class TimeTracker:
                 # Add to report only if time was tracked for this sub-project on the specified date
                 if sub_project_total_time.total_seconds() > 0:
                     hours = sub_project_total_time.total_seconds() / 3600
-                    # Formatierung: Punkt durch Komma ersetzen
+                    # Formatting: replace dot with comma
                     hours_str = f"{hours:.3f}".replace('.', ',')
                     sub_project_details.append(f"- {sub_project['sub_project_name']}: {hours_str} hours")
                     main_project_total_time += sub_project_total_time
@@ -134,7 +228,7 @@ class TimeTracker:
             if main_project_total_time.total_seconds() > 0:
                 total_daily_time += main_project_total_time
                 hours = main_project_total_time.total_seconds() / 3600
-                # Formatierung: Punkt durch Komma ersetzen
+                # Formatting: replace dot with comma
                 hours_str = f"{hours:.3f}".replace('.', ',')
                 report.append(f"## {project['main_project_name']} ({hours_str} hours)\n")
                 report.extend(sub_project_details)
@@ -143,7 +237,7 @@ class TimeTracker:
         # Add total daily time to the report
         if total_daily_time.total_seconds() > 0:
             total_hours = total_daily_time.total_seconds() / 3600
-            # Formatierung: Punkt durch Komma ersetzen
+            # Formatting: replace dot with comma
             total_hours_str = f"{total_hours:.3f}".replace('.', ',')
             
             report.insert(0, f"# Daily Time Report: {today.strftime('%Y-%m-%d')}\n")
