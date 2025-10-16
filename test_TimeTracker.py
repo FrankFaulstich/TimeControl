@@ -222,7 +222,49 @@ class TestTimeTracker(unittest.TestCase):
         inactive_list_6w = self.tracker.list_inactive_sub_projects(inactive_weeks=6)
         self.assertEqual(len(inactive_list_6w), 0)
 
+    def test_list_inactive_main_projects(self):
+        """Testet das Auflisten inaktiver Hauptprojekte."""
+        now = datetime.now()
+        
+        # P1: Aktives Main-Projekt (letzte Aktivität vor 1 Tag) -> sollte NICHT gelistet werden
+        self.tracker.add_main_project("P1_Active")
+        self.tracker.add_sub_project("P1_Active", "T1_Recent")
+        self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"].append({
+            "start_time": (now - timedelta(days=2)).isoformat(),
+            "end_time": (now - timedelta(days=1)).isoformat()
+        })
 
+        # P2: Inaktives Main-Projekt (letzte Aktivität vor 5 Wochen) -> sollte gelistet werden (bei 4 Wochen Schwelle)
+        self.tracker.add_main_project("P2_Inactive")
+        self.tracker.add_sub_project("P2_Inactive", "T2_Old")
+        self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"].append({
+            "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
+            "end_time": (now - timedelta(weeks=5)).isoformat()
+        })
+
+        # P3: Laufendes Main-Projekt (enthält einen offenen Sub-Eintrag) -> sollte ignoriert werden
+        self.tracker.add_main_project("P3_Running")
+        self.tracker.add_sub_project("P3_Running", "T3_Open")
+        self.tracker.data["projects"][2]["sub_projects"][0]["time_entries"].append({
+            "start_time": (now - timedelta(days=1)).isoformat()
+        })
+        
+        # P4: Leeres Main-Projekt (keine Aktivität) -> sollte ignoriert werden
+        self.tracker.add_main_project("P4_Empty")
+
+        # Speichern, um Datenkonsistenz sicherzustellen
+        self.tracker._save_data()
+        
+        # Testen mit 4 Wochen Inaktivitätsschwelle
+        inactive_list = self.tracker.list_inactive_main_projects(inactive_weeks=4)
+        
+        # Erwartung: Nur P2_Inactive sollte gelistet werden
+        self.assertEqual(len(inactive_list), 1)
+        self.assertEqual(inactive_list[0]['main_project'], "P2_Inactive")
+        
+        # Testen mit 6 Wochen Inaktivitätsschwelle (sollte leer sein)
+        inactive_list_6w = self.tracker.list_inactive_main_projects(inactive_weeks=6)
+        self.assertEqual(len(inactive_list_6w), 0)
     # --- Berichts-Methode Test ---
 
     def test_generate_daily_report_formatting(self):
