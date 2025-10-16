@@ -179,7 +179,7 @@ class TimeTracker:
                     self._save_data()
                     return True
         return False
-        
+
     def list_inactive_sub_projects(self, inactive_weeks):
         """
         Lists sub-projects that have not had any activity (completed time entry) 
@@ -231,6 +231,58 @@ class TimeTracker:
                     })
 
         return inactive_projects
+
+    def list_inactive_main_projects(self, inactive_weeks):
+        """
+        Lists main projects that have not had any activity (completed time entry 
+        in any contained sub-project) within the specified number of weeks.
+        Main projects with currently running sub-projects are ignored.
+
+        :param inactive_weeks: The number of weeks defining the inactivity threshold.
+        :type inactive_weeks: int
+        :return: A list of dictionaries, each containing 'main_project' and the 
+                 'last_activity' timestamp (formatted).
+        :rtype: list[dict]
+        """
+        cutoff_date = datetime.now() - timedelta(weeks=inactive_weeks)
+        inactive_main_projects = []
+
+        for project in self.data["projects"]:
+            latest_activity = None
+            is_active = False
+
+            for sub_project in project["sub_projects"]:
+                for entry in sub_project.get("time_entries", []):
+                    # 1. Check for running session (activity right now)
+                    if "start_time" in entry and "end_time" not in entry:
+                        is_active = True
+                        break # Break from time entries loop
+                    
+                    # 2. Find the latest completed activity
+                    if "end_time" in entry:
+                        activity_time = datetime.fromisoformat(entry["end_time"])
+                        if latest_activity is None or activity_time > latest_activity:
+                            latest_activity = activity_time
+                
+                if is_active:
+                    break # Break from sub-projects loop
+
+            # If any sub-project is running, the main project is active, so skip it.
+            if is_active:
+                continue
+            
+            # If no activities were found at all, skip.
+            if latest_activity is None:
+                continue
+
+            # Check if the latest activity is older than the cutoff date
+            if latest_activity < cutoff_date:
+                inactive_main_projects.append({
+                    "main_project": project["main_project_name"],
+                    "last_activity": latest_activity.strftime("%Y-%m-%d %H:%M:%S")
+                })
+
+        return inactive_main_projects
 
     def generate_daily_report(self, report_date=None):
         """
