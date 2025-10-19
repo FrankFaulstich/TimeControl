@@ -90,7 +90,7 @@ python3 TimeTrackerCLI.py
 
 Once the application is running, you will see an updated menu structure with the following options:
 
-```
+```Text
 --- Time Tracking Menu ---
 1  Add new main project
 2  List main projects
