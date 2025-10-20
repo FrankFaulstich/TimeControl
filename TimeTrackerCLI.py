@@ -24,6 +24,7 @@ def run_menu():
         print("------------------------------------------------")
         print("11 Generate daily report (Today)") 
         print("12 Generate a daily report for a specific day") 
+        print("13 Generate report for a date range")
         print("------------------------------------------------")
         print("0 Exit")
         print("------------------------------------------------")
@@ -266,13 +267,29 @@ def run_menu():
                 print(report_text)
             except ValueError:
                 print("Invalid date format. Please use YYYY-MM-DD.")
+
+        elif choice == '13':
+            # Funktion 13: Generate report for a date range
+            print("\n--- Generate Report for a Date Range ---")
+            start_date_str = input("Enter the start date (YYYY-MM-DD): ")
+            end_date_str = input("Enter the end date (YYYY-MM-DD): ")
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                if start_date > end_date:
+                    print("Error: The start date cannot be after the end date.")
+                    continue
+                report_text = tt.generate_date_range_report(start_date, end_date)
+                print(report_text)
+            except ValueError:
+                print("Invalid date format. Please use YYYY-MM-DD.")
         
         elif choice == '0':
             print("Exiting application. Goodbye!")
             break
             
         else:
-            print("Invalid choice. Please enter a number from 0 to 12.")
+            print("Invalid choice. Please enter a number from 0 to 13.")
 
 if __name__ == '__main__':
     run_menu()

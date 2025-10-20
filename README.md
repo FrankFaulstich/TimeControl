@@ -35,6 +35,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 - **Daily Report:** Generate a daily report for today or a specific date. Time totals are output in decimal hours with a **comma** as the decimal separator (e.g., `1,500 hours`).
 - **Inactive Main Projects:** List main projects that have been inactive for a user-specified number of weeks.
 - **Inactive Sub-Projects:** List sub-projects that have been inactive for a user-specified number of weeks.
+- **Date Range Report:** Generate a report for a user-defined date range. Time totals are shown in hours and a custom "DLP" unit (1 DLP = 40 hours).
 
 **Local Data Storage:** All project data and time entries are saved in a `data.json` file in the application's directory.
 
@@ -107,6 +108,7 @@ Once the application is running, you will see an updated menu structure with the
 ------------------------------------------------
 11 Generate daily report (Today)
 12 Generate a daily report for a specific day
+13 Generate report for a date range
 ------------------------------------------------
 0 Exit
 ```

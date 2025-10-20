@@ -312,6 +312,48 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("## Report P1 (1,500 hours)", report)
         self.assertIn("## Report P2 (2,000 hours)", report)
         
+    def test_generate_date_range_report(self):
+        """Testet die Berichtsgenerierung für einen Datumsbereich."""
+        
+        # Setup: Erstelle Einträge an verschiedenen Tagen
+        day1 = datetime(2025, 10, 20)
+        day2 = datetime(2025, 10, 22)
+        day_outside = datetime(2025, 10, 25)
+
+        # P1: 1 Stunde an Tag 1
+        self._create_mock_project_with_sub("Range P1", "R_Sub1")
+        self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"].append({
+            "start_time": day1.replace(hour=9).isoformat(),
+            "end_time": day1.replace(hour=10).isoformat()
+        })
+        
+        # P2: 2 Stunden an Tag 2
+        self._create_mock_project_with_sub("Range P2", "R_Sub2")
+        self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"].append({
+            "start_time": day2.replace(hour=11).isoformat(),
+            "end_time": day2.replace(hour=13).isoformat()
+        })
+        
+        # P3: Eintrag außerhalb des Bereichs (sollte ignoriert werden)
+        self._create_mock_project_with_sub("Range P3", "R_Sub3_Outside")
+        self.tracker.data["projects"][2]["sub_projects"][0]["time_entries"].append({
+            "start_time": day_outside.replace(hour=9).isoformat(),
+            "end_time": day_outside.replace(hour=10).isoformat()
+        })
+        
+        # Test: Generiere Bericht für den Bereich von Tag 1 bis Tag 2
+        start_date = day1.date()
+        end_date = day2.date()
+        report = self.tracker.generate_date_range_report(start_date, end_date)
+        
+        # Erwartete Gesamtzeit: 1 + 2 = 3 Stunden
+        # 1h = 0.025 DLP; 2h = 0.050 DLP; 3h = 0.075 DLP
+        self.assertIn("## Range P1 (1,000 hours (0,025 DLP))", report)
+        self.assertIn("## Range P2 (2,000 hours (0,050 DLP))", report)
+        self.assertNotIn("Range P3", report)
+        self.assertIn("**Total Time in Period: 3,000 hours (0,075 DLP)**", report)
+        self.assertTrue(report.startswith(f"# Time Report: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"))
+
 # Führt die Tests aus, wenn die Datei direkt aufgerufen wird
 if __name__ == '__main__':
     unittest.main()
