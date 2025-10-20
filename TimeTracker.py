@@ -284,6 +284,22 @@ class TimeTracker:
 
         return inactive_main_projects
 
+    def _format_duration(self, duration_td):
+        """
+        Formats a timedelta duration into a string with hours and DLP.
+        1 DLP = 40 hours.
+
+        :param duration_td: The timedelta object to format.
+        :type duration_td: timedelta
+        :return: The formatted string, e.g., "8,000 hours (0,200 DLP)".
+        :rtype: str
+        """
+        hours = duration_td.total_seconds() / 3600
+        dlp = hours / 40
+        hours_str = f"{hours:.3f}".replace('.', ',')
+        dlp_str = f"{dlp:.3f}".replace('.', ',')
+        return f"{hours_str} hours ({dlp_str} DLP)"
+
     def generate_daily_report(self, report_date=None):
         """
         Generates a daily report in Markdown format, listing only projects 
@@ -323,7 +339,6 @@ class TimeTracker:
                 # Add to report only if time was tracked for this sub-project on the specified date
                 if sub_project_total_time.total_seconds() > 0:
                     hours = sub_project_total_time.total_seconds() / 3600
-                    # Formatting: replace dot with comma
                     hours_str = f"{hours:.3f}".replace('.', ',')
                     sub_project_details.append(f"- {sub_project['sub_project_name']}: {hours_str} hours")
                     main_project_total_time += sub_project_total_time
@@ -332,7 +347,6 @@ class TimeTracker:
             if main_project_total_time.total_seconds() > 0:
                 total_daily_time += main_project_total_time
                 hours = main_project_total_time.total_seconds() / 3600
-                # Formatting: replace dot with comma
                 hours_str = f"{hours:.3f}".replace('.', ',')
                 report.append(f"## {project['main_project_name']} ({hours_str} hours)\n")
                 report.extend(sub_project_details)
@@ -341,7 +355,6 @@ class TimeTracker:
         # Add total daily time to the report
         if total_daily_time.total_seconds() > 0:
             total_hours = total_daily_time.total_seconds() / 3600
-            # Formatting: replace dot with comma
             total_hours_str = f"{total_hours:.3f}".replace('.', ',')
             
             report.insert(0, f"# Daily Time Report: {today.strftime('%Y-%m-%d')}\n")
@@ -350,5 +363,62 @@ class TimeTracker:
             report.append("https://github.com/frankfaulstich/TimeControl")
         else:
             report.append(f"No time tracked for {today.strftime('%Y-%m-%d')}.")
+        
+        return "\n".join(report)
+
+    def generate_date_range_report(self, start_date, end_date):
+        """
+        Generates a report for a specific date range in Markdown format.
+
+        :param start_date: The start date of the report period (datetime.date object).
+        :type start_date: datetime.date
+        :param end_date: The end date of the report period (datetime.date object).
+        :type end_date: datetime.date
+        :return: The formatted report as a Markdown string.
+        :rtype: str
+        """
+        report = []
+        total_period_time = timedelta()
+
+        for project in self.data["projects"]:
+            main_project_total_time = timedelta()
+            sub_project_details = []
+
+            for sub_project in project["sub_projects"]:
+                sub_project_total_time = timedelta()
+                
+                for entry in sub_project["time_entries"]:
+                    try:
+                        start_time = datetime.fromisoformat(entry["start_time"])
+                        if "end_time" in entry:
+                            end_time = datetime.fromisoformat(entry["end_time"])
+                            # Check if the entry is within the specified date range
+                            if start_date <= start_time.date() <= end_date:
+                                duration = end_time - start_time
+                                sub_project_total_time += duration
+                    except (ValueError, KeyError):
+                        continue
+
+                if sub_project_total_time.total_seconds() > 0:
+                    formatted_time = self._format_duration(sub_project_total_time)
+                    sub_project_details.append(f"- {sub_project['sub_project_name']}: {formatted_time}")
+                    main_project_total_time += sub_project_total_time
+
+            if main_project_total_time.total_seconds() > 0:
+                total_period_time += main_project_total_time
+                formatted_time = self._format_duration(main_project_total_time)
+                report.append(f"## {project['main_project_name']} ({formatted_time})\n")
+                report.extend(sub_project_details)
+                report.append("\n")
+        
+        if total_period_time.total_seconds() > 0:
+            total_hours_str = self._format_duration(total_period_time)
+            
+            report.insert(0, f"# Time Report: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}\n")
+            report.append(f"\n**Total Time in Period: {total_hours_str}**")
+            report.append("\nGenerated by TimeControl")
+            report.append("https://github.com/frankfaulstich/TimeControl")
+        else:
+            report.append(f"No time tracked between {start_date.strftime('%Y-%m-%d')} and {end_date.strftime('%Y-%m-%d')}.")
         
         return "\n".join(report)
