@@ -138,6 +138,35 @@ class TimeTracker:
                     return True
         return False
 
+    def rename_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name):
+        """
+        Renames a sub-project within a given main project.
+
+        :param main_project_name: The name of the main project containing the sub-project.
+        :type main_project_name: str
+        :param old_sub_project_name: The current name of the sub-project to rename.
+        :type old_sub_project_name: str
+        :param new_sub_project_name: The new name for the sub-project.
+        :type new_sub_project_name: str
+        :return: True if renaming was successful, False otherwise (e.g., project not found,
+                 or new name already exists).
+        :rtype: bool
+        """
+        for project in self.data["projects"]:
+            if project["main_project_name"] == main_project_name:
+                # Check if the new name already exists
+                if any(sp["sub_project_name"] == new_sub_project_name for sp in project["sub_projects"]):
+                    return False # New name is already in use
+
+                # Find the sub-project to rename
+                for sub_project in project["sub_projects"]:
+                    if sub_project["sub_project_name"] == old_sub_project_name:
+                        sub_project["sub_project_name"] = new_sub_project_name
+                        self._save_data()
+                        return True
+                return False # Old sub-project not found
+        return False # Main project not found
+
     def start_work(self, main_project_name, sub_project_name):
         """
         Starts a new time tracking session for a sub-project by saving the start time.

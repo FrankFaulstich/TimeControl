@@ -17,14 +17,15 @@ def run_menu():
         print("5  Add new sub-project")        # Verschiebung von 4
         print("6  List sub-projects")          # Verschiebung von 5
         print("7  List inactive sub-projects") # Verschiebung von 6
-        print("8  Delete sub-project")         # Verschiebung von 7
+        print("8  Rename sub-project")         # NEU
+        print("9  Delete sub-project")         # Verschiebung von 8
         print("------------------------------------------------")
-        print("9  Start work on sub-project")  
-        print("10 Stop current work")          
+        print("10 Start work on sub-project")  
+        print("11 Stop current work")          
         print("------------------------------------------------")
-        print("11 Generate daily report (Today)") 
-        print("12 Generate a daily report for a specific day") 
-        print("13 Generate report for a date range")
+        print("12 Generate daily report (Today)") 
+        print("13 Generate a daily report for a specific day") 
+        print("14 Generate report for a date range")
         print("------------------------------------------------")
         print("0 Exit")
         print("------------------------------------------------")
@@ -168,7 +169,44 @@ def run_menu():
                 print("Invalid input. Please enter a valid number for weeks.")
 
         elif choice == '8':
-            # Funktion 8: Delete Sub-Project (War 7)
+            # NEUE FUNKTION an Position 8: Rename Sub-Project
+            print("\n--- Rename Sub-Project ---")
+            main_projects = tt.list_main_projects()
+            if not main_projects:
+                print("No main projects found.")
+                continue
+
+            print("Select the main project:")
+            for i, project_name in enumerate(main_projects, 1):
+                print(f"{i}. {project_name}")
+            
+            try:
+                main_project_choice = int(input("Enter the number of the main project: "))
+                main_project_name = main_projects[main_project_choice - 1]
+
+                sub_projects = tt.list_sub_projects(main_project_name)
+                if not sub_projects:
+                    print(f"No sub-projects to rename for '{main_project_name}'.")
+                    continue
+                
+                print(f"Select a sub-project from '{main_project_name}' to rename:")
+                for i, sub_project_name in enumerate(sub_projects, 1):
+                    print(f"{i}. {sub_project_name}")
+
+                sub_project_choice = int(input("Enter the number of the sub-project: "))
+                old_sub_project_name = sub_projects[sub_project_choice - 1]
+                
+                new_sub_project_name = input(f"Enter the new name for '{old_sub_project_name}': ")
+
+                if tt.rename_sub_project(main_project_name, old_sub_project_name, new_sub_project_name):
+                    print(f"Sub-project '{old_sub_project_name}' renamed to '{new_sub_project_name}'.")
+                else:
+                    print(f"Error: Could not rename. The new name might already exist or the project was not found.")
+            except (ValueError, IndexError):
+                print("Invalid input. Please enter a valid number.")
+
+        elif choice == '9':
+            # Funktion 9: Delete Sub-Project (War 8)
             print("\n--- Delete Sub-Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -204,8 +242,8 @@ def run_menu():
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
 
-        elif choice == '9':
-            # Funktion 9: Start work on sub-project (Unverändert)
+        elif choice == '10':
+            # Funktion 10: Start work on sub-project
             print("\n--- Start Work on a Sub-Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -243,22 +281,22 @@ def run_menu():
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
 
-        elif choice == '10':
-            # Funktion 10: Stop current work (Unverändert)
+        elif choice == '11':
+            # Funktion 11: Stop current work
             print("\n--- Stop Work ---")
             if tt.stop_work():
                 print("Work session stopped successfully.")
             else:
                 print("No active work session to stop.")
 
-        elif choice == '11':
-            # Funktion 11: Generate daily report (Today) (Unverändert)
+        elif choice == '12':
+            # Funktion 12: Generate daily report (Today)
             print("\n--- Generate Daily Report (Today) ---")
             report_text = tt.generate_daily_report()
             print(report_text)
 
-        elif choice == '12':
-            # Funktion 12: Generate a daily report for a specific day (Unverändert)
+        elif choice == '13':
+            # Funktion 13: Generate a daily report for a specific day
             print("\n--- Generate Daily Report for a specific Day ---")
             specific_date_str = input("Enter the date (YYYY-MM-DD): ")
             try:
@@ -268,8 +306,8 @@ def run_menu():
             except ValueError:
                 print("Invalid date format. Please use YYYY-MM-DD.")
 
-        elif choice == '13':
-            # Funktion 13: Generate report for a date range
+        elif choice == '14':
+            # Funktion 14: Generate report for a date range
             print("\n--- Generate Report for a Date Range ---")
             start_date_str = input("Enter the start date (YYYY-MM-DD): ")
             end_date_str = input("Enter the end date (YYYY-MM-DD): ")
@@ -289,7 +327,7 @@ def run_menu():
             break
             
         else:
-            print("Invalid choice. Please enter a number from 0 to 13.")
+            print("Invalid choice. Please enter a number from 0 to 14.")
 
 if __name__ == '__main__':
     run_menu()
