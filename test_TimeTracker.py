@@ -113,6 +113,33 @@ class TestTimeTracker(unittest.TestCase):
         success = self.tracker.delete_sub_project("Main Test", "Non Existent Sub")
         self.assertFalse(success)
         self.assertEqual(len(self.tracker.list_sub_projects("Main Test")), 1)
+
+    def test_rename_sub_project_success(self):
+        """Testet das erfolgreiche Umbenennen eines Unterprojekts."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_sub_project("Main", "Old Name")
+        success = self.tracker.rename_sub_project("Main", "Old Name", "New Name")
+        self.assertTrue(success)
+        self.assertEqual(self.tracker.list_sub_projects("Main"), ["New Name"])
+
+    def test_rename_sub_project_main_not_found(self):
+        """Testet das Umbenennen, wenn das Hauptprojekt nicht existiert."""
+        self.assertFalse(self.tracker.rename_sub_project("Non-Existent", "Old", "New"))
+
+    def test_rename_sub_project_sub_not_found(self):
+        """Testet das Umbenennen, wenn das Unterprojekt nicht existiert."""
+        self.tracker.add_main_project("Main")
+        self.assertFalse(self.tracker.rename_sub_project("Main", "Non-Existent", "New"))
+
+    def test_rename_sub_project_new_name_exists(self):
+        """Testet, dass ein Umbenennen fehlschlägt, wenn der neue Name bereits existiert."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_sub_project("Main", "Sub A")
+        self.tracker.add_sub_project("Main", "Sub B")
+        # Versuch, "Sub A" in "Sub B" umzubenennen
+        success = self.tracker.rename_sub_project("Main", "Sub A", "Sub B")
+        self.assertFalse(success)
+        self.assertEqual(self.tracker.list_sub_projects("Main"), ["Sub A", "Sub B"])
         
     # --- Zeiterfassungs-Methoden Tests ---
     
