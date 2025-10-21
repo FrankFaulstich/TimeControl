@@ -226,6 +226,25 @@ class TestTimeTracker(unittest.TestCase):
         # Stop again
         success = self.tracker.stop_work()
         self.assertFalse(success)
+
+    def test_get_current_work(self):
+        """Tests retrieving the current working project."""
+        # Case 1: No active work
+        self.assertIsNone(self.tracker.get_current_work())
+
+        # Case 2: Start work
+        self._create_mock_project_with_sub("Main", "Sub")
+        self.tracker.start_work("Main", "Sub")
+        
+        current_work = self.tracker.get_current_work()
+        self.assertIsNotNone(current_work)
+        self.assertEqual(current_work["main_project_name"], "Main")
+        self.assertEqual(current_work["sub_project_name"], "Sub")
+        self.assertIn("start_time", current_work)
+
+        # Case 3: Stop work
+        self.tracker.stop_work()
+        self.assertIsNone(self.tracker.get_current_work())
         
     # --- Inactivity Method Tests ---
 

@@ -232,6 +232,26 @@ class TimeTracker:
                     return True
         return False
 
+    def get_current_work(self):
+        """
+        Finds and returns the currently active sub-project, if any.
+
+        An active sub-project is one with a time entry that has a 'start_time' but no 'end_time'.
+
+        :return: A dictionary containing 'main_project_name', 'sub_project_name', and 'start_time'
+                 of the active session, or None if no session is active.
+        :rtype: dict or None
+        """
+        for project in reversed(self.data["projects"]):
+            for sub_project in reversed(project["sub_projects"]):
+                if sub_project["time_entries"] and "end_time" not in sub_project["time_entries"][-1]:
+                    return {
+                        "main_project_name": project["main_project_name"],
+                        "sub_project_name": sub_project["sub_project_name"],
+                        "start_time": sub_project["time_entries"][-1]["start_time"]
+                    }
+        return None
+
     def list_inactive_sub_projects(self, inactive_weeks):
         """
         Lists sub-projects that have not had any activity (completed time entry) 
