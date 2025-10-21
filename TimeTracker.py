@@ -80,6 +80,29 @@ class TimeTracker:
             return True
         return False
 
+    def rename_main_project(self, old_name, new_name):
+        """
+        Renames a main project.
+
+        :param old_name: The current name of the main project to rename.
+        :type old_name: str
+        :param new_name: The new name for the main project.
+        :type new_name: str
+        :return: True if renaming was successful, False otherwise (e.g., project not found,
+                 or new name already exists).
+        :rtype: bool
+        """
+        # Check if the new name already exists to avoid duplicates
+        if any(p["main_project_name"] == new_name for p in self.data["projects"]):
+            return False
+
+        for project in self.data["projects"]:
+            if project["main_project_name"] == old_name:
+                project["main_project_name"] = new_name
+                self._save_data()
+                return True
+        return False # Old name not found
+
     def add_sub_project(self, main_project_name, sub_project_name):
         """
         Adds a new sub-project to a specified main project.

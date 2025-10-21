@@ -12,20 +12,21 @@ def run_menu():
         print("1  Add new main project")
         print("2  List main projects")
         print("3  List inactive main-projects") # NEU an Position 3
-        print("4  Delete main project")        # Verschiebung von 3
+        print("4  Rename main project")        # NEU
+        print("5  Delete main project")        # Verschiebung von 4
         print("------------------------------------------------")
-        print("5  Add new sub-project")        # Verschiebung von 4
-        print("6  List sub-projects")          # Verschiebung von 5
-        print("7  List inactive sub-projects") # Verschiebung von 6
-        print("8  Rename sub-project")         # NEU
-        print("9  Delete sub-project")         # Verschiebung von 8
+        print("6  Add new sub-project")        # Verschiebung von 5
+        print("7  List sub-projects")          # Verschiebung von 6
+        print("8  List inactive sub-projects") # Verschiebung von 7
+        print("9  Rename sub-project")         # Verschiebung von 8
+        print("10 Delete sub-project")         # Verschiebung von 9
         print("------------------------------------------------")
-        print("10 Start work on sub-project")  
-        print("11 Stop current work")          
+        print("11 Start work on sub-project")  
+        print("12 Stop current work")          
         print("------------------------------------------------")
-        print("12 Generate daily report (Today)") 
-        print("13 Generate a daily report for a specific day") 
-        print("14 Generate report for a date range")
+        print("13 Generate daily report (Today)") 
+        print("14 Generate a daily report for a specific day") 
+        print("15 Generate report for a date range")
         print("------------------------------------------------")
         print("0 Exit")
         print("------------------------------------------------")
@@ -73,7 +74,32 @@ def run_menu():
                 print("Invalid input. Please enter a valid number for weeks.")
 
         elif choice == '4':
-            # Funktion 4: Delete Main Project (War 3)
+            # NEUE FUNKTION an Position 4: Rename Main Project
+            print("\n--- Rename Main Project ---")
+            main_projects = tt.list_main_projects()
+            if not main_projects:
+                print("No main projects to rename.")
+                continue
+
+            print("Select a main project to rename:")
+            for i, project_name in enumerate(main_projects, 1):
+                print(f"{i}. {project_name}")
+            
+            try:
+                choice_num = int(input("Enter the number of the main project: "))
+                old_name = main_projects[choice_num - 1]
+                
+                new_name = input(f"Enter the new name for '{old_name}': ")
+
+                if tt.rename_main_project(old_name, new_name):
+                    print(f"Main project '{old_name}' successfully renamed to '{new_name}'.")
+                else:
+                    print(f"Error: Could not rename. The new name '{new_name}' might already exist.")
+            except (ValueError, IndexError):
+                print("Invalid input. Please enter a valid number.")
+
+        elif choice == '5':
+            # Funktion 5: Delete Main Project (War 4)
             print("\n--- Delete Main Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -95,8 +121,8 @@ def run_menu():
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
 
-        elif choice == '5':
-            # Funktion 5: Add new sub-project (War 4)
+        elif choice == '6':
+            # Funktion 6: Add new sub-project (War 5)
             print("\n--- Add New Sub-Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -119,8 +145,8 @@ def run_menu():
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
 
-        elif choice == '6':
-            # Funktion 6: List Sub-Projects (War 5)
+        elif choice == '7':
+            # Funktion 7: List Sub-Projects (War 6)
             print("\n--- List Sub-Projects ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -144,8 +170,8 @@ def run_menu():
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
         
-        elif choice == '7':
-            # Funktion 7: List Inactive Sub-Projects (War 6)
+        elif choice == '8':
+            # Funktion 8: List Inactive Sub-Projects (War 7)
             print("\n--- List Inactive Sub-Projects ---")
             try:
                 inactive_weeks = int(input("Enter the number of weeks without activity (e.g., 4): "))
@@ -168,8 +194,8 @@ def run_menu():
             except ValueError:
                 print("Invalid input. Please enter a valid number for weeks.")
 
-        elif choice == '8':
-            # NEUE FUNKTION an Position 8: Rename Sub-Project
+        elif choice == '9':
+            # Funktion 9: Rename Sub-Project (War 8)
             print("\n--- Rename Sub-Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -205,8 +231,8 @@ def run_menu():
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
 
-        elif choice == '9':
-            # Funktion 9: Delete Sub-Project (War 8)
+        elif choice == '10':
+            # Funktion 10: Delete Sub-Project (War 9)
             print("\n--- Delete Sub-Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -242,8 +268,8 @@ def run_menu():
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
 
-        elif choice == '10':
-            # Funktion 10: Start work on sub-project
+        elif choice == '11':
+            # Funktion 11: Start work on sub-project (War 10)
             print("\n--- Start Work on a Sub-Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -281,22 +307,22 @@ def run_menu():
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
 
-        elif choice == '11':
-            # Funktion 11: Stop current work
+        elif choice == '12':
+            # Funktion 12: Stop current work (War 11)
             print("\n--- Stop Work ---")
             if tt.stop_work():
                 print("Work session stopped successfully.")
             else:
                 print("No active work session to stop.")
 
-        elif choice == '12':
-            # Funktion 12: Generate daily report (Today)
+        elif choice == '13':
+            # Funktion 13: Generate daily report (Today) (War 12)
             print("\n--- Generate Daily Report (Today) ---")
             report_text = tt.generate_daily_report()
             print(report_text)
 
-        elif choice == '13':
-            # Funktion 13: Generate a daily report for a specific day
+        elif choice == '14':
+            # Funktion 14: Generate a daily report for a specific day (War 13)
             print("\n--- Generate Daily Report for a specific Day ---")
             specific_date_str = input("Enter the date (YYYY-MM-DD): ")
             try:
@@ -306,8 +332,8 @@ def run_menu():
             except ValueError:
                 print("Invalid date format. Please use YYYY-MM-DD.")
 
-        elif choice == '14':
-            # Funktion 14: Generate report for a date range
+        elif choice == '15':
+            # Funktion 15: Generate report for a date range (War 14)
             print("\n--- Generate Report for a Date Range ---")
             start_date_str = input("Enter the start date (YYYY-MM-DD): ")
             end_date_str = input("Enter the end date (YYYY-MM-DD): ")
@@ -327,7 +353,7 @@ def run_menu():
             break
             
         else:
-            print("Invalid choice. Please enter a number from 0 to 14.")
+            print("Invalid choice. Please enter a number from 0 to 15.")
 
 if __name__ == '__main__':
     run_menu()
