@@ -22,11 +22,12 @@ def run_menu():
         print("10 Delete sub-project")         # Verschiebung von 9
         print("------------------------------------------------")
         print("11 Start work on sub-project")  
-        print("12 Stop current work")          
+        print("12 Show current work")          # NEU
+        print("13 Stop current work")          # Verschiebung von 12
         print("------------------------------------------------")
-        print("13 Generate daily report (Today)") 
-        print("14 Generate a daily report for a specific day") 
-        print("15 Generate report for a date range")
+        print("14 Generate daily report (Today)") 
+        print("15 Generate a daily report for a specific day") 
+        print("16 Generate report for a date range")
         print("------------------------------------------------")
         print("0 Exit")
         print("------------------------------------------------")
@@ -308,21 +309,41 @@ def run_menu():
                 print("Invalid input. Please enter a valid number.")
 
         elif choice == '12':
-            # Funktion 12: Stop current work (War 11)
+            # NEUE FUNKTION an Position 12: Show current work
+            print("\n--- Current Active Work ---")
+            current_work = tt.get_current_work()
+            if current_work:
+                start_time_str = current_work['start_time']
+                start_time_dt = datetime.fromisoformat(start_time_str)
+                duration = datetime.now() - start_time_dt
+                
+                hours, remainder = divmod(duration.total_seconds(), 3600)
+                minutes, seconds = divmod(remainder, 60)
+
+                print(f"You are currently working on:")
+                print(f"  Main Project: {current_work['main_project_name']}")
+                print(f"  Sub-Project:  {current_work['sub_project_name']}")
+                print(f"  Started at:   {start_time_dt.strftime('%Y-%m-%d %H:%M:%S')}")
+                print(f"  Duration:     {int(hours):02}:{int(minutes):02}:{int(seconds):02}")
+            else:
+                print("No active work session.")
+
+        elif choice == '13':
+            # Funktion 13: Stop current work (War 12)
             print("\n--- Stop Work ---")
             if tt.stop_work():
                 print("Work session stopped successfully.")
             else:
                 print("No active work session to stop.")
 
-        elif choice == '13':
-            # Funktion 13: Generate daily report (Today) (War 12)
+        elif choice == '14':
+            # Funktion 14: Generate daily report (Today) (War 13)
             print("\n--- Generate Daily Report (Today) ---")
             report_text = tt.generate_daily_report()
             print(report_text)
 
-        elif choice == '14':
-            # Funktion 14: Generate a daily report for a specific day (War 13)
+        elif choice == '15':
+            # Funktion 15: Generate a daily report for a specific day (War 14)
             print("\n--- Generate Daily Report for a specific Day ---")
             specific_date_str = input("Enter the date (YYYY-MM-DD): ")
             try:
@@ -332,8 +353,8 @@ def run_menu():
             except ValueError:
                 print("Invalid date format. Please use YYYY-MM-DD.")
 
-        elif choice == '15':
-            # Funktion 15: Generate report for a date range (War 14)
+        elif choice == '16':
+            # Funktion 16: Generate report for a date range (War 15)
             print("\n--- Generate Report for a Date Range ---")
             start_date_str = input("Enter the start date (YYYY-MM-DD): ")
             end_date_str = input("Enter the end date (YYYY-MM-DD): ")
@@ -353,7 +374,7 @@ def run_menu():
             break
             
         else:
-            print("Invalid choice. Please enter a number from 0 to 15.")
+            print("Invalid choice. Please enter a number from 0 to 16.")
 
 if __name__ == '__main__':
     run_menu()
