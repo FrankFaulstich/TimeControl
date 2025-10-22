@@ -1,36 +1,24 @@
 from TimeTracker import TimeTracker
 from datetime import datetime, timedelta
 
-def run_menu():
-    """
-    Starts the interactive menu for the time tracking application.
-    """
-    tt = TimeTracker()
-
+def _handle_project_management(tt):
+    """Handles the project management submenu."""
     while True:
-        print("\n--- Time Tracking Menu ---")
-        print("1  Add new main project")
-        print("2  List main projects")
-        print("3  List inactive main-projects") # NEU an Position 3
-        print("4  Rename main project")        # NEU
-        print("5  Delete main project")        # Verschiebung von 4
-        print("------------------------------------------------")
-        print("6  Add new sub-project")        # Verschiebung von 5
-        print("7  List sub-projects")          # Verschiebung von 6
-        print("8  List inactive sub-projects") # Verschiebung von 7
-        print("9  Rename sub-project")         # Verschiebung von 8
-        print("10 Delete sub-project")         # Verschiebung von 9
-        print("------------------------------------------------")
-        print("11 Start work on sub-project")  
-        print("12 Show current work")          # NEU
-        print("13 Stop current work")          # Verschiebung von 12
-        print("------------------------------------------------")
-        print("14 Generate daily report (Today)") 
-        print("15 Generate a daily report for a specific day") 
-        print("16 Generate report for a date range")
-        print("------------------------------------------------")
-        print("0 Exit")
-        print("------------------------------------------------")
+        print("\n--- Project Management ---")
+        print("1. Add Main Project")
+        print("2. List Main Projects")
+        print("3. Rename Main Project")
+        print("4. Delete Main Project")
+        print("5. List Inactive Main Projects")
+        print("--------------------------------")
+        print("6. Add Sub-Project")
+        print("7. List Sub-Projects")
+        print("8. Rename Sub-Project")
+        print("9. Delete Sub-Project")
+        print("10. List Inactive Sub-Projects")
+        print("--------------------------------")
+        print("0. Back to Main Menu")
+        print("--------------------------------")
         
         choice = input("Choice: ")
 
@@ -40,7 +28,6 @@ def run_menu():
             main_project_name = input('Name of the main project: ')
             tt.add_main_project(main_project_name)
             print(f"Main project '{main_project_name}' added.")
-            
         elif choice == '2':
             # Funktion 2: List main projects
             print("\n--- List Main Projects ---")
@@ -50,32 +37,8 @@ def run_menu():
                     print(f"{i}. {project}")
             else:
                 print("No main projects found.")
-
         elif choice == '3':
-            # NEUE FUNKTION an Position 3: List inactive main-projects (War 8)
-            print("\n--- List Inactive Main-Projects ---")
-            try:
-                inactive_weeks = int(input("Enter the number of weeks without activity (e.g., 8): "))
-                if inactive_weeks < 1:
-                    print("Please enter a positive number.")
-                    continue
-                
-                inactive_list = tt.list_inactive_main_projects(inactive_weeks)
-                
-                if inactive_list:
-                    print(f"\nInactive Main-Projects (>{inactive_weeks} weeks):")
-                    for item in inactive_list:
-                        print(f"  - Main Project: {item['main_project']}")
-                        print(f"    Last Activity: {item['last_activity']}")
-                        print("-" * 20)
-                else:
-                    print(f"No main-projects found inactive for more than {inactive_weeks} weeks.")
-
-            except ValueError:
-                print("Invalid input. Please enter a valid number for weeks.")
-
-        elif choice == '4':
-            # NEUE FUNKTION an Position 4: Rename Main Project
+            # Funktion 4: Rename Main Project
             print("\n--- Rename Main Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -98,9 +61,8 @@ def run_menu():
                     print(f"Error: Could not rename. The new name '{new_name}' might already exist.")
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
-
-        elif choice == '5':
-            # Funktion 5: Delete Main Project (War 4)
+        elif choice == '4':
+            # Funktion 5: Delete Main Project
             print("\n--- Delete Main Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -121,9 +83,30 @@ def run_menu():
                     print(f"Error: Main project '{main_project_name}' not found.")
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
+        elif choice == '5':
+            # Funktion 3: List inactive main-projects
+            print("\n--- List Inactive Main-Projects ---")
+            try:
+                inactive_weeks = int(input("Enter the number of weeks without activity (e.g., 8): "))
+                if inactive_weeks < 1:
+                    print("Please enter a positive number.")
+                    continue
+                
+                inactive_list = tt.list_inactive_main_projects(inactive_weeks)
+                
+                if inactive_list:
+                    print(f"\nInactive Main-Projects (>{inactive_weeks} weeks):")
+                    for item in inactive_list:
+                        print(f"  - Main Project: {item['main_project']}")
+                        print(f"    Last Activity: {item['last_activity']}")
+                        print("-" * 20)
+                else:
+                    print(f"No main-projects found inactive for more than {inactive_weeks} weeks.")
 
+            except ValueError:
+                print("Invalid input. Please enter a valid number for weeks.")
         elif choice == '6':
-            # Funktion 6: Add new sub-project (War 5)
+            # Funktion 6: Add new sub-project
             print("\n--- Add New Sub-Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -145,9 +128,8 @@ def run_menu():
                     print(f"Error: Main project '{main_project_name}' not found.")
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
-
         elif choice == '7':
-            # Funktion 7: List Sub-Projects (War 6)
+            # Funktion 7: List Sub-Projects
             print("\n--- List Sub-Projects ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -170,33 +152,8 @@ def run_menu():
                     print(f"No sub-projects found for '{main_project_name}'.")
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
-        
         elif choice == '8':
-            # Funktion 8: List Inactive Sub-Projects (War 7)
-            print("\n--- List Inactive Sub-Projects ---")
-            try:
-                inactive_weeks = int(input("Enter the number of weeks without activity (e.g., 4): "))
-                if inactive_weeks < 1:
-                    print("Please enter a positive number.")
-                    continue
-                
-                inactive_list = tt.list_inactive_sub_projects(inactive_weeks)
-                
-                if inactive_list:
-                    print(f"\nInactive Sub-Projects (>{inactive_weeks} weeks):")
-                    for item in inactive_list:
-                        print(f"  - Main Project: {item['main_project']}")
-                        print(f"    Sub-Project: {item['sub_project']}")
-                        print(f"    Last Activity: {item['last_activity']}")
-                        print("-" * 20)
-                else:
-                    print(f"No sub-projects found inactive for more than {inactive_weeks} weeks.")
-
-            except ValueError:
-                print("Invalid input. Please enter a valid number for weeks.")
-
-        elif choice == '9':
-            # Funktion 9: Rename Sub-Project (War 8)
+            # Funktion 9: Rename Sub-Project
             print("\n--- Rename Sub-Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -231,9 +188,8 @@ def run_menu():
                     print(f"Error: Could not rename. The new name might already exist or the project was not found.")
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
-
-        elif choice == '10':
-            # Funktion 10: Delete Sub-Project (War 9)
+        elif choice == '9':
+            # Funktion 10: Delete Sub-Project
             print("\n--- Delete Sub-Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -268,9 +224,104 @@ def run_menu():
 
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
+        elif choice == '10':
+            # Funktion 8: List Inactive Sub-Projects
+            print("\n--- List Inactive Sub-Projects ---")
+            try:
+                inactive_weeks = int(input("Enter the number of weeks without activity (e.g., 4): "))
+                if inactive_weeks < 1:
+                    print("Please enter a positive number.")
+                    continue
+                
+                inactive_list = tt.list_inactive_sub_projects(inactive_weeks)
+                
+                if inactive_list:
+                    print(f"\nInactive Sub-Projects (>{inactive_weeks} weeks):")
+                    for item in inactive_list:
+                        print(f"  - Main Project: {item['main_project']}")
+                        print(f"    Sub-Project: {item['sub_project']}")
+                        print(f"    Last Activity: {item['last_activity']}")
+                        print("-" * 20)
+                else:
+                    print(f"No sub-projects found inactive for more than {inactive_weeks} weeks.")
 
-        elif choice == '11':
-            # Funktion 11: Start work on sub-project (War 10)
+            except ValueError:
+                print("Invalid input. Please enter a valid number for weeks.")
+        elif choice == '0':
+            break
+        else:
+            print("Invalid choice. Please enter a number from 0 to 10.")
+
+def _handle_reporting(tt):
+    """Handles the reporting submenu."""
+    while True:
+        print("\n--- Reporting ---")
+        print("1. Daily Report (Today)")
+        print("2. Daily Report (Specific Day)")
+        print("3. Date Range Report")
+        print("--------------------------")
+        print("0. Back to Main Menu")
+        print("--------------------------")
+
+        choice = input("Choice: ")
+
+        if choice == '1':
+            # Funktion 14: Generate daily report (Today)
+            print("\n--- Generate Daily Report (Today) ---")
+            report_text = tt.generate_daily_report()
+            print(report_text)
+        elif choice == '2':
+            # Funktion 15: Generate a daily report for a specific day
+            print("\n--- Generate Daily Report for a specific Day ---")
+            specific_date_str = input("Enter the date (YYYY-MM-DD): ")
+            try:
+                specific_date = datetime.strptime(specific_date_str, "%Y-%m-%d").date()
+                report_text = tt.generate_daily_report(specific_date)
+                print(report_text)
+            except ValueError:
+                print("Invalid date format. Please use YYYY-MM-DD.")
+        elif choice == '3':
+            # Funktion 16: Generate report for a date range
+            print("\n--- Generate Report for a Date Range ---")
+            start_date_str = input("Enter the start date (YYYY-MM-DD): ")
+            end_date_str = input("Enter the end date (YYYY-MM-DD): ")
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                if start_date > end_date:
+                    print("Error: The start date cannot be after the end date.")
+                    continue
+                report_text = tt.generate_date_range_report(start_date, end_date)
+                print(report_text)
+            except ValueError:
+                print("Invalid date format. Please use YYYY-MM-DD.")
+        elif choice == '0':
+            break
+        else:
+            print("Invalid choice. Please enter a number from 0 to 3.")
+
+def run_menu():
+    """
+    Starts the interactive menu for the time tracking application.
+    """
+    tt = TimeTracker()
+
+    while True:
+        print("\n--- Time Tracking Menu ---")
+        print("1. Start work on sub-project")
+        print("2. Show current work")
+        print("3. Stop current work")
+        print("------------------------------------------------")
+        print("4. Project Management")
+        print("5. Reporting")
+        print("------------------------------------------------")
+        print("0. Exit")
+        print("------------------------------------------------")
+        
+        choice = input("Choice: ")
+
+        if choice == '1':
+            # Funktion 11: Start work on sub-project
             print("\n--- Start Work on a Sub-Project ---")
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -304,12 +355,11 @@ def run_menu():
                 else:
                     print("Error starting work.")
 
-
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
 
-        elif choice == '12':
-            # NEUE FUNKTION an Position 12: Show current work
+        elif choice == '2':
+            # Funktion 12: Show current work
             print("\n--- Current Active Work ---")
             current_work = tt.get_current_work()
             if current_work:
@@ -328,53 +378,26 @@ def run_menu():
             else:
                 print("No active work session.")
 
-        elif choice == '13':
-            # Funktion 13: Stop current work (War 12)
+        elif choice == '3':
+            # Funktion 13: Stop current work
             print("\n--- Stop Work ---")
             if tt.stop_work():
                 print("Work session stopped successfully.")
             else:
                 print("No active work session to stop.")
 
-        elif choice == '14':
-            # Funktion 14: Generate daily report (Today) (War 13)
-            print("\n--- Generate Daily Report (Today) ---")
-            report_text = tt.generate_daily_report()
-            print(report_text)
+        elif choice == '4':
+            _handle_project_management(tt)
 
-        elif choice == '15':
-            # Funktion 15: Generate a daily report for a specific day (War 14)
-            print("\n--- Generate Daily Report for a specific Day ---")
-            specific_date_str = input("Enter the date (YYYY-MM-DD): ")
-            try:
-                specific_date = datetime.strptime(specific_date_str, "%Y-%m-%d").date()
-                report_text = tt.generate_daily_report(specific_date)
-                print(report_text)
-            except ValueError:
-                print("Invalid date format. Please use YYYY-MM-DD.")
-
-        elif choice == '16':
-            # Funktion 16: Generate report for a date range (War 15)
-            print("\n--- Generate Report for a Date Range ---")
-            start_date_str = input("Enter the start date (YYYY-MM-DD): ")
-            end_date_str = input("Enter the end date (YYYY-MM-DD): ")
-            try:
-                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-                if start_date > end_date:
-                    print("Error: The start date cannot be after the end date.")
-                    continue
-                report_text = tt.generate_date_range_report(start_date, end_date)
-                print(report_text)
-            except ValueError:
-                print("Invalid date format. Please use YYYY-MM-DD.")
+        elif choice == '5':
+            _handle_reporting(tt)
         
         elif choice == '0':
             print("Exiting application. Goodbye!")
             break
             
         else:
-            print("Invalid choice. Please enter a number from 0 to 16.")
+            print("Invalid choice. Please enter a number from 0 to 5.")
 
 if __name__ == '__main__':
     run_menu()
