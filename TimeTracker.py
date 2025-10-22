@@ -2,6 +2,11 @@ import json
 import os
 from datetime import datetime, timedelta
 
+try:
+    import pyperclip
+except ImportError:
+    pyperclip = None  # Set to None if the library is not installed
+
 class TimeTracker:
     """
     Manages time tracking for various main and sub-projects.
@@ -38,6 +43,39 @@ class TimeTracker:
         """
         with open(self.file_path, 'w', encoding='utf-8') as f:
             json.dump(self.data, f, indent=2)
+
+    def _copy_to_clipboard(self, text):
+        """
+        Copies the given text to the system clipboard.
+        Handles cases where the 'pyperclip' library is not installed.
+
+        :param text: The text to be copied.
+        :type text: str
+        """
+        if pyperclip:
+            try:
+                pyperclip.copy(text)
+                print("Info: Report content has been copied to the clipboard.")
+            except pyperclip.PyperclipException as e:
+                print(f"Warning: Could not copy to clipboard. Error: {e}")
+        else:
+            print("Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip install pyperclip`).")
+
+    def _format_duration(self, duration_td):
+        """
+        Formats a timedelta duration into a string with hours and DLP.
+        1 DLP = 40 hours.
+
+        :param duration_td: The timedelta object to format.
+        :type duration_td: timedelta
+        :return: The formatted string, e.g., "8,000 hours (0,200 DLP)".
+        :rtype: str
+        """
+        hours = duration_td.total_seconds() / 3600
+        dlp = hours / 40
+        hours_str = f"{hours:.3f}".replace('.', ',')
+        dlp_str = f"{dlp:.3f}".replace('.', ',')
+        return f"{hours_str} hours ({dlp_str} DLP)"
 
     def add_main_project(self, main_project_name):
         """
@@ -356,22 +394,6 @@ class TimeTracker:
 
         return inactive_main_projects
 
-    def _format_duration(self, duration_td):
-        """
-        Formats a timedelta duration into a string with hours and DLP.
-        1 DLP = 40 hours.
-
-        :param duration_td: The timedelta object to format.
-        :type duration_td: timedelta
-        :return: The formatted string, e.g., "8,000 hours (0,200 DLP)".
-        :rtype: str
-        """
-        hours = duration_td.total_seconds() / 3600
-        dlp = hours / 40
-        hours_str = f"{hours:.3f}".replace('.', ',')
-        dlp_str = f"{dlp:.3f}".replace('.', ',')
-        return f"{hours_str} hours ({dlp_str} DLP)"
-
     def generate_daily_report(self, report_date=None):
         """
         Generates a daily report in Markdown format, listing only projects 
@@ -436,7 +458,9 @@ class TimeTracker:
         else:
             report.append(f"No time tracked for {today.strftime('%Y-%m-%d')}.")
         
-        return "\n".join(report)
+        report_text = "\n".join(report)
+        self._copy_to_clipboard(report_text)
+        return report_text
 
     def generate_date_range_report(self, start_date, end_date):
         """
@@ -493,4 +517,6 @@ class TimeTracker:
         else:
             report.append(f"No time tracked between {start_date.strftime('%Y-%m-%d')} and {end_date.strftime('%Y-%m-%d')}.")
         
-        return "\n".join(report)
+        report_text = "\n".join(report)
+        self._copy_to_clipboard(report_text)
+        return report_text
