@@ -4,7 +4,11 @@ from datetime import datetime, timedelta
 
 import sys
 import subprocess
-import pkg_resources
+try:
+    # Python 3.8+
+    from importlib.metadata import distributions, PackageNotFoundError
+except ImportError:
+    from importlib_metadata import distributions, PackageNotFoundError
 try:
     import pyperclip
 except ImportError:
@@ -44,8 +48,15 @@ class TimeTracker:
             return
 
         try:
-            installed_packages = {pkg.key for pkg in pkg_resources.working_set}
-            missing_packages = [req for req in requirements if req.lower() not in installed_packages]
+            installed_packages_dist = distributions()
+            installed_packages = {dist.metadata['Name'].lower() for dist in installed_packages_dist}
+            
+            missing_packages = []
+            for req in requirements:
+                # A simple check for the package name, ignoring version specifiers for now
+                req_name = req.split('==')[0].split('>=')[0].split('<=')[0].split('<')[0].split('>')[0].strip()
+                if req_name.lower() not in installed_packages:
+                    missing_packages.append(req)
 
             if missing_packages:
                 print("Some required packages are missing. Attempting to install them...")
