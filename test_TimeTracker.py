@@ -159,6 +159,42 @@ class TestTimeTracker(unittest.TestCase):
         success = self.tracker.rename_sub_project("Main", "Sub A", "Sub B")
         self.assertFalse(success)
         self.assertEqual(self.tracker.list_sub_projects("Main"), ["Sub A", "Sub B"])
+
+    def test_move_sub_project_success(self):
+        """Tests moving a sub-project successfully."""
+        self.tracker.add_main_project("Source")
+        self.tracker.add_sub_project("Source", "Task 1")
+        self.tracker.add_main_project("Destination")
+
+        success, msg = self.tracker.move_sub_project("Source", "Task 1", "Destination")
+        self.assertTrue(success)
+        self.assertEqual(self.tracker.list_sub_projects("Source"), [])
+        self.assertEqual(self.tracker.list_sub_projects("Destination"), ["Task 1"])
+
+    def test_move_sub_project_source_not_found(self):
+        """Tests moving from a non-existent source main project."""
+        self.tracker.add_main_project("Destination")
+        success, msg = self.tracker.move_sub_project("Non-Existent", "Task 1", "Destination")
+        self.assertFalse(success)
+        self.assertIn("Source main project 'Non-Existent' not found", msg)
+
+    def test_move_sub_project_dest_not_found(self):
+        """Tests moving to a non-existent destination main project."""
+        self.tracker.add_main_project("Source")
+        self.tracker.add_sub_project("Source", "Task 1")
+        success, msg = self.tracker.move_sub_project("Source", "Task 1", "Non-Existent")
+        self.assertFalse(success)
+        self.assertIn("Destination main project 'Non-Existent' not found", msg)
+
+    def test_move_sub_project_name_conflict(self):
+        """Tests moving a sub-project when the name exists in the destination."""
+        self.tracker.add_main_project("Source")
+        self.tracker.add_sub_project("Source", "Task 1")
+        self.tracker.add_main_project("Destination")
+        self.tracker.add_sub_project("Destination", "Task 1")
+        success, msg = self.tracker.move_sub_project("Source", "Task 1", "Destination")
+        self.assertFalse(success)
+        self.assertIn("already exists in 'Destination'", msg)
         
     # --- Time Tracking Method Tests ---
     
