@@ -2,6 +2,13 @@ import json
 import os
 from datetime import datetime, timedelta
 
+import sys
+import subprocess
+try:
+    # Python 3.8+
+    from importlib.metadata import distributions, PackageNotFoundError
+except ImportError:
+    from importlib_metadata import distributions, PackageNotFoundError
 try:
     import pyperclip
 except ImportError:
@@ -15,13 +22,57 @@ class TimeTracker:
     """
     def __init__(self, file_path='data.json'):
         """
-        Initializes the TimeTracker and loads data from the JSON file.
+        Initializes the TimeTracker, checks for dependencies, and loads data from the JSON file.
 
         :param file_path: The path to the JSON file where data is stored. Defaults to 'data.json'.
         :type file_path: str
         """
+        self._check_dependencies()
         self.file_path = file_path
         self.data = self._load_data()
+
+    def _check_dependencies(self):
+        """
+        Checks if all packages from requirements.txt are installed.
+        If not, it attempts to install them and then exits the program.
+        """
+        requirements_path = 'requirements.txt'
+        if not os.path.exists(requirements_path):
+            return # requirements.txt not found, skip check
+
+        try:
+            with open(requirements_path, 'r') as f:
+                requirements = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+        except IOError as e:
+            print(f"Warning: Could not read {requirements_path}. Error: {e}")
+            return
+
+        try:
+            installed_packages_dist = distributions()
+            installed_packages = {dist.metadata['Name'].lower() for dist in installed_packages_dist}
+            
+            missing_packages = []
+            for req in requirements:
+                # A simple check for the package name, ignoring version specifiers for now
+                req_name = req.split('==')[0].split('>=')[0].split('<=')[0].split('<')[0].split('>')[0].strip()
+                if req_name.lower() not in installed_packages:
+                    missing_packages.append(req)
+
+            if missing_packages:
+                print("Some required packages are missing. Attempting to install them...")
+                try:
+                    for package in missing_packages:
+                        print(f"Installing {package}...")
+                        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+                    
+                    print("\nDependencies installed successfully.")
+                    print("Please restart the application for the changes to take effect.")
+                    sys.exit(0)
+                except subprocess.CalledProcessError:
+                    print(f"\nError: Failed to install dependencies. Please install them manually using: pip install -r {requirements_path}")
+                    sys.exit(1)
+        except Exception as e:
+            print(f"An unexpected error occurred during dependency check: {e}")
 
     def _load_data(self):
         """
