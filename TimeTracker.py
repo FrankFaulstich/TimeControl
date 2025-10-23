@@ -228,6 +228,50 @@ class TimeTracker:
                 return False # Old sub-project not found
         return False # Main project not found
 
+    def move_sub_project(self, old_main_project_name, sub_project_name, new_main_project_name):
+        """
+        Moves a sub-project from one main project to another.
+
+        :param old_main_project_name: The name of the source main project.
+        :type old_main_project_name: str
+        :param sub_project_name: The name of the sub-project to move.
+        :type sub_project_name: str
+        :param new_main_project_name: The name of the destination main project.
+        :type new_main_project_name: str
+        :return: A tuple (bool, str) indicating success and a message.
+        :rtype: tuple(bool, str)
+        """
+        source_project = None
+        dest_project = None
+        sub_project_to_move = None
+
+        for p in self.data["projects"]:
+            if p["main_project_name"] == old_main_project_name:
+                source_project = p
+            if p["main_project_name"] == new_main_project_name:
+                dest_project = p
+
+        if not source_project:
+            return False, f"Source main project '{old_main_project_name}' not found."
+        if not dest_project:
+            return False, f"Destination main project '{new_main_project_name}' not found."
+
+        # Check if sub-project with same name exists in destination
+        if any(sp["sub_project_name"] == sub_project_name for sp in dest_project["sub_projects"]):
+            return False, f"A sub-project named '{sub_project_name}' already exists in '{new_main_project_name}'."
+
+        # Find and remove sub-project from source
+        for i, sp in enumerate(source_project["sub_projects"]):
+            if sp["sub_project_name"] == sub_project_name:
+                sub_project_to_move = source_project["sub_projects"].pop(i)
+                break
+
+        if sub_project_to_move:
+            dest_project["sub_projects"].append(sub_project_to_move)
+            self._save_data()
+            return True, f"Sub-project '{sub_project_name}' moved successfully."
+        return False, f"Sub-project '{sub_project_name}' not found in '{old_main_project_name}'."
+
     def start_work(self, main_project_name, sub_project_name):
         """
         Starts a new time tracking session for a sub-project by saving the start time.

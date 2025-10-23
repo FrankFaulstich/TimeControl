@@ -5,19 +5,20 @@ def _handle_project_management(tt):
     """Handles the project management submenu."""
     while True:
         print("\n--- Project Management ---")
-        print("1. Add Main Project")
-        print("2. List Main Projects")
-        print("3. Rename Main Project")
-        print("4. Delete Main Project")
-        print("5. List Inactive Main Projects")
+        print("1.  Add Main Project")
+        print("2.  List Main Projects")
+        print("3.  Rename Main Project")
+        print("4.  Delete Main Project")
+        print("5.  List Inactive Main Projects")
         print("--------------------------------")
-        print("6. Add Sub-Project")
-        print("7. List Sub-Projects")
-        print("8. Rename Sub-Project")
-        print("9. Delete Sub-Project")
-        print("10. List Inactive Sub-Projects")
+        print("6.  Add Sub-Project")
+        print("7.  List Sub-Projects")
+        print("8.  Rename Sub-Project")
+        print("9.  Delete Sub-Project")
+        print("10. Move Sub-Project")
+        print("11. List Inactive Sub-Projects")
         print("--------------------------------")
-        print("0. Back to Main Menu")
+        print("0.  Back to Main Menu")
         print("--------------------------------")
         
         choice = input("Choice: ")
@@ -224,7 +225,7 @@ def _handle_project_management(tt):
 
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
-        elif choice == '10':
+        elif choice == '11':
             # Funktion 8: List Inactive Sub-Projects
             print("\n--- List Inactive Sub-Projects ---")
             try:
@@ -247,10 +248,57 @@ def _handle_project_management(tt):
 
             except ValueError:
                 print("Invalid input. Please enter a valid number for weeks.")
+        elif choice == '10':
+            # New Funktion: Move Sub-Project
+            print("\n--- Move Sub-Project ---")
+            main_projects = tt.list_main_projects()
+            if len(main_projects) < 2:
+                print("You need at least two main projects to move a sub-project.")
+                continue
+
+            try:
+                # 1. Select source main project
+                print("Select the source main project:")
+                for i, project_name in enumerate(main_projects, 1):
+                    print(f"{i}. {project_name}")
+                source_choice = int(input("Enter the number of the source main project: "))
+                source_main_project = main_projects[source_choice - 1]
+
+                # 2. Select sub-project to move
+                sub_projects = tt.list_sub_projects(source_main_project)
+                if not sub_projects:
+                    print(f"No sub-projects to move from '{source_main_project}'.")
+                    continue
+                
+                print(f"\nSelect a sub-project from '{source_main_project}' to move:")
+                for i, sub_project_name in enumerate(sub_projects, 1):
+                    print(f"{i}. {sub_project_name}")
+                sub_project_choice = int(input("Enter the number of the sub-project: "))
+                sub_project_to_move = sub_projects[sub_project_choice - 1]
+
+                # 3. Select destination main project
+                print("\nSelect the destination main project:")
+                # Filter out the source project from the list of possible destinations
+                dest_options = [p for p in main_projects if p != source_main_project]
+                for i, project_name in enumerate(dest_options, 1):
+                    print(f"{i}. {project_name}")
+                dest_choice = int(input("Enter the number of the destination main project: "))
+                dest_main_project = dest_options[dest_choice - 1]
+
+                # 4. Perform the move
+                success, message = tt.move_sub_project(source_main_project, sub_project_to_move, dest_main_project)
+                if success:
+                    print(f"Successfully moved '{sub_project_to_move}' from '{source_main_project}' to '{dest_main_project}'.")
+                else:
+                    print(f"Error: {message}")
+
+            except (ValueError, IndexError):
+                print("Invalid input. Please enter a valid number.")
+
         elif choice == '0':
             break
         else:
-            print("Invalid choice. Please enter a number from 0 to 10.")
+            print("Invalid choice. Please enter a number from 0 to 11.")
 
 def _handle_reporting(tt):
     """Handles the reporting submenu."""
