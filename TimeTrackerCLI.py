@@ -312,7 +312,7 @@ def run_menu():
         print("2. Show current work")
         print("3. Stop current work")
         print("------------------------------------------------")
-        print("4. Project Management")
+        print("4. Handle projects and sub-projects")
         print("5. Reporting")
         print("------------------------------------------------")
         print("0. Exit")
