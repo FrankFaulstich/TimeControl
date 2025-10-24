@@ -131,6 +131,12 @@ class TimeTracker:
         return f"{hours_str} hours ({dlp_str} DLP)"
 
     def get_version(self):
+        """
+        Returns the current version of the TimeTracker application.
+
+        :return: The application version string.
+        :rtype: str
+        """
         return self.VERSION
 
     def add_main_project(self, main_project_name):

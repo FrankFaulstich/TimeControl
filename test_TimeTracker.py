@@ -40,6 +40,13 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(len(new_tracker.data["projects"]), 1)
         self.assertEqual(new_tracker.data["projects"][0]["main_project_name"], "Test")
         
+    # --- General Method Tests ---
+
+    def test_get_version(self):
+        """Tests retrieving the application version."""
+        # Compare the method's output with the class attribute
+        self.assertEqual(self.tracker.get_version(), TimeTracker.VERSION)
+
     # --- Main Project Method Tests ---
 
     def test_add_main_project(self):
