@@ -355,7 +355,8 @@ def run_menu():
     tt = TimeTracker()
 
     while True:
-        print("\n--- Time Tracking Menu ---")
+        print("\n=== Time Control " + tt.get_version() + " ===")
+        print("--- Main Menu ---")
         print("1. Start work on sub-project")
         print("2. Show current work")
         print("3. Stop current work")
