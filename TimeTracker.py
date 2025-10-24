@@ -20,6 +20,8 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
+    VERSION = "1.4"
+
     def __init__(self, file_path='data.json'):
         """
         Initializes the TimeTracker, checks for dependencies, and loads data from the JSON file.
@@ -127,6 +129,9 @@ class TimeTracker:
         hours_str = f"{hours:.3f}".replace('.', ',')
         dlp_str = f"{dlp:.3f}".replace('.', ',')
         return f"{hours_str} hours ({dlp_str} DLP)"
+
+    def get_version(self):
+        return self.VERSION
 
     def add_main_project(self, main_project_name):
         """
