@@ -4,3 +4,4 @@ __pycache__/
 
 # Sphinx documentation build output
 /docs/_build/
+.DS_Store
