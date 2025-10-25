@@ -9,6 +9,7 @@ A simple, object-oriented Python application for tracking time spent on projects
   - [Features 🚀](#features-)
   - [Prerequisites 📋](#prerequisites-)
   - [Installation 🛠️](#installation-️)
+  - [Configuration ⚙️](#configuration-️)
   - [Usage ⚙️](#usage-️)
     - [Running the Application](#running-the-application)
     - [Menu Options](#menu-options)
@@ -43,6 +44,8 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **Unit Testing:** Includes comprehensive unit tests in `test_TimeTracker.py` for feature reliability.
 
+**MCP & API Server:** An alternative `TimeTrackerMCP.py` provides a machine-controllable interface via stdin/stdout and a full HTTPS REST API.
+
 ---
 
 ## Prerequisites 📋
@@ -69,6 +72,21 @@ Make sure you have the following files in the root of your repository:
 - **`test_TimeTracker.py`** (containing the unit tests)
 - **`data.json`** (this file will be created automatically on the first run if it doesn't exist)
 
+---
+
+## Configuration ⚙️
+
+The application can be configured via the `config.json` file.
+
+```json
+{
+    "update": {
+        "github_repo": "FrankFaulstich/TimeControl"
+    }
+}
+```
+
+- **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions.
 ---
 
 ## Usage ⚙️

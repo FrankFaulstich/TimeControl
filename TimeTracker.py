@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import sys
 import subprocess
 try:
-    # Python 3.8+
+    # Python 3.8+ for importlib.metadata
     from importlib.metadata import distributions, PackageNotFoundError
 except ImportError:
     from importlib_metadata import distributions, PackageNotFoundError
@@ -13,6 +13,12 @@ try:
     import pyperclip
 except ImportError:
     pyperclip = None  # Set to None if the library is not installed
+try:
+    # For version comparison in the update mechanism
+    from packaging.version import parse as parse_version
+except ImportError:
+    parse_version = None
+
 
 class TimeTracker:
     """
@@ -54,7 +60,7 @@ class TimeTracker:
             installed_packages = {dist.metadata['Name'].lower() for dist in installed_packages_dist}
             
             missing_packages = []
-            for req in requirements:
+            for req in requirements: # e.g., "requests==2.28.1"
                 # A simple check for the package name, ignoring version specifiers for now
                 req_name = req.split('==')[0].split('>=')[0].split('<=')[0].split('<')[0].split('>')[0].strip()
                 if req_name.lower() not in installed_packages:

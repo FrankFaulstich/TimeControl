@@ -1,5 +1,14 @@
+import os
+import sys
 from TimeTracker import TimeTracker
 from datetime import datetime, timedelta
+
+try:
+    from update import check_for_updates, download_update, install_update
+    UPDATE_AVAILABLE = True
+except ImportError:
+    UPDATE_AVAILABLE = False
+
 
 def _handle_project_management(tt):
     """Handles the project management submenu."""
@@ -352,6 +361,13 @@ def run_menu():
     """
     Starts the interactive menu for the time tracking application.
     """
+    # --- Update-Check beim Start ---
+    if UPDATE_AVAILABLE and os.path.exists("update.zip"):
+        install_update()
+        print("Anwendung wird neu gestartet, um das Update abzuschließen...")
+        os.execv(sys.executable, ['python'] + sys.argv)
+        return # Exit after restart
+
     tt = TimeTracker()
 
     while True:
@@ -442,6 +458,12 @@ def run_menu():
             _handle_reporting(tt)
         
         elif choice == '0':
+            # --- Update-Check beim Beenden ---
+            if UPDATE_AVAILABLE:
+                print("\nPrüfe auf Updates...")
+                is_update, _, url = check_for_updates(tt.get_version())
+                if is_update and url:
+                    download_update(url)
             print("Exiting application. Goodbye!")
             break
             
