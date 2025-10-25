@@ -10,6 +10,7 @@ A simple, object-oriented Python application for tracking time spent on projects
   - [Prerequisites 📋](#prerequisites-)
   - [Installation 🛠️](#installation-️)
   - [Configuration ⚙️](#configuration-️)
+  - [Building the Documentation 📚](#building-the-documentation-)
   - [Usage ⚙️](#usage-️)
     - [Running the Application](#running-the-application)
     - [Menu Options](#menu-options)
@@ -88,6 +89,24 @@ The application can be configured via the `config.json` file.
 
 - **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions.
 ---
+
+## Building the Documentation 📚
+
+This project uses Sphinx to generate documentation from the docstrings in the source code.
+
+1.  **Install dependencies:**
+    Make sure you have installed the required packages for building the docs:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+2.  **Build the HTML documentation:**
+    Navigate to the `docs` directory and use the `make` command:
+    ```bash
+    cd docs
+    make html
+    ```
+    The generated documentation can be found in `docs/_build/html/index.html`.
 
 ## Usage ⚙️
 
