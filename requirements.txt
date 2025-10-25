@@ -1,3 +1,5 @@
-pyperclip
+pyperclip==1.8.2
 requests
 packaging
+sphinx
+sphinx_rtd_theme
