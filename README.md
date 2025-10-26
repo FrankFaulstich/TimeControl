@@ -10,10 +10,11 @@ A simple, object-oriented Python application for tracking time spent on projects
   - [Prerequisites 📋](#prerequisites-)
   - [Installation 🛠️](#installation-️)
   - [Configuration ⚙️](#configuration-️)
-  - [Building the Documentation 📚](#building-the-documentation-)
   - [Usage ⚙️](#usage-️)
-    - [Running the Application](#running-the-application)
-    - [Menu Options](#menu-options)
+    - [Running the Interactive CLI](#running-the-interactive-cli)
+    - [Running the MCP / API Server](#running-the-mcp--api-server)
+    - [CLI Menu Options](#cli-menu-options)
+  - [Building the Documentation 📚](#building-the-documentation-)
   - [Data Storage 🗄️](#data-storage-️)
   - [Contributing 🤝](#contributing-)
   - [License 📜](#license-)
@@ -26,26 +27,23 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **Sub-Project Management:** Add, list, and delete sub-projects within main projects.
 
-**Time Tracking:**
+**Time Tracking:** Start, stop, and view the current work session. Automatically stops the previous session when a new one begins.
 
-- Start tracking time for a specific sub-project.
-- Automatically stops the previous time entry if you start a new one.
-- Stop tracking time for the currently active sub-project.
+**Reporting & Analysis:**
 
-**Reporting & Inactivity Analysis (NEW):**
-
-- **Daily Report:** Generate a daily report for today or a specific date. Time totals are output in decimal hours with a **comma** as the decimal separator (e.g., `1,500 hours`).
-- **Inactive Main Projects:** List main projects that have been inactive for a user-specified number of weeks.
-- **Inactive Sub-Projects:** List sub-projects that have been inactive for a user-specified number of weeks.
-- **Date Range Report:** Generate a report for a user-defined date range. Time totals are shown in hours and a custom "DLP" unit (1 DLP = 40 hours).
+- **Daily & Date Range Reports:** Generate detailed reports for specific days or periods.
+- **Inactivity Tracking:** Identify main and sub-projects that have been inactive for a configurable duration.
 
 **Local Data Storage:** All project data and time entries are saved in a `data.json` file in the application's directory.
 
-**Object-Oriented Design:** Separates data handling logic from the user interface.
+**Automatic Updates:** The application can check for new versions on GitHub upon exit and install them on the next start.
+
+**Multiple Interfaces:**
+
+- **Interactive CLI:** A user-friendly command-line interface (`TimeTrackerCLI.py`) for manual operations.
+- **MCP & API Server:** An alternative server (`TimeTrackerMCP.py`) provides a machine-controllable interface via stdin/stdout and a full HTTPS REST API for programmatic control.
 
 **Unit Testing:** Includes comprehensive unit tests in `test_TimeTracker.py` for feature reliability.
-
-**MCP & API Server:** An alternative `TimeTrackerMCP.py` provides a machine-controllable interface via stdin/stdout and a full HTTPS REST API.
 
 ---
 
@@ -61,17 +59,15 @@ Clone the repository:
 
 ```bash
 git clone [https://github.com/FrankFaulstich/TimeControl.git](https://github.com/FrankFaulstich/TimeControl.git)
-cd TimeControl
-````
+cd TimeControl```
 
-Place the Python files:
+Install the required Python packages:
 
-Make sure you have the following files in the root of your repository:
+```bash
+pip install -r requirements.txt
+```
 
-- **`TimeTrackerCLI.py`** (containing a simple command-line interface for interacting with the TimeTracker)
-- **`TimeTracker.py`** (containing the TimeTracker class)
-- **`test_TimeTracker.py`** (containing the unit tests)
-- **`data.json`** (this file will be created automatically on the first run if it doesn't exist)
+The application will also attempt to self-install missing dependencies on first run.
 
 ---
 
@@ -88,69 +84,95 @@ The application can be configured via the `config.json` file.
 ```
 
 - **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions.
+
 ---
-
-## Building the Documentation 📚
-
-This project uses Sphinx to generate documentation from the docstrings in the source code.
-
-1.  **Install dependencies:**
-    Make sure you have installed the required packages for building the docs:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-2.  **Build the HTML documentation:**
-    Navigate to the `docs` directory and use the `make` command:
-    ```bash
-    cd docs
-    make html
-    ```
-    The generated documentation can be found in `docs/_build/html/index.html`.
 
 ## Usage ⚙️
 
-### Running the Application
+### Running the Interactive CLI
 
-To start the time tracker, open your terminal or command prompt, navigate to the project directory, and run the main Python script:
+To start the interactive command-line interface, run:
 
 ```bash
 python TimeTrackerCLI.py
 ```
 
-or
+### Running the MCP / API Server
+
+The server provides programmatic access via standard I/O and a REST API. To start it, run:
 
 ```bash
-python3 TimeTrackerCLI.py
+python TimeTrackerMCP.py
 ```
 
-### Menu Options
+**Note on HTTPS:** The API server requires an SSL certificate. You can generate a local, self-signed certificate using `openssl`. The server looks for `cert.pem` and `key.pem` in the project directory.
 
-Once the application is running, you will see an updated menu structure with the following options:
-
-```Text
---- Time Tracking Menu ---
-1  Add new main project
-2  List main projects
-3  List inactive main-projects
-4  Delete main project
-------------------------------------------------
-5  Add new sub-project
-6  List sub-projects
-7  List inactive sub-projects
-8  Delete sub-project
-------------------------------------------------
-9  Start work on sub-project
-10 Stop current work
-------------------------------------------------
-11 Generate daily report (Today)
-12 Generate a daily report for a specific day
-13 Generate report for a date range
-------------------------------------------------
-0 Exit
+```bash
+openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365 -subj "/CN=localhost"
 ```
 
-The application will prompt you for necessary information for each action.
+- The **MCP interface** accepts JSON commands on `stdin` (e.g., `{"command": "list_main_projects", "params": {}}`).
+- The **API interface** runs by default on `https://localhost:8443`. You can access endpoints like `GET /projects` or `GET /version`.
+
+### CLI Menu Options
+
+The interactive CLI provides a structured menu for all operations.
+
+**Main Menu:**
+
+```text
+=== Time Control [version] ===
+--- Main Menu ---
+1. Start work on sub-project
+2. Show current work
+3. Stop current work
+------------------------------------------------
+4. Handle projects and sub-projects
+5. Reporting
+------------------------------------------------
+0. Exit
+```
+
+**Project Management Submenu (Option 4):**
+
+```text
+--- Project Management ---
+1.  Add Main Project
+2.  List Main Projects
+3.  Rename Main Project
+4.  Delete Main Project
+5.  List Inactive Main Projects
+--------------------------------
+6.  Add Sub-Project
+7.  List Sub-Projects
+8.  Rename Sub-Project
+9.  Delete Sub-Project
+10. Move Sub-Project
+11. List Inactive Sub-Projects
+--------------------------------
+0.  Back to Main Menu
+```
+
+## Building the Documentation 📚
+
+This project uses Sphinx to generate documentation from the docstrings in the source code.
+
+1. **Install dependencies:**
+    Make sure you have installed the required packages for building the docs:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+2. **Build the HTML documentation:**
+    Navigate to the `docs` directory and use the `make` command:
+
+    ```bash
+    cd docs
+    make html
+    ```
+
+    The generated documentation can be found in `docs/_build/html/index.html`.
 
 ---
 
