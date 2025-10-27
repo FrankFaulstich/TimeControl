@@ -26,6 +26,7 @@ def _handle_project_management(tt):
         print("9.  Delete Sub-Project")
         print("10. Move Sub-Project")
         print("11. List Inactive Sub-Projects")
+        print("12. Promote Sub-Project to Main-Project")
         print("--------------------------------")
         print("0.  Back to Main Menu")
         print("--------------------------------")
@@ -304,10 +305,45 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
 
+        elif choice == '12':
+            # New Funktion: Promote Sub-Project
+            print("\n--- Promote Sub-Project to Main-Project ---")
+            main_projects = tt.list_main_projects()
+            if not main_projects:
+                print("No main projects found.")
+                continue
+
+            try:
+                # 1. Select source main project
+                print("Select the main project containing the sub-project to promote:")
+                for i, project_name in enumerate(main_projects, 1):
+                    print(f"{i}. {project_name}")
+                source_choice = int(input("Enter the number of the main project: "))
+                source_main_project = main_projects[source_choice - 1]
+
+                # 2. Select sub-project to promote
+                sub_projects = tt.list_sub_projects(source_main_project)
+                if not sub_projects:
+                    print(f"No sub-projects to promote in '{source_main_project}'.")
+                    continue
+                
+                print(f"\nSelect a sub-project from '{source_main_project}' to promote:")
+                for i, sub_project_name in enumerate(sub_projects, 1):
+                    print(f"{i}. {sub_project_name}")
+                sub_project_choice = int(input("Enter the number of the sub-project: "))
+                sub_project_to_promote = sub_projects[sub_project_choice - 1]
+
+                # 3. Perform the promotion
+                success, message = tt.promote_sub_project(source_main_project, sub_project_to_promote)
+                print(message)
+
+            except (ValueError, IndexError):
+                print("Invalid input. Please enter a valid number.")
+
         elif choice == '0':
             break
         else:
-            print("Invalid choice. Please enter a number from 0 to 11.")
+            print("Invalid choice. Please enter a number from 0 to 12.")
 
 def _handle_reporting(tt):
     """Handles the reporting submenu."""

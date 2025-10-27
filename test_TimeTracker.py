@@ -203,6 +203,44 @@ class TestTimeTracker(unittest.TestCase):
         self.assertFalse(success)
         self.assertIn("already exists in 'Destination'", msg)
         
+    def test_promote_sub_project_success(self):
+        """Tests promoting a sub-project to a main project successfully."""
+        self.tracker.add_main_project("Source Main")
+        self.tracker.add_sub_project("Source Main", "Promotable Sub")
+        # Add a time entry to ensure it's carried over
+        self.tracker.start_work("Source Main", "Promotable Sub")
+        self.tracker.stop_work()
+
+        success, msg = self.tracker.promote_sub_project("Source Main", "Promotable Sub")
+        
+        self.assertTrue(success)
+        self.assertIn("was promoted", msg)
+
+        # 1. Check if original sub-project is gone
+        self.assertEqual(self.tracker.list_sub_projects("Source Main"), [])
+
+        # 2. Check if new main project exists
+        self.assertIn("Promotable Sub", self.tracker.list_main_projects())
+
+        # 3. Check if new main project has a "General" sub-project with the time entries
+        new_main_subs = self.tracker.list_sub_projects("Promotable Sub")
+        self.assertEqual(new_main_subs, ["General"])
+        
+        new_main_project_data = next(p for p in self.tracker.data["projects"] if p["main_project_name"] == "Promotable Sub")
+        general_sub = new_main_project_data["sub_projects"][0]
+        self.assertEqual(len(general_sub["time_entries"]), 1)
+        self.assertIn("start_time", general_sub["time_entries"][0])
+        self.assertIn("end_time", general_sub["time_entries"][0])
+
+    def test_promote_sub_project_name_conflict(self):
+        """Tests that promoting fails if a main project with the same name already exists."""
+        self.tracker.add_main_project("Source Main")
+        self.tracker.add_sub_project("Source Main", "Existing Name")
+        self.tracker.add_main_project("Existing Name") # This is the conflict
+
+        success, msg = self.tracker.promote_sub_project("Source Main", "Existing Name")
+        self.assertFalse(success)
+        self.assertIn("already exists", msg)
     # --- Time Tracking Method Tests ---
     
     def _create_mock_project_with_sub(self, main_name, sub_name):
