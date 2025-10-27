@@ -26,7 +26,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "1.4.3"
+    VERSION = "1.5"
 
     def __init__(self, file_path='data.json'):
         """
@@ -339,6 +339,55 @@ class TimeTracker:
             self._save_data()
             return True, f"Sub-project '{sub_project_name}' moved successfully."
         return False, f"Sub-project '{sub_project_name}' not found in '{old_main_project_name}'."
+
+    def promote_sub_project(self, main_project_name, sub_project_name_to_promote):
+        """
+        Promotes a sub-project to a new main project.
+
+        The time entries of the sub-project are preserved and moved to a new sub-project
+        named 'General' within the new main project.
+
+        :param main_project_name: The name of the current main project.
+        :type main_project_name: str
+        :param sub_project_name_to_promote: The name of the sub-project to promote.
+        :type sub_project_name_to_promote: str
+        :return: A tuple (bool, str) indicating success and a message.
+        :rtype: tuple(bool, str)
+        """
+        # Check if a main project with the new name already exists
+        if any(p["main_project_name"] == sub_project_name_to_promote for p in self.data["projects"]):
+            return False, f"A main project named '{sub_project_name_to_promote}' already exists."
+
+        # Find the source project in a more readable way
+        source_project = None
+        for p in self.data["projects"]:
+            if p["main_project_name"] == main_project_name:
+                source_project = p
+                break
+        if not source_project:
+            return False, f"Source main project '{main_project_name}' not found."
+
+        # Find the index of the sub-project to promote
+        sub_project_index = None
+        for i, sp in enumerate(source_project["sub_projects"]):
+            if sp["sub_project_name"] == sub_project_name_to_promote:
+                sub_project_index = i
+                break
+        if sub_project_index is None:
+            return False, f"Sub-project '{sub_project_name_to_promote}' not found in '{main_project_name}'."
+
+        # Remove sub-project from old main project and get its data
+        sub_project_data = source_project["sub_projects"].pop(sub_project_index)
+        time_entries = sub_project_data.get("time_entries", [])
+
+        # Create the new main project
+        new_main_project = {
+            "main_project_name": sub_project_name_to_promote,
+            "sub_projects": [{"sub_project_name": "General", "time_entries": time_entries}]
+        }
+        self.data["projects"].append(new_main_project)
+        self._save_data()
+        return True, f"Sub-project '{sub_project_name_to_promote}' was promoted to a new main project."
 
     def start_work(self, main_project_name, sub_project_name):
         """
