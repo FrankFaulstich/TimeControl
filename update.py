@@ -8,6 +8,7 @@ from packaging.version import parse as parse_version
 
 UPDATE_ZIP_FILE = "update.zip"
 CONFIG_FILE = "config.json"
+PROTECTED_FILES = ["data.json", "config.json"] # Files that should not be overwritten during an update if they already exist
 
 def _get_github_repo_from_config():
     """Reads the GitHub repository slug from config.json."""
@@ -84,6 +85,7 @@ def download_update(url):
 def install_update():
     """
     Installs the downloaded update by extracting the zip file and overwriting old files.
+    Protected files (like data.json) will not be overwritten if they already exist.
     """
     if not os.path.exists(UPDATE_ZIP_FILE):
         return
@@ -106,6 +108,10 @@ def install_update():
                 relative_path = source_path.replace(root_folder, '', 1)
                 target_path = os.path.join(os.getcwd(), relative_path)
 
+                # Check if the file is protected and already exists
+                if os.path.basename(target_path) in PROTECTED_FILES and os.path.exists(target_path):
+                    print(f"Skipping protected file: {os.path.basename(target_path)}. It will not be overwritten.")
+                    continue # Skip this file
                 # Ensure the target directory exists
                 os.makedirs(os.path.dirname(target_path), exist_ok=True)
                 
