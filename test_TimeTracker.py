@@ -241,6 +241,45 @@ class TestTimeTracker(unittest.TestCase):
         success, msg = self.tracker.promote_sub_project("Source Main", "Existing Name")
         self.assertFalse(success)
         self.assertIn("already exists", msg)
+
+    def test_demote_main_project_success(self):
+        """Tests demoting a main project to a sub-project successfully."""
+        # Setup: Main project to be demoted with two sub-projects
+        self.tracker.add_main_project("Old Main")
+        self.tracker.add_sub_project("Old Main", "Sub 1")
+        self.tracker.start_work("Old Main", "Sub 1") # Entry 1
+        self.tracker.stop_work()
+        self.tracker.add_sub_project("Old Main", "Sub 2")
+        self.tracker.start_work("Old Main", "Sub 2") # Entry 2
+        self.tracker.stop_work()
+
+        # Setup: New parent project
+        self.tracker.add_main_project("New Parent")
+
+        success, msg = self.tracker.demote_main_project("Old Main", "New Parent")
+        self.assertTrue(success)
+        self.assertIn("was demoted", msg)
+
+        # 1. Check if old main project is gone
+        self.assertNotIn("Old Main", self.tracker.list_main_projects())
+
+        # 2. Check if new sub-project exists under the new parent
+        new_parent_subs = self.tracker.list_sub_projects("New Parent")
+        self.assertIn("Old Main", new_parent_subs)
+
+        # 3. Check if all time entries were consolidated
+        new_parent_project_data = next(p for p in self.tracker.data["projects"] if p["main_project_name"] == "New Parent")
+        newly_demoted_sub = next(sp for sp in new_parent_project_data["sub_projects"] if sp["sub_project_name"] == "Old Main")
+        self.assertEqual(len(newly_demoted_sub["time_entries"]), 2)
+
+    def test_demote_main_project_name_conflict(self):
+        """Tests that demoting fails if a sub-project with the same name already exists in the parent."""
+        self.tracker.add_main_project("To Demote")
+        self.tracker.add_main_project("Parent")
+        self.tracker.add_sub_project("Parent", "To Demote") # Name conflict
+        success, msg = self.tracker.demote_main_project("To Demote", "Parent")
+        self.assertFalse(success)
+        self.assertIn("already exists", msg)
     # --- Time Tracking Method Tests ---
     
     def _create_mock_project_with_sub(self, main_name, sub_name):

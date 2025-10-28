@@ -27,6 +27,7 @@ def _handle_project_management(tt):
         print("10. Move Sub-Project")
         print("11. List Inactive Sub-Projects")
         print("12. Promote Sub-Project to Main-Project")
+        print("13. Demote Main-Project to Sub-Project")
         print("--------------------------------")
         print("0.  Back to Main Menu")
         print("--------------------------------")
@@ -339,11 +340,42 @@ def _handle_project_management(tt):
 
             except (ValueError, IndexError):
                 print("Invalid input. Please enter a valid number.")
+        
+        elif choice == '13':
+            # New Funktion: Demote Main-Project
+            print("\n--- Demote Main-Project to Sub-Project ---")
+            main_projects = tt.list_main_projects()
+            if len(main_projects) < 2:
+                print("You need at least two main projects for this operation.")
+                continue
+
+            try:
+                # 1. Select main project to demote
+                print("Select the main project to demote:")
+                for i, project_name in enumerate(main_projects, 1):
+                    print(f"{i}. {project_name}")
+                demote_choice = int(input("Enter the number of the project to demote: "))
+                project_to_demote = main_projects[demote_choice - 1]
+
+                # 2. Select new parent main project
+                print("\nSelect the new parent main project:")
+                parent_options = [p for p in main_projects if p != project_to_demote]
+                for i, project_name in enumerate(parent_options, 1):
+                    print(f"{i}. {project_name}")
+                parent_choice = int(input("Enter the number of the new parent project: "))
+                new_parent_project = parent_options[parent_choice - 1]
+
+                # 3. Perform the demotion
+                success, message = tt.demote_main_project(project_to_demote, new_parent_project)
+                print(message)
+
+            except (ValueError, IndexError):
+                print("Invalid input. Please enter a valid number.")
 
         elif choice == '0':
             break
         else:
-            print("Invalid choice. Please enter a number from 0 to 12.")
+            print("Invalid choice. Please enter a number from 0 to 13.")
 
 def _handle_reporting(tt):
     """Handles the reporting submenu."""

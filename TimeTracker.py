@@ -26,7 +26,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "1.5"
+    VERSION = "1.6"
 
     def __init__(self, file_path='data.json'):
         """
@@ -388,6 +388,61 @@ class TimeTracker:
         self.data["projects"].append(new_main_project)
         self._save_data()
         return True, f"Sub-project '{sub_project_name_to_promote}' was promoted to a new main project."
+
+    def demote_main_project(self, main_project_to_demote_name, new_parent_main_project_name):
+        """
+        Demotes a main project to a sub-project of another main project.
+
+        All time entries from all sub-projects of the demoted main project are
+        consolidated into the new sub-project.
+
+        :param main_project_to_demote_name: The name of the main project to demote.
+        :type main_project_to_demote_name: str
+        :param new_parent_main_project_name: The name of the main project that will become the parent.
+        :type new_parent_main_project_name: str
+        :return: A tuple (bool, str) indicating success and a message.
+        :rtype: tuple(bool, str)
+        """
+        # 1. Find projects and handle errors
+        project_to_demote = None
+        project_to_demote_index = -1
+        new_parent_project = None
+
+        for i, p in enumerate(self.data["projects"]):
+            if p["main_project_name"] == main_project_to_demote_name:
+                project_to_demote = p
+                project_to_demote_index = i
+            if p["main_project_name"] == new_parent_main_project_name:
+                new_parent_project = p
+
+        if not project_to_demote:
+            return False, f"Main project to demote '{main_project_to_demote_name}' not found."
+        if not new_parent_project:
+            return False, f"New parent main project '{new_parent_main_project_name}' not found."
+
+        # Check for name conflict in the destination
+        if any(sp["sub_project_name"] == main_project_to_demote_name for sp in new_parent_project["sub_projects"]):
+            return False, f"A sub-project named '{main_project_to_demote_name}' already exists in '{new_parent_main_project_name}'."
+
+        # 2. Consolidate all time entries
+        all_time_entries = []
+        for sub_project in project_to_demote.get("sub_projects", []):
+            all_time_entries.extend(sub_project.get("time_entries", []))
+
+        # Sort entries by start time to maintain chronological order
+        all_time_entries.sort(key=lambda x: x['start_time'])
+
+        # 3. Create the new sub-project
+        new_sub_project = {
+            "sub_project_name": main_project_to_demote_name,
+            "time_entries": all_time_entries
+        }
+        new_parent_project["sub_projects"].append(new_sub_project)
+
+        # 4. Remove the old main project and save
+        self.data["projects"].pop(project_to_demote_index)
+        self._save_data()
+        return True, f"Main project '{main_project_to_demote_name}' was demoted to a sub-project under '{new_parent_main_project_name}'."
 
     def start_work(self, main_project_name, sub_project_name):
         """
