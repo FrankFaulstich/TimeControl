@@ -438,12 +438,14 @@ def _handle_language_settings():
         print(_("\n--- Language Settings ---"))
         # List available languages by scanning the locale directory
         try:
-            available_languages = [d for d in os.listdir('locale') if os.path.isdir(os.path.join('locale', d))]
+            # Explicitly define supported languages to control the order and display names
+            supported_languages = {'en': 'English', 'de': 'Deutsch', 'cs': 'Čeština'}
+            available_languages = {lang: name for lang, name in supported_languages.items() if os.path.isdir(os.path.join('locale', lang))}
         except FileNotFoundError:
-            available_languages = []
+            available_languages = {}
 
         if not available_languages:
-            print(_("No languages found."))
+            print(_("No additional languages found."))
             return
 
         for i, lang in enumerate(available_languages, 1):
@@ -459,8 +461,9 @@ def _handle_language_settings():
         try:
             choice_num = int(choice)
             if 1 <= choice_num <= len(available_languages):
-                selected_lang = available_languages[choice_num - 1]
+                selected_lang = list(available_languages.keys())[choice_num - 1]
                 # Update config.json
+                CONFIG_FILE = 'config.json'
                 with open(CONFIG_FILE, 'r+') as f:
                     config = json.load(f)
                     config['language'] = selected_lang
