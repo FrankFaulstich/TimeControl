@@ -1,5 +1,6 @@
 import json
 import os
+from i18n import _
 from datetime import datetime, timedelta
 
 import sys
@@ -35,11 +36,17 @@ class TimeTracker:
         :param file_path: The path to the JSON file where data is stored. Defaults to 'data.json'.
         :type file_path: str
         """
-        self._check_dependencies()
         self.file_path = file_path
         self.data = self._load_data()
 
-    def _check_dependencies(self):
+    def initialize_dependencies(self):
+        """
+        Public method to check and install dependencies.
+        This should be called after the language setup is complete.
+        """
+        self._check_and_install_dependencies()
+
+    def _check_and_install_dependencies(self):
         """
         Checks if all packages from requirements.txt are installed.
         If not, it attempts to install them and then exits the program.
@@ -52,7 +59,7 @@ class TimeTracker:
             with open(requirements_path, 'r') as f:
                 requirements = [line.strip() for line in f if line.strip() and not line.startswith('#')]
         except IOError as e:
-            print(f"Warning: Could not read {requirements_path}. Error: {e}")
+            print(_("Warning: Could not read {file}. Error: {error}").format(file=requirements_path, error=e))
             return
 
         try:
@@ -67,20 +74,20 @@ class TimeTracker:
                     missing_packages.append(req)
 
             if missing_packages:
-                print("Some required packages are missing. Attempting to install them...")
+                print(_("Some required packages are missing. Attempting to install them..."))
                 try:
                     for package in missing_packages:
-                        print(f"Installing {package}...")
+                        print(_("Installing {package}...").format(package=package))
                         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
                     
-                    print("\nDependencies installed successfully.")
-                    print("Please restart the application for the changes to take effect.")
+                    print(_("\nDependencies installed successfully."))
+                    print(_("Please restart the application for the changes to take effect."))
                     sys.exit(0)
                 except subprocess.CalledProcessError:
-                    print(f"\nError: Failed to install dependencies. Please install them manually using: pip install -r {requirements_path}")
+                    print(_("\nError: Failed to install dependencies. Please install them manually using: pip install -r {requirements_path}").format(requirements_path=requirements_path))
                     sys.exit(1)
         except Exception as e:
-            print(f"An unexpected error occurred during dependency check: {e}")
+            print(_("An unexpected error occurred during dependency check: {error}").format(error=e))
 
     def _load_data(self):
         """
@@ -114,11 +121,11 @@ class TimeTracker:
         if pyperclip:
             try:
                 pyperclip.copy(text)
-                print("Info: Report content has been copied to the clipboard.")
+                print(_("Info: Report content has been copied to the clipboard."))
             except pyperclip.PyperclipException as e:
-                print(f"Warning: Could not copy to clipboard. Error: {e}")
+                print(_("Warning: Could not copy to clipboard. Error: {error}").format(error=e))
         else:
-            print("Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip install pyperclip`).")
+            print(_("Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip install pyperclip`)."))
 
     def _format_duration(self, duration_td):
         """
@@ -134,7 +141,7 @@ class TimeTracker:
         dlp = hours / 40
         hours_str = f"{hours:.3f}".replace('.', ',')
         dlp_str = f"{dlp:.3f}".replace('.', ',')
-        return f"{hours_str} hours ({dlp_str} DLP)"
+        return _("{hours} hours ({dlp} DLP)").format(hours=hours_str, dlp=dlp_str)
 
     def get_version(self):
         """
@@ -320,13 +327,13 @@ class TimeTracker:
                 dest_project = p
 
         if not source_project:
-            return False, f"Source main project '{old_main_project_name}' not found."
+            return False, _("Source main project '{name}' not found.").format(name=old_main_project_name)
         if not dest_project:
-            return False, f"Destination main project '{new_main_project_name}' not found."
+            return False, _("Destination main project '{name}' not found.").format(name=new_main_project_name)
 
         # Check if sub-project with same name exists in destination
         if any(sp["sub_project_name"] == sub_project_name for sp in dest_project["sub_projects"]):
-            return False, f"A sub-project named '{sub_project_name}' already exists in '{new_main_project_name}'."
+            return False, _("A sub-project named '{sub_name}' already exists in '{main_name}'.").format(sub_name=sub_project_name, main_name=new_main_project_name)
 
         # Find and remove sub-project from source
         for i, sp in enumerate(source_project["sub_projects"]):
@@ -337,8 +344,8 @@ class TimeTracker:
         if sub_project_to_move:
             dest_project["sub_projects"].append(sub_project_to_move)
             self._save_data()
-            return True, f"Sub-project '{sub_project_name}' moved successfully."
-        return False, f"Sub-project '{sub_project_name}' not found in '{old_main_project_name}'."
+            return True, _("Sub-project '{name}' moved successfully.").format(name=sub_project_name)
+        return False, _("Sub-project '{sub_name}' not found in '{main_name}'.").format(sub_name=sub_project_name, main_name=old_main_project_name)
 
     def promote_sub_project(self, main_project_name, sub_project_name_to_promote):
         """
@@ -356,7 +363,7 @@ class TimeTracker:
         """
         # Check if a main project with the new name already exists
         if any(p["main_project_name"] == sub_project_name_to_promote for p in self.data["projects"]):
-            return False, f"A main project named '{sub_project_name_to_promote}' already exists."
+            return False, _("A main project named '{name}' already exists.").format(name=sub_project_name_to_promote)
 
         # Find the source project in a more readable way
         source_project = None
@@ -365,7 +372,7 @@ class TimeTracker:
                 source_project = p
                 break
         if not source_project:
-            return False, f"Source main project '{main_project_name}' not found."
+            return False, _("Source main project '{name}' not found.").format(name=main_project_name)
 
         # Find the index of the sub-project to promote
         sub_project_index = None
@@ -374,7 +381,7 @@ class TimeTracker:
                 sub_project_index = i
                 break
         if sub_project_index is None:
-            return False, f"Sub-project '{sub_project_name_to_promote}' not found in '{main_project_name}'."
+            return False, _("Sub-project '{sub_name}' not found in '{main_name}'.").format(sub_name=sub_project_name_to_promote, main_name=main_project_name)
 
         # Remove sub-project from old main project and get its data
         sub_project_data = source_project["sub_projects"].pop(sub_project_index)
@@ -383,11 +390,11 @@ class TimeTracker:
         # Create the new main project
         new_main_project = {
             "main_project_name": sub_project_name_to_promote,
-            "sub_projects": [{"sub_project_name": "General", "time_entries": time_entries}]
+            "sub_projects": [{"sub_project_name": _("General"), "time_entries": time_entries}]
         }
         self.data["projects"].append(new_main_project)
         self._save_data()
-        return True, f"Sub-project '{sub_project_name_to_promote}' was promoted to a new main project."
+        return True, _("Sub-project '{name}' was promoted to a new main project.").format(name=sub_project_name_to_promote)
 
     def demote_main_project(self, main_project_to_demote_name, new_parent_main_project_name):
         """
@@ -416,13 +423,13 @@ class TimeTracker:
                 new_parent_project = p
 
         if not project_to_demote:
-            return False, f"Main project to demote '{main_project_to_demote_name}' not found."
+            return False, _("Main project to demote '{name}' not found.").format(name=main_project_to_demote_name)
         if not new_parent_project:
-            return False, f"New parent main project '{new_parent_main_project_name}' not found."
+            return False, _("New parent main project '{name}' not found.").format(name=new_parent_main_project_name)
 
         # Check for name conflict in the destination
         if any(sp["sub_project_name"] == main_project_to_demote_name for sp in new_parent_project["sub_projects"]):
-            return False, f"A sub-project named '{main_project_to_demote_name}' already exists in '{new_parent_main_project_name}'."
+            return False, _("A sub-project named '{sub_name}' already exists in '{main_name}'.").format(sub_name=main_project_to_demote_name, main_name=new_parent_main_project_name)
 
         # 2. Consolidate all time entries
         all_time_entries = []
@@ -442,7 +449,7 @@ class TimeTracker:
         # 4. Remove the old main project and save
         self.data["projects"].pop(project_to_demote_index)
         self._save_data()
-        return True, f"Main project '{main_project_to_demote_name}' was demoted to a sub-project under '{new_parent_main_project_name}'."
+        return True, _("Main project '{demoted_name}' was demoted to a sub-project under '{parent_name}'.").format(demoted_name=main_project_to_demote_name, parent_name=new_parent_main_project_name)
 
     def start_work(self, main_project_name, sub_project_name):
         """
@@ -650,7 +657,7 @@ class TimeTracker:
                 if sub_project_total_time.total_seconds() > 0:
                     hours = sub_project_total_time.total_seconds() / 3600
                     hours_str = f"{hours:.3f}".replace('.', ',')
-                    sub_project_details.append(f"- {sub_project['sub_project_name']}: {hours_str} hours")
+                    sub_project_details.append(_("- {name}: {hours} hours").format(name=sub_project['sub_project_name'], hours=hours_str))
                     main_project_total_time += sub_project_total_time
 
             # Add main project and its sub-projects to report if it has entries for the specified date
@@ -658,7 +665,7 @@ class TimeTracker:
                 total_daily_time += main_project_total_time
                 hours = main_project_total_time.total_seconds() / 3600
                 hours_str = f"{hours:.3f}".replace('.', ',')
-                report.append(f"## {project['main_project_name']} ({hours_str} hours)\n")
+                report.append(_("## {name} ({hours} hours)\n").format(name=project['main_project_name'], hours=hours_str))
                 report.extend(sub_project_details)
                 report.append("\n")
         
@@ -667,12 +674,12 @@ class TimeTracker:
             total_hours = total_daily_time.total_seconds() / 3600
             total_hours_str = f"{total_hours:.3f}".replace('.', ',')
             
-            report.insert(0, f"# Daily Time Report: {today.strftime('%Y-%m-%d')}\n")
-            report.append(f"\n**Total Daily Time: {total_hours_str} hours**")
+            report.insert(0, _("# Daily Time Report: {date}\n").format(date=today.strftime('%Y-%m-%d')))
+            report.append(_("\n**Total Daily Time: {hours} hours**").format(hours=total_hours_str))
             report.append("\nGenerated by TimeControl")
             report.append("https://github.com/frankfaulstich/TimeControl")
         else:
-            report.append(f"No time tracked for {today.strftime('%Y-%m-%d')}.")
+            report.append(_("No time tracked for {date}.").format(date=today.strftime('%Y-%m-%d')))
         
         report_text = "\n".join(report)
         self._copy_to_clipboard(report_text)
@@ -713,25 +720,25 @@ class TimeTracker:
 
                 if sub_project_total_time.total_seconds() > 0:
                     formatted_time = self._format_duration(sub_project_total_time)
-                    sub_project_details.append(f"- {sub_project['sub_project_name']}: {formatted_time}")
+                    sub_project_details.append(f"- {sub_project['sub_project_name']}: {formatted_time}") # _format_duration is already translated
                     main_project_total_time += sub_project_total_time
 
             if main_project_total_time.total_seconds() > 0:
                 total_period_time += main_project_total_time
                 formatted_time = self._format_duration(main_project_total_time)
-                report.append(f"## {project['main_project_name']} ({formatted_time})\n")
+                report.append(f"## {project['main_project_name']} ({formatted_time})\n") # _format_duration is already translated
                 report.extend(sub_project_details)
                 report.append("\n")
         
         if total_period_time.total_seconds() > 0:
             total_hours_str = self._format_duration(total_period_time)
             
-            report.insert(0, f"# Time Report: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}\n")
-            report.append(f"\n**Total Time in Period: {total_hours_str}**")
+            report.insert(0, _("# Time Report: {start_date} to {end_date}\n").format(start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')))
+            report.append(_("\n**Total Time in Period: {total_time}**").format(total_time=total_hours_str))
             report.append("\nGenerated by TimeControl")
             report.append("https://github.com/frankfaulstich/TimeControl")
         else:
-            report.append(f"No time tracked between {start_date.strftime('%Y-%m-%d')} and {end_date.strftime('%Y-%m-%d')}.")
+            report.append(_("No time tracked between {start_date} and {end_date}.").format(start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')))
         
         report_text = "\n".join(report)
         self._copy_to_clipboard(report_text)

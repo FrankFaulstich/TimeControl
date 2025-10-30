@@ -1,6 +1,7 @@
 import json
 import sys
 import os
+from i18n import _
 import requests
 import zipfile
 import shutil
@@ -30,7 +31,7 @@ def check_for_updates(current_version_str):
     """
     github_repo = _get_github_repo_from_config()
     if not github_repo:
-        print("Warning: Update check skipped. 'github_repo' not found in config.json or file is invalid.")
+        print(_("Warning: Update check skipped. 'github_repo' not found in config.json or file is invalid."))
         return False, None, None
 
     api_url = f"https://api.github.com/repos/{github_repo}/releases/latest"
@@ -44,19 +45,19 @@ def check_for_updates(current_version_str):
         latest_version = parse_version(latest_version_str)
 
         if latest_version > current_version:
-            print(f"A new version ({latest_version_str}) is available.")
+            print(_("A new version ({version}) is available.").format(version=latest_version_str))
             # Find the asset for the source code zip
             zip_url = latest_release.get("zipball_url")
             if zip_url:
                 return True, latest_version_str, zip_url
             else:
-                print("Error: Download URL for the new version not found.")
+                print(_("Error: Download URL for the new version not found."))
                 return False, None, None
 
     except requests.exceptions.RequestException as e:
-        print(f"Error checking for updates: {e}")
+        print(_("Error checking for updates: {error}").format(error=e))
     except Exception as e:
-        print(f"An unexpected error occurred while checking for updates: {e}")
+        print(_("An unexpected error occurred while checking for updates: {error}").format(error=e))
         
     return False, None, None
 
@@ -68,16 +69,16 @@ def download_update(url):
     :return: True if download was successful, False otherwise.
     """
     try:
-        print("Downloading update...")
+        print(_("Downloading update..."))
         response = requests.get(url, stream=True, timeout=30)
         response.raise_for_status()
         with open(UPDATE_ZIP_FILE, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
-        print("Download complete. The update will be installed on the next start.")
+        print(_("Download complete. The update will be installed on the next start."))
         return True
     except requests.exceptions.RequestException as e:
-        print(f"Error downloading the update: {e}")
+        print(_("Error downloading the update: {error}").format(error=e))
         if os.path.exists(UPDATE_ZIP_FILE):
             os.remove(UPDATE_ZIP_FILE) # Clean up partial download
         return False
@@ -90,7 +91,7 @@ def install_update():
     if not os.path.exists(UPDATE_ZIP_FILE):
         return
 
-    print("Installing update...")
+    print(_("Installing update..."))
     try:
         with zipfile.ZipFile(UPDATE_ZIP_FILE, 'r') as zip_ref:
             # The files are usually inside a root folder in the zip
@@ -110,7 +111,7 @@ def install_update():
 
                 # Check if the file is protected and already exists
                 if os.path.basename(target_path) in PROTECTED_FILES and os.path.exists(target_path):
-                    print(f"Skipping protected file: {os.path.basename(target_path)}. It will not be overwritten.")
+                    print(_("Skipping protected file: {filename}. It will not be overwritten.").format(filename=os.path.basename(target_path)))
                     continue # Skip this file
                 # Ensure the target directory exists
                 os.makedirs(os.path.dirname(target_path), exist_ok=True)
@@ -119,9 +120,9 @@ def install_update():
                 with zip_ref.open(source_path) as source, open(target_path, "wb") as target:
                     shutil.copyfileobj(source, target)
 
-        print("Update installed successfully.")
+        print(_("Update installed successfully."))
     except Exception as e:
-        print(f"Error during update installation: {e}")
+        print(_("Error during update installation: {error}").format(error=e))
     finally:
         # Clean up the zip file regardless of success
         if os.path.exists(UPDATE_ZIP_FILE):
