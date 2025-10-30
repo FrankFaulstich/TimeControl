@@ -439,7 +439,7 @@ def _handle_language_settings():
         # List available languages by scanning the locale directory
         try:
             # Explicitly define supported languages to control the order and display names
-            supported_languages = {'en': 'English', 'de': 'Deutsch', 'cs': 'Čeština'}
+            supported_languages = {'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'cs': 'Čeština'}
             available_languages = {lang: name for lang, name in supported_languages.items() if os.path.isdir(os.path.join('locale', lang))}
         except FileNotFoundError:
             available_languages = {}
