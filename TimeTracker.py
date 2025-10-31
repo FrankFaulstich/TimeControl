@@ -344,7 +344,7 @@ class TimeTracker:
         if sub_project_to_move:
             dest_project["sub_projects"].append(sub_project_to_move)
             self._save_data()
-            return True, _("Sub-project '{name}' moved successfully.").format(name=sub_project_name)
+            return True, _("Sub-project '{sub_name}' moved successfully.").format(sub_name=sub_project_name)
         return False, _("Sub-project '{sub_name}' not found in '{main_name}'.").format(sub_name=sub_project_name, main_name=old_main_project_name)
 
     def promote_sub_project(self, main_project_name, sub_project_name_to_promote):
@@ -394,7 +394,7 @@ class TimeTracker:
         }
         self.data["projects"].append(new_main_project)
         self._save_data()
-        return True, _("Sub-project '{name}' was promoted to a new main project.").format(name=sub_project_name_to_promote)
+        return True, _("Sub-project '{sub_name}' was promoted to a new main project.").format(sub_name=sub_project_name_to_promote)
 
     def demote_main_project(self, main_project_to_demote_name, new_parent_main_project_name):
         """

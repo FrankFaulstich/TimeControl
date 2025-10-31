@@ -306,7 +306,7 @@ def _handle_project_management(tt):
                 # 4. Perform the move
                 success, message = tt.move_sub_project(source_main_project, sub_project_to_move, dest_main_project)
                 if success:
-                    print(_("Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'.").format(sub_name=sub_project_to_move, source_name=source_main_project, dest_name=dest_main_project))
+                    print(_("Successfully moved '{sub_name}' from '{source_main_project}' to '{dest_main_project}'.").format(sub_name=sub_project_to_move, source_main_project=source_main_project, dest_main_project=dest_main_project))
                 else:
                     print(_("Error: {message}").format(message=message))
 
@@ -539,7 +539,7 @@ def run_menu():
                 sub_project_name = sub_projects[sub_project_choice - 1]
 
                 if tt.start_work(main_project_name, sub_project_name):
-                    print(_("Work started on '{sub_name}' in project '{main_name}'.").format(sub_name=sub_project_name, main_project_name=main_project_name))
+                    print(_("Work started on '{sub_name}' in project '{main_name}'.").format(sub_name=sub_project_name, main_name=main_project_name))
                 else:
                     print(_("Error starting work."))
 
