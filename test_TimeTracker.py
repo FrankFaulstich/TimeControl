@@ -539,6 +539,47 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("**Total Time in Period: 3,000 hours (0,075 DLP)**", report)
         self.assertTrue(report.startswith(f"# Time Report: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"))
 
+    def test_generate_sub_project_report(self):
+        """Tests the detailed report generation for a single sub-project."""
+        main_proj = "Detailed Report Main"
+        sub_proj = "Detailed Report Sub"
+        self._create_mock_project_with_sub(main_proj, sub_proj)
+
+        # Entry 1: Yesterday
+        yesterday = datetime.now() - timedelta(days=1)
+        entry1_start = yesterday.replace(hour=10, minute=0, second=0, microsecond=0)
+        entry1_end = yesterday.replace(hour=11, minute=30, second=0, microsecond=0)
+        
+        # Entry 2: Today
+        today = datetime.now()
+        entry2_start = today.replace(hour=14, minute=0, second=0, microsecond=0)
+        entry2_end = today.replace(hour=15, minute=0, second=0, microsecond=0)
+
+        # Manually add entries to control times precisely
+        sub_project_data = self.tracker.data["projects"][0]["sub_projects"][0]
+        sub_project_data["time_entries"].append({
+            "start_time": entry1_start.isoformat(),
+            "end_time": entry1_end.isoformat()
+        })
+        sub_project_data["time_entries"].append({
+            "start_time": entry2_start.isoformat(),
+            "end_time": entry2_end.isoformat()
+        })
+        self.tracker._save_data()
+
+        report = self.tracker.generate_sub_project_report(main_proj, sub_proj)
+
+        # Check for key information
+        self.assertIn(f"# Detailed Report for Sub-Project: {sub_proj}", report)
+        self.assertIn(f"Part of Main Project: {main_proj}", report)
+        self.assertIn("Total recorded time:** 2:30:00", report)
+        self.assertIn("Total work sessions:** 2", report)
+        self.assertIn("Average session duration:** 1:15:00", report)
+        self.assertIn(f"### {yesterday.strftime('%Y-%m-%d')}", report)
+        self.assertIn(f"### {today.strftime('%Y-%m-%d')}", report)
+        self.assertIn("10:00:00 - 11:30:00", report)
+        self.assertIn("14:00:00 - 15:00:00", report)
+
 # Run the tests if the file is called directly
 if __name__ == '__main__':
     unittest.main()

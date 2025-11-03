@@ -365,12 +365,13 @@ class TimeTracker:
         if any(p["main_project_name"] == sub_project_name_to_promote for p in self.data["projects"]):
             return False, _("A main project named '{name}' already exists.").format(name=sub_project_name_to_promote)
 
-        # Find the source project in a more readable way
+        # Find the source project
         source_project = None
         for p in self.data["projects"]:
             if p["main_project_name"] == main_project_name:
                 source_project = p
                 break
+
         if not source_project:
             return False, _("Source main project '{name}' not found.").format(name=main_project_name)
 
@@ -380,6 +381,7 @@ class TimeTracker:
             if sp["sub_project_name"] == sub_project_name_to_promote:
                 sub_project_index = i
                 break
+
         if sub_project_index is None:
             return False, _("Sub-project '{sub_name}' not found in '{main_name}'.").format(sub_name=sub_project_name_to_promote, main_name=main_project_name)
 
@@ -433,8 +435,13 @@ class TimeTracker:
 
         # 2. Consolidate all time entries
         all_time_entries = []
-        for sub_project in project_to_demote.get("sub_projects", []):
-            all_time_entries.extend(sub_project.get("time_entries", []))
+        
+        # Iterate through all sub-projects of the project to be demoted
+        if "sub_projects" in project_to_demote:
+            for sub_project in project_to_demote["sub_projects"]:
+                # Extend the list with the time entries of each sub-project
+                if "time_entries" in sub_project:
+                    all_time_entries.extend(sub_project["time_entries"])
 
         # Sort entries by start time to maintain chronological order
         all_time_entries.sort(key=lambda x: x['start_time'])
@@ -681,6 +688,101 @@ class TimeTracker:
         else:
             report.append(_("No time tracked for {date}.").format(date=today.strftime('%Y-%m-%d')))
         
+        report_text = "\n".join(report)
+        self._copy_to_clipboard(report_text)
+        return report_text
+
+    def generate_sub_project_report(self, main_project_name, sub_project_name):
+        """
+        Generates a detailed report for a single sub-project.
+
+        :param main_project_name: The name of the main project.
+        :type main_project_name: str
+        :param sub_project_name: The name of the sub-project.
+        :type sub_project_name: str
+        :return: The formatted report as a Markdown string, or an error message.
+        :rtype: str
+        """
+        project = None
+        for p in self.data["projects"]:
+            if p["main_project_name"] == main_project_name:
+                project = p
+                break
+        if not project:
+            return _("Main project '{name}' not found.").format(name=main_project_name)
+
+        sub_project = None
+        for sp in project["sub_projects"]:
+            if sp["sub_project_name"] == sub_project_name:
+                sub_project = sp
+                break
+        if not sub_project:
+            return _("Sub-project '{sub_name}' not found in '{main_name}'.").format(sub_name=sub_project_name, main_name=main_project_name)
+
+        entries = sub_project.get("time_entries", [])
+        if not entries:
+            return _("No time entries found for sub-project '{sub_name}'.").format(sub_name=sub_project_name)
+
+        total_duration = timedelta()
+        first_start_time = None
+        last_activity_time = None
+        is_active = False
+        daily_breakdown = {}
+
+        for i, entry in enumerate(entries):
+            start_time = datetime.fromisoformat(entry["start_time"])
+            if first_start_time is None:
+                first_start_time = start_time
+            
+            last_activity_time = start_time
+            
+            end_time = None
+            duration = timedelta()
+
+            if "end_time" in entry:
+                end_time = datetime.fromisoformat(entry["end_time"])
+                duration = end_time - start_time
+                total_duration += duration
+                last_activity_time = end_time
+            elif i == len(entries) - 1: # Last entry is open
+                is_active = True
+                duration = datetime.now() - start_time
+
+            date_key = start_time.date()
+            if date_key not in daily_breakdown:
+                daily_breakdown[date_key] = []
+            
+            duration_str = str(duration).split('.')[0] # Format as H:MM:SS
+            time_range_str = f"{start_time.strftime('%H:%M:%S')} - {end_time.strftime('%H:%M:%S') if end_time else _('now')}"
+            daily_breakdown[date_key].append(f"  - {time_range_str} ({_('Duration')}: {duration_str})")
+
+        # Build the report string
+        report = []
+        report.append(_("# Detailed Report for Sub-Project: {name}").format(name=sub_project_name))
+        report.append(_("Part of Main Project: {name}").format(name=main_project_name))
+        report.append("-" * 30)
+
+        status = _("Active (currently running)") if is_active else _("Inactive")
+        report.append(f"**{_('Status')}:** {status}")
+        if first_start_time:
+            report.append(f"**{_('First entry')}:** {first_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        if last_activity_time:
+            report.append(f"**{_('Last activity')}:** {last_activity_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        report.append(f"**{_('Total recorded time')}:** {str(total_duration).split('.')[0]}")
+        report.append(f"**{_('Total work sessions')}:** {len(entries)}")
+
+        if len(entries) > 0:
+            avg_duration = total_duration / len(entries)
+            report.append(f"**{_('Average session duration')}:** {str(avg_duration).split('.')[0]}")
+
+        report.append(f"\n## {_('Daily Breakdown')}")
+        
+        sorted_dates = sorted(daily_breakdown.keys())
+        for date in sorted_dates:
+            report.append(f"\n### {date.strftime('%Y-%m-%d')}")
+            report.extend(daily_breakdown[date])
+
         report_text = "\n".join(report)
         self._copy_to_clipboard(report_text)
         return report_text

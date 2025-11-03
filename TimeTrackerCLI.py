@@ -391,6 +391,7 @@ def _handle_reporting(tt):
         print(_("1. Daily Report (Today)"))
         print(_("2. Daily Report (Specific Day)"))
         print(_("3. Date Range Report"))
+        print(_("4. Detailed Sub-Project Report"))
         print("--------------------------")
         print(_("0. Back to Main Menu"))
         print("--------------------------")
@@ -427,10 +428,43 @@ def _handle_reporting(tt):
                 print(report_text)
             except ValueError:
                 print(_("Invalid date format. Please use YYYY-MM-DD."))
+        elif choice == '4':
+            print(_("\n--- Detailed Sub-Project Report ---"))
+            main_projects = tt.list_main_projects()
+            if not main_projects:
+                print(_("No projects found."))
+                continue
+
+            try:
+                # 1. Select main project
+                print(_("Select the main project:"))
+                for i, project_name in enumerate(main_projects, 1):
+                    print(f"{i}. {project_name}")
+                main_choice = int(input(_("Enter the number of the main project: ")))
+                main_project_name = main_projects[main_choice - 1]
+
+                # 2. Select sub-project
+                sub_projects = tt.list_sub_projects(main_project_name)
+                if not sub_projects:
+                    print(_("No sub-projects found for '{name}'.").format(name=main_project_name))
+                    continue
+
+                print(_("\nSelect the sub-project for the report:"))
+                for i, sub_project_name in enumerate(sub_projects, 1):
+                    print(f"{i}. {sub_project_name}")
+                sub_choice = int(input(_("Enter the number of the sub-project: ")))
+                sub_project_name = sub_projects[sub_choice - 1]
+
+                # 3. Generate and print the report
+                report_text = tt.generate_sub_project_report(main_project_name, sub_project_name)
+                print("\n" + report_text)
+
+            except (ValueError, IndexError):
+                print(_("Invalid input. Please enter a valid number."))
         elif choice == '0':
             break
         else:
-            print(_("Invalid choice. Please enter a number from 0 to 3."))
+            print(_("Invalid choice. Please enter a number from 0 to 4."))
 
 def _handle_language_settings():
     """Handles the language selection submenu."""
