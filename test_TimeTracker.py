@@ -317,8 +317,7 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("end_time", t1_entry)
         
         # Check if T2 only has a start_time
-        t2_entry = self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"][0]
-        self.assertNotIn("end_time", t2_entry)
+        self.assertNotIn("end_time", self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"][0])
 
     def test_stop_work_success(self):
         """Tests the successful stopping of work."""
@@ -546,14 +545,15 @@ class TestTimeTracker(unittest.TestCase):
         self._create_mock_project_with_sub(main_proj, sub_proj)
 
         # Entry 1: Yesterday
-        yesterday = datetime.now() - timedelta(days=1)
-        entry1_start = yesterday.replace(hour=10, minute=0, second=0, microsecond=0)
-        entry1_end = yesterday.replace(hour=11, minute=30, second=0, microsecond=0)
+        # Use fixed dates to make weekday predictable. 2025-11-03 is a Monday.
+        day1 = datetime(2025, 11, 3, 10, 0, 0) # Monday
+        entry1_start = day1
+        entry1_end = day1 + timedelta(hours=1, minutes=30) # 1.5 hours
         
-        # Entry 2: Today
-        today = datetime.now()
-        entry2_start = today.replace(hour=14, minute=0, second=0, microsecond=0)
-        entry2_end = today.replace(hour=15, minute=0, second=0, microsecond=0)
+        # Entry 2: A Tuesday
+        day2 = datetime(2025, 11, 4, 14, 0, 0) # Tuesday
+        entry2_start = day2
+        entry2_end = day2 + timedelta(hours=1) # 1 hour
 
         # Manually add entries to control times precisely
         sub_project_data = self.tracker.data["projects"][0]["sub_projects"][0]
@@ -575,10 +575,57 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("Total recorded time:** 2:30:00", report)
         self.assertIn("Total work sessions:** 2", report)
         self.assertIn("Average session duration:** 1:15:00", report)
-        self.assertIn(f"### {yesterday.strftime('%Y-%m-%d')}", report)
-        self.assertIn(f"### {today.strftime('%Y-%m-%d')}", report)
+        self.assertIn("## Weekday Distribution", report)
+        self.assertIn("- **Monday**: 1:30:00 (60.0%)", report) # 1.5h of 2.5h total
+        self.assertIn("- **Tuesday**: 1:00:00 (40.0%)", report) # 1h of 2.5h total
+        self.assertIn(f"### {day1.strftime('%Y-%m-%d')}", report)
+        self.assertIn(f"### {day2.strftime('%Y-%m-%d')}", report)
         self.assertIn("10:00:00 - 11:30:00", report)
         self.assertIn("14:00:00 - 15:00:00", report)
+
+    def test_generate_main_project_report(self):
+        """Tests the detailed report generation for a single main project."""
+        main_proj = "Main Project Report Test"
+        sub_proj_1 = "Sub 1"
+        sub_proj_2 = "Sub 2"
+        self.tracker.add_main_project(main_proj)
+        self.tracker.add_sub_project(main_proj, sub_proj_1)
+        self.tracker.add_sub_project(main_proj, sub_proj_2)
+
+        # Use fixed dates for predictable weekdays
+        # Entry 1 for Sub 1: 1 hour on a Monday
+        day1 = datetime(2025, 11, 3, 10, 0, 0)
+        self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"].append({
+            "start_time": day1.isoformat(),
+            "end_time": (day1 + timedelta(hours=1)).isoformat()
+        })
+        # Entry 2 for Sub 1: 30 minutes on a Tuesday
+        day2 = datetime(2025, 11, 4, 14, 0, 0)
+        self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"].append({
+            "start_time": day2.isoformat(),
+            "end_time": (day2 + timedelta(minutes=30)).isoformat()
+        })
+        # Entry 1 for Sub 2: 2 hours, also on a Monday
+        self.tracker.data["projects"][0]["sub_projects"][1]["time_entries"].append({
+            "start_time": day1.replace(hour=12).isoformat(),
+            "end_time": (day1.replace(hour=12) + timedelta(hours=2)).isoformat()
+        })
+        self.tracker._save_data()
+
+        report = self.tracker.generate_main_project_report(main_proj)
+
+        # Check for key information
+        self.assertIn(f"# Detailed Report for Main Project: {main_proj}", report)
+        self.assertIn("Total recorded time:** 3:30:00", report)
+        self.assertIn("Number of sub-projects:** 2", report)
+        self.assertIn("Total work sessions:** 3", report)
+        self.assertIn("Average session duration:** 1:10:00", report)
+        self.assertIn("## Weekday Distribution", report)
+        self.assertIn("- **Monday**: 3:00:00 (85.7%)", report) # 1h + 2h = 3h of 3.5h total
+        self.assertIn("- **Tuesday**: 0:30:00 (14.3%)", report) # 0.5h of 3.5h total
+        self.assertIn("## Sub-Project Breakdown", report)
+        self.assertIn("- **Sub 2**: 2:00:00 (1 sessions, 57.1%)", report) # 2h of 3.5h total
+        self.assertIn("- **Sub 1**: 1:30:00 (2 sessions, 42.9%)", report) # 1.5h of 3.5h total
 
 # Run the tests if the file is called directly
 if __name__ == '__main__':

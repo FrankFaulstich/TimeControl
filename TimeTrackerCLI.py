@@ -391,7 +391,8 @@ def _handle_reporting(tt):
         print(_("1. Daily Report (Today)"))
         print(_("2. Daily Report (Specific Day)"))
         print(_("3. Date Range Report"))
-        print(_("4. Detailed Sub-Project Report"))
+        print(_("4. Detailed Sub-Project Report")) # Yesterday's change
+        print(_("5. Detailed Main-Project Report")) # Today's change
         print("--------------------------")
         print(_("0. Back to Main Menu"))
         print("--------------------------")
@@ -461,22 +462,36 @@ def _handle_reporting(tt):
 
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
+        elif choice == '5':
+            print(_("\n--- Detailed Main-Project Report ---"))
+            main_projects = tt.list_main_projects()
+            if not main_projects:
+                print(_("No projects found."))
+                continue
+
+            try:
+                # 1. Select main project
+                print(_("Select the main project for the report:"))
+                for i, project_name in enumerate(main_projects, 1):
+                    print(f"{i}. {project_name}")
+                main_choice = int(input(_("Enter the number of the main project: ")))
+                main_project_name = main_projects[main_choice - 1]
+
+                report_text = tt.generate_main_project_report(main_project_name)
+                print("\n" + report_text)
+            except (ValueError, IndexError):
+                print(_("Invalid input. Please enter a valid number."))
         elif choice == '0':
             break
         else:
-            print(_("Invalid choice. Please enter a number from 0 to 4."))
+            print(_("Invalid choice. Please enter a number from 0 to 5."))
 
 def _handle_language_settings():
     """Handles the language selection submenu."""
     while True:
         print(_("\n--- Language Settings ---"))
-        # List available languages by scanning the locale directory
-        try:
-            # Explicitly define supported languages to control the order and display names
-            supported_languages = {'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'cs': 'Čeština'}
-            available_languages = {lang: name for lang, name in supported_languages.items() if os.path.isdir(os.path.join('locale', lang))}
-        except FileNotFoundError:
-            available_languages = {}
+        supported_languages = {'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'cs': 'Čeština'}
+        available_languages = {lang: name for lang, name in supported_languages.items() if os.path.isdir(os.path.join('locale', lang))}
 
         if not available_languages:
             print(_("No additional languages found."))

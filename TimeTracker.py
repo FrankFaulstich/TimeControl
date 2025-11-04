@@ -728,26 +728,27 @@ class TimeTracker:
         last_activity_time = None
         is_active = False
         daily_breakdown = {}
+        weekday_durations = [timedelta() for _ in range(7)] # Mo-So
 
         for i, entry in enumerate(entries):
             start_time = datetime.fromisoformat(entry["start_time"])
             if first_start_time is None:
                 first_start_time = start_time
             
-            last_activity_time = start_time
-            
             end_time = None
-            duration = timedelta()
+            duration = timedelta() # Initialize duration here
 
             if "end_time" in entry:
                 end_time = datetime.fromisoformat(entry["end_time"])
                 duration = end_time - start_time
                 total_duration += duration
                 last_activity_time = end_time
+                weekday_durations[start_time.weekday()] += duration
             elif i == len(entries) - 1: # Last entry is open
                 is_active = True
                 duration = datetime.now() - start_time
-
+                weekday_durations[start_time.weekday()] += duration
+ 
             date_key = start_time.date()
             if date_key not in daily_breakdown:
                 daily_breakdown[date_key] = []
@@ -776,12 +777,129 @@ class TimeTracker:
             avg_duration = total_duration / len(entries)
             report.append(f"**{_('Average session duration')}:** {str(avg_duration).split('.')[0]}")
 
+        if total_duration.total_seconds() > 0:
+            report.append(f"\n## {_('Weekday Distribution')}")
+            total_seconds = total_duration.total_seconds()
+            weekdays = [_('Monday'), _('Tuesday'), _('Wednesday'), _('Thursday'), _('Friday'), _('Saturday'), _('Sunday')]
+            for i, day_name in enumerate(weekdays):
+                day_duration = weekday_durations[i]
+                if day_duration.total_seconds() > 0:
+                    percentage = (day_duration.total_seconds() / total_seconds) * 100
+                    duration_str = str(day_duration).split('.')[0]
+                    report.append(f"- **{day_name}**: {duration_str} ({percentage:.1f}%)")
+
         report.append(f"\n## {_('Daily Breakdown')}")
         
         sorted_dates = sorted(daily_breakdown.keys())
         for date in sorted_dates:
             report.append(f"\n### {date.strftime('%Y-%m-%d')}")
             report.extend(daily_breakdown[date])
+
+        report_text = "\n".join(report)
+        self._copy_to_clipboard(report_text)
+        return report_text
+
+    def generate_main_project_report(self, main_project_name):
+        """
+        Generates a detailed report for a single main project.
+
+        :param main_project_name: The name of the main project.
+        :type main_project_name: str
+        :return: The formatted report as a Markdown string, or an error message.
+        :rtype: str
+        """
+        project = next((p for p in self.data["projects"] if p["main_project_name"] == main_project_name), None)
+        if not project:
+            return _("Main project '{name}' not found.").format(name=main_project_name)
+
+        sub_projects = project.get("sub_projects", [])
+
+        # --- Overall Stats ---
+        total_duration = timedelta()
+        total_sessions = 0
+        first_start_time = None
+        last_activity_time = None
+        is_active = False
+        active_sub_project_name = None
+
+        # --- Sub-Project Specific Stats ---
+        sub_project_stats = []
+        weekday_durations = [timedelta() for _ in range(7)] # Mo-So
+
+        for sp in sub_projects:
+            sp_duration = timedelta()
+            entries = sp.get("time_entries", [])
+            total_sessions += len(entries)
+
+            for i, entry in enumerate(entries):
+                start_time = datetime.fromisoformat(entry["start_time"])
+                if first_start_time is None or start_time < first_start_time:
+                    first_start_time = start_time
+                if last_activity_time is None or start_time > last_activity_time:
+                    last_activity_time = start_time
+
+                if "end_time" in entry:
+                    end_time = datetime.fromisoformat(entry["end_time"])
+                    duration = end_time - start_time
+                    sp_duration += duration
+                    weekday_durations[start_time.weekday()] += duration
+                    if last_activity_time is None or end_time > last_activity_time:
+                        last_activity_time = end_time
+                elif i == len(entries) - 1:  # Last entry is open
+                    is_active = True
+                    active_sub_project_name = sp["sub_project_name"]
+            
+            total_duration += sp_duration
+            if len(entries) > 0:
+                sub_project_stats.append({
+                    "name": sp["sub_project_name"],
+                    "duration": sp_duration,
+                    "sessions": len(entries)
+                })
+
+        # --- Build Report ---
+        report = []
+        report.append(_("# Detailed Report for Main Project: {name}").format(name=main_project_name))
+        report.append("-" * 30)
+
+        status = _("Active (working on '{sub_name}')").format(sub_name=active_sub_project_name) if is_active else _("Inactive")
+        report.append(f"**{_('Status')}:** {status}")
+        if first_start_time:
+            report.append(f"**{_('First entry')}:** {first_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        if last_activity_time:
+            report.append(f"**{_('Last activity')}:** {last_activity_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        report.append(f"**{_('Total recorded time')}:** {str(total_duration).split('.')[0]}")
+        report.append(f"**{_('Number of sub-projects')}:** {len(sub_projects)}")
+        report.append(f"**{_('Total work sessions')}:** {total_sessions}")
+
+        if total_sessions > 0:
+            avg_duration = total_duration / total_sessions
+            report.append(f"**{_('Average session duration')}:** {str(avg_duration).split('.')[0]}")
+
+        if total_duration.total_seconds() > 0:
+            report.append(f"\n## {_('Weekday Distribution')}")
+            total_seconds = total_duration.total_seconds()
+            weekdays = [_('Monday'), _('Tuesday'), _('Wednesday'), _('Thursday'), _('Friday'), _('Saturday'), _('Sunday')]
+            for i, day_name in enumerate(weekdays):
+                day_duration = weekday_durations[i]
+                if day_duration.total_seconds() > 0:
+                    percentage = (day_duration.total_seconds() / total_seconds) * 100
+                    duration_str = str(day_duration).split('.')[0]
+                    report.append(f"- **{day_name}**: {duration_str} ({percentage:.1f}%)")
+
+        if sub_project_stats:
+            report.append(f"\n## {_('Sub-Project Breakdown')}")
+            # Sort by duration, descending
+            sub_project_stats.sort(key=lambda x: x["duration"], reverse=True)
+            
+            total_seconds = total_duration.total_seconds()
+            for stat in sub_project_stats:
+                percentage = (stat["duration"].total_seconds() / total_seconds * 100) if total_seconds > 0 else 0
+                duration_str = str(stat['duration']).split('.')[0]
+                report.append(
+                    f"- **{stat['name']}**: {duration_str} ({_('{num_sessions} sessions').format(num_sessions=stat['sessions'])}, {percentage:.1f}%)"
+                )
 
         report_text = "\n".join(report)
         self._copy_to_clipboard(report_text)
