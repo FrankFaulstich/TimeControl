@@ -32,6 +32,12 @@ A simple, object-oriented Python application for tracking time spent on projects
 **Reporting & Analysis:**
 
 - **Daily & Date Range Reports:** Generate detailed reports for specific days or periods.
+- **Detailed Project Reports:** Create in-depth reports for individual main or sub-projects, including:
+  - Total time, session count, and average session duration.
+  - A timeline of first and last activity.
+  - A breakdown of time spent per weekday (e.g., Monday: 2.5 hours, 30%).
+  - For main projects, a summary of time distribution across its sub-projects.
+  - For sub-projects, a day-by-day list of all time entries.
 - **Inactivity Tracking:** Identify main and sub-projects that have been inactive for a configurable duration.
 
 **Local Data Storage:** All project data and time entries are saved in a `data.json` file in the application's directory.
