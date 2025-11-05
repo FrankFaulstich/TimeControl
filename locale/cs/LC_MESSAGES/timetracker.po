@@ -71,11 +71,14 @@ msgstr "Podprojekt s názvem '{sub_name}' již v projektu '{main_name}' existuje
 msgid "Sub-project '{name}' moved successfully."
 msgstr "Podprojekt '{name}' byl úspěšně přesunut."
 
-msgid "Sub-project '{sub_name}' not found in '{main_name}'."
-msgstr "Podprojekt '{sub_name}' nebyl v projektu '{main_name}' nalezen."
-
 msgid "A main project named '{name}' already exists."
 msgstr "Hlavní projekt s názvem '{name}' již existuje."
+
+msgid "Main project '{old_name}' renamed to '{new_name}'."
+msgstr "Hlavní projekt '{old_name}' přejmenován na '{new_name}'."
+
+msgid "Sub-project '{sub_name}' not found in '{main_name}'."
+msgstr "Podprojekt '{sub_name}' nebyl v projektu '{main_name}' nalezen."
 
 msgid "General"
 msgstr "Obecné"
@@ -88,6 +91,9 @@ msgstr "Hlavní projekt k degradaci '{name}' nebyl nalezen."
 
 msgid "New parent main project '{name}' not found."
 msgstr "Nový nadřazený hlavní projekt '{name}' nebyl nalezen."
+
+msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
+msgstr "Podprojekt '{old_name}' byl přejmenován na '{new_name}'."
 
 msgid ""
 "Main project '{demoted_name}' was demoted to a sub-project under "
@@ -438,8 +444,8 @@ msgstr "Chyba: Počáteční datum nemůže být po koncovém datu."
 msgid "Invalid choice. Please enter a number from 0 to 3."
 msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 3."
 
-msgid "\n--- Language Settings ---"
-msgstr "\n--- Nastavení jazyka ---"
+msgid "\n--- Settings ---"
+msgstr "\n--- Nastavení ---"
 
 msgid "No additional languages found."
 msgstr "Nebyly nalezeny žádné další jazyky."
@@ -450,8 +456,14 @@ msgstr "Jazyk změněn na '{lang}'. Prosím, restartujte aplikaci."
 msgid "Invalid choice."
 msgstr "Neplatná volba."
 
+msgid "1. Language"
+msgstr "1. Jazyk"
+
 msgid "Application is restarting to complete the update..."
 msgstr "Aplikace se restartuje, aby dokončila aktualizaci..."
+
+msgid "\n--- Language Settings ---"
+msgstr "\n--- Nastavení jazyka ---"
 
 msgid "=== Time Control {version} ==="
 msgstr "=== Time Control {version} ==="

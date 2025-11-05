@@ -91,10 +91,6 @@ msgstr "Ein Unterprojekt mit dem Namen '{sub_name}' existiert bereits in '{main_
 msgid "Sub-project '{name}' moved successfully."
 msgstr "Unterprojekt '{name}' erfolgreich verschoben."
 
-#_de: TimeTracker.py:366
-msgid "Sub-project '{sub_name}' not found in '{main_name}'."
-msgstr "Unterprojekt '{sub_name}' in '{main_name}' nicht gefunden."
-
 #: TimeTracker.py:378
 msgid "A main project named '{name}' already exists."
 msgstr "Ein Hauptprojekt mit dem Namen '{name}' existiert bereits."
@@ -102,6 +98,10 @@ msgstr "Ein Hauptprojekt mit dem Namen '{name}' existiert bereits."
 #: TimeTracker.py:388
 msgid "Source main project '{name}' not found."
 msgstr "Quell-Hauptprojekt '{name}' nicht gefunden."
+
+#: TimeTracker.py:390
+msgid "Main project '{old_name}' renamed to '{new_name}'."
+msgstr "Hauptprojekt '{old_name}' wurde in '{new_name}' umbenannt."
 
 #: TimeTracker.py:398
 msgid "Sub-project '{sub_name}' not found in '{main_name}'."
@@ -115,6 +115,10 @@ msgstr "Allgemein"
 msgid "Sub-project '{name}' was promoted to a new main project."
 msgstr "Unterprojekt '{name}' wurde zu einem neuen Hauptprojekt befördert."
 
+#: TimeTracker.py:412
+msgid "Sub-project '{sub_name}' not found in '{main_name}'."
+msgstr "Unterprojekt '{sub_name}' in '{main_name}' nicht gefunden."
+
 #: TimeTracker.py:439
 msgid "Main project to demote '{name}' not found."
 msgstr "Hauptprojekt '{name}' zum Herabstufen nicht gefunden."
@@ -126,6 +130,10 @@ msgstr "Neues übergeordnetes Hauptprojekt '{name}' nicht gefunden."
 #: TimeTracker.py:445
 msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
 msgstr "Ein Unterprojekt mit dem Namen '{sub_name}' existiert bereits in '{main_name}'."
+
+#: TimeTracker.py:455
+msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
+msgstr "Unterprojekt '{old_name}' wurde in '{new_name}' umbenannt."
 
 #: TimeTracker.py:463
 msgid ""
@@ -285,7 +293,7 @@ msgstr "Hauptprojekt '{old_name}' erfolgreich in '{new_name}' umbenannt."
 
 #: TimeTrackerCLI.py:77
 msgid "Error: Could not rename. The new name '{new_name}' might already exist."
-msgstr "Fehler: Konnte nicht umbenannt werden. Der neue Name '{new_name}' existiert möglicherweise bereits."
+msgstr "Fehler: Umbenennung fehlgeschlagen. Der neue Name '{new_name}' existiert möglicherweise bereits."
 
 #: TimeTrackerCLI.py:79 TimeTrackerCLI.py:99 TimeTrackerCLI.py:121 TimeTrackerCLI.py:140 TimeTrackerCLI.py:161 TimeTrackerCLI.py:180 TimeTrackerCLI.py:200 TimeTrackerCLI.py:224 TimeTrackerCLI.py:249 TimeTrackerCLI.py:272 TimeTrackerCLI.py:293 TimeTrackerCLI.py:313 TimeTrackerCLI.py:337 TimeTrackerCLI.py:385 TimeTrackerCLI.py:408 TimeTrackerCLI.py:453 TimeTrackerCLI.py:541
 msgid "Invalid input. Please enter a valid number."
@@ -419,9 +427,7 @@ msgstr "Unterprojekt '{old_name}' in '{new_name}' umbenannt."
 msgid ""
 "Error: Could not rename. The new name might already exist or the project "
 "was not found."
-msgstr ""
-"Fehler: Konnte nicht umbenannt werden. Der neue Name existiert "
-"möglicherweise bereits oder das Projekt wurde nicht gefunden."
+msgstr "Fehler: Umbenennung fehlgeschlagen. Der neue Name existiert möglicherweise bereits oder das Projekt wurde nicht gefunden."
 
 #: TimeTrackerCLI.py:196
 msgid "\n--- Delete Sub-Project ---"
@@ -714,10 +720,6 @@ msgstr "Arbeitssitzung erfolgreich beendet."
 #: TimeTrackerCLI.py:537
 msgid "No active work session to stop."
 msgstr "Keine aktive Arbeitssitzung zum Beenden."
-
-#_de: TimeTrackerCLI.py:544
-msgid "Invalid choice. Please enter a number from 0 to 5."
-msgstr "Ungültige Auswahl. Bitte eine Zahl von 0 bis 5 eingeben."
 
 #: TimeTrackerCLI.py:589
 msgid "\nChecking for updates..."
