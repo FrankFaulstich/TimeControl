@@ -155,7 +155,9 @@ The interactive CLI provides a structured menu for all operations.
 9.  Delete Sub-Project
 10. Move Sub-Project
 11. List Inactive Sub-Projects
---------------------------------
+12. Promote Sub-Project to Main-Project
+13. Demote Main-Project to Sub-Project
+0.  Back to Main Menu
 0.  Back to Main Menu
 ```
 
