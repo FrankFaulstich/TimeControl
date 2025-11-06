@@ -12,7 +12,6 @@ A simple, object-oriented Python application for tracking time spent on projects
   - [Configuration ⚙️](#configuration-️)
   - [Usage ⚙️](#usage-️)
     - [Running the Interactive CLI](#running-the-interactive-cli)
-    - [Running the MCP / API Server](#running-the-mcp--api-server)
     - [CLI Menu Options](#cli-menu-options)
   - [Building the Documentation 📚](#building-the-documentation-)
   - [Data Storage 🗄️](#data-storage-️)
@@ -44,10 +43,9 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **Automatic Updates:** The application can check for new versions on GitHub upon exit and install them on the next start.
 
-**Multiple Interfaces:**
+**Interface:**
 
 - **Interactive CLI:** A user-friendly command-line interface (`TimeTrackerCLI.py`) for manual operations.
-- **MCP & API Server:** An alternative server (`TimeTrackerMCP.py`) provides a machine-controllable interface via stdin/stdout and a full HTTPS REST API for programmatic control.
 
 **Unit Testing:** Includes comprehensive unit tests in `test_TimeTracker.py` for feature reliability.
 
@@ -55,7 +53,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 ## Prerequisites 📋
 
-- **Python 3.x:** Ensure you have Python 3 installed on your system. You can download it from [python.org](https://www.python.org/).
+- **Python 3.8 - 3.14:** Ensure you have Python 3 installed on your system. You can download it from [python.org](https://www.python.org/).
 
 ---
 
@@ -64,8 +62,9 @@ A simple, object-oriented Python application for tracking time spent on projects
 Clone the repository:
 
 ```bash
-git clone [https://github.com/FrankFaulstich/TimeControl.git](https://github.com/FrankFaulstich/TimeControl.git)
-cd TimeControl```
+git clone https://github.com/FrankFaulstich/TimeControl.git
+cd TimeControl
+```
 
 Install the required Python packages:
 
@@ -85,11 +84,13 @@ The application can be configured via the `config.json` file.
 {
     "update": {
         "github_repo": "FrankFaulstich/TimeControl"
-    }
+    },
+    "language": "en"
 }
 ```
 
 - **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions.
+- **`language`**: The user interface language ("en", "de", "fr", "es", "cs").
 
 ---
 
@@ -102,23 +103,10 @@ To start the interactive command-line interface, run:
 ```bash
 python TimeTrackerCLI.py
 ```
-
-### Running the MCP / API Server
-
-The server provides programmatic access via standard I/O and a REST API. To start it, run:
-
+or
 ```bash
-python TimeTrackerMCP.py
+python3 TimeTrackerCLI.py
 ```
-
-**Note on HTTPS:** The API server requires an SSL certificate. You can generate a local, self-signed certificate using `openssl`. The server looks for `cert.pem` and `key.pem` in the project directory.
-
-```bash
-openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365 -subj "/CN=localhost"
-```
-
-- The **MCP interface** accepts JSON commands on `stdin` (e.g., `{"command": "list_main_projects", "params": {}}`).
-- The **API interface** runs by default on `https://localhost:8443`. You can access endpoints like `GET /projects` or `GET /version`.
 
 ### CLI Menu Options
 
@@ -157,7 +145,7 @@ The interactive CLI provides a structured menu for all operations.
 11. List Inactive Sub-Projects
 12. Promote Sub-Project to Main-Project
 13. Demote Main-Project to Sub-Project
-0.  Back to Main Menu
+--------------------------------
 0.  Back to Main Menu
 ```
 
