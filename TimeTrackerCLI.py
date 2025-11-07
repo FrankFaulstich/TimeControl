@@ -26,15 +26,15 @@ def _handle_project_management(tt):
         print(_("3.  Rename Main Project"))
         print(_("4.  Delete Main Project"))
         print(_("5.  List Inactive Main Projects"))
+        print(_("6.  Demote Main-Project to Sub-Project"))
         print("--------------------------------")
-        print(_("6.  Add Sub-Project"))
-        print(_("7.  List Sub-Projects"))
-        print(_("8.  Rename Sub-Project"))
-        print(_("9.  Delete Sub-Project"))
-        print(_("10. Move Sub-Project"))
-        print(_("11. List Inactive Sub-Projects"))
-        print(_("12. Promote Sub-Project to Main-Project"))
-        print(_("13. Demote Main-Project to Sub-Project"))
+        print(_("7.  Add Sub-Project"))
+        print(_("8.  List Sub-Projects"))
+        print(_("9.  Rename Sub-Project"))
+        print(_("10. Delete Sub-Project"))
+        print(_("11. Move Sub-Project"))
+        print(_("12. List Inactive Sub-Projects"))
+        print(_("13. Promote Sub-Project to Main-Project"))
         print("--------------------------------")
         print(_("0.  Back to Main Menu"))
         print("--------------------------------")
@@ -124,7 +124,7 @@ def _handle_project_management(tt):
 
             except ValueError:
                 print(_("Invalid input. Please enter a valid number for weeks."))
-        elif choice == '6':
+        elif choice == '7':
             # Funktion 6: Add new sub-project
             print(_("\n--- Add New Sub-Project ---"))
             main_projects = tt.list_main_projects()
@@ -147,7 +147,7 @@ def _handle_project_management(tt):
                     print(_("Error: Main project '{name}' not found.").format(name=main_project_name))
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
-        elif choice == '7':
+        elif choice == '8':
             # Funktion 7: List Sub-Projects
             print(_("\n--- List Sub-Projects ---"))
             main_projects = tt.list_main_projects()
@@ -171,7 +171,7 @@ def _handle_project_management(tt):
                     print(_("No sub-projects found for '{name}'.").format(name=main_project_name))
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
-        elif choice == '8':
+        elif choice == '9':
             # Funktion 9: Rename Sub-Project
             print(_("\n--- Rename Sub-Project ---"))
             main_projects = tt.list_main_projects()
@@ -207,7 +207,7 @@ def _handle_project_management(tt):
                     print(_("Error: Could not rename. The new name might already exist or the project was not found."))
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
-        elif choice == '9':
+        elif choice == '10':
             # Funktion 10: Delete Sub-Project
             print(_("\n--- Delete Sub-Project ---"))
             main_projects = tt.list_main_projects()
@@ -243,7 +243,7 @@ def _handle_project_management(tt):
 
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
-        elif choice == '11':
+        elif choice == '12':
             # Funktion 8: List Inactive Sub-Projects
             print(_("\n--- List Inactive Sub-Projects ---"))
             try:
@@ -266,7 +266,7 @@ def _handle_project_management(tt):
 
             except ValueError:
                 print(_("Invalid input. Please enter a valid number for weeks."))
-        elif choice == '10':
+        elif choice == '11':
             # New Funktion: Move Sub-Project
             print(_("\n--- Move Sub-Project ---"))
             main_projects = tt.list_main_projects()
@@ -313,7 +313,7 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
 
-        elif choice == '12':
+        elif choice == '13':
             # New Funktion: Promote Sub-Project
             print(_("\n--- Promote Sub-Project to Main-Project ---"))
             main_projects = tt.list_main_projects()
@@ -348,7 +348,7 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
 
-        elif choice == '13':
+        elif choice == '6': # This is the moved item
             # New Funktion: Demote Main-Project
             print(_("\n--- Demote Main-Project to Sub-Project ---"))
             main_projects = tt.list_main_projects()
@@ -382,7 +382,7 @@ def _handle_project_management(tt):
         elif choice == '0':
             break
         else:
-            print(_("Invalid choice. Please enter a number from 0 to 13."))
+            print(_("Invalid choice. Please enter a number from 0 to 13.")) # Max choice number remains 13.
 
 def _handle_reporting(tt):
     """Handles the reporting submenu."""
