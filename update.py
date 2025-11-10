@@ -6,6 +6,7 @@ import requests
 import zipfile
 import shutil
 from packaging.version import parse as parse_version
+from i18n import _ # Import translation function
 
 UPDATE_ZIP_FILE = "update.zip"
 CONFIG_FILE = "config.json"
@@ -91,6 +92,33 @@ def install_update():
     if not os.path.exists(UPDATE_ZIP_FILE):
         return
 
+    # --- Create backup of the current version before installing the new update ---
+    backup_zip_file = "prev-version.zip"
+    # Files/directories to exclude from the backup
+    exclude_from_backup = [
+        "data.json",          # User data should not be in the backup
+        UPDATE_ZIP_FILE,      # The new update file itself
+        backup_zip_file,      # The old backup file
+        "__pycache__",        # Python cache files
+        ".git",               # Git directory
+        ".vscode",            # VSCode settings
+        "docs/_build"         # Sphinx build output
+    ]
+
+    print(_("Creating backup of current version before update..."))
+    try:
+        with zipfile.ZipFile(backup_zip_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk('.'):
+                # Exclude specified directories from being walked
+                dirs[:] = [d for d in dirs if d not in exclude_from_backup]
+                for file in files:
+                    if file not in exclude_from_backup and not any(file.startswith(d) for d in exclude_from_backup if d.endswith('/')): # Also check for directory prefixes
+                        file_path = os.path.join(root, file)
+                        zipf.write(file_path, file_path) # arcname keeps the path structure
+        print(_("Backup created successfully as {filename}.").format(filename=backup_zip_file))
+    except Exception as e:
+        print(_("Warning: Could not create backup. Error: {error}").format(error=e))
+
     print(_("Installing update..."))
     try:
         with zipfile.ZipFile(UPDATE_ZIP_FILE, 'r') as zip_ref:
@@ -110,7 +138,7 @@ def install_update():
                 target_path = os.path.join(os.getcwd(), relative_path)
 
                 # Check if the file is protected and already exists
-                if os.path.basename(target_path) in PROTECTED_FILES and os.path.exists(target_path):
+                if os.path.basename(target_path) in PROTECTED_FILES and os.path.exists(target_path): # PROTECTED_FILES = ["data.json", "config.json"]
                     print(_("Skipping protected file: {filename}. It will not be overwritten.").format(filename=os.path.basename(target_path)))
                     continue # Skip this file
                 # Ensure the target directory exists
@@ -127,3 +155,51 @@ def install_update():
         # Clean up the zip file regardless of success
         if os.path.exists(UPDATE_ZIP_FILE):
             os.remove(UPDATE_ZIP_FILE)
+
+
+def restore_previous_version():
+    """
+    Restores the application to the previous version from 'prev-version.zip'.
+    'data.json' (user data) is explicitly NOT overwritten.
+    The application restarts after successful restoration.
+    """
+    backup_zip_file = "prev-version.zip"
+    if not os.path.exists(backup_zip_file):
+        print(_("Error: No previous version backup '{filename}' found.").format(filename=backup_zip_file))
+        return
+
+    print(_("Restoring previous version from '{filename}'...").format(filename=backup_zip_file))
+    try:
+        with zipfile.ZipFile(backup_zip_file, 'r') as zip_ref:
+            # Get the root folder name from the zip, if any (e.g., "FrankFaulstich-TimeControl-12345ab/")
+            root_folder = ''
+            if zip_ref.namelist():
+                first_entry = zip_ref.namelist()[0]
+                if '/' in first_entry:
+                    root_folder = first_entry.split('/')[0] + '/'
+
+            for member in zip_ref.infolist():
+                if member.is_dir():
+                    continue
+
+                source_path = member.filename
+                # Remove the root folder from the path to get the relative path
+                relative_path = source_path.replace(root_folder, '', 1)
+                target_path = os.path.join(os.getcwd(), relative_path)
+
+                # Explicitly protect data.json from being overwritten during restore
+                if os.path.basename(target_path) == "data.json" and os.path.exists(target_path):
+                    print(_("Skipping user data file: {filename}. It will not be overwritten during restore.").format(filename=os.path.basename(target_path)))
+                    continue
+
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                with zip_ref.open(source_path) as source, open(target_path, "wb") as target:
+                    shutil.copyfileobj(source, target)
+
+        print(_("Previous version restored successfully."))
+        os.remove(backup_zip_file)
+        print(_("Restarting application to apply changes..."))
+        os.execv(sys.executable, ['python'] + sys.argv)
+    except Exception as e:
+        print(_("Error during restoration: {error}").format(error=e))
+        print(_("The backup file '{filename}' was not deleted.").format(filename=backup_zip_file))
