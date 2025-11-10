@@ -1,7 +1,7 @@
 import os
 import sys
-import json
 
+import json
 # Import the translation function `_` which is initialized in i18n.py on first import.
 # This must be done before other local modules are imported.
 from i18n import _
@@ -384,6 +384,79 @@ def _handle_project_management(tt):
         else:
             print(_("Invalid choice. Please enter a number from 0 to 13.")) # Max choice number remains 13.
 
+def _handle_settings(tt):
+    """Handles the settings submenu."""
+    while True:
+        print(_("\n--- Settings ---"))
+        print(_("1. Change Language"))
+        print(_("2. Restore Previous Version"))
+        print("--------------------------")
+        print(_("0. Back to Main Menu"))
+        print("--------------------------")
+
+        choice = input(_("Choice: "))
+
+        if choice == '1':
+            _handle_language_settings()
+        elif choice == '2':
+            # Call the new restore function from update.py
+            # The restore_previous_version function handles its own restart.
+            restore_previous_version()
+            # If restore_previous_version successfully restarts, this code won't be reached.
+            # If it fails or the user cancels, we stay in the settings menu.
+            # No need for 'return' here unless we want to force exit settings menu on failure.
+            # For now, staying in settings menu on failure is reasonable.
+            pass
+        elif choice == '0':
+            break
+        else:
+            print(_("Invalid choice. Please enter a number from 0 to 2."))
+
+def _handle_language_settings():
+    """Handles the language selection submenu."""
+    # This function's content remains the same as before, just moved/called from _handle_settings
+    # For brevity, I'm not including the full body here, assuming it's already implemented.
+    # The existing implementation in your context is:
+    # ... (your existing _handle_language_settings code) ...
+    # I'll include the full body in the final diff for completeness.
+    while True:
+        print(_("\n--- Language Settings ---"))
+        supported_languages = {'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'cs': 'Čeština'}
+        available_languages = {lang: name for lang, name in supported_languages.items() if os.path.isdir(os.path.join('locale', lang))}
+
+        if not available_languages:
+            print(_("No additional languages found."))
+            return
+
+        for i, lang in enumerate(available_languages, 1):
+            print(f"{i}. {lang}")
+        print("--------------------------")
+        print(_("0. Back to Main Menu"))
+        print("--------------------------")
+
+        choice = input(_("Choice: "))
+        if choice == '0':
+            break
+        
+        try:
+            choice_num = int(choice)
+            if 1 <= choice_num <= len(available_languages):
+                selected_lang = list(available_languages.keys())[choice_num - 1]
+                # Update config.json
+                CONFIG_FILE = 'config.json'
+                with open(CONFIG_FILE, 'r+') as f:
+                    config = json.load(f)
+                    config['language'] = selected_lang
+                    f.seek(0)
+                    json.dump(config, f, indent=4)
+                print(_("Language changed to '{lang}'. Please restart the application.").format(lang=selected_lang))
+                return # Go back to main menu to encourage restart
+            else:
+                print(_("Invalid choice."))
+        except ValueError:
+            print(_("Invalid input. Please enter a number."))
+
+
 def _handle_reporting(tt):
     """Handles the reporting submenu."""
     while True:
@@ -531,12 +604,24 @@ def run_menu():
     """
     Starts the interactive menu for the time tracking application.
     """
-    # --- Update-Check beim Start ---
+    # --- Update-Check ---
     if UPDATE_AVAILABLE and os.path.exists("update.zip"):
-        install_update()
-        print(_("Application is restarting to complete the update..."))
-        os.execv(sys.executable, ['python'] + sys.argv)
-        return # Exit after restart
+        print(_("\n--- Update Available ---"))
+        print(_("A downloaded update is ready to be installed."))
+        print(_("0. Skip update for now"))
+        print(_("1. Install update now"))
+        choice = input(_("Enter your choice (0 or 1): "))
+        
+        if choice == '1':
+            install_update()
+            print(_("Application is restarting to complete the update..."))
+            os.execv(sys.executable, ['python'] + sys.argv)
+            return # Exit after restart
+        elif choice == '0':
+            print(_("Update installation skipped. The application will start normally."))
+        else:
+            print(_("Invalid choice. Update installation skipped. The application will start normally."))
+
 
     tt = TimeTracker()    
     tt.initialize_dependencies() # Now this can be called safely.
@@ -630,7 +715,7 @@ def run_menu():
             _handle_reporting(tt)
 
         elif choice == '6':
-            _handle_language_settings()
+            _handle_settings(tt)
         
         elif choice == '0':
             # --- Update-Check beim Beenden ---
