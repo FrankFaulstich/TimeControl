@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 
 try:
     from update import check_for_updates, download_update, install_update
+    from update import check_for_updates, download_update, install_update, restore_previous_version
 
     UPDATE_AVAILABLE = True
 except ImportError:
