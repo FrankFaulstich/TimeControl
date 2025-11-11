@@ -405,9 +405,6 @@ msgstr "Zadejte číslo nového nadřazeného projektu: "
 msgid "Invalid choice. Please enter a number from 0 to 13."
 msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 13."
 
-msgid "\n--- Reporting ---"
-msgstr "\n--- Reportování ---"
-
 msgid "1. Daily Report (Today)"
 msgstr "1. Denní report (dnes)"
 
@@ -416,6 +413,12 @@ msgstr "2. Denní report (konkrétní den)"
 
 msgid "3. Date Range Report"
 msgstr "3. Report za období"
+
+msgid "4. Detailed Sub-Project Report"
+msgstr "4. Podrobný report podprojektu"
+
+msgid "5. Detailed Main-Project Report"
+msgstr "5. Podrobný report hlavního projektu"
 
 msgid "\n--- Generate Daily Report (Today) ---"
 msgstr "\n--- Generovat denní report (dnes) ---"
@@ -441,11 +444,32 @@ msgstr "Zadejte koncové datum (RRRR-MM-DD): "
 msgid "Error: The start date cannot be after the end date."
 msgstr "Chyba: Počáteční datum nemůže být po koncovém datu."
 
-msgid "Invalid choice. Please enter a number from 0 to 3."
-msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 3."
+msgid "\n--- Detailed Sub-Project Report ---"
+msgstr "\n--- Podrobný report podprojektu ---"
+
+msgid "No projects found."
+msgstr "Nebyly nalezeny žádné projekty."
+
+msgid "\nSelect the sub-project for the report:"
+msgstr "\nVyberte podprojekt pro report:"
+
+msgid "\n--- Detailed Main-Project Report ---"
+msgstr "\n--- Podrobný report hlavního projektu ---"
+
+msgid "Select the main project for the report:"
+msgstr "Vyberte hlavní projekt pro report:"
+
+msgid "Invalid choice. Please enter a number from 0 to 5."
+msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 5."
 
 msgid "\n--- Settings ---"
 msgstr "\n--- Nastavení ---"
+
+msgid "1. Change Language"
+msgstr "1. Změnit jazyk"
+
+msgid "2. Restore Previous Version"
+msgstr "2. Obnovit předchozí verzi"
 
 msgid "No additional languages found."
 msgstr "Nebyly nalezeny žádné další jazyky."
@@ -456,14 +480,29 @@ msgstr "Jazyk změněn na '{lang}'. Prosím, restartujte aplikaci."
 msgid "Invalid choice."
 msgstr "Neplatná volba."
 
-msgid "1. Language"
-msgstr "1. Jazyk"
+msgid "Invalid choice. Please enter a number from 0 to 2."
+msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 2."
+
+msgid "\n--- Update Available ---"
+msgstr "\n--- K dispozici je aktualizace ---"
+
+msgid "A downloaded update is ready to be installed."
+msgstr "Stažená aktualizace je připravena k instalaci."
+
+msgid "0. Skip update for now"
+msgstr "0. Přeskočit aktualizaci prozatím"
+
+msgid "1. Install update now"
+msgstr "1. Nainstalovat aktualizaci nyní"
+
+msgid "Enter your choice (0 or 1): "
+msgstr "Zadejte svou volbu (0 nebo 1): "
 
 msgid "Application is restarting to complete the update..."
 msgstr "Aplikace se restartuje, aby dokončila aktualizaci..."
 
-msgid "\n--- Language Settings ---"
-msgstr "\n--- Nastavení jazyka ---"
+msgid "Update installation skipped. The application will start normally."
+msgstr "Instalace aktualizace byla přeskočena. Aplikace se spustí normálně."
 
 msgid "=== Time Control {version} ==="
 msgstr "=== Time Control {version} ==="
@@ -575,3 +614,33 @@ msgstr "Aktualizace byla úspěšně nainstalována."
 
 msgid "Error during update installation: {error}"
 msgstr "Chyba během instalace aktualizace: {error}"
+
+msgid "Creating backup of current version before update..."
+msgstr "Vytvářím zálohu aktuální verze před aktualizací..."
+
+msgid "Backup created successfully as {filename}."
+msgstr "Záloha byla úspěšně vytvořena jako {filename}."
+
+msgid "Warning: Could not create backup. Error: {error}"
+msgstr "Varování: Nepodařilo se vytvořit zálohu. Chyba: {error}"
+
+msgid "Error: No previous version backup '{filename}' found."
+msgstr "Chyba: Nebyla nalezena žádná záloha předchozí verze '{filename}'."
+
+msgid "Restoring previous version from '{filename}'..."
+msgstr "Obnovuji předchozí verzi ze souboru '{filename}'..."
+
+msgid "Skipping user data file: {filename}. It will not be overwritten during restore."
+msgstr "Přeskakuji soubor s uživatelskými daty: {filename}. Během obnovy nebude přepsán."
+
+msgid "Previous version restored successfully."
+msgstr "Předchozí verze byla úspěšně obnovena."
+
+msgid "Restarting application to apply changes..."
+msgstr "Restartuji aplikaci pro aplikaci změn..."
+
+msgid "Error during restoration: {error}"
+msgstr "Chyba během obnovy: {error}"
+
+msgid "The backup file '{filename}' was not deleted."
+msgstr "Záložní soubor '{filename}' nebyl smazán."
