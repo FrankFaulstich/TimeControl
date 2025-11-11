@@ -74,10 +74,6 @@ msgstr ""
 msgid "{hours} hours ({dlp} DLP)"
 msgstr "{hours} heures ({dlp} DLP)"
 
-#: TimeTracker.py:350
-msgid "Source main project '{name}' not found."
-msgstr "Projet principal source '{name}' non trouvé."
-
 #: TimeTracker.py:352
 msgid "Destination main project '{name}' not found."
 msgstr "Projet principal de destination '{name}' non trouvé."
@@ -90,10 +86,6 @@ msgstr "Un sous-projet nommé '{sub_name}' existe déjà dans '{main_name}'."
 msgid "Sub-project '{sub_name}' moved successfully."
 msgstr "Le sous-projet '{sub_name}' a été déplacé avec succès."
 
-#: TimeTracker.py:378
-msgid "A main project named '{name}' already exists."
-msgstr "Un projet principal nommé '{name}' existe déjà."
-
 #: TimeTracker.py:388
 msgid "Source main project '{name}' not found."
 msgstr "Projet principal source '{name}' non trouvé."
@@ -105,14 +97,13 @@ msgstr "Le projet principal '{old_name}' a été renommé en '{new_name}'."
 #: TimeTracker.py:398
 msgid "Sub-project '{sub_name}' not found in '{main_name}'."
 msgstr "Sous-projet '{sub_name}' non trouvé dans '{main_name}'."
-
-#: TimeTracker.py:406
-msgid "General"
-msgstr "Général"
-
-#: TimeTracker.py:410, TimeTracker.py:412
+#: TimeTracker.py:406 TimeTracker.py:412
 msgid "Sub-project '{sub_name}' not found in '{main_name}'."
 msgstr "Sous-projet '{sub_name}' non trouvé dans '{main_name}'."
+
+#: TimeTracker.py:410
+msgid "General"
+msgstr "Général"
 
 #: TimeTracker.py:414
 msgid "Sub-project '{sub_name}' was promoted to a new main project."
@@ -191,10 +182,13 @@ msgstr "maintenant"
 #: TimeTracker.py:746
 msgid "Duration"
 msgstr "Durée"
-
 #: TimeTracker.py:750
 msgid "# Detailed Report for Sub-Project: {name}"
 msgstr "# Rapport détaillé pour le sous-projet : {name}"
+
+#: TimeTracker.py:724
+msgid "No time entries found for sub-project '{sub_name}'."
+msgstr "Aucune entrée de temps trouvée pour le sous-projet '{sub_name}'."
 
 #: TimeTracker.py:751
 msgid "Part of Main Project: {name}"
@@ -252,51 +246,51 @@ msgstr "2.  Lister les projets principaux"
 msgid "3.  Rename Main Project"
 msgstr "3.  Renommer le projet principal"
 
-#: TimeTrackerCLI.py:26
+#: TimeTrackerCLI.py:25
 msgid "4.  Delete Main Project"
 msgstr "4.  Supprimer le projet principal"
 
-#: TimeTrackerCLI.py:27
+#: TimeTrackerCLI.py:26
 msgid "5.  List Inactive Main Projects"
 msgstr "5.  Lister les projets principaux inactifs"
 
+#: TimeTrackerCLI.py:27
+msgid "6.  Demote Main-Project to Sub-Project"
+msgstr "6.  Rétrograder un projet principal en sous-projet"
+
 #: TimeTrackerCLI.py:29
-msgid "6.  Add Sub-Project"
-msgstr "6.  Ajouter un sous-projet"
+msgid "7.  Add Sub-Project"
+msgstr "7.  Ajouter un sous-projet"
 
 #: TimeTrackerCLI.py:30
-msgid "7.  List Sub-Projects"
-msgstr "7.  Lister les sous-projets"
+msgid "8.  List Sub-Projects"
+msgstr "8.  Lister les sous-projets"
 
 #: TimeTrackerCLI.py:31
-msgid "8.  Rename Sub-Project"
-msgstr "8.  Renommer le sous-projet"
+msgid "9.  Rename Sub-Project"
+msgstr "9.  Renommer le sous-projet"
 
 #: TimeTrackerCLI.py:32
-msgid "9.  Delete Sub-Project"
-msgstr "9.  Supprimer le sous-projet"
+msgid "10. Delete Sub-Project"
+msgstr "10. Supprimer le sous-projet"
 
 #: TimeTrackerCLI.py:33
-msgid "10. Move Sub-Project"
-msgstr "10. Déplacer le sous-projet"
+msgid "11. Move Sub-Project"
+msgstr "11. Déplacer le sous-projet"
 
 #: TimeTrackerCLI.py:34
-msgid "11. List Inactive Sub-Projects"
-msgstr "11. Lister les sous-projets inactifs"
+msgid "12. List Inactive Sub-Projects"
+msgstr "12. Lister les sous-projets inactifs"
 
 #: TimeTrackerCLI.py:35
-msgid "12. Promote Sub-Project to Main-Project"
-msgstr "12. Promouvoir un sous-projet en projet principal"
+msgid "13. Promote Sub-Project to Main-Project"
+msgstr "13. Promouvoir un sous-projet en projet principal"
 
-#: TimeTrackerCLI.py:36
-msgid "13. Demote Main-Project to Sub-Project"
-msgstr "13. Rétrograder un projet principal en sous-projet"
-
-#: TimeTrackerCLI.py:38, TimeTrackerCLI.py:457
+#: TimeTrackerCLI.py:37, TimeTrackerCLI.py:403, TimeTrackerCLI.py:461, TimeTrackerCLI.py:539
 msgid "0.  Back to Main Menu"
 msgstr "0.  Retour au menu principal"
 
-#: TimeTrackerCLI.py:41, TimeTrackerCLI.py:358, TimeTrackerCLI.py:441, TimeTrackerCLI.py:504
+#: TimeTrackerCLI.py:40, TimeTrackerCLI.py:406, TimeTrackerCLI.py:464, TimeTrackerCLI.py:595
 msgid "Choice: "
 msgstr "Choix : "
 
@@ -348,7 +342,7 @@ msgstr "Le projet principal '{old_name}' a été renommé en '{new_name}' avec s
 msgid "Error: Could not rename. The new name '{new_name}' might already exist."
 msgstr "Erreur : Impossible de renommer. Le nouveau nom '{new_name}' existe peut-être déjà."
 
-#: TimeTrackerCLI.py:79, TimeTrackerCLI.py:99, TimeTrackerCLI.py:121, TimeTrackerCLI.py:140, TimeTrackerCLI.py:161, TimeTrackerCLI.py:180, TimeTrackerCLI.py:200, TimeTrackerCLI.py:224, TimeTrackerCLI.py:249, TimeTrackerCLI.py:272, TimeTrackerCLI.py:293, TimeTrackerCLI.py:313, TimeTrackerCLI.py:337, TimeTrackerCLI.py:385, TimeTrackerCLI.py:408, TimeTrackerCLI.py:453, TimeTrackerCLI.py:541
+#: TimeTrackerCLI.py:78, TimeTrackerCLI.py:98, TimeTrackerCLI.py:120, TimeTrackerCLI.py:139, TimeTrackerCLI.py:160, TimeTrackerCLI.py:194, TimeTrackerCLI.py:222, TimeTrackerCLI.py:247, TimeTrackerCLI.py:284, TimeTrackerCLI.py:311, TimeTrackerCLI.py:342, TimeTrackerCLI.py:387, TimeTrackerCLI.py:431, TimeTrackerCLI.py:456, TimeTrackerCLI.py:532
 msgid "Invalid input. Please enter a valid number."
 msgstr "Entrée invalide. Veuillez entrer un numéro valide."
 
@@ -554,9 +548,9 @@ msgstr "\nSélectionnez le projet principal de destination :"
 msgid "Enter the number of the destination main project: "
 msgstr "Entrez le numéro du projet principal de destination : "
 
-#: TimeTrackerCLI.py:280
-msgid "Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'."
-msgstr "Déplacement réussi de '{sub_name}' de '{source_name}' vers '{dest_name}'."
+#: TimeTrackerCLI.py:279
+msgid "Successfully moved '{sub_name}' from '{source_main_project}' to '{dest_main_project}'."
+msgstr "Déplacement réussi de '{sub_name}' de '{source_main_project}' vers '{dest_main_project}'."
 
 #: TimeTrackerCLI.py:282
 msgid "Error: {message}"
@@ -568,7 +562,7 @@ msgstr "\n--- Promouvoir un sous-projet en projet principal ---"
 
 #: TimeTrackerCLI.py:294
 msgid "Select the main project containing the sub-project to promote:"
-msgstr "Sélectionnez le projet principal contenant le sous-projet à promouvoir :"
+msgstr "Sélectionnez le projet principal contenant le sous-projet à promouvoir :" # Changed from TimeTrackerCLI.py:287
 
 #: TimeTrackerCLI.py:302
 msgid "No sub-projects to promote in '{name}'."
@@ -613,6 +607,10 @@ msgstr "\n--- Rapports ---"
 #: TimeTrackerCLI.py:351
 msgid "1. Daily Report (Today)"
 msgstr "1. Rapport journalier (Aujourd'hui)"
+
+#: TimeTrackerCLI.py:352
+msgid "5. Detailed Main-Project Report"
+msgstr "5. Rapport détaillé de projet principal"
 
 #: TimeTrackerCLI.py:352
 msgid "2. Daily Report (Specific Day)"
