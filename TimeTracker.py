@@ -27,7 +27,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "1.8"
+    VERSION = "1.9"
 
     def __init__(self, file_path='data.json'):
         """
@@ -38,6 +38,8 @@ class TimeTracker:
         """
         self.file_path = file_path
         self.data = self._load_data()
+        if self._migrate_data_structure():
+            self._save_data()
 
     def initialize_dependencies(self):
         """
@@ -102,6 +104,27 @@ class TimeTracker:
                 return json.load(f)
         else:
             return {"projects": []}
+
+    def _migrate_data_structure(self):
+        """
+        Stellt sicher, dass die Datenstruktur aktuell ist.
+        - Fügt 'status': 'open' zu Sub-Projekten hinzu, falls es fehlt.
+        
+        :return: True, wenn Daten geändert wurden, sonst False.
+        :rtype: bool
+        """
+        data_changed = False
+        # Sicherstellen, dass self.data und "projects" existieren
+        if "projects" not in self.data:
+            self.data["projects"] = []
+            data_changed = True # Das Datenobjekt selbst wurde geändert
+
+        for project in self.data.get("projects", []):
+            for sub_project in project.get("sub_projects", []):
+                if "status" not in sub_project:
+                    sub_project["status"] = "open"
+                    data_changed = True
+        return data_changed
 
     def _save_data(self):
         """
@@ -231,7 +254,8 @@ class TimeTracker:
             if project["main_project_name"] == main_project_name:
                 new_sub_project = {
                     "sub_project_name": sub_project_name,
-                    "time_entries": []
+                    "time_entries": [],
+                    "status": "open"  # Standardstatus für neue Sub-Projekte
                 }
                 project["sub_projects"].append(new_sub_project)
                 self._save_data()
