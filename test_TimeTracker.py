@@ -40,6 +40,29 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(len(new_tracker.data["projects"]), 1)
         self.assertEqual(new_tracker.data["projects"][0]["main_project_name"], "Test")
         
+    def test_migrate_data_structure_adds_status(self):
+        """Tests that the migration logic adds the 'status' field to sub-projects."""
+        # 1. Create a data file with an old structure (no 'status' field)
+        old_data = {
+            "projects": [{
+                "main_project_name": "Old Project",
+                "sub_projects": [{
+                    "sub_project_name": "Sub without status",
+                    "time_entries": []
+                }]
+            }]
+        }
+        with open(TEST_FILE_PATH, 'w') as f:
+            json.dump(old_data, f)
+
+        # 2. Initialize the tracker, which should trigger the migration
+        tracker = TimeTracker(file_path=TEST_FILE_PATH)
+
+        # 3. Check if the 'status' field was added and set to 'open'
+        sub_project = tracker.data["projects"][0]["sub_projects"][0]
+        self.assertIn("status", sub_project)
+        self.assertEqual(sub_project["status"], "open")
+
     # --- General Method Tests ---
 
     def test_get_version(self):
@@ -120,6 +143,44 @@ class TestTimeTracker(unittest.TestCase):
         subs = self.tracker.list_sub_projects("Main List")
         self.assertEqual(subs, ["Sub A", "Sub B"])
         self.assertIsNone(self.tracker.list_sub_projects("Unknown Project"))
+
+    def test_list_open_sub_projects(self):
+        """Tests that only sub-projects with status 'open' are listed."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_sub_project("Main", "Open Sub 1") # status: 'open' by default
+        self.tracker.add_sub_project("Main", "To Be Closed")
+        self.tracker.add_sub_project("Main", "Open Sub 2")
+
+        # Manually close one sub-project
+        self.tracker.data["projects"][0]["sub_projects"][1]["status"] = "closed"
+        self.tracker._save_data()
+
+        open_subs = self.tracker.list_open_sub_projects("Main")
+        self.assertEqual(open_subs, ["Open Sub 1", "Open Sub 2"])
+        self.assertNotIn("To Be Closed", open_subs)
+
+    def test_close_sub_project_success(self):
+        """Tests setting a sub-project's status to 'closed'."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_sub_project("Main", "Task to Close")
+
+        # Verify it's open first
+        self.assertIn("Task to Close", self.tracker.list_open_sub_projects("Main"))
+
+        success = self.tracker.close_sub_project("Main", "Task to Close")
+        self.assertTrue(success)
+
+        # Verify it's now closed
+        sub_project = self.tracker.data["projects"][0]["sub_projects"][0]
+        self.assertEqual(sub_project["status"], "closed")
+
+        # Verify it no longer appears in the list of open projects
+        self.assertNotIn("Task to Close", self.tracker.list_open_sub_projects("Main"))
+
+    def test_close_sub_project_not_found(self):
+        """Tests closing a non-existent sub-project."""
+        self.tracker.add_main_project("Main")
+        self.assertFalse(self.tracker.close_sub_project("Main", "Non-Existent"))
 
     def test_delete_sub_project_success(self):
         """Tests the successful deletion of a sub-project."""

@@ -27,7 +27,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "1.8"
+    VERSION = "1.9"
 
     def __init__(self, file_path='data.json'):
         """
@@ -38,6 +38,8 @@ class TimeTracker:
         """
         self.file_path = file_path
         self.data = self._load_data()
+        if self._migrate_data_structure():
+            self._save_data()
 
     def initialize_dependencies(self):
         """
@@ -102,6 +104,27 @@ class TimeTracker:
                 return json.load(f)
         else:
             return {"projects": []}
+
+    def _migrate_data_structure(self):
+        """
+        Stellt sicher, dass die Datenstruktur aktuell ist.
+        - Fügt 'status': 'open' zu Sub-Projekten hinzu, falls es fehlt.
+        
+        :return: True, wenn Daten geändert wurden, sonst False.
+        :rtype: bool
+        """
+        data_changed = False
+        # Sicherstellen, dass self.data und "projects" existieren
+        if "projects" not in self.data:
+            self.data["projects"] = []
+            data_changed = True # Das Datenobjekt selbst wurde geändert
+
+        for project in self.data.get("projects", []):
+            for sub_project in project.get("sub_projects", []):
+                if "status" not in sub_project:
+                    sub_project["status"] = "open"
+                    data_changed = True
+        return data_changed
 
     def _save_data(self):
         """
@@ -231,7 +254,8 @@ class TimeTracker:
             if project["main_project_name"] == main_project_name:
                 new_sub_project = {
                     "sub_project_name": sub_project_name,
-                    "time_entries": []
+                    "time_entries": [],
+                    "status": "open"  # Standardstatus für neue Sub-Projekte
                 }
                 project["sub_projects"].append(new_sub_project)
                 self._save_data()
@@ -250,6 +274,21 @@ class TimeTracker:
         for project in self.data["projects"]:
             if project["main_project_name"] == main_project_name:
                 return [sub_project["sub_project_name"] for sub_project in project["sub_projects"]]
+        return None
+
+    def list_open_sub_projects(self, main_project_name):
+        """
+        Returns a list of sub-project names for a given main project that have the status 'open'.
+
+        :param main_project_name: The name of the main project.
+        :type main_project_name: str
+        :return: A list of open sub-project names or None if the main project was not found.
+        :rtype: list[str] or None
+        """
+        for project in self.data["projects"]:
+            if project["main_project_name"] == main_project_name:
+                return [sp["sub_project_name"] for sp in project.get("sub_projects", [])
+                        if sp.get("status", "open") == "open"]
         return None
 
     def delete_sub_project(self, main_project_name, sub_project_name):
@@ -272,6 +311,26 @@ class TimeTracker:
                 if len(project["sub_projects"]) < initial_count:
                     self._save_data()
                     return True
+        return False
+
+    def close_sub_project(self, main_project_name, sub_project_name):
+        """
+        Sets the status of a sub-project to 'closed'.
+
+        :param main_project_name: The name of the main project.
+        :type main_project_name: str
+        :param sub_project_name: The name of the sub-project to close.
+        :type sub_project_name: str
+        :return: True if the sub-project was closed, otherwise False.
+        :rtype: bool
+        """
+        for project in self.data["projects"]:
+            if project["main_project_name"] == main_project_name:
+                for sub_project in project.get("sub_projects", []):
+                    if sub_project["sub_project_name"] == sub_project_name:
+                        sub_project["status"] = "closed"
+                        self._save_data()
+                        return True
         return False
 
     def rename_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name):
