@@ -291,6 +291,21 @@ class TimeTracker:
                         if sp.get("status", "open") == "open"]
         return None
 
+    def list_closed_sub_projects(self, main_project_name):
+        """
+        Returns a list of sub-project names for a given main project that have the status 'closed'.
+
+        :param main_project_name: The name of the main project.
+        :type main_project_name: str
+        :return: A list of closed sub-project names or None if the main project was not found.
+        :rtype: list[str] or None
+        """
+        for project in self.data["projects"]:
+            if project["main_project_name"] == main_project_name:
+                return [sp["sub_project_name"] for sp in project.get("sub_projects", [])
+                        if sp.get("status") == "closed"]
+        return None
+
     def delete_sub_project(self, main_project_name, sub_project_name):
         """
         Deletes a sub-project from a main project.
@@ -329,6 +344,26 @@ class TimeTracker:
                 for sub_project in project.get("sub_projects", []):
                     if sub_project["sub_project_name"] == sub_project_name:
                         sub_project["status"] = "closed"
+                        self._save_data()
+                        return True
+        return False
+
+    def reopen_sub_project(self, main_project_name, sub_project_name):
+        """
+        Sets the status of a sub-project to 'open'.
+
+        :param main_project_name: The name of the main project.
+        :type main_project_name: str
+        :param sub_project_name: The name of the sub-project to reopen.
+        :type sub_project_name: str
+        :return: True if the sub-project was reopened, otherwise False.
+        :rtype: bool
+        """
+        for project in self.data["projects"]:
+            if project["main_project_name"] == main_project_name:
+                for sub_project in project.get("sub_projects", []):
+                    if sub_project["sub_project_name"] == sub_project_name:
+                        sub_project["status"] = "open"
                         self._save_data()
                         return True
         return False
