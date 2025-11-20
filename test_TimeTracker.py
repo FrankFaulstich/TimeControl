@@ -63,6 +63,18 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("status", sub_project)
         self.assertEqual(sub_project["status"], "open")
 
+    def test_format_duration(self):
+        """Tests the _format_duration helper method."""
+        # Test case 1: 8 hours -> 0,200 DLP
+        duration1 = timedelta(hours=8)
+        self.assertEqual(self.tracker._format_duration(duration1), "8,000 hours (0,200 DLP)")
+        # Test case 2: 40 hours -> 1,000 DLP
+        duration2 = timedelta(hours=40)
+        self.assertEqual(self.tracker._format_duration(duration2), "40,000 hours (1,000 DLP)")
+        # Test case 3: 1.5 hours
+        duration3 = timedelta(hours=1.5)
+        self.assertEqual(self.tracker._format_duration(duration3), "1,500 hours (0,038 DLP)")
+
     # --- General Method Tests ---
 
     def test_get_version(self):
@@ -182,12 +194,27 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_main_project("Main")
         self.assertFalse(self.tracker.close_sub_project("Main", "Non-Existent"))
 
+    def test_reopen_sub_project_success(self):
+        """Tests reopening a closed sub-project."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_sub_project("Main", "Task to Reopen")
+
+        # First, close it
+        self.tracker.close_sub_project("Main", "Task to Reopen")
+        self.assertNotIn("Task to Reopen", self.tracker.list_open_sub_projects("Main"))
+        self.assertIn("Task to Reopen", self.tracker.list_closed_sub_projects("Main"))
+
+        # Now, reopen it
+        success = self.tracker.reopen_sub_project("Main", "Task to Reopen")
+        self.assertTrue(success)
+        self.assertIn("Task to Reopen", self.tracker.list_open_sub_projects("Main"))
+
     def test_delete_sub_project_success(self):
         """Tests the successful deletion of a sub-project."""
         self.tracker.add_main_project("Main Test")
         self.tracker.add_sub_project("Main Test", "Sub To Delete")
         self.tracker.add_sub_project("Main Test", "Sub To Keep")
-        
+
         success = self.tracker.delete_sub_project("Main Test", "Sub To Delete")
         self.assertTrue(success)
         self.assertEqual(self.tracker.list_sub_projects("Main Test"), ["Sub To Keep"])
