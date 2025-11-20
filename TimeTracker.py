@@ -1,6 +1,7 @@
 import json
 import os
 from i18n import _
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 
 import sys
@@ -160,10 +161,14 @@ class TimeTracker:
         :return: The formatted string, e.g., "8,000 hours (0,200 DLP)".
         :rtype: str
         """
-        hours = duration_td.total_seconds() / 3600
-        dlp = hours / 40
-        hours_str = f"{hours:.3f}".replace('.', ',')
-        dlp_str = f"{dlp:.3f}".replace('.', ',')
+        # Use Decimal for precise calculations and rounding
+        hours_decimal = Decimal(str(duration_td.total_seconds())) / Decimal('3600')
+        dlp_decimal = hours_decimal / Decimal('40')
+        
+        # Quantize to 3 decimal places using standard rounding (away from zero)
+        quantizer = Decimal('0.001')
+        hours_str = str(hours_decimal.quantize(quantizer, rounding=ROUND_HALF_UP)).replace('.', ',')
+        dlp_str = str(dlp_decimal.quantize(quantizer, rounding=ROUND_HALF_UP)).replace('.', ',')
         return _("{hours} hours ({dlp} DLP)").format(hours=hours_str, dlp=dlp_str)
 
     def get_version(self):
