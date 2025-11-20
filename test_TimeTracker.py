@@ -73,7 +73,7 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(self.tracker._format_duration(duration2), "40,000 hours (1,000 DLP)")
         # Test case 3: 1.5 hours
         duration3 = timedelta(hours=1.5)
-        self.assertEqual(self.tracker._format_duration(duration3), "1,500 hours (0,038 DLP)")
+        self.assertEqual(self.tracker._format_duration(duration3), "1,500 hours (0,038 DLP)") # Corrected expected value from 0,037 to 0,038
 
     # --- General Method Tests ---
 
