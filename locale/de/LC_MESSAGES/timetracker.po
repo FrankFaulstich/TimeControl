@@ -72,8 +72,10 @@ msgstr ""
 "installieren (`pip install pyperclip`)."
 
 #: TimeTracker.py:130
+msgid "{hours} hour ({dlp} DLP)"
 msgid "{hours} hours ({dlp} DLP)"
-msgstr "{hours} Stunden ({dlp} DLP)"
+msgstr[0] "{hours} Stunde ({dlp} DLP)"
+msgstr[1] "{hours} Stunden ({dlp} DLP)"
 
 #: TimeTracker.py:350
 msgid "Source main project '{name}' not found."
@@ -87,10 +89,6 @@ msgstr "Ziel-Hauptprojekt '{name}' nicht gefunden."
 msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
 msgstr "Ein Unterprojekt mit dem Namen '{sub_name}' existiert bereits in '{main_name}'."
 
-#: TimeTracker.py:365
-msgid "Sub-project '{name}' moved successfully."
-msgstr "Unterprojekt '{name}' erfolgreich verschoben."
-
 #: TimeTracker.py:378
 msgid "A main project named '{name}' already exists."
 msgstr "Ein Hauptprojekt mit dem Namen '{name}' existiert bereits."
@@ -98,10 +96,6 @@ msgstr "Ein Hauptprojekt mit dem Namen '{name}' existiert bereits."
 #: TimeTracker.py:388
 msgid "Source main project '{name}' not found."
 msgstr "Quell-Hauptprojekt '{name}' nicht gefunden."
-
-#: TimeTracker.py:390
-msgid "Main project '{old_name}' renamed to '{new_name}'."
-msgstr "Hauptprojekt '{old_name}' wurde in '{new_name}' umbenannt."
 
 #: TimeTracker.py:398
 msgid "Sub-project '{sub_name}' not found in '{main_name}'."
@@ -127,10 +121,6 @@ msgstr "Hauptprojekt '{name}' zum Herabstufen nicht gefunden."
 msgid "New parent main project '{name}' not found."
 msgstr "Neues übergeordnetes Hauptprojekt '{name}' nicht gefunden."
 
-#: TimeTracker.py:445
-msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
-msgstr "Ein Unterprojekt mit dem Namen '{sub_name}' existiert bereits in '{main_name}'."
-
 #: TimeTracker.py:455
 msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
 msgstr "Unterprojekt '{old_name}' wurde in '{new_name}' umbenannt."
@@ -148,24 +138,26 @@ msgstr ""
 "'{parent_name}' herabgestuft."
 
 #: TimeTracker.py:651
+msgid "- {name}: {hours} hour"
 msgid "- {name}: {hours} hours"
-msgstr "- {name}: {hours} Stunden"
+msgstr[0] "- {name}: {hours} Stunde"
+msgstr[1] "- {name}: {hours} Stunden"
 
 #: TimeTracker.py:657
+msgid "## {name} ({hours} hour)\n"
 msgid "## {name} ({hours} hours)\n"
-msgstr "## {name} ({hours} Stunden)\n"
+msgstr[0] "## {name} ({hours} Stunde)\n"
+msgstr[1] "## {name} ({hours} Stunden)\n"
 
 #: TimeTracker.py:665
 msgid "# Daily Time Report: {date}\n"
 msgstr "# Täglicher Zeitbericht: {date}\n"
 
 #: TimeTracker.py:666
-msgid ""
-"\n"
-"**Total Daily Time: {hours} hours**"
-msgstr ""
-"\n"
-"**Tägliche Gesamtzeit: {hours} Stunden**"
+msgid "\n**Total Daily Time: {hours} hour**"
+msgid_plural "\n**Total Daily Time: {hours} hours**"
+msgstr[0] "\n**Tägliche Gesamtzeit: {hours} Stunde**"
+msgstr[1] "\n**Tägliche Gesamtzeit: {hours} Stunden**"
 
 #: TimeTracker.py:670
 msgid "No time tracked for {date}."
@@ -348,8 +340,10 @@ msgid "    Last Activity: {date}"
 msgstr "    Letzte Aktivität: {date}"
 
 #: TimeTrackerCLI.py:116
+msgid "No main-projects found inactive for more than {weeks} week."
 msgid "No main-projects found inactive for more than {weeks} weeks."
-msgstr "Keine Hauptprojekte seit mehr als {weeks} Wochen inaktiv."
+msgstr[0] "Kein Hauptprojekt seit mehr als {weeks} Woche inaktiv."
+msgstr[1] "Keine Hauptprojekte seit mehr als {weeks} Wochen inaktiv."
 
 #: TimeTrackerCLI.py:119
 msgid "Invalid input. Please enter a valid number for weeks."
@@ -466,8 +460,10 @@ msgid "    Sub-Project: {name}"
 msgstr "    Unterprojekt: {name}"
 
 #: TimeTrackerCLI.py:241
+msgid "No sub-projects found inactive for more than {weeks} week."
 msgid "No sub-projects found inactive for more than {weeks} weeks."
-msgstr "Keine Unterprojekte seit mehr als {weeks} Wochen inaktiv."
+msgstr[0] "Kein Unterprojekt seit mehr als {weeks} Woche inaktiv."
+msgstr[1] "Keine Unterprojekts seit mehr als {weeks} Wochen inaktiv."
 
 #: TimeTrackerCLI.py:244
 msgid "Invalid input. Please enter a valid number for weeks."
@@ -503,11 +499,10 @@ msgstr "Gib die Nummer des Ziel-Hauptprojekts ein: "
 
 #: TimeTrackerCLI.py:279
 msgid ""
-"Successfully moved '{sub_name}' from '{source_main_project}' to "
-"'{dest_main_project}'."
+"Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'."
 msgstr ""
-"'{sub_name}' erfolgreich von '{source_main_project}' nach "
-"'{dest_main_project}' verschoben."
+"'{sub_name}' erfolgreich von '{source_name}' nach '{dest_name}' "
+"verschoben."
 
 #: TimeTrackerCLI.py:281
 msgid "Error: {message}"
@@ -756,10 +751,6 @@ msgstr "Wähle ein Unterprojekt von '{name}' aus:"
 #: TimeTrackerCLI.py:507
 msgid "Work started on '{sub_name}' in project '{main_name}'."
 msgstr "Arbeit an '{sub_name}' im Projekt '{main_name}' begonnen."
-
-#: TimeTrackerCLI.py:509
-msgid "Error starting work."
-msgstr "Fehler beim Starten der Arbeit."
 
 #: TimeTrackerCLI.py:514
 msgid "\n--- Current Active Work ---"
