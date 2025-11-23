@@ -22,9 +22,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 ## Features 🚀
 
-**Project Management:** Create, list, and delete main projects.
-
-**Sub-Project Management:** Add, list, and delete sub-projects within main projects.
+**Project Management:** Create, list, rename, delete, move, promote, and demote main and sub-projects.
 
 **Time Tracking:** Start, stop, and view the current work session. Automatically stops the previous session when a new one begins.
 
@@ -120,10 +118,10 @@ The interactive CLI provides a structured menu for all operations.
 1. Start work on sub-project
 2. Show current work
 3. Stop current work
-------------------------------------------------
 4. Handle projects and sub-projects
 5. Reporting
-------------------------------------------------
+6. Settings
+--------------------------------
 0. Exit
 ```
 

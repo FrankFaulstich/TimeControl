@@ -67,13 +67,13 @@ class TestTimeTracker(unittest.TestCase):
         """Tests the _format_duration helper method."""
         # Test case 1: 8 hours -> 0,200 DLP
         duration1 = timedelta(hours=8)
-        self.assertEqual(self.tracker._format_duration(duration1), "8,000 hours (0,200 DLP)")
+        self.assertEqual(self.tracker._format_duration(duration1), "8,000 hour (0,200 DLP)")
         # Test case 2: 40 hours -> 1,000 DLP
         duration2 = timedelta(hours=40)
-        self.assertEqual(self.tracker._format_duration(duration2), "40,000 hours (1,000 DLP)")
+        self.assertEqual(self.tracker._format_duration(duration2), "40,000 hour (1,000 DLP)")
         # Test case 3: 1.5 hours
         duration3 = timedelta(hours=1.5)
-        self.assertEqual(self.tracker._format_duration(duration3), "1,500 hours (0,038 DLP)")
+        self.assertEqual(self.tracker._format_duration(duration3), "1,500 hour (0,038 DLP)")
 
     # --- General Method Tests ---
 
@@ -570,19 +570,19 @@ class TestTimeTracker(unittest.TestCase):
         report = self.tracker.generate_daily_report(today_date)
         
         # Expected total time: 1.5 + 2.0 = 3.5 hours
-        
+
         # Check for correct comma formatting of hours
-        self.assertIn("1,500 hours", report)
-        self.assertIn("2,000 hours", report)
+        self.assertIn("1,500 hour", report)
+        self.assertIn("2,000 hour", report)
         self.assertIn("**Total Daily Time: 3,500 hours**", report)
         
         # Check if P3 was ignored
         self.assertNotIn("R_Sub3_Old", report)
-        
+
         # Check the overall structure
         self.assertTrue(report.startswith(f"# Daily Time Report: {today_date.strftime('%Y-%m-%d')}"))
-        self.assertIn("## Report P1 (1,500 hours)", report)
-        self.assertIn("## Report P2 (2,000 hours)", report)
+        self.assertIn("## Report P1 (1,500 hour)", report)
+        self.assertIn("## Report P2 (2,000 hour)", report)
         
     def test_generate_date_range_report(self):
         """Tests report generation for a date range."""
@@ -620,10 +620,10 @@ class TestTimeTracker(unittest.TestCase):
         
         # Expected total time: 1 + 2 = 3 hours
         # 1h = 0.025 DLP; 2h = 0.050 DLP; 3h = 0.075 DLP
-        self.assertIn("## Range P1 (1,000 hours (0,025 DLP))", report)
-        self.assertIn("## Range P2 (2,000 hours (0,050 DLP))", report)
+        self.assertIn("## Range P1 (1,000 hour (0,025 DLP))", report)
+        self.assertIn("## Range P2 (2,000 hour (0,050 DLP))", report)
         self.assertNotIn("Range P3", report)
-        self.assertIn("**Total Time in Period: 3,000 hours (0,075 DLP)**", report)
+        self.assertIn("**Total Time in Period: 3,000 hour (0,075 DLP)**", report)
         self.assertTrue(report.startswith(f"# Time Report: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"))
 
     def test_generate_sub_project_report(self):
