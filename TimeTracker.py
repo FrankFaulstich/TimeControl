@@ -625,6 +625,7 @@ class TimeTracker:
         within the specified number of weeks.
         Currently running sessions are ignored (i.e., not listed as inactive).
         Sub-projects with no time entries are also ignored.
+        Only sub-projects with status 'open' are considered.
 
         :param inactive_weeks: The number of weeks defining the inactivity threshold.
         :type inactive_weeks: int
@@ -645,6 +646,11 @@ class TimeTracker:
                 last_entry = sub_project["time_entries"][-1]
                 if "end_time" not in last_entry:
                     continue # Skip if currently running
+
+                # Only consider sub-projects that are currently 'open'
+                # This check is now after the 'running' check to correctly ignore running projects regardless of status.
+                if sub_project.get("status", "open") != "open":
+                    continue
 
                 latest_timestamp = None
                 
