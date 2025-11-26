@@ -28,7 +28,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "1.9"
+    VERSION = "1.10.1"
 
     def __init__(self, file_path='data.json'):
         """
