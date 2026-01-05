@@ -28,7 +28,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "1.10.1"
+    VERSION = "1.11"
 
     def __init__(self, file_path='data.json'):
         """
@@ -332,6 +332,26 @@ class TimeTracker:
                     self._save_data()
                     return True
         return False
+
+    def delete_all_closed_sub_projects(self):
+        """
+        Permanently deletes all sub-projects that have the status 'closed'.
+
+        :return: The number of deleted sub-projects.
+        :rtype: int
+        """
+        deleted_count = 0
+        for project in self.data["projects"]:
+            sub_projects = project.get("sub_projects", [])
+            for i in range(len(sub_projects) - 1, -1, -1):
+                if sub_projects[i].get("status") == "closed":
+                    del sub_projects[i]
+                    deleted_count += 1
+
+        if deleted_count > 0:
+            self._save_data()
+        
+        return deleted_count
 
     def close_sub_project(self, main_project_name, sub_project_name):
         """

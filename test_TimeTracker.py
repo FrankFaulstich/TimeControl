@@ -228,6 +228,32 @@ class TestTimeTracker(unittest.TestCase):
         self.assertFalse(success)
         self.assertEqual(len(self.tracker.list_sub_projects("Main Test")), 1)
 
+    def test_delete_all_closed_sub_projects(self):
+        """Tests deleting all closed sub-projects across all main projects."""
+        # Setup
+        self.tracker.add_main_project("P1")
+        self.tracker.add_sub_project("P1", "Open1")
+        self.tracker.add_sub_project("P1", "Closed1")
+        self.tracker.close_sub_project("P1", "Closed1")
+        
+        self.tracker.add_main_project("P2")
+        self.tracker.add_sub_project("P2", "Closed2")
+        self.tracker.close_sub_project("P2", "Closed2")
+        self.tracker.add_sub_project("P2", "Closed3")
+        self.tracker.close_sub_project("P2", "Closed3")
+        
+        self.tracker.add_main_project("P3")
+        self.tracker.add_sub_project("P3", "Open2")
+
+        # Action
+        deleted_count = self.tracker.delete_all_closed_sub_projects()
+
+        # Assertions
+        self.assertEqual(deleted_count, 3)
+        self.assertEqual(self.tracker.list_sub_projects("P1"), ["Open1"])
+        self.assertEqual(self.tracker.list_sub_projects("P2"), [])
+        self.assertEqual(self.tracker.list_sub_projects("P3"), ["Open2"])
+
     def test_rename_sub_project_success(self):
         """Tests the successful renaming of a sub-project."""
         self.tracker.add_main_project("Main")
