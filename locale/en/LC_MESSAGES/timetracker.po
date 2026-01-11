@@ -77,6 +77,9 @@ msgid "{hours} hours ({dlp} DLP)"
 msgstr[0] "{hours} hour ({dlp} DLP)"
 msgstr[1] "{hours} hours ({dlp} DLP)"
 
+msgid "closed"
+msgstr "closed"
+
 #: TimeTracker.py:352
 msgid "Destination main project '{name}' not found."
 msgstr "Destination main project '{name}' not found."
@@ -206,17 +209,26 @@ msgstr "9.  Rename Sub-Project"
 msgid "10. Delete Sub-Project"
 msgstr "10. Delete Sub-Project"
 
-#: TimeTrackerCLI.py:33
-msgid "11. Move Sub-Project"
-msgstr "11. Move Sub-Project"
+msgid "11. Re-open Sub-Project"
+msgstr "11. Re-open Sub-Project"
 
-#: TimeTrackerCLI.py:34
-msgid "12. List Inactive Sub-Projects"
-msgstr "12. List Inactive Sub-Projects"
+msgid "12. Delete Sub-Project"
+msgstr "12. Delete Sub-Project"
 
-#: TimeTrackerCLI.py:35
-msgid "13. Promote Sub-Project to Main-Project"
-msgstr "13. Promote Sub-Project to Main-Project"
+msgid "13. Move Sub-Project"
+msgstr "13. Move Sub-Project"
+
+msgid "14. List Inactive Sub-Projects"
+msgstr "14. List Inactive Sub-Projects"
+
+msgid "15. List All Closed Sub-Projects"
+msgstr "15. List All Closed Sub-Projects"
+
+msgid "16. Delete All Closed Sub-Projects"
+msgstr "16. Delete All Closed Sub-Projects"
+
+msgid "17. Promote Sub-Project to Main-Project"
+msgstr "17. Promote Sub-Project to Main-Project"
 
 #: TimeTrackerCLI.py:37 TimeTrackerCLI.py:403 TimeTrackerCLI.py:461 TimeTrackerCLI.py:539
 msgid "0.  Back to Main Menu"
@@ -428,6 +440,24 @@ msgstr "Select a sub-project from '{name}' to delete:"
 msgid "Sub-project '{sub_name}' deleted from '{main_name}'."
 msgstr "Sub-project '{sub_name}' deleted from '{main_name}'."
 
+msgid "\n--- List All Closed Sub-Projects ---"
+msgstr "\n--- List All Closed Sub-Projects ---"
+
+msgid "No closed sub-projects found."
+msgstr "No closed sub-projects found."
+
+msgid "\n--- Delete All Closed Sub-Projects ---"
+msgstr "\n--- Delete All Closed Sub-Projects ---"
+
+msgid "Are you sure you want to delete ALL closed sub-projects? (y/n): "
+msgstr "Are you sure you want to delete ALL closed sub-projects? (y/n): "
+
+msgid "{count} closed sub-projects were deleted."
+msgstr "{count} closed sub-projects were deleted."
+
+msgid "Operation cancelled."
+msgstr "Operation cancelled."
+
 #: TimeTrackerCLI.py:219
 msgid "Error: Main project or sub-project not found."
 msgstr "Error: Main project or sub-project not found."
@@ -534,9 +564,8 @@ msgstr "\nSelect the new parent main project:"
 msgid "Enter the number of the new parent project: "
 msgstr "Enter the number of the new parent project: "
 
-#: TimeTrackerCLI.py:344
-msgid "Invalid choice. Please enter a number from 0 to 13."
-msgstr "Invalid choice. Please enter a number from 0 to 13."
+msgid "Invalid choice. Please enter a number from 0 to 17."
+msgstr "Invalid choice. Please enter a number from 0 to 17."
 
 #: TimeTrackerCLI.py:348
 msgid "\n--- Reporting ---"
@@ -622,13 +651,15 @@ msgstr "\n--- Settings ---"
 msgid "1. Change Language"
 msgstr "1. Change Language"
 
+msgid "3. Change Data Storage Location"
+msgstr "3. Change Data Storage Location"
+
 #: TimeTrackerCLI.py:430
 msgid "2. Restore Previous Version"
 msgstr "2. Restore Previous Version"
 
-#: TimeTrackerCLI.py:441
-msgid "Invalid choice. Please enter a number from 0 to 2."
-msgstr "Invalid choice. Please enter a number from 0 to 2."
+msgid "Invalid choice. Please enter a number from 0 to 3."
+msgstr "Invalid choice. Please enter a number from 0 to 3."
 
 #: TimeTrackerCLI.py:447 TimeTrackerCLI.py:546
 msgid "\n--- Language Settings ---"
@@ -649,6 +680,39 @@ msgstr "Invalid choice."
 #: TimeTrackerCLI.py:462 TimeTrackerCLI.py:592
 msgid "Invalid input. Please enter a number."
 msgstr "Invalid input. Please enter a number."
+
+msgid "\n--- Data Storage Settings ---"
+msgstr "\n--- Data Storage Settings ---"
+
+msgid "Current data file: {path}"
+msgstr "Current data file: {path}"
+
+msgid "Enter the new path for the data file (e.g., /path/to/my_data.json)."
+msgstr "Enter the new path for the data file (e.g., /path/to/my_data.json)."
+
+msgid "Leave empty to cancel."
+msgstr "Leave empty to cancel."
+
+msgid "New Path: "
+msgstr "New Path: "
+
+msgid "Error: The directory '{dir}' does not exist."
+msgstr "Error: The directory '{dir}' does not exist."
+
+msgid "Storage location updated."
+msgstr "Storage location updated."
+
+msgid "Do you want to move the existing data to the new location? (y/n): "
+msgstr "Do you want to move the existing data to the new location? (y/n): "
+
+msgid "Data moved successfully."
+msgstr "Data moved successfully."
+
+msgid "Error moving data: {error}"
+msgstr "Error moving data: {error}"
+
+msgid "Error updating configuration: {error}"
+msgstr "Error updating configuration: {error}"
 
 #: TimeTrackerCLI.py:509
 msgid "\n--- Update Available ---"
