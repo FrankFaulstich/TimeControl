@@ -2,5 +2,6 @@
     "update": {
         "github_repo": "FrankFaulstich/TimeControl"
     },
-    "language": "en"
+    "language": "en",
+    "data_file": "data.json"
 }
