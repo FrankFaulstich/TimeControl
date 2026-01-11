@@ -68,13 +68,13 @@ class TestTimeTracker(unittest.TestCase):
         """Tests the _format_duration helper method."""
         # Test case 1: 8 hours -> 0,200 DLP
         duration1 = timedelta(hours=8)
-        self.assertEqual(self.tracker._format_duration(duration1), "8,000 hour (0,200 DLP)")
+        self.assertEqual(self.tracker._format_duration(duration1), "8,000 hours (0,200 DLP)")
         # Test case 2: 40 hours -> 1,000 DLP
         duration2 = timedelta(hours=40)
-        self.assertEqual(self.tracker._format_duration(duration2), "40,000 hour (1,000 DLP)")
+        self.assertEqual(self.tracker._format_duration(duration2), "40,000 hours (1,000 DLP)")
         # Test case 3: 1.5 hours
         duration3 = timedelta(hours=1.5)
-        self.assertEqual(self.tracker._format_duration(duration3), "1,500 hour (0,038 DLP)")
+        self.assertEqual(self.tracker._format_duration(duration3), "1,500 hours (0,038 DLP)")
 
     # --- General Method Tests ---
 
@@ -335,7 +335,7 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_main_project("Destination")
         success, msg = self.tracker.move_sub_project("Non-Existent", "Task 1", "Destination")
         self.assertFalse(success)
-        self.assertIn("Source main project 'Non-Existent' not found", msg)
+        self.assertEqual(msg, _("Source main project '{name}' not found.").format(name="Non-Existent"))
 
     def test_move_sub_project_dest_not_found(self):
         """Tests moving to a non-existent destination main project."""
@@ -343,7 +343,7 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_sub_project("Source", "Task 1")
         success, msg = self.tracker.move_sub_project("Source", "Task 1", "Non-Existent")
         self.assertFalse(success)
-        self.assertIn("Destination main project 'Non-Existent' not found", msg)
+        self.assertEqual(msg, _("Destination main project '{name}' not found.").format(name="Non-Existent"))
 
     def test_move_sub_project_name_conflict(self):
         """Tests moving a sub-project when the name exists in the destination."""
@@ -353,7 +353,7 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_sub_project("Destination", "Task 1")
         success, msg = self.tracker.move_sub_project("Source", "Task 1", "Destination")
         self.assertFalse(success)
-        self.assertIn("already exists in 'Destination'", msg)
+        self.assertEqual(msg, _("A sub-project named '{sub_name}' already exists in '{main_name}'.").format(sub_name="Task 1", main_name="Destination"))
         
     def test_promote_sub_project_success(self):
         """Tests promoting a sub-project to a main project successfully."""
@@ -376,7 +376,7 @@ class TestTimeTracker(unittest.TestCase):
 
         # 3. Check if new main project has a "General" sub-project with the time entries
         new_main_subs = self.tracker.list_sub_projects("Promotable Sub")
-        self.assertEqual(new_main_subs, ["General"])
+        self.assertEqual(new_main_subs, [_("General")])
         
         new_main_project_data = next(p for p in self.tracker.data["projects"] if p["main_project_name"] == "Promotable Sub")
         general_sub = new_main_project_data["sub_projects"][0]
@@ -392,7 +392,7 @@ class TestTimeTracker(unittest.TestCase):
 
         success, msg = self.tracker.promote_sub_project("Source Main", "Existing Name")
         self.assertFalse(success)
-        self.assertIn("already exists", msg)
+        self.assertEqual(msg, _("A main project named '{name}' already exists.").format(name="Existing Name"))
 
     def test_demote_main_project_success(self):
         """Tests demoting a main project to a sub-project successfully."""
@@ -410,7 +410,7 @@ class TestTimeTracker(unittest.TestCase):
 
         success, msg = self.tracker.demote_main_project("Old Main", "New Parent")
         self.assertTrue(success)
-        self.assertIn("was demoted", msg)
+        self.assertIn("herabgestuft", msg)
 
         # 1. Check if old main project is gone
         self.assertNotIn("Old Main", self.tracker.list_main_projects())
@@ -431,7 +431,7 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_sub_project("Parent", "To Demote") # Name conflict
         success, msg = self.tracker.demote_main_project("To Demote", "Parent")
         self.assertFalse(success)
-        self.assertIn("already exists", msg)
+        self.assertIn("existiert bereits", msg)
     # --- Time Tracking Method Tests ---
     
     def _create_mock_project_with_sub(self, main_name, sub_name):
@@ -636,17 +636,17 @@ class TestTimeTracker(unittest.TestCase):
         # Expected total time: 1.5 + 2.0 = 3.5 hours
 
         # Check for correct comma formatting of hours
-        self.assertIn("1,500 hour", report)
-        self.assertIn("2,000 hour", report)
+        self.assertIn("1,500 hours", report)
+        self.assertIn("2,000 hours", report)
         self.assertIn("**Total Daily Time: 3,500 hours**", report)
         
         # Check if P3 was ignored
         self.assertNotIn("R_Sub3_Old", report)
 
         # Check the overall structure
-        self.assertTrue(report.startswith(f"# Daily Time Report: {today_date.strftime('%Y-%m-%d')}"))
-        self.assertIn("## Report P1 (1,500 hour)", report)
-        self.assertIn("## Report P2 (2,000 hour)", report)
+        self.assertTrue(report.startswith(_("# Daily Time Report: {date}\n").format(date=today_date.strftime('%Y-%m-%d')).strip()))
+        self.assertIn("## Report P1 (1,500 hours)", report)
+        self.assertIn("## Report P2 (2,000 hours)", report)
         
     def test_generate_date_range_report(self):
         """Tests report generation for a date range."""
@@ -684,11 +684,11 @@ class TestTimeTracker(unittest.TestCase):
         
         # Expected total time: 1 + 2 = 3 hours
         # 1h = 0.025 DLP; 2h = 0.050 DLP; 3h = 0.075 DLP
-        self.assertIn("## Range P1 (1,000 hour (0,025 DLP))", report)
-        self.assertIn("## Range P2 (2,000 hour (0,050 DLP))", report)
+        self.assertIn("## Range P1 (1,000 hours (0,025 DLP))", report)
+        self.assertIn("## Range P2 (2,000 hours (0,050 DLP))", report)
         self.assertNotIn("Range P3", report)
-        self.assertIn("**Total Time in Period: 3,000 hour (0,075 DLP)**", report)
-        self.assertTrue(report.startswith(f"# Time Report: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"))
+        self.assertIn(_("\n**Total Time in Period: {total_time}**").format(total_time="3,000 hours (0,075 DLP)"), report)
+        self.assertTrue(report.startswith(_("# Time Report: {start_date} to {end_date}\n").format(start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')).strip()))
 
     def test_generate_sub_project_report(self):
         """Tests the detailed report generation for a single sub-project."""
