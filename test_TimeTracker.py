@@ -175,6 +175,25 @@ class TestTimeTracker(unittest.TestCase):
         sub_projects_default = self.tracker.list_sub_projects("Main", mark_closed=False)
         self.assertIn("Closed Sub", sub_projects_default)
 
+    def test_list_all_closed_sub_projects(self):
+        """Tests listing all closed sub-projects globally."""
+        self.tracker.add_main_project("M1")
+        self.tracker.add_sub_project("M1", "S1_Open")
+        self.tracker.add_sub_project("M1", "S1_Closed")
+        self.tracker.close_sub_project("M1", "S1_Closed")
+        
+        self.tracker.add_main_project("M2")
+        self.tracker.add_sub_project("M2", "S2_Closed")
+        self.tracker.close_sub_project("M2", "S2_Closed")
+        
+        result = self.tracker.list_all_closed_sub_projects()
+        self.assertEqual(len(result), 2)
+        
+        self.assertEqual(result[0]["main_project_name"], "M1")
+        self.assertEqual(result[0]["sub_project_name"], "S1_Closed")
+        self.assertEqual(result[1]["main_project_name"], "M2")
+        self.assertEqual(result[1]["sub_project_name"], "S2_Closed")
+
     def test_list_open_sub_projects(self):
         """Tests that only sub-projects with status 'open' are listed."""
         self.tracker.add_main_project("Main")

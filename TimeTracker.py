@@ -322,6 +322,23 @@ class TimeTracker:
                         if sp.get("status") == "closed"]
         return None
 
+    def list_all_closed_sub_projects(self):
+        """
+        Returns a list of all sub-projects with status 'closed' across all main projects.
+
+        :return: A list of dictionaries with 'main_project_name' and 'sub_project_name'.
+        :rtype: list[dict]
+        """
+        closed_sub_projects = []
+        for project in self.data["projects"]:
+            for sub_project in project.get("sub_projects", []):
+                if sub_project.get("status") == "closed":
+                    closed_sub_projects.append({
+                        "main_project_name": project["main_project_name"],
+                        "sub_project_name": sub_project["sub_project_name"]
+                    })
+        return closed_sub_projects
+
     def delete_sub_project(self, main_project_name, sub_project_name):
         """
         Deletes a sub-project from a main project.
