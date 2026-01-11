@@ -73,7 +73,7 @@ msgstr ""
 
 #: TimeTracker.py:130
 msgid "{hours} hour ({dlp} DLP)"
-msgid "{hours} hours ({dlp} DLP)"
+msgid_plural "{hours} hours ({dlp} DLP)"
 msgstr[0] "{hours} Stunde ({dlp} DLP)"
 msgstr[1] "{hours} Stunden ({dlp} DLP)"
 
@@ -96,10 +96,6 @@ msgstr "Ein Unterprojekt mit dem Namen '{sub_name}' existiert bereits in '{main_
 msgid "A main project named '{name}' already exists."
 msgstr "Ein Hauptprojekt mit dem Namen '{name}' existiert bereits."
 
-#: TimeTracker.py:388
-msgid "Source main project '{name}' not found."
-msgstr "Quell-Hauptprojekt '{name}' nicht gefunden."
-
 #: TimeTracker.py:398
 msgid "Sub-project '{sub_name}' not found in '{main_name}'."
 msgstr "Unterprojekt '{sub_name}' in '{main_name}' nicht gefunden."
@@ -111,10 +107,6 @@ msgstr "Allgemein"
 #: TimeTracker.py:410
 msgid "Sub-project '{name}' was promoted to a new main project."
 msgstr "Unterprojekt '{name}' wurde zu einem neuen Hauptprojekt befördert."
-
-#: TimeTracker.py:412
-msgid "Sub-project '{sub_name}' not found in '{main_name}'."
-msgstr "Unterprojekt '{sub_name}' in '{main_name}' nicht gefunden."
 
 #: TimeTracker.py:439
 msgid "Main project to demote '{name}' not found."
@@ -128,10 +120,6 @@ msgstr "Neues übergeordnetes Hauptprojekt '{name}' nicht gefunden."
 msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
 msgstr "Unterprojekt '{old_name}' wurde in '{new_name}' umbenannt."
 
-#: TimeTracker.py:459
-msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
-msgstr "Unterprojekt '{old_name}' wurde in '{new_name}' umbenannt."
-
 #: TimeTracker.py:463
 msgid ""
 "Main project '{demoted_name}' was demoted to a sub-project under "
@@ -142,13 +130,13 @@ msgstr ""
 
 #: TimeTracker.py:651
 msgid "- {name}: {hours} hour"
-msgid "- {name}: {hours} hours"
+msgid_plural "- {name}: {hours} hours"
 msgstr[0] "- {name}: {hours} Stunde"
 msgstr[1] "- {name}: {hours} Stunden"
 
 #: TimeTracker.py:657
 msgid "## {name} ({hours} hour)\n"
-msgid "## {name} ({hours} hours)\n"
+msgid_plural "## {name} ({hours} hours)\n"
 msgstr[0] "## {name} ({hours} Stunde)\n"
 msgstr[1] "## {name} ({hours} Stunden)\n"
 
@@ -353,7 +341,7 @@ msgstr "    Letzte Aktivität: {date}"
 
 #: TimeTrackerCLI.py:116
 msgid "No main-projects found inactive for more than {weeks} week."
-msgid "No main-projects found inactive for more than {weeks} weeks."
+msgid_plural "No main-projects found inactive for more than {weeks} weeks."
 msgstr[0] "Kein Hauptprojekt seit mehr als {weeks} Woche inaktiv."
 msgstr[1] "Keine Hauptprojekte seit mehr als {weeks} Wochen inaktiv."
 
@@ -421,10 +409,6 @@ msgstr "Wähle ein Unterprojekt von '{name}' zum Umbenennen aus:"
 msgid "Enter the number of the sub-project: "
 msgstr "Gib die Nummer des Unterprojekts ein: "
 
-#: TimeTrackerCLI.py:187
-msgid "Enter the new name for '{name}': "
-msgstr "Gib den neuen Namen für '{name}' ein: "
-
 #: TimeTrackerCLI.py:190
 msgid "Sub-project '{old_name}' renamed to '{new_name}'."
 msgstr "Unterprojekt '{old_name}' in '{new_name}' umbenannt."
@@ -491,13 +475,9 @@ msgstr "    Unterprojekt: {name}"
 
 #: TimeTrackerCLI.py:241
 msgid "No sub-projects found inactive for more than {weeks} week."
-msgid "No sub-projects found inactive for more than {weeks} weeks."
+msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
 msgstr[0] "Kein Unterprojekt seit mehr als {weeks} Woche inaktiv."
-msgstr[1] "Keine Unterprojekts seit mehr als {weeks} Wochen inaktiv."
-
-#: TimeTrackerCLI.py:244
-msgid "Invalid input. Please enter a valid number for weeks."
-msgstr "Ungültige Eingabe. Bitte eine gültige Zahl für Wochen eingeben."
+msgstr[1] "Keine Unterprojekte seit mehr als {weeks} Wochen inaktiv."
 
 #: TimeTrackerCLI.py:248
 msgid "\n--- Move Sub-Project ---"

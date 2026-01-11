@@ -72,7 +72,7 @@ msgstr ""
 
 #: TimeTracker.py:130
 msgid "{hours} hour ({dlp} DLP)"
-msgid "{hours} hours ({dlp} DLP)"
+msgid_plural "{hours} hours ({dlp} DLP)"
 msgstr[0] "{hours} heure ({dlp} DLP)"
 msgstr[1] "{hours} heures ({dlp} DLP)"
 
@@ -137,13 +137,13 @@ msgstr ""
 
 #: TimeTracker.py:651
 msgid "- {name}: {hours} hour"
-msgid "- {name}: {hours} hours"
+msgid_plural "- {name}: {hours} hours"
 msgstr[0] "- {name} : {hours} heure"
 msgstr[1] "- {name} : {hours} heures"
 
 #: TimeTracker.py:657
 msgid "## {name} ({hours} hour)\n"
-msgid "## {name} ({hours} hours)\n"
+msgid_plural "## {name} ({hours} hours)\n"
 msgstr[0] "## {name} ({hours} heure)\n"
 msgstr[1] "## {name} ({hours} heures)\n"
 
@@ -392,7 +392,7 @@ msgstr "    Dernière activité : {date}"
 
 #: TimeTrackerCLI.py:116
 msgid "No main-projects found inactive for more than {weeks} week."
-msgid "No main-projects found inactive for more than {weeks} weeks."
+msgid_plural "No main-projects found inactive for more than {weeks} weeks."
 msgstr[0] "Aucun projet principal inactif depuis plus de {weeks} semaine n'a été trouvé."
 msgstr[1] "Aucun projet principal inactif depuis plus de {weeks} semaines n'a été trouvé."
 
@@ -530,7 +530,7 @@ msgstr "    Sous-projet : {name}"
 
 #: TimeTrackerCLI.py:241
 msgid "No sub-projects found inactive for more than {weeks} week."
-msgid "No sub-projects found inactive for more than {weeks} weeks."
+msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
 msgstr[0] "Aucun sous-projet inactif depuis plus de {weeks} semaine n'a été trouvé."
 msgstr[1] "Aucun sous-projet inactif depuis plus de {weeks} semaines n'a été trouvé."
 

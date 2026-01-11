@@ -72,7 +72,7 @@ msgstr ""
 
 #: TimeTracker.py:130
 msgid "{hours} hour ({dlp} DLP)"
-msgid "{hours} hours ({dlp} DLP)"
+msgid_plural "{hours} hours ({dlp} DLP)"
 msgstr[0] "{hours} hora ({dlp} DLP)"
 msgstr[1] "{hours} horas ({dlp} DLP)"
 
@@ -123,21 +123,17 @@ msgstr "No se encontró el proyecto principal a degradar '{name}'."
 msgid "New parent main project '{name}' not found."
 msgstr "No se encontró el nuevo proyecto principal padre '{name}'."
 
-#: TimeTracker.py:445
-msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
-msgstr "Ya existe un subproyecto llamado '{sub_name}' en '{main_name}'."
-
 #: TimeTracker.py:455
 msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
 msgstr "El subproyecto '{old_name}' ha sido renombrado a '{new_name}'."
 
 msgid "- {name}: {hours} hour"
-msgid "- {name}: {hours} hours"
+msgid_plural "- {name}: {hours} hours"
 msgstr[0] "- {name}: {hours} hora"
 msgstr[1] "- {name}: {hours} horas"
 
 msgid "## {name} ({hours} hour)\n"
-msgid "## {name} ({hours} hours)\n"
+msgid_plural "## {name} ({hours} hours)\n"
 msgstr[0] "## {name} ({hours} hora)\n"
 msgstr[1] "## {name} ({hours} horas)\n"
 
@@ -393,7 +389,7 @@ msgid "    Last Activity: {date}"
 msgstr "    Última Actividad: {date}"
 
 msgid "No main-projects found inactive for more than {weeks} week."
-msgid "No main-projects found inactive for more than {weeks} weeks."
+msgid_plural "No main-projects found inactive for more than {weeks} weeks."
 msgstr[0] "No se encontró ningún proyecto principal inactivo por más de {weeks} semana."
 msgstr[1] "No se encontraron proyectos principales inactivos por más de {weeks} semanas."
 
@@ -530,7 +526,7 @@ msgid "    Sub-Project: {name}"
 msgstr "    Subproyecto: {name}"
 
 msgid "No sub-projects found inactive for more than {weeks} week."
-msgid "No sub-projects found inactive for more than {weeks} weeks."
+msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
 msgstr[0] "No se encontró ningún subproyecto inactivo por más de {weeks} semana."
 msgstr[1] "No se encontraron subproyectos inactivos por más de {weeks} semanas."
 
