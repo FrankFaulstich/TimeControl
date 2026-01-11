@@ -62,6 +62,9 @@ msgstr[0] "{hours} hodina ({dlp} DLP)"
 msgstr[1] "{hours} hodiny ({dlp} DLP)"
 msgstr[2] "{hours} hodin ({dlp} DLP)"
 
+msgid "closed"
+msgstr "uzavřeno"
+
 msgid "Source main project '{name}' not found."
 msgstr "Zdrojový hlavní projekt '{name}' nebyl nalezen."
 
@@ -153,29 +156,41 @@ msgstr "4.  Smazat hlavní projekt"
 msgid "5.  List Inactive Main Projects"
 msgstr "5.  Vypsat neaktivní hlavní projekty"
 
-msgid "6.  Add Sub-Project"
-msgstr "6.  Přidat podprojekt"
+msgid "6.  Demote Main-Project to Sub-Project"
+msgstr "6.  Degradovat hlavní projekt na podprojekt"
 
-msgid "7.  List Sub-Projects"
-msgstr "7.  Vypsat podprojekty"
+msgid "7.  Add Sub-Project"
+msgstr "7.  Přidat podprojekt"
 
-msgid "8.  Rename Sub-Project"
-msgstr "8.  Přejmenovat podprojekt"
+msgid "8.  List Sub-Projects"
+msgstr "8.  Vypsat podprojekty"
 
-msgid "9.  Delete Sub-Project"
-msgstr "9.  Smazat podprojekt"
+msgid "9.  Rename Sub-Project"
+msgstr "9.  Přejmenovat podprojekt"
 
-msgid "10. Move Sub-Project"
-msgstr "10. Přesunout podprojekt"
+msgid "10. Close Sub-Project"
+msgstr "10. Uzavřít podprojekt"
 
-msgid "11. List Inactive Sub-Projects"
-msgstr "11. Vypsat neaktivní podprojekty"
+msgid "11. Re-open Sub-Project"
+msgstr "11. Znovu otevřít podprojekt"
 
-msgid "12. Promote Sub-Project to Main-Project"
-msgstr "12. Povýšit podprojekt na hlavní projekt"
+msgid "12. Delete Sub-Project"
+msgstr "12. Smazat podprojekt"
 
-msgid "13. Demote Main-Project to Sub-Project"
-msgstr "13. Degradovat hlavní projekt na podprojekt"
+msgid "13. Move Sub-Project"
+msgstr "13. Přesunout podprojekt"
+
+msgid "14. List Inactive Sub-Projects"
+msgstr "14. Vypsat neaktivní podprojekty"
+
+msgid "15. List All Closed Sub-Projects"
+msgstr "15. Vypsat všechny uzavřené podprojekty"
+
+msgid "16. Delete All Closed Sub-Projects"
+msgstr "16. Smazat všechny uzavřené podprojekty"
+
+msgid "17. Promote Sub-Project to Main-Project"
+msgstr "17. Povýšit podprojekt na hlavní projekt"
 
 msgid "0.  Back to Main Menu"
 msgstr "0.  Zpět do hlavního menu"
@@ -258,7 +273,7 @@ msgid "    Last Activity: {date}"
 msgstr "    Poslední aktivita: {date}"
 
 msgid "No main-projects found inactive for more than {weeks} week."
-msgid "No main-projects found inactive for more than {weeks} weeks."
+msgid_plural "No main-projects found inactive for more than {weeks} weeks."
 msgstr[0] "Nebyl nalezen žádný hlavní projekt neaktivní déle než {weeks} týden."
 msgstr[1] "Nebyly nalezeny žádné hlavní projekty neaktivní déle než {weeks} týdny."
 msgstr[2] "Nebyly nalezeny žádné hlavní projekty neaktivní déle než {weeks} týdnů."
@@ -333,6 +348,12 @@ msgstr "Vyberte podprojekt z '{name}' ke smazání:"
 msgid "Sub-project '{sub_name}' deleted from '{main_name}'."
 msgstr "Podprojekt '{sub_name}' byl smazán z '{main_name}'."
 
+msgid "\n--- List All Closed Sub-Projects ---"
+msgstr "\n--- Seznam všech uzavřených podprojektů ---"
+
+msgid "No closed sub-projects found."
+msgstr "Nebyly nalezeny žádné uzavřené podprojekty."
+
 msgid "Error: Main project or sub-project not found."
 msgstr "Chyba: Hlavní projekt nebo podprojekt nebyl nalezen."
 
@@ -349,7 +370,7 @@ msgid "    Sub-Project: {name}"
 msgstr "    Podprojekt: {name}"
 
 msgid "No sub-projects found inactive for more than {weeks} week."
-msgid "No sub-projects found inactive for more than {weeks} weeks."
+msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
 msgstr[0] "Nebyl nalezen žádný podprojekt neaktivní déle než {weeks} týden."
 msgstr[1] "Nebyly nalezeny žádné podprojekty neaktivní déle než {weeks} týdny."
 msgstr[2] "Nebyly nalezeny žádné podprojekty neaktivní déle než {weeks} týdnů."
@@ -417,8 +438,8 @@ msgstr "\nVyberte nový nadřazený hlavní projekt:"
 msgid "Enter the number of the new parent project: "
 msgstr "Zadejte číslo nového nadřazeného projektu: "
 
-msgid "Invalid choice. Please enter a number from 0 to 13."
-msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 13."
+msgid "Invalid choice. Please enter a number from 0 to 17."
+msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 17."
 
 msgid "1. Daily Report (Today)"
 msgstr "1. Denní report (dnes)"
@@ -483,6 +504,9 @@ msgstr "\n--- Nastavení ---"
 msgid "1. Change Language"
 msgstr "1. Změnit jazyk"
 
+msgid "3. Change Data Storage Location"
+msgstr "3. Změnit umístění úložiště dat"
+
 msgid "2. Restore Previous Version"
 msgstr "2. Obnovit předchozí verzi"
 
@@ -495,8 +519,41 @@ msgstr "Jazyk změněn na '{lang}'. Prosím, restartujte aplikaci."
 msgid "Invalid choice."
 msgstr "Neplatná volba."
 
-msgid "Invalid choice. Please enter a number from 0 to 2."
-msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 2."
+msgid "Invalid choice. Please enter a number from 0 to 3."
+msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 3."
+
+msgid "\n--- Data Storage Settings ---"
+msgstr "\n--- Nastavení úložiště dat ---"
+
+msgid "Current data file: {path}"
+msgstr "Aktuální datový soubor: {path}"
+
+msgid "Enter the new path for the data file (e.g., /path/to/my_data.json)."
+msgstr "Zadejte novou cestu k datovému souboru (např. /cesta/k/my_data.json)."
+
+msgid "Leave empty to cancel."
+msgstr "Ponechte prázdné pro zrušení."
+
+msgid "New Path: "
+msgstr "Nová cesta: "
+
+msgid "Error: The directory '{dir}' does not exist."
+msgstr "Chyba: Adresář '{dir}' neexistuje."
+
+msgid "Storage location updated."
+msgstr "Umístění úložiště aktualizováno."
+
+msgid "Do you want to move the existing data to the new location? (y/n): "
+msgstr "Chcete přesunout stávající data do nového umístění? (a/n): "
+
+msgid "Data moved successfully."
+msgstr "Data byla úspěšně přesunuta."
+
+msgid "Error moving data: {error}"
+msgstr "Chyba při přesunu dat: {error}"
+
+msgid "Error updating configuration: {error}"
+msgstr "Chyba při aktualizaci konfigurace: {error}"
 
 msgid "\n--- Update Available ---"
 msgstr "\n--- K dispozici je aktualizace ---"

@@ -73,9 +73,12 @@ msgstr ""
 
 #: TimeTracker.py:130
 msgid "{hours} hour ({dlp} DLP)"
-msgid "{hours} hours ({dlp} DLP)"
+msgid_plural "{hours} hours ({dlp} DLP)"
 msgstr[0] "{hours} Stunde ({dlp} DLP)"
 msgstr[1] "{hours} Stunden ({dlp} DLP)"
+
+msgid "closed"
+msgstr "geschlossen"
 
 #: TimeTracker.py:350
 msgid "Source main project '{name}' not found."
@@ -93,10 +96,6 @@ msgstr "Ein Unterprojekt mit dem Namen '{sub_name}' existiert bereits in '{main_
 msgid "A main project named '{name}' already exists."
 msgstr "Ein Hauptprojekt mit dem Namen '{name}' existiert bereits."
 
-#: TimeTracker.py:388
-msgid "Source main project '{name}' not found."
-msgstr "Quell-Hauptprojekt '{name}' nicht gefunden."
-
 #: TimeTracker.py:398
 msgid "Sub-project '{sub_name}' not found in '{main_name}'."
 msgstr "Unterprojekt '{sub_name}' in '{main_name}' nicht gefunden."
@@ -108,10 +107,6 @@ msgstr "Allgemein"
 #: TimeTracker.py:410
 msgid "Sub-project '{name}' was promoted to a new main project."
 msgstr "Unterprojekt '{name}' wurde zu einem neuen Hauptprojekt befördert."
-
-#: TimeTracker.py:412
-msgid "Sub-project '{sub_name}' not found in '{main_name}'."
-msgstr "Unterprojekt '{sub_name}' in '{main_name}' nicht gefunden."
 
 #: TimeTracker.py:439
 msgid "Main project to demote '{name}' not found."
@@ -125,10 +120,6 @@ msgstr "Neues übergeordnetes Hauptprojekt '{name}' nicht gefunden."
 msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
 msgstr "Unterprojekt '{old_name}' wurde in '{new_name}' umbenannt."
 
-#: TimeTracker.py:459
-msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
-msgstr "Unterprojekt '{old_name}' wurde in '{new_name}' umbenannt."
-
 #: TimeTracker.py:463
 msgid ""
 "Main project '{demoted_name}' was demoted to a sub-project under "
@@ -139,13 +130,13 @@ msgstr ""
 
 #: TimeTracker.py:651
 msgid "- {name}: {hours} hour"
-msgid "- {name}: {hours} hours"
+msgid_plural "- {name}: {hours} hours"
 msgstr[0] "- {name}: {hours} Stunde"
 msgstr[1] "- {name}: {hours} Stunden"
 
 #: TimeTracker.py:657
 msgid "## {name} ({hours} hour)\n"
-msgid "## {name} ({hours} hours)\n"
+msgid_plural "## {name} ({hours} hours)\n"
 msgstr[0] "## {name} ({hours} Stunde)\n"
 msgstr[1] "## {name} ({hours} Stunden)\n"
 
@@ -223,17 +214,26 @@ msgstr "9.  Unterprojekt umbenennen"
 msgid "10. Delete Sub-Project"
 msgstr "10. Unterprojekt löschen"
 
-#: TimeTrackerCLI.py:33
-msgid "11. Move Sub-Project"
-msgstr "11. Unterprojekt verschieben"
+msgid "11. Re-open Sub-Project"
+msgstr "11. Unterprojekt wieder öffnen"
 
-#: TimeTrackerCLI.py:34
-msgid "12. List Inactive Sub-Projects"
-msgstr "12. Inaktive Unterprojekte auflisten"
+msgid "12. Delete Sub-Project"
+msgstr "12. Unterprojekt löschen"
 
-#: TimeTrackerCLI.py:35
-msgid "13. Promote Sub-Project to Main-Project"
-msgstr "13. Unterprojekt zu Hauptprojekt befördern"
+msgid "13. Move Sub-Project"
+msgstr "13. Unterprojekt verschieben"
+
+msgid "14. List Inactive Sub-Projects"
+msgstr "14. Inaktive Unterprojekte auflisten"
+
+msgid "15. List All Closed Sub-Projects"
+msgstr "15. Alle geschlossenen Unterprojekte auflisten"
+
+msgid "16. Delete All Closed Sub-Projects"
+msgstr "16. Alle geschlossenen Unterprojekte löschen"
+
+msgid "17. Promote Sub-Project to Main-Project"
+msgstr "17. Unterprojekt zu Hauptprojekt befördern"
 
 #: TimeTrackerCLI.py:37 TimeTrackerCLI.py:403 TimeTrackerCLI.py:461 TimeTrackerCLI.py:539
 msgid "0.  Back to Main Menu"
@@ -341,7 +341,7 @@ msgstr "    Letzte Aktivität: {date}"
 
 #: TimeTrackerCLI.py:116
 msgid "No main-projects found inactive for more than {weeks} week."
-msgid "No main-projects found inactive for more than {weeks} weeks."
+msgid_plural "No main-projects found inactive for more than {weeks} weeks."
 msgstr[0] "Kein Hauptprojekt seit mehr als {weeks} Woche inaktiv."
 msgstr[1] "Keine Hauptprojekte seit mehr als {weeks} Wochen inaktiv."
 
@@ -409,10 +409,6 @@ msgstr "Wähle ein Unterprojekt von '{name}' zum Umbenennen aus:"
 msgid "Enter the number of the sub-project: "
 msgstr "Gib die Nummer des Unterprojekts ein: "
 
-#: TimeTrackerCLI.py:187
-msgid "Enter the new name for '{name}': "
-msgstr "Gib den neuen Namen für '{name}' ein: "
-
 #: TimeTrackerCLI.py:190
 msgid "Sub-project '{old_name}' renamed to '{new_name}'."
 msgstr "Unterprojekt '{old_name}' in '{new_name}' umbenannt."
@@ -439,6 +435,24 @@ msgstr "Wähle ein Unterprojekt von '{name}' zum Löschen aus:"
 msgid "Sub-project '{sub_name}' deleted from '{main_name}'."
 msgstr "Unterprojekt '{sub_name}' von '{main_name}' gelöscht."
 
+msgid "\n--- List All Closed Sub-Projects ---"
+msgstr "\n--- Alle geschlossenen Unterprojekte auflisten ---"
+
+msgid "No closed sub-projects found."
+msgstr "Keine geschlossenen Unterprojekte gefunden."
+
+msgid "\n--- Delete All Closed Sub-Projects ---"
+msgstr "\n--- Alle geschlossenen Unterprojekte löschen ---"
+
+msgid "Are you sure you want to delete ALL closed sub-projects? (y/n): "
+msgstr "Bist du sicher, dass du ALLE geschlossenen Unterprojekte löschen möchtest? (j/n): "
+
+msgid "{count} closed sub-projects were deleted."
+msgstr "{count} geschlossene Unterprojekte wurden gelöscht."
+
+msgid "Operation cancelled."
+msgstr "Vorgang abgebrochen."
+
 #: TimeTrackerCLI.py:219
 msgid "Error: Main project or sub-project not found."
 msgstr "Fehler: Hauptprojekt oder Unterprojekt nicht gefunden."
@@ -461,13 +475,9 @@ msgstr "    Unterprojekt: {name}"
 
 #: TimeTrackerCLI.py:241
 msgid "No sub-projects found inactive for more than {weeks} week."
-msgid "No sub-projects found inactive for more than {weeks} weeks."
+msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
 msgstr[0] "Kein Unterprojekt seit mehr als {weeks} Woche inaktiv."
-msgstr[1] "Keine Unterprojekts seit mehr als {weeks} Wochen inaktiv."
-
-#: TimeTrackerCLI.py:244
-msgid "Invalid input. Please enter a valid number for weeks."
-msgstr "Ungültige Eingabe. Bitte eine gültige Zahl für Wochen eingeben."
+msgstr[1] "Keine Unterprojekte seit mehr als {weeks} Wochen inaktiv."
 
 #: TimeTrackerCLI.py:248
 msgid "\n--- Move Sub-Project ---"
@@ -548,9 +558,8 @@ msgstr "\nWähle das neue übergeordnete Hauptprojekt aus:"
 msgid "Enter the number of the new parent project: "
 msgstr "Gib die Nummer des neuen übergeordneten Projekts ein: "
 
-#: TimeTrackerCLI.py:344
-msgid "Invalid choice. Please enter a number from 0 to 13."
-msgstr "Ungültige Auswahl. Bitte eine Zahl von 0 bis 13 eingeben."
+msgid "Invalid choice. Please enter a number from 0 to 17."
+msgstr "Ungültige Auswahl. Bitte eine Zahl von 0 bis 17 eingeben."
 
 #: TimeTrackerCLI.py:348
 msgid "\n--- Reporting ---"
@@ -640,13 +649,15 @@ msgstr "\n--- Einstellungen ---"
 msgid "1. Change Language"
 msgstr "1. Sprache ändern"
 
+msgid "3. Change Data Storage Location"
+msgstr "3. Speicherort der Daten ändern"
+
 #: TimeTrackerCLI.py:430
 msgid "2. Restore Previous Version"
 msgstr "2. Vorherige Version wiederherstellen"
 
-#: TimeTrackerCLI.py:440
-msgid "Invalid choice. Please enter a number from 0 to 2."
-msgstr "Ungültige Auswahl. Bitte eine Zahl von 0 bis 2 eingeben."
+msgid "Invalid choice. Please enter a number from 0 to 3."
+msgstr "Ungültige Auswahl. Bitte eine Zahl von 0 bis 3 eingeben."
 
 #: TimeTrackerCLI.py:446 TimeTrackerCLI.py:545
 msgid "\n--- Language Settings ---"
@@ -667,6 +678,39 @@ msgstr "Ungültige Auswahl."
 #: TimeTrackerCLI.py:462 TimeTrackerCLI.py:592
 msgid "Invalid input. Please enter a number."
 msgstr "Ungültige Eingabe. Bitte eine Zahl eingeben."
+
+msgid "\n--- Data Storage Settings ---"
+msgstr "\n--- Datenspeicher-Einstellungen ---"
+
+msgid "Current data file: {path}"
+msgstr "Aktuelle Datendatei: {path}"
+
+msgid "Enter the new path for the data file (e.g., /path/to/my_data.json)."
+msgstr "Gib den neuen Pfad für die Datendatei ein (z.B. /pfad/zu/meine_daten.json)."
+
+msgid "Leave empty to cancel."
+msgstr "Leer lassen zum Abbrechen."
+
+msgid "New Path: "
+msgstr "Neuer Pfad: "
+
+msgid "Error: The directory '{dir}' does not exist."
+msgstr "Fehler: Das Verzeichnis '{dir}' existiert nicht."
+
+msgid "Storage location updated."
+msgstr "Speicherort aktualisiert."
+
+msgid "Do you want to move the existing data to the new location? (y/n): "
+msgstr "Möchtest du die vorhandenen Daten an den neuen Ort verschieben? (j/n): "
+
+msgid "Data moved successfully."
+msgstr "Daten erfolgreich verschoben."
+
+msgid "Error moving data: {error}"
+msgstr "Fehler beim Verschieben der Daten: {error}"
+
+msgid "Error updating configuration: {error}"
+msgstr "Fehler beim Aktualisieren der Konfiguration: {error}"
 
 #: TimeTrackerCLI.py:508
 msgid "\n--- Update Available ---"
