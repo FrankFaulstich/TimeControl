@@ -3,6 +3,7 @@ import json
 import os
 from datetime import datetime, timedelta
 from TimeTracker import TimeTracker # Assume TimeTracker.py is in the same directory
+from i18n import _
 
 # The temporary file path for tests
 TEST_FILE_PATH = 'test_data.json'
@@ -155,6 +156,24 @@ class TestTimeTracker(unittest.TestCase):
         subs = self.tracker.list_sub_projects("Main List")
         self.assertEqual(subs, ["Sub A", "Sub B"])
         self.assertIsNone(self.tracker.list_sub_projects("Unknown Project"))
+
+    def test_list_sub_projects_mark_closed(self):
+        """Tests listing sub-projects with closed ones marked."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_sub_project("Main", "Open Sub")
+        self.tracker.add_sub_project("Main", "Closed Sub")
+        self.tracker.close_sub_project("Main", "Closed Sub")
+
+        # Check with mark_closed=True
+        sub_projects = self.tracker.list_sub_projects("Main", mark_closed=True)
+        self.assertIn("Open Sub", sub_projects)
+        # Construct expected string using the translation function
+        expected_closed_string = f"({_('closed')}) Closed Sub"
+        self.assertIn(expected_closed_string, sub_projects)
+        
+        # Check with mark_closed=False (default)
+        sub_projects_default = self.tracker.list_sub_projects("Main", mark_closed=False)
+        self.assertIn("Closed Sub", sub_projects_default)
 
     def test_list_open_sub_projects(self):
         """Tests that only sub-projects with status 'open' are listed."""

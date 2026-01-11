@@ -165,7 +165,7 @@ def _handle_project_management(tt):
             try:
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]
-                sub_projects = tt.list_sub_projects(main_project_name)
+                sub_projects = tt.list_sub_projects(main_project_name, mark_closed=True)
                 if sub_projects:
                     print(_("Sub-projects for '{name}':").format(name=main_project_name))
                     for i, sub_project in enumerate(sub_projects, 1):
