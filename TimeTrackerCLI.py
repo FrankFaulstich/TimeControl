@@ -36,8 +36,9 @@ def _handle_project_management(tt):
         print(_("12. Delete Sub-Project"))
         print(_("13. Move Sub-Project"))
         print(_("14. List Inactive Sub-Projects"))
-        print(_("15. Delete All Closed Sub-Projects"))
-        print(_("16. Promote Sub-Project to Main-Project"))
+        print(_("15. List All Closed Sub-Projects"))
+        print(_("16. Delete All Closed Sub-Projects"))
+        print(_("17. Promote Sub-Project to Main-Project"))
         print("--------------------------------")
         print(_("0.  Back to Main Menu"))
         print("--------------------------------")
@@ -385,7 +386,17 @@ def _handle_project_management(tt):
                 print(_("Invalid input. Please enter a valid number."))
 
         elif choice == '15':
-            # Funktion 15: Delete All Closed Sub-Projects
+            # Funktion 15: List All Closed Sub-Projects
+            print(_("\n--- List All Closed Sub-Projects ---"))
+            closed_projects = tt.list_all_closed_sub_projects()
+            if closed_projects:
+                for i, entry in enumerate(closed_projects, 1):
+                    print(f"{i}. {entry['main_project_name']} - {entry['sub_project_name']}")
+            else:
+                print(_("No closed sub-projects found."))
+
+        elif choice == '16':
+            # Funktion 16: Delete All Closed Sub-Projects
             print(_("\n--- Delete All Closed Sub-Projects ---"))
             confirm = input(_("Are you sure you want to delete ALL closed sub-projects? (y/n): "))
             if confirm.lower() == 'y':
@@ -394,8 +405,8 @@ def _handle_project_management(tt):
             else:
                 print(_("Operation cancelled."))
 
-        elif choice == '16':
-            # Funktion 16: Promote Sub-Project
+        elif choice == '17':
+            # Funktion 17: Promote Sub-Project
             print(_("\n--- Promote Sub-Project to Main-Project ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -463,7 +474,7 @@ def _handle_project_management(tt):
         elif choice == '0':
             break
         else:
-            print(_("Invalid choice. Please enter a number from 0 to 16."))
+            print(_("Invalid choice. Please enter a number from 0 to 17."))
 
 def _handle_settings(tt):
     """Handles the settings submenu."""
