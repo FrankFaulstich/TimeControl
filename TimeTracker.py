@@ -28,15 +28,27 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "1.11"
+    VERSION = "1.12"
 
-    def __init__(self, file_path='data.json'):
+    def __init__(self, file_path=None):
         """
         Initializes the TimeTracker, checks for dependencies, and loads data from the JSON file.
 
-        :param file_path: The path to the JSON file where data is stored. Defaults to 'data.json'.
+        :param file_path: The path to the JSON file where data is stored.
+                          If None, the path is read from config.json (key 'data_file').
+                          Defaults to 'data.json'.
         :type file_path: str
         """
+        if file_path is None:
+            file_path = 'data.json'
+            if os.path.exists('config.json'):
+                try:
+                    with open('config.json', 'r', encoding='utf-8') as f:
+                        config = json.load(f)
+                        file_path = config.get('data_file', 'data.json')
+                except (IOError, json.JSONDecodeError):
+                    pass
+
         self.file_path = file_path
         self.data = self._load_data()
         if self._migrate_data_structure():

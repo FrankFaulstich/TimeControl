@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 
 import json
 # Import the translation function `_` which is initialized in i18n.py on first import.
@@ -482,6 +483,7 @@ def _handle_settings(tt):
         print(_("\n--- Settings ---"))
         print(_("1. Change Language"))
         print(_("2. Restore Previous Version"))
+        print(_("3. Change Data Storage Location"))
         print("--------------------------")
         print(_("0. Back to Main Menu"))
         print("--------------------------")
@@ -499,10 +501,12 @@ def _handle_settings(tt):
             # No need for 'return' here unless we want to force exit settings menu on failure.
             # For now, staying in settings menu on failure is reasonable.
             pass
+        elif choice == '3':
+            _handle_storage_settings(tt)
         elif choice == '0':
             break
         else:
-            print(_("Invalid choice. Please enter a number from 0 to 2."))
+            print(_("Invalid choice. Please enter a number from 0 to 3."))
 
 def _handle_language_settings():
     """Handles the language selection submenu."""
@@ -547,6 +551,53 @@ def _handle_language_settings():
                 print(_("Invalid choice."))
         except ValueError:
             print(_("Invalid input. Please enter a number."))
+
+def _handle_storage_settings(tt):
+    """Handles the data storage settings."""
+    CONFIG_FILE = 'config.json'
+    print(_("\n--- Data Storage Settings ---"))
+    print(_("Current data file: {path}").format(path=tt.file_path))
+    
+    print(_("Enter the new path for the data file (e.g., /path/to/my_data.json)."))
+    print(_("Leave empty to cancel."))
+    new_path = input(_("New Path: ")).strip()
+    
+    if not new_path:
+        return
+
+    # Check if directory exists
+    directory = os.path.dirname(new_path)
+    if directory and not os.path.exists(directory):
+        print(_("Error: The directory '{dir}' does not exist.").format(dir=directory))
+        return
+
+    try:
+        config = {}
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+        
+        config['data_file'] = new_path
+        
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=4)
+            
+        print(_("Storage location updated."))
+        
+        # Offer to move data
+        if os.path.exists(tt.file_path) and not os.path.exists(new_path):
+            move = input(_("Do you want to move the existing data to the new location? (y/n): ")).lower()
+            if move == 'y':
+                try:
+                    shutil.move(tt.file_path, new_path)
+                    print(_("Data moved successfully."))
+                except Exception as e:
+                    print(_("Error moving data: {error}").format(error=e))
+        
+        print(_("Please restart the application for the changes to take effect."))
+
+    except Exception as e:
+        print(_("Error updating configuration: {error}").format(error=e))
 
 
 def _handle_reporting(tt):
