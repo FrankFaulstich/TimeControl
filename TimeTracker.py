@@ -267,17 +267,28 @@ class TimeTracker:
                 return True
         return False
 
-    def list_sub_projects(self, main_project_name):
+    def list_sub_projects(self, main_project_name, mark_closed=False):
         """
         Returns a list of all sub-project names for a given main project.
 
         :param main_project_name: The name of the main project.
         :type main_project_name: str
+        :param mark_closed: If True, closed sub-projects are marked with "(closed)".
+        :type mark_closed: bool
         :return: A list of sub-project names or None if the main project was not found.
         :rtype: list[str] or None
         """
         for project in self.data["projects"]:
             if project["main_project_name"] == main_project_name:
+                if mark_closed:
+                    result = []
+                    for sp in project["sub_projects"]:
+                        name = sp["sub_project_name"]
+                        if sp.get("status") == "closed":
+                            result.append(f"({_('closed')}) {name}")
+                        else:
+                            result.append(name)
+                    return result
                 return [sub_project["sub_project_name"] for sub_project in project["sub_projects"]]
         return None
 
