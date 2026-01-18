@@ -1,4 +1,5 @@
 import unittest
+import unittest.mock
 import json
 import os
 from datetime import datetime, timedelta
@@ -24,7 +25,35 @@ class TestTimeTracker(unittest.TestCase):
         if os.path.exists(TEST_FILE_PATH):
             os.remove(TEST_FILE_PATH)
 
-    # --- Hilfsmethoden Tests (Private Methods) ---
+    # --- Helper Method Tests (Private Methods) ---
+
+    def test_get_project_helper(self):
+        """Tests the _get_project helper method."""
+        self.tracker.add_main_project("Helper Main")
+        
+        # Test finding existing project
+        project = self.tracker._get_project("Helper Main")
+        self.assertIsNotNone(project)
+        self.assertEqual(project["main_project_name"], "Helper Main")
+        
+        # Test finding non-existent project
+        self.assertIsNone(self.tracker._get_project("Non Existent"))
+
+    def test_get_sub_project_helper(self):
+        """Tests the _get_sub_project helper method."""
+        self.tracker.add_main_project("Helper Main")
+        self.tracker.add_sub_project("Helper Main", "Helper Sub")
+        
+        # Test finding existing sub-project
+        sub_project = self.tracker._get_sub_project("Helper Main", "Helper Sub")
+        self.assertIsNotNone(sub_project)
+        self.assertEqual(sub_project["sub_project_name"], "Helper Sub")
+        
+        # Test finding non-existent sub-project in existing main
+        self.assertIsNone(self.tracker._get_sub_project("Helper Main", "Non Existent"))
+        
+        # Test finding sub-project in non-existent main
+        self.assertIsNone(self.tracker._get_sub_project("Non Existent Main", "Helper Sub"))
 
     def test_load_data_initial_empty(self):
         """Tests if _load_data returns an empty dictionary when no file exists."""
@@ -75,6 +104,54 @@ class TestTimeTracker(unittest.TestCase):
         # Test case 3: 1.5 hours
         duration3 = timedelta(hours=1.5)
         self.assertEqual(self.tracker._format_duration(duration3), "1,500 hours (0,038 DLP)")
+
+    @unittest.mock.patch('TimeTracker.pyperclip')
+    def test_copy_to_clipboard_success(self, mock_pyperclip):
+        """Tests copying to clipboard when pyperclip is available."""
+        # Setup mock
+        mock_pyperclip.copy = unittest.mock.MagicMock()
+        
+        # Call method
+        text = "Test Report"
+        self.tracker._copy_to_clipboard(text)
+        
+        # Assert
+        mock_pyperclip.copy.assert_called_with(text)
+
+    @unittest.mock.patch('TimeTracker.pyperclip', None)
+    @unittest.mock.patch('builtins.print')
+    def test_copy_to_clipboard_not_installed(self, mock_print):
+        """Tests behavior when pyperclip is not installed."""
+        self.tracker._copy_to_clipboard("Test")
+        # Should print a warning
+        args, _kwargs = mock_print.call_args
+        expected_msg = _("Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip install pyperclip`).")
+        self.assertIn(expected_msg, args[0])
+
+    @unittest.mock.patch('TimeTracker.distributions')
+    @unittest.mock.patch('subprocess.check_call')
+    @unittest.mock.patch('sys.exit')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open, read_data="packageA==1.0\npackageB")
+    @unittest.mock.patch('os.path.exists')
+    def test_check_and_install_dependencies_missing(self, mock_exists, mock_open, mock_exit, mock_subprocess, mock_distributions):
+        """Tests dependency installation when packages are missing."""
+        mock_exists.return_value = True # requirements.txt exists
+        
+        # Mock installed packages: only packageA is installed
+        mock_dist = unittest.mock.MagicMock()
+        mock_dist.metadata = {'Name': 'packageA'}
+        mock_distributions.return_value = [mock_dist]
+        
+        # Run
+        self.tracker._check_and_install_dependencies()
+        
+        # Assert packageB was installed
+        mock_subprocess.assert_called()
+        args, _kwargs = mock_subprocess.call_args
+        self.assertIn("packageB", args[0])
+        
+        # Assert sys.exit(0) was called (restart)
+        mock_exit.assert_called_with(0)
 
     # --- General Method Tests ---
 
@@ -148,104 +225,73 @@ class TestTimeTracker(unittest.TestCase):
         success = self.tracker.add_sub_project("Non Existent", "Sub Task 1")
         self.assertFalse(success)
 
-    def test_list_sub_projects(self):
-        """Tests listing sub-projects."""
+    def test_list_sub_projects_unified_method(self):
+        """Tests the unified list_sub_projects method with various filters."""
         self.tracker.add_main_project("Main List")
         self.tracker.add_sub_project("Main List", "Sub A")
         self.tracker.add_sub_project("Main List", "Sub B")
-        subs = self.tracker.list_sub_projects("Main List")
-        self.assertEqual(subs, ["Sub A", "Sub B"])
-        self.assertIsNone(self.tracker.list_sub_projects("Unknown Project"))
+        self.tracker.add_sub_project("Main List", "Closed Sub")
+        self.tracker.close_sub_project("Main List", "Closed Sub")
 
-    def test_list_sub_projects_mark_closed(self):
-        """Tests listing sub-projects with closed ones marked."""
-        self.tracker.add_main_project("Main")
-        self.tracker.add_sub_project("Main", "Open Sub")
-        self.tracker.add_sub_project("Main", "Closed Sub")
-        self.tracker.close_sub_project("Main", "Closed Sub")
+        # Test 1: List all for a specific main project
+        all_subs = self.tracker.list_sub_projects(main_project_name="Main List", status_filter='all')
+        self.assertEqual(len(all_subs), 3)
+        self.assertEqual([s['sub_project_name'] for s in all_subs], ["Sub A", "Sub B", "Closed Sub"])
 
-        # Check with mark_closed=True
-        sub_projects = self.tracker.list_sub_projects("Main", mark_closed=True)
-        self.assertIn("Open Sub", sub_projects)
-        # Construct expected string using the translation function
-        expected_closed_string = f"({_('closed')}) Closed Sub"
-        self.assertIn(expected_closed_string, sub_projects)
-        
-        # Check with mark_closed=False (default)
-        sub_projects_default = self.tracker.list_sub_projects("Main", mark_closed=False)
-        self.assertIn("Closed Sub", sub_projects_default)
+        # Test 2: List only open for a specific main project
+        open_subs = self.tracker.list_sub_projects(main_project_name="Main List", status_filter='open')
+        self.assertEqual(len(open_subs), 2)
+        self.assertEqual([s['sub_project_name'] for s in open_subs], ["Sub A", "Sub B"])
 
-    def test_list_all_closed_sub_projects(self):
-        """Tests listing all closed sub-projects globally."""
-        self.tracker.add_main_project("M1")
-        self.tracker.add_sub_project("M1", "S1_Open")
-        self.tracker.add_sub_project("M1", "S1_Closed")
-        self.tracker.close_sub_project("M1", "S1_Closed")
-        
-        self.tracker.add_main_project("M2")
-        self.tracker.add_sub_project("M2", "S2_Closed")
-        self.tracker.close_sub_project("M2", "S2_Closed")
-        
-        result = self.tracker.list_all_closed_sub_projects()
-        self.assertEqual(len(result), 2)
-        
-        self.assertEqual(result[0]["main_project_name"], "M1")
-        self.assertEqual(result[0]["sub_project_name"], "S1_Closed")
-        self.assertEqual(result[1]["main_project_name"], "M2")
-        self.assertEqual(result[1]["sub_project_name"], "S2_Closed")
+        # Test 3: List only closed for a specific main project
+        closed_subs = self.tracker.list_sub_projects(main_project_name="Main List", status_filter='closed')
+        self.assertEqual(len(closed_subs), 1)
+        self.assertEqual(closed_subs[0]['sub_project_name'], "Closed Sub")
 
-    def test_list_open_sub_projects(self):
-        """Tests that only sub-projects with status 'open' are listed."""
+        # Test 4: List all closed across all projects
+        self.tracker.add_main_project("Another Main")
+        self.tracker.add_sub_project("Another Main", "Another Closed")
+        self.tracker.close_sub_project("Another Main", "Another Closed")
+        all_closed = self.tracker.list_sub_projects(status_filter='closed')
+        self.assertEqual(len(all_closed), 2)
+        closed_names = {s['sub_project_name'] for s in all_closed}
+        self.assertEqual(closed_names, {"Closed Sub", "Another Closed"})
+
+        # Test 5: Non-existent project returns empty list
+        self.assertEqual(self.tracker.list_sub_projects("Unknown Project"), [])
+
+    def test_close_and_reopen_sub_project(self):
+        """Tests closing and reopening a sub-project and verifies status changes."""
         self.tracker.add_main_project("Main")
         self.tracker.add_sub_project("Main", "Open Sub 1") # status: 'open' by default
         self.tracker.add_sub_project("Main", "To Be Closed")
         self.tracker.add_sub_project("Main", "Open Sub 2")
 
-        # Manually close one sub-project
-        self.tracker.data["projects"][0]["sub_projects"][1]["status"] = "closed"
-        self.tracker._save_data()
-
-        open_subs = self.tracker.list_open_sub_projects("Main")
-        self.assertEqual(open_subs, ["Open Sub 1", "Open Sub 2"])
-        self.assertNotIn("To Be Closed", open_subs)
-
-    def test_close_sub_project_success(self):
-        """Tests setting a sub-project's status to 'closed'."""
-        self.tracker.add_main_project("Main")
-        self.tracker.add_sub_project("Main", "Task to Close")
-
         # Verify it's open first
-        self.assertIn("Task to Close", self.tracker.list_open_sub_projects("Main"))
+        open_subs_before = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Main", status_filter='open')]
+        self.assertIn("To Be Closed", open_subs_before)
 
-        success = self.tracker.close_sub_project("Main", "Task to Close")
+        # Close it
+        success = self.tracker.close_sub_project("Main", "To Be Closed")
         self.assertTrue(success)
 
         # Verify it's now closed
         sub_project = self.tracker.data["projects"][0]["sub_projects"][0]
-        self.assertEqual(sub_project["status"], "closed")
+        open_subs_after_close = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Main", status_filter='open')]
+        self.assertNotIn("To Be Closed", open_subs_after_close)
+        closed_subs = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Main", status_filter='closed')]
+        self.assertIn("To Be Closed", closed_subs)
 
-        # Verify it no longer appears in the list of open projects
-        self.assertNotIn("Task to Close", self.tracker.list_open_sub_projects("Main"))
+        # Reopen it
+        success_reopen = self.tracker.reopen_sub_project("Main", "To Be Closed")
+        self.assertTrue(success_reopen)
+        open_subs_after_reopen = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Main", status_filter='open')]
+        self.assertIn("To Be Closed", open_subs_after_reopen)
 
     def test_close_sub_project_not_found(self):
         """Tests closing a non-existent sub-project."""
         self.tracker.add_main_project("Main")
         self.assertFalse(self.tracker.close_sub_project("Main", "Non-Existent"))
-
-    def test_reopen_sub_project_success(self):
-        """Tests reopening a closed sub-project."""
-        self.tracker.add_main_project("Main")
-        self.tracker.add_sub_project("Main", "Task to Reopen")
-
-        # First, close it
-        self.tracker.close_sub_project("Main", "Task to Reopen")
-        self.assertNotIn("Task to Reopen", self.tracker.list_open_sub_projects("Main"))
-        self.assertIn("Task to Reopen", self.tracker.list_closed_sub_projects("Main"))
-
-        # Now, reopen it
-        success = self.tracker.reopen_sub_project("Main", "Task to Reopen")
-        self.assertTrue(success)
-        self.assertIn("Task to Reopen", self.tracker.list_open_sub_projects("Main"))
 
     def test_delete_sub_project_success(self):
         """Tests the successful deletion of a sub-project."""
@@ -255,7 +301,7 @@ class TestTimeTracker(unittest.TestCase):
 
         success = self.tracker.delete_sub_project("Main Test", "Sub To Delete")
         self.assertTrue(success)
-        self.assertEqual(self.tracker.list_sub_projects("Main Test"), ["Sub To Keep"])
+        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("Main Test")], ["Sub To Keep"])
 
     def test_delete_sub_project_not_found(self):
         """Tests deleting a non-existent sub-project."""
@@ -288,9 +334,9 @@ class TestTimeTracker(unittest.TestCase):
 
         # Assertions
         self.assertEqual(deleted_count, 3)
-        self.assertEqual(self.tracker.list_sub_projects("P1"), ["Open1"])
+        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("P1")], ["Open1"])
         self.assertEqual(self.tracker.list_sub_projects("P2"), [])
-        self.assertEqual(self.tracker.list_sub_projects("P3"), ["Open2"])
+        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("P3")], ["Open2"])
 
     def test_rename_sub_project_success(self):
         """Tests the successful renaming of a sub-project."""
@@ -298,7 +344,7 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_sub_project("Main", "Old Name")
         success = self.tracker.rename_sub_project("Main", "Old Name", "New Name")
         self.assertTrue(success)
-        self.assertEqual(self.tracker.list_sub_projects("Main"), ["New Name"])
+        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("Main")], ["New Name"])
 
     def test_rename_sub_project_main_not_found(self):
         """Tests renaming when the main project does not exist."""
@@ -317,7 +363,7 @@ class TestTimeTracker(unittest.TestCase):
         # Attempt to rename "Sub A" to "Sub B"
         success = self.tracker.rename_sub_project("Main", "Sub A", "Sub B")
         self.assertFalse(success)
-        self.assertEqual(self.tracker.list_sub_projects("Main"), ["Sub A", "Sub B"])
+        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("Main")], ["Sub A", "Sub B"])
 
     def test_move_sub_project_success(self):
         """Tests moving a sub-project successfully."""
@@ -328,7 +374,7 @@ class TestTimeTracker(unittest.TestCase):
         success, msg = self.tracker.move_sub_project("Source", "Task 1", "Destination")
         self.assertTrue(success)
         self.assertEqual(self.tracker.list_sub_projects("Source"), [])
-        self.assertEqual(self.tracker.list_sub_projects("Destination"), ["Task 1"])
+        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("Destination")], ["Task 1"])
 
     def test_move_sub_project_source_not_found(self):
         """Tests moving from a non-existent source main project."""
@@ -375,7 +421,7 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("Promotable Sub", self.tracker.list_main_projects())
 
         # 3. Check if new main project has a "General" sub-project with the time entries
-        new_main_subs = self.tracker.list_sub_projects("Promotable Sub")
+        new_main_subs = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Promotable Sub")]
         self.assertEqual(new_main_subs, [_("General")])
         
         new_main_project_data = next(p for p in self.tracker.data["projects"] if p["main_project_name"] == "Promotable Sub")
@@ -416,7 +462,7 @@ class TestTimeTracker(unittest.TestCase):
         self.assertNotIn("Old Main", self.tracker.list_main_projects())
 
         # 2. Check if new sub-project exists under the new parent
-        new_parent_subs = self.tracker.list_sub_projects("New Parent")
+        new_parent_subs = [s['sub_project_name'] for s in self.tracker.list_sub_projects("New Parent")]
         self.assertIn("Old Main", new_parent_subs)
 
         # 3. Check if all time entries were consolidated
@@ -636,17 +682,17 @@ class TestTimeTracker(unittest.TestCase):
         # Expected total time: 1.5 + 2.0 = 3.5 hours
 
         # Check for correct comma formatting of hours
-        self.assertIn("1,500 hours", report)
-        self.assertIn("2,000 hours", report)
-        self.assertIn("**Total Daily Time: 3,500 hours**", report)
+        self.assertIn(_("- {name}: {hours} hours").format(name="R_Sub1", hours="1,500"), report)
+        self.assertIn(_("- {name}: {hours} hours").format(name="R_Sub2", hours="2,000"), report)
+        self.assertIn(_("**Total Daily Time: {hours} hours**").format(hours="3,500"), report)
         
         # Check if P3 was ignored
         self.assertNotIn("R_Sub3_Old", report)
 
         # Check the overall structure
         self.assertTrue(report.startswith(_("# Daily Time Report: {date}\n").format(date=today_date.strftime('%Y-%m-%d')).strip()))
-        self.assertIn("## Report P1 (1,500 hours)", report)
-        self.assertIn("## Report P2 (2,000 hours)", report)
+        self.assertIn(_("## {name} ({hours} hours)").format(name="Report P1", hours="1,500"), report)
+        self.assertIn(_("## {name} ({hours} hours)").format(name="Report P2", hours="2,000"), report)
         
     def test_generate_date_range_report(self):
         """Tests report generation for a date range."""
@@ -684,10 +730,16 @@ class TestTimeTracker(unittest.TestCase):
         
         # Expected total time: 1 + 2 = 3 hours
         # 1h = 0.025 DLP; 2h = 0.050 DLP; 3h = 0.075 DLP
-        self.assertIn("## Range P1 (1,000 hours (0,025 DLP))", report)
-        self.assertIn("## Range P2 (2,000 hours (0,050 DLP))", report)
+        
+        # Use _format_duration to get the expected string in the correct language
+        dur_1h = self.tracker._format_duration(timedelta(hours=1))
+        dur_2h = self.tracker._format_duration(timedelta(hours=2))
+        dur_3h = self.tracker._format_duration(timedelta(hours=3))
+
+        self.assertIn(f"## Range P1 ({dur_1h})", report)
+        self.assertIn(f"## Range P2 ({dur_2h})", report)
         self.assertNotIn("Range P3", report)
-        self.assertIn(_("\n**Total Time in Period: {total_time}**").format(total_time="3,000 hours (0,075 DLP)"), report)
+        self.assertIn(_("\n**Total Time in Period: {total_time}**").format(total_time=dur_3h), report)
         self.assertTrue(report.startswith(_("# Time Report: {start_date} to {end_date}\n").format(start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')).strip()))
 
     def test_generate_sub_project_report(self):
@@ -722,18 +774,18 @@ class TestTimeTracker(unittest.TestCase):
         report = self.tracker.generate_sub_project_report(main_proj, sub_proj)
 
         # Check for key information
-        self.assertIn(f"# Detailed Report for Sub-Project: {sub_proj}", report)
-        self.assertIn(f"Part of Main Project: {main_proj}", report)
-        self.assertIn("Total recorded time:** 2:30:00", report)
-        self.assertIn("Total work sessions:** 2", report)
-        self.assertIn("Average session duration:** 1:15:00", report)
-        self.assertIn("## Weekday Distribution", report)
-        self.assertIn("- **Monday**: 1:30:00 (60.0%)", report) # 1.5h of 2.5h total
-        self.assertIn("- **Tuesday**: 1:00:00 (40.0%)", report) # 1h of 2.5h total
+        self.assertIn(f"# {_('Detailed Report for Sub-Project')}: {sub_proj}", report)
+        self.assertIn(f"{_('Part of Main Project')}: {main_proj}", report)
+        self.assertIn(f"**{_('Total recorded time')}:** 2:30:00", report)
+        self.assertIn(f"**{_('Total work sessions')}:** 2", report)
+        self.assertIn(f"**{_('Average session duration')}:** 1:15:00", report)
+        self.assertIn(f"## {_('Weekday Distribution')}", report)
+        self.assertIn(f"- **{_('Monday')}**: 1:30:00 (60.0%)", report) # 1.5h of 2.5h total
+        self.assertIn(f"- **{_('Tuesday')}**: 1:00:00 (40.0%)", report) # 1h of 2.5h total
         self.assertIn(f"### {day1.strftime('%Y-%m-%d')}", report)
         self.assertIn(f"### {day2.strftime('%Y-%m-%d')}", report)
-        self.assertIn("10:00:00 - 11:30:00", report)
-        self.assertIn("14:00:00 - 15:00:00", report)
+        self.assertIn(f"({_('Duration')}: 1:30:00)", report)
+        self.assertIn(f"({_('Duration')}: 1:00:00)", report)
 
     def test_generate_main_project_report(self):
         """Tests the detailed report generation for a single main project."""
@@ -767,17 +819,21 @@ class TestTimeTracker(unittest.TestCase):
         report = self.tracker.generate_main_project_report(main_proj)
 
         # Check for key information
-        self.assertIn(f"# Detailed Report for Main Project: {main_proj}", report)
-        self.assertIn("Total recorded time:** 3:30:00", report)
-        self.assertIn("Number of sub-projects:** 2", report)
-        self.assertIn("Total work sessions:** 3", report)
-        self.assertIn("Average session duration:** 1:10:00", report)
-        self.assertIn("## Weekday Distribution", report)
-        self.assertIn("- **Monday**: 3:00:00 (85.7%)", report) # 1h + 2h = 3h of 3.5h total
-        self.assertIn("- **Tuesday**: 0:30:00 (14.3%)", report) # 0.5h of 3.5h total
-        self.assertIn("## Sub-Project Breakdown", report)
-        self.assertIn("- **Sub 2**: 2:00:00 (1 sessions, 57.1%)", report) # 2h of 3.5h total
-        self.assertIn("- **Sub 1**: 1:30:00 (2 sessions, 42.9%)", report) # 1.5h of 3.5h total
+        self.assertIn(f"# {_('Detailed Report for Main Project')}: {main_proj}", report)
+        self.assertIn(f"**{_('Total recorded time')}:** 3:30:00", report)
+        self.assertIn(f"**{_('Number of sub-projects')}:** 2", report)
+        self.assertIn(f"**{_('Total work sessions')}:** 3", report)
+        self.assertIn(f"**{_('Average session duration')}:** 1:10:00", report)
+        self.assertIn(f"## {_('Weekday Distribution')}", report)
+        self.assertIn(f"- **{_('Monday')}**: 3:00:00 (85.7%)", report) # 1h + 2h = 3h of 3.5h total
+        self.assertIn(f"- **{_('Tuesday')}**: 0:30:00 (14.3%)", report) # 0.5h of 3.5h total
+        self.assertIn(f"## {_('Sub-Project Breakdown')}", report)
+        
+        sessions_str_1 = _('{num_sessions} sessions').format(num_sessions=1)
+        sessions_str_2 = _('{num_sessions} sessions').format(num_sessions=2)
+        
+        self.assertIn(f"- **Sub 2**: 2:00:00 ({sessions_str_1}, 57.1%)", report) # 2h of 3.5h total
+        self.assertIn(f"- **Sub 1**: 1:30:00 ({sessions_str_2}, 42.9%)", report) # 1.5h of 3.5h total
 
 # Run the tests if the file is called directly
 if __name__ == '__main__':
