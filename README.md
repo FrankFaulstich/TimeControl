@@ -147,6 +147,31 @@ The interactive CLI provides a structured menu for all operations.
 0.  Back to Main Menu
 ```
 
+**Reporting Submenu (Option 5):**
+
+```text
+--- Reporting ---
+1. Daily Report (Today)
+2. Daily Report (Specific Day)
+3. Date Range Report
+4. Detailed Sub-Project Report
+5. Detailed Main-Project Report
+6. Detailed Daily Report
+--------------------------
+0. Back to Main Menu
+```
+
+**Settings Submenu (Option 6):**
+
+```text
+--- Settings ---
+1. Change Language
+2. Restore Previous Version
+3. Change Data Storage Location
+--------------------------
+0. Back to Main Menu
+```
+
 ## Building the Documentation 📚
 
 This project uses Sphinx to generate documentation from the docstrings in the source code.
@@ -184,6 +209,7 @@ The `data.json` file has the following structure:
       "sub_projects": [
         {
           "sub_project_name": "Example Sub-Project 1",
+          "status": "open",
           "time_entries": [
             {
               "start_time": "YYYY-MM-DDTHH:MM:SS.ffffff",
