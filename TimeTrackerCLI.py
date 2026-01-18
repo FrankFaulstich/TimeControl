@@ -17,6 +17,7 @@ try:
 except ImportError:
     UPDATE_AVAILABLE = False
 
+CONFIG_FILE = 'config.json'
 
 def _handle_project_management(tt):
     """Handles the project management submenu."""
@@ -609,6 +610,7 @@ def _handle_reporting(tt):
         print(_("3. Date Range Report"))
         print(_("4. Detailed Sub-Project Report")) # Yesterday's change
         print(_("5. Detailed Main-Project Report")) # Today's change
+        print(_("6. Detailed Daily Report"))
         print("--------------------------")
         print(_("0. Back to Main Menu"))
         print("--------------------------")
@@ -697,10 +699,23 @@ def _handle_reporting(tt):
                 print("\n" + report_text)
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
+        elif choice == '6':
+            print(_("\n--- Detailed Daily Report ---"))
+            date_str = input(_("Enter the date (YYYY-MM-DD) or press Enter for today: "))
+            report_date = None
+            if date_str:
+                try:
+                    report_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    print(_("Invalid date format. Please use YYYY-MM-DD."))
+                    continue
+            
+            report_text = tt.generate_detailed_daily_report(report_date)
+            print("\n" + report_text)
         elif choice == '0':
             break
         else:
-            print(_("Invalid choice. Please enter a number from 0 to 5."))
+            print(_("Invalid choice. Please enter a number from 0 to 6."))
 
 def _handle_language_settings():
     """Handles the language selection submenu."""
@@ -741,7 +756,6 @@ def _handle_language_settings():
         except ValueError:
             print(_("Invalid input. Please enter a number."))
 
-CONFIG_FILE = 'config.json'
 
 def run_menu():
     """
