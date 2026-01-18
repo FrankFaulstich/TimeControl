@@ -28,7 +28,9 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "1.12"
+    VERSION = "1.13"
+    STATUS_OPEN = "open"
+    STATUS_CLOSED = "closed"
 
     def __init__(self, file_path=None):
         """
@@ -120,22 +122,22 @@ class TimeTracker:
 
     def _migrate_data_structure(self):
         """
-        Stellt sicher, dass die Datenstruktur aktuell ist.
-        - Fügt 'status': 'open' zu Sub-Projekten hinzu, falls es fehlt.
+        Ensures that the data structure is up to date.
+        - Adds 'status': 'open' to sub-projects if missing.
         
-        :return: True, wenn Daten geändert wurden, sonst False.
+        :return: True if data was changed, otherwise False.
         :rtype: bool
         """
         data_changed = False
-        # Sicherstellen, dass self.data und "projects" existieren
+        # Ensure self.data and "projects" exist
         if "projects" not in self.data:
             self.data["projects"] = []
-            data_changed = True # Das Datenobjekt selbst wurde geändert
+            data_changed = True # The data object itself was changed
 
         for project in self.data.get("projects", []):
             for sub_project in project.get("sub_projects", []):
                 if "status" not in sub_project:
-                    sub_project["status"] = "open"
+                    sub_project["status"] = self.STATUS_OPEN
                     data_changed = True
         return data_changed
 
@@ -191,6 +193,33 @@ class TimeTracker:
         :rtype: str
         """
         return self.VERSION
+
+    def _get_project(self, main_project_name):
+        """
+        Helper method to find a main project by name.
+        
+        :param main_project_name: The name of the main project.
+        :return: The project dictionary or None if not found.
+        """
+        for project in self.data["projects"]:
+            if project["main_project_name"] == main_project_name:
+                return project
+        return None
+
+    def _get_sub_project(self, main_project_name, sub_project_name):
+        """
+        Helper method to find a sub-project by name within a main project.
+        
+        :param main_project_name: The name of the main project.
+        :param sub_project_name: The name of the sub-project.
+        :return: The sub-project dictionary or None if not found.
+        """
+        project = self._get_project(main_project_name)
+        if project:
+            for sub_project in project["sub_projects"]:
+                if sub_project["sub_project_name"] == sub_project_name:
+                    return sub_project
+        return None
 
     def add_main_project(self, main_project_name):
         """
@@ -249,12 +278,12 @@ class TimeTracker:
         if any(p["main_project_name"] == new_name for p in self.data["projects"]):
             return False
 
-        for project in self.data["projects"]:
-            if project["main_project_name"] == old_name:
-                project["main_project_name"] = new_name
-                self._save_data()
-                return True
-        return False # Old name not found
+        project = self._get_project(old_name)
+        if project:
+            project["main_project_name"] = new_name
+            self._save_data()
+            return True
+        return False
 
     def add_sub_project(self, main_project_name, sub_project_name):
         """
@@ -267,89 +296,53 @@ class TimeTracker:
         :return: True if the sub-project was added successfully, otherwise False (if main project not found).
         :rtype: bool
         """
-        for project in self.data["projects"]:
-            if project["main_project_name"] == main_project_name:
-                new_sub_project = {
-                    "sub_project_name": sub_project_name,
-                    "time_entries": [],
-                    "status": "open"  # Standardstatus für neue Sub-Projekte
-                }
-                project["sub_projects"].append(new_sub_project)
-                self._save_data()
-                return True
+        project = self._get_project(main_project_name)
+        if project:
+            new_sub_project = {
+                "sub_project_name": sub_project_name,
+                "time_entries": [],
+                "status": self.STATUS_OPEN
+            }
+            project["sub_projects"].append(new_sub_project)
+            self._save_data()
+            return True
         return False
-
-    def list_sub_projects(self, main_project_name, mark_closed=False):
+    
+    def list_sub_projects(self, main_project_name=None, status_filter='all'):
         """
-        Returns a list of all sub-project names for a given main project.
+        Lists sub-projects based on specified filters.
 
-        :param main_project_name: The name of the main project.
-        :type main_project_name: str
-        :param mark_closed: If True, closed sub-projects are marked with "(closed)".
-        :type mark_closed: bool
-        :return: A list of sub-project names or None if the main project was not found.
-        :rtype: list[str] or None
-        """
-        for project in self.data["projects"]:
-            if project["main_project_name"] == main_project_name:
-                if mark_closed:
-                    result = []
-                    for sp in project["sub_projects"]:
-                        name = sp["sub_project_name"]
-                        if sp.get("status") == "closed":
-                            result.append(f"({_('closed')}) {name}")
-                        else:
-                            result.append(name)
-                    return result
-                return [sub_project["sub_project_name"] for sub_project in project["sub_projects"]]
-        return None
+        This method serves as a unified way to retrieve sub-projects, replacing
+        previous methods like list_open_sub_projects, list_closed_sub_projects, etc.
 
-    def list_open_sub_projects(self, main_project_name):
-        """
-        Returns a list of sub-project names for a given main project that have the status 'open'.
-
-        :param main_project_name: The name of the main project.
-        :type main_project_name: str
-        :return: A list of open sub-project names or None if the main project was not found.
-        :rtype: list[str] or None
-        """
-        for project in self.data["projects"]:
-            if project["main_project_name"] == main_project_name:
-                return [sp["sub_project_name"] for sp in project.get("sub_projects", [])
-                        if sp.get("status", "open") == "open"]
-        return None
-
-    def list_closed_sub_projects(self, main_project_name):
-        """
-        Returns a list of sub-project names for a given main project that have the status 'closed'.
-
-        :param main_project_name: The name of the main project.
-        :type main_project_name: str
-        :return: A list of closed sub-project names or None if the main project was not found.
-        :rtype: list[str] or None
-        """
-        for project in self.data["projects"]:
-            if project["main_project_name"] == main_project_name:
-                return [sp["sub_project_name"] for sp in project.get("sub_projects", [])
-                        if sp.get("status") == "closed"]
-        return None
-
-    def list_all_closed_sub_projects(self):
-        """
-        Returns a list of all sub-projects with status 'closed' across all main projects.
-
-        :return: A list of dictionaries with 'main_project_name' and 'sub_project_name'.
+        :param main_project_name: Optional. The name of the main project to search in.
+                                  If None, all main projects are considered.
+        :type main_project_name: str or None
+        :param status_filter: Optional. Filter by status. Can be 'open', 'closed', or 'all'.
+                              Defaults to 'all'.
+        :type status_filter: str
+        :return: A list of dictionaries, where each dictionary contains details
+                 of a sub-project, including 'main_project_name', 'sub_project_name',
+                 and 'status'.
         :rtype: list[dict]
         """
-        closed_sub_projects = []
-        for project in self.data["projects"]:
+        results = []
+        projects_to_search = self.data["projects"]
+
+        # If a specific main project is given, filter the list of projects to search
+        if main_project_name:
+            projects_to_search = [p for p in projects_to_search if p.get("main_project_name") == main_project_name]
+
+        for project in projects_to_search:
             for sub_project in project.get("sub_projects", []):
-                if sub_project.get("status") == "closed":
-                    closed_sub_projects.append({
+                status = sub_project.get("status", self.STATUS_OPEN)
+                if status_filter == 'all' or status == status_filter:
+                    results.append({
                         "main_project_name": project["main_project_name"],
-                        "sub_project_name": sub_project["sub_project_name"]
+                        "sub_project_name": sub_project["sub_project_name"],
+                        "status": status
                     })
-        return closed_sub_projects
+        return results
 
     def delete_sub_project(self, main_project_name, sub_project_name):
         """
@@ -362,15 +355,15 @@ class TimeTracker:
         :return: True if the sub-project was deleted, otherwise False.
         :rtype: bool
         """
-        for project in self.data["projects"]:
-            if project["main_project_name"] == main_project_name:
-                initial_count = len(project["sub_projects"])
-                project["sub_projects"] = [
-                    sp for sp in project["sub_projects"] if sp["sub_project_name"] != sub_project_name
-                ]
-                if len(project["sub_projects"]) < initial_count:
-                    self._save_data()
-                    return True
+        project = self._get_project(main_project_name)
+        if project:
+            initial_count = len(project["sub_projects"])
+            project["sub_projects"] = [
+                sp for sp in project["sub_projects"] if sp["sub_project_name"] != sub_project_name
+            ]
+            if len(project["sub_projects"]) < initial_count:
+                self._save_data()
+                return True
         return False
 
     def delete_all_closed_sub_projects(self):
@@ -384,7 +377,7 @@ class TimeTracker:
         for project in self.data["projects"]:
             sub_projects = project.get("sub_projects", [])
             for i in range(len(sub_projects) - 1, -1, -1):
-                if sub_projects[i].get("status") == "closed":
+                if sub_projects[i].get("status") == self.STATUS_CLOSED:
                     del sub_projects[i]
                     deleted_count += 1
 
@@ -404,13 +397,11 @@ class TimeTracker:
         :return: True if the sub-project was closed, otherwise False.
         :rtype: bool
         """
-        for project in self.data["projects"]:
-            if project["main_project_name"] == main_project_name:
-                for sub_project in project.get("sub_projects", []):
-                    if sub_project["sub_project_name"] == sub_project_name:
-                        sub_project["status"] = "closed"
-                        self._save_data()
-                        return True
+        sub_project = self._get_sub_project(main_project_name, sub_project_name)
+        if sub_project:
+            sub_project["status"] = self.STATUS_CLOSED
+            self._save_data()
+            return True
         return False
 
     def reopen_sub_project(self, main_project_name, sub_project_name):
@@ -424,13 +415,11 @@ class TimeTracker:
         :return: True if the sub-project was reopened, otherwise False.
         :rtype: bool
         """
-        for project in self.data["projects"]:
-            if project["main_project_name"] == main_project_name:
-                for sub_project in project.get("sub_projects", []):
-                    if sub_project["sub_project_name"] == sub_project_name:
-                        sub_project["status"] = "open"
-                        self._save_data()
-                        return True
+        sub_project = self._get_sub_project(main_project_name, sub_project_name)
+        if sub_project:
+            sub_project["status"] = self.STATUS_OPEN
+            self._save_data()
+            return True
         return False
 
     def rename_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name):
@@ -447,20 +436,19 @@ class TimeTracker:
                  or new name already exists).
         :rtype: bool
         """
-        for project in self.data["projects"]:
-            if project["main_project_name"] == main_project_name:
-                # Check if the new name already exists
-                if any(sp["sub_project_name"] == new_sub_project_name for sp in project["sub_projects"]):
-                    return False # New name is already in use
+        project = self._get_project(main_project_name)
+        if project:
+            # Check if the new name already exists
+            if any(sp["sub_project_name"] == new_sub_project_name for sp in project["sub_projects"]):
+                return False # New name is already in use
 
-                # Find the sub-project to rename
-                for sub_project in project["sub_projects"]:
-                    if sub_project["sub_project_name"] == old_sub_project_name:
-                        sub_project["sub_project_name"] = new_sub_project_name
-                        self._save_data()
-                        return True
-                return False # Old sub-project not found
-        return False # Main project not found
+            # Find the sub-project to rename
+            for sub_project in project["sub_projects"]:
+                if sub_project["sub_project_name"] == old_sub_project_name:
+                    sub_project["sub_project_name"] = new_sub_project_name
+                    self._save_data()
+                    return True
+        return False
 
     def move_sub_project(self, old_main_project_name, sub_project_name, new_main_project_name):
         """
@@ -475,15 +463,8 @@ class TimeTracker:
         :return: A tuple (bool, str) indicating success and a message.
         :rtype: tuple(bool, str)
         """
-        source_project = None
-        dest_project = None
-        sub_project_to_move = None
-
-        for p in self.data["projects"]:
-            if p["main_project_name"] == old_main_project_name:
-                source_project = p
-            if p["main_project_name"] == new_main_project_name:
-                dest_project = p
+        source_project = self._get_project(old_main_project_name)
+        dest_project = self._get_project(new_main_project_name)
 
         if not source_project:
             return False, _("Source main project '{name}' not found.").format(name=old_main_project_name)
@@ -495,6 +476,7 @@ class TimeTracker:
             return False, _("A sub-project named '{sub_name}' already exists in '{main_name}'.").format(sub_name=sub_project_name, main_name=new_main_project_name)
 
         # Find and remove sub-project from source
+        sub_project_to_move = None
         for i, sp in enumerate(source_project["sub_projects"]):
             if sp["sub_project_name"] == sub_project_name:
                 sub_project_to_move = source_project["sub_projects"].pop(i)
@@ -525,11 +507,7 @@ class TimeTracker:
             return False, _("A main project named '{name}' already exists.").format(name=sub_project_name_to_promote)
 
         # Find the source project
-        source_project = None
-        for p in self.data["projects"]:
-            if p["main_project_name"] == main_project_name:
-                source_project = p
-                break
+        source_project = self._get_project(main_project_name)
 
         if not source_project:
             return False, _("Source main project '{name}' not found.").format(name=main_project_name)
@@ -574,14 +552,12 @@ class TimeTracker:
         # 1. Find projects and handle errors
         project_to_demote = None
         project_to_demote_index = -1
-        new_parent_project = None
+        new_parent_project = self._get_project(new_parent_main_project_name)
 
         for i, p in enumerate(self.data["projects"]):
             if p["main_project_name"] == main_project_to_demote_name:
                 project_to_demote = p
                 project_to_demote_index = i
-            if p["main_project_name"] == new_parent_main_project_name:
-                new_parent_project = p
 
         if not project_to_demote:
             return False, _("Main project to demote '{name}' not found.").format(name=main_project_to_demote_name)
@@ -631,16 +607,14 @@ class TimeTracker:
         """
         self.stop_work()
         
-        for project in self.data["projects"]:
-            if project["main_project_name"] == main_project_name:
-                for sub_project in project["sub_projects"]:
-                    if sub_project["sub_project_name"] == sub_project_name:
-                        new_entry = {
-                            "start_time": datetime.now().isoformat()
-                        }
-                        sub_project["time_entries"].append(new_entry)
-                        self._save_data()
-                        return True
+        sub_project = self._get_sub_project(main_project_name, sub_project_name)
+        if sub_project:
+            new_entry = {
+                "start_time": datetime.now().isoformat()
+            }
+            sub_project["time_entries"].append(new_entry)
+            self._save_data()
+            return True
         return False
 
     def stop_work(self):
@@ -709,7 +683,7 @@ class TimeTracker:
 
                 # Only consider sub-projects that are currently 'open'
                 # This check is now after the 'running' check to correctly ignore running projects regardless of status.
-                if sub_project.get("status", "open") != "open":
+                if sub_project.get("status", self.STATUS_OPEN) != self.STATUS_OPEN:
                     continue
 
                 latest_timestamp = None
@@ -868,19 +842,11 @@ class TimeTracker:
         :return: The formatted report as a Markdown string, or an error message.
         :rtype: str
         """
-        project = None
-        for p in self.data["projects"]:
-            if p["main_project_name"] == main_project_name:
-                project = p
-                break
+        project = self._get_project(main_project_name)
         if not project:
             return _("Main project '{name}' not found.").format(name=main_project_name)
 
-        sub_project = None
-        for sp in project["sub_projects"]:
-            if sp["sub_project_name"] == sub_project_name:
-                sub_project = sp
-                break
+        sub_project = self._get_sub_project(main_project_name, sub_project_name)
         if not sub_project:
             return _("Sub-project '{sub_name}' not found in '{main_name}'.").format(sub_name=sub_project_name, main_name=main_project_name)
 
@@ -893,7 +859,7 @@ class TimeTracker:
         last_activity_time = None
         is_active = False
         daily_breakdown = {}
-        weekday_durations = [timedelta() for _ in range(7)] # Mo-So
+        weekday_durations = [timedelta() for _ in range(7)] # Mon-Sun
 
         for i, entry in enumerate(entries):
             start_time = datetime.fromisoformat(entry["start_time"])
@@ -973,7 +939,7 @@ class TimeTracker:
         :return: The formatted report as a Markdown string, or an error message.
         :rtype: str
         """
-        project = next((p for p in self.data["projects"] if p["main_project_name"] == main_project_name), None)
+        project = self._get_project(main_project_name)
         if not project:
             return _("Main project '{name}' not found.").format(name=main_project_name)
 
@@ -989,7 +955,7 @@ class TimeTracker:
 
         # --- Sub-Project Specific Stats ---
         sub_project_stats = []
-        weekday_durations = [timedelta() for _ in range(7)] # Mo-So
+        weekday_durations = [timedelta() for _ in range(7)] # Mon-Sun
 
         for sp in sub_projects:
             sp_duration = timedelta()

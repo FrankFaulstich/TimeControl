@@ -47,13 +47,13 @@ def _handle_project_management(tt):
         choice = input(_("Choice: "))
 
         if choice == '1':
-            # Funktion 1: Add new main project
+            # Add new main project
             print(_("\n--- Add New Main Project ---"))
             main_project_name = input(_('Name of the main project: '))
             tt.add_main_project(main_project_name)
             print(_("Main project '{name}' added.").format(name=main_project_name))
         elif choice == '2':
-            # Funktion 2: List main projects
+            # List main projects
             print(_("\n--- List Main Projects ---"))
             projects = tt.list_main_projects()
             if projects:
@@ -62,7 +62,7 @@ def _handle_project_management(tt):
             else:
                 print(_("No main projects found."))
         elif choice == '3':
-            # Funktion 4: Rename Main Project
+            # Rename Main Project
             print(_("\n--- Rename Main Project ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -86,7 +86,7 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
         elif choice == '4':
-            # Funktion 5: Delete Main Project
+            # Delete Main Project
             print(_("\n--- Delete Main Project ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -108,7 +108,7 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
         elif choice == '5':
-            # Funktion 3: List inactive main-projects
+            # List inactive main-projects
             print(_("\n--- List Inactive Main-Projects ---"))
             try:
                 inactive_weeks = int(input(_("Enter the number of weeks without activity (e.g., 8): ")))
@@ -130,7 +130,7 @@ def _handle_project_management(tt):
             except ValueError:
                 print(_("Invalid input. Please enter a valid number for weeks."))
         elif choice == '7':
-            # Funktion 6: Add new sub-project
+            # Add new sub-project
             print(_("\n--- Add New Sub-Project ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -153,7 +153,7 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
         elif choice == '8':
-            # Funktion 7: List Sub-Projects
+            # List Sub-Projects
             print(_("\n--- List Sub-Projects ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -167,17 +167,21 @@ def _handle_project_management(tt):
             try:
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]
-                sub_projects = tt.list_sub_projects(main_project_name, mark_closed=True)
-                if sub_projects:
+                sub_projects_details = tt.list_sub_projects(main_project_name=main_project_name, status_filter='all')
+                if sub_projects_details:
                     print(_("Sub-projects for '{name}':").format(name=main_project_name))
-                    for i, sub_project in enumerate(sub_projects, 1):
-                        print(f"{i}. {sub_project}")
+                    for i, sp in enumerate(sub_projects_details, 1):
+                        name = sp['sub_project_name']
+                        if sp['status'] == 'closed':
+                            print(f"{i}. {name} ({_('closed')})")
+                        else:
+                            print(f"{i}. {name}")
                 else:
                     print(_("No sub-projects found for '{name}'.").format(name=main_project_name))
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
         elif choice == '9':
-            # Funktion 9: Rename Sub-Project
+            # Rename Sub-Project
             print(_("\n--- Rename Sub-Project ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -192,7 +196,7 @@ def _handle_project_management(tt):
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]
 
-                sub_projects = tt.list_open_sub_projects(main_project_name)
+                sub_projects = [sp['sub_project_name'] for sp in tt.list_sub_projects(main_project_name=main_project_name, status_filter='open')]
                 if not sub_projects:
                     print(_("No sub-projects to rename for '{name}'.").format(name=main_project_name))
                     continue
@@ -213,7 +217,7 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
         elif choice == '10':
-            # Funktion 10: Close Sub-Project
+            # Close Sub-Project
             print(_("\n--- Close Sub-Project ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -228,7 +232,7 @@ def _handle_project_management(tt):
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]
 
-                sub_projects = tt.list_open_sub_projects(main_project_name)
+                sub_projects = [sp['sub_project_name'] for sp in tt.list_sub_projects(main_project_name=main_project_name, status_filter='open')]
                 if not sub_projects:
                     print(_("No open sub-projects to close for '{name}'.").format(name=main_project_name))
                     continue
@@ -247,7 +251,7 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
         elif choice == '11':
-            # Funktion 11: Re-open Sub-Project
+            # Re-open Sub-Project
             print(_("\n--- Re-open Sub-Project ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -262,7 +266,7 @@ def _handle_project_management(tt):
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]
 
-                sub_projects = tt.list_closed_sub_projects(main_project_name)
+                sub_projects = [sp['sub_project_name'] for sp in tt.list_sub_projects(main_project_name=main_project_name, status_filter='closed')]
                 if not sub_projects:
                     print(_("No closed sub-projects to reopen for '{name}'.").format(name=main_project_name))
                     continue
@@ -281,7 +285,7 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
         elif choice == '12':
-            # Funktion 12: Delete Sub-Project
+            # Delete Sub-Project
             print(_("\n--- Delete Sub-Project ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -297,7 +301,7 @@ def _handle_project_management(tt):
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]
 
-                sub_projects = tt.list_open_sub_projects(main_project_name)
+                sub_projects = [sp['sub_project_name'] for sp in tt.list_sub_projects(main_project_name=main_project_name, status_filter='open')]
                 if not sub_projects:
                     print(_("No sub-projects to delete for '{name}'.").format(name=main_project_name))
                     continue
@@ -317,7 +321,7 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
         elif choice == '14':
-            # Funktion 14: List Inactive Sub-Projects
+            # List Inactive Sub-Projects
             print(_("\n--- List Inactive Sub-Projects ---"))
             try:
                 inactive_weeks = int(input(_("Enter the number of weeks without activity (e.g., 4): ")))
@@ -340,7 +344,7 @@ def _handle_project_management(tt):
             except ValueError:
                 print(_("Invalid input. Please enter a valid number for weeks."))
         elif choice == '13':
-            # Funktion 13: Move Sub-Project
+            # Move Sub-Project
             print(_("\n--- Move Sub-Project ---"))
             main_projects = tt.list_main_projects()
             if len(main_projects) < 2:
@@ -348,15 +352,15 @@ def _handle_project_management(tt):
                 continue
 
             try:
-                # 1. Select source main project
+                # Select source main project
                 print(_("Select the source main project:"))
                 for i, project_name in enumerate(main_projects, 1):
                     print(f"{i}. {project_name}")
                 source_choice = int(input(_("Enter the number of the source main project: ")))
                 source_main_project = main_projects[source_choice - 1]
 
-                # 2. Select sub-project to move
-                sub_projects = tt.list_open_sub_projects(source_main_project)
+                # Select sub-project to move
+                sub_projects = [sp['sub_project_name'] for sp in tt.list_sub_projects(main_project_name=source_main_project, status_filter='open')]
                 if not sub_projects:
                     print(_("No sub-projects to move from '{name}'.").format(name=source_main_project))
                     continue
@@ -367,7 +371,7 @@ def _handle_project_management(tt):
                 sub_project_choice = int(input(_("Enter the number of the sub-project: ")))
                 sub_project_to_move = sub_projects[sub_project_choice - 1]
 
-                # 3. Select destination main project
+                # Select destination main project
                 print(_("\nSelect the destination main project:"))
                 # Filter out the source project from the list of possible destinations
                 dest_options = [p for p in main_projects if p != source_main_project]
@@ -376,7 +380,7 @@ def _handle_project_management(tt):
                 dest_choice = int(input(_("Enter the number of the destination main project: ")))
                 dest_main_project = dest_options[dest_choice - 1]
 
-                # 4. Perform the move
+                # Perform the move
                 success, message = tt.move_sub_project(source_main_project, sub_project_to_move, dest_main_project)
                 if success:
                     print(_("Successfully moved '{sub_name}' from '{source_main_project}' to '{dest_main_project}'.").format(sub_name=sub_project_to_move, source_main_project=source_main_project, dest_main_project=dest_main_project))
@@ -387,9 +391,9 @@ def _handle_project_management(tt):
                 print(_("Invalid input. Please enter a valid number."))
 
         elif choice == '15':
-            # Funktion 15: List All Closed Sub-Projects
+            # List All Closed Sub-Projects
             print(_("\n--- List All Closed Sub-Projects ---"))
-            closed_projects = tt.list_all_closed_sub_projects()
+            closed_projects = tt.list_sub_projects(status_filter='closed')
             if closed_projects:
                 for i, entry in enumerate(closed_projects, 1):
                     print(f"{i}. {entry['main_project_name']} - {entry['sub_project_name']}")
@@ -397,7 +401,7 @@ def _handle_project_management(tt):
                 print(_("No closed sub-projects found."))
 
         elif choice == '16':
-            # Funktion 16: Delete All Closed Sub-Projects
+            # Delete All Closed Sub-Projects
             print(_("\n--- Delete All Closed Sub-Projects ---"))
             confirm = input(_("Are you sure you want to delete ALL closed sub-projects? (y/n): "))
             if confirm.lower() == 'y':
@@ -407,7 +411,7 @@ def _handle_project_management(tt):
                 print(_("Operation cancelled."))
 
         elif choice == '17':
-            # Funktion 17: Promote Sub-Project
+            # Promote Sub-Project
             print(_("\n--- Promote Sub-Project to Main-Project ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -415,15 +419,15 @@ def _handle_project_management(tt):
                 continue
 
             try:
-                # 1. Select source main project
+                # Select source main project
                 print(_("Select the main project containing the sub-project to promote:"))
                 for i, project_name in enumerate(main_projects, 1):
                     print(f"{i}. {project_name}")
                 source_choice = int(input(_("Enter the number of the main project: ")))
                 source_main_project = main_projects[source_choice - 1]
 
-                # 2. Select sub-project to promote
-                sub_projects = tt.list_open_sub_projects(source_main_project)
+                # Select sub-project to promote
+                sub_projects = [sp['sub_project_name'] for sp in tt.list_sub_projects(main_project_name=source_main_project, status_filter='open')]
                 if not sub_projects:
                     print(_("No sub-projects to promote in '{name}'.").format(name=source_main_project))
                     continue
@@ -434,15 +438,15 @@ def _handle_project_management(tt):
                 sub_project_choice = int(input(_("Enter the number of the sub-project: ")))
                 sub_project_to_promote = sub_projects[sub_project_choice - 1]
 
-                # 3. Perform the promotion
+                # Perform the promotion
                 success, message = tt.promote_sub_project(source_main_project, sub_project_to_promote)
                 print(message)
 
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
 
-        elif choice == '6': # This is the moved item
-            # New Funktion: Demote Main-Project
+        elif choice == '6':
+            # Demote Main-Project
             print(_("\n--- Demote Main-Project to Sub-Project ---"))
             main_projects = tt.list_main_projects()
             if len(main_projects) < 2:
@@ -450,14 +454,14 @@ def _handle_project_management(tt):
                 continue
 
             try:
-                # 1. Select main project to demote
+                # Select main project to demote
                 print(_("Select the main project to demote:"))
                 for i, project_name in enumerate(main_projects, 1):
                     print(f"{i}. {project_name}")
                 demote_choice = int(input(_("Enter the number of the project to demote: ")))
                 project_to_demote = main_projects[demote_choice - 1]
 
-                # 2. Select new parent main project
+                # Select new parent main project
                 print(_("\nSelect the new parent main project:"))
                 parent_options = [p for p in main_projects if p != project_to_demote]
                 for i, project_name in enumerate(parent_options, 1):
@@ -465,7 +469,7 @@ def _handle_project_management(tt):
                 parent_choice = int(input(_("Enter the number of the new parent project: ")))
                 new_parent_project = parent_options[parent_choice - 1]
 
-                # 3. Perform the demotion
+                # Perform the demotion
                 success, message = tt.demote_main_project(project_to_demote, new_parent_project)
                 print(message)
 
@@ -607,8 +611,8 @@ def _handle_reporting(tt):
         print(_("1. Daily Report (Today)"))
         print(_("2. Daily Report (Specific Day)"))
         print(_("3. Date Range Report"))
-        print(_("4. Detailed Sub-Project Report")) # Yesterday's change
-        print(_("5. Detailed Main-Project Report")) # Today's change
+        print(_("4. Detailed Sub-Project Report"))
+        print(_("5. Detailed Main-Project Report"))
         print("--------------------------")
         print(_("0. Back to Main Menu"))
         print("--------------------------")
@@ -616,12 +620,12 @@ def _handle_reporting(tt):
         choice = input(_("Choice: "))
 
         if choice == '1':
-            # Funktion 14: Generate daily report (Today)
+            # Generate daily report (Today)
             print(_("\n--- Generate Daily Report (Today) ---"))
             report_text = tt.generate_daily_report()
             print(report_text)
         elif choice == '2':
-            # Funktion 15: Generate a daily report for a specific day
+            # Generate a daily report for a specific day
             print(_("\n--- Generate Daily Report for a specific Day ---"))
             specific_date_str = input(_("Enter the date (YYYY-MM-DD): "))
             try:
@@ -631,7 +635,7 @@ def _handle_reporting(tt):
             except ValueError:
                 print(_("Invalid date format. Please use YYYY-MM-DD."))
         elif choice == '3':
-            # Funktion 16: Generate report for a date range
+            # Generate report for a date range
             print(_("\n--- Generate Report for a Date Range ---"))
             start_date_str = input(_("Enter the start date (YYYY-MM-DD): "))
             end_date_str = input(_("Enter the end date (YYYY-MM-DD): "))
@@ -653,15 +657,15 @@ def _handle_reporting(tt):
                 continue
 
             try:
-                # 1. Select main project
+                # Select main project
                 print(_("Select the main project:"))
                 for i, project_name in enumerate(main_projects, 1):
                     print(f"{i}. {project_name}")
                 main_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_choice - 1]
 
-                # 2. Select sub-project (only open ones are shown)
-                sub_projects = tt.list_sub_projects(main_project_name) # Use all sub-projects for reporting
+                # Select sub-project (only open ones are shown)
+                sub_projects = [sp['sub_project_name'] for sp in tt.list_sub_projects(main_project_name=main_project_name, status_filter='all')] # Use all sub-projects for reporting
                 if not sub_projects:
                     print(_("No sub-projects found for '{name}'.").format(name=main_project_name))
                     continue
@@ -672,7 +676,7 @@ def _handle_reporting(tt):
                 sub_choice = int(input(_("Enter the number of the sub-project: ")))
                 sub_project_name = sub_projects[sub_choice - 1]
 
-                # 3. Generate and print the report
+                # Generate and print the report
                 report_text = tt.generate_sub_project_report(main_project_name, sub_project_name)
                 print("\n" + report_text)
 
@@ -686,7 +690,7 @@ def _handle_reporting(tt):
                 continue
 
             try:
-                # 1. Select main project
+                # Select main project
                 print(_("Select the main project for the report:"))
                 for i, project_name in enumerate(main_projects, 1):
                     print(f"{i}. {project_name}")
@@ -747,7 +751,7 @@ def run_menu():
     """
     Starts the interactive menu for the time tracking application.
     """
-    # --- Update-Check ---
+    # --- Update Check ---
     if UPDATE_AVAILABLE and os.path.exists("update.zip"):
         print(_("\n--- Update Available ---"))
         print(_("A downloaded update is ready to be installed."))
@@ -786,7 +790,7 @@ def run_menu():
         choice = input(_("Choice: "))
 
         if choice == '1':
-            # Funktion 11: Start work on sub-project
+            # Start work on sub-project
             print(_("\n--- Start Work on a Sub-Project ---"))
             main_projects = tt.list_main_projects()
             if not main_projects:
@@ -802,7 +806,7 @@ def run_menu():
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]
 
-                sub_projects = tt.list_open_sub_projects(main_project_name)
+                sub_projects = [sp['sub_project_name'] for sp in tt.list_sub_projects(main_project_name=main_project_name, status_filter='open')]
                 if not sub_projects:
                     print(_("No open sub-projects found for '{name}' to start work on.").format(name=main_project_name))
                     continue
@@ -824,7 +828,7 @@ def run_menu():
                 print(_("Invalid input. Please enter a valid number."))
 
         elif choice == '2':
-            # Funktion 12: Show current work
+            # Show current work
             print(_("\n--- Current Active Work ---"))
             current_work = tt.get_current_work()
             if current_work:
@@ -844,7 +848,7 @@ def run_menu():
                 print(_("No active work session."))
 
         elif choice == '3':
-            # Funktion 13: Stop current work
+            # Stop current work
             print(_("\n--- Stop Work ---"))
             if tt.stop_work():
                 print(_("Work session stopped successfully."))
@@ -861,7 +865,7 @@ def run_menu():
             _handle_settings(tt)
         
         elif choice == '0':
-            # --- Update-Check beim Beenden ---
+            # --- Update Check on Exit ---
             if UPDATE_AVAILABLE:
                 print(_("\nChecking for updates..."))
                 is_update, _unused_version, url = check_for_updates(tt.get_version())
