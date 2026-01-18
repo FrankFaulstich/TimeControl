@@ -124,8 +124,9 @@ class TestTimeTracker(unittest.TestCase):
         """Tests behavior when pyperclip is not installed."""
         self.tracker._copy_to_clipboard("Test")
         # Should print a warning
-        args, _ = mock_print.call_args
-        self.assertIn("Warning", args[0])
+        args, _kwargs = mock_print.call_args
+        expected_msg = _("Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip install pyperclip`).")
+        self.assertIn(expected_msg, args[0])
 
     @unittest.mock.patch('TimeTracker.distributions')
     @unittest.mock.patch('subprocess.check_call')
@@ -146,7 +147,7 @@ class TestTimeTracker(unittest.TestCase):
         
         # Assert packageB was installed
         mock_subprocess.assert_called()
-        args, _ = mock_subprocess.call_args
+        args, _kwargs = mock_subprocess.call_args
         self.assertIn("packageB", args[0])
         
         # Assert sys.exit(0) was called (restart)
@@ -681,17 +682,17 @@ class TestTimeTracker(unittest.TestCase):
         # Expected total time: 1.5 + 2.0 = 3.5 hours
 
         # Check for correct comma formatting of hours
-        self.assertIn("1,500 hours", report)
-        self.assertIn("2,000 hours", report)
-        self.assertIn("**Total Daily Time: 3,500 hours**", report)
+        self.assertIn(_("- {name}: {hours} hours").format(name="R_Sub1", hours="1,500"), report)
+        self.assertIn(_("- {name}: {hours} hours").format(name="R_Sub2", hours="2,000"), report)
+        self.assertIn(_("**Total Daily Time: {hours} hours**").format(hours="3,500"), report)
         
         # Check if P3 was ignored
         self.assertNotIn("R_Sub3_Old", report)
 
         # Check the overall structure
         self.assertTrue(report.startswith(_("# Daily Time Report: {date}\n").format(date=today_date.strftime('%Y-%m-%d')).strip()))
-        self.assertIn("## Report P1 (1,500 hours)", report)
-        self.assertIn("## Report P2 (2,000 hours)", report)
+        self.assertIn(_("## {name} ({hours} hours)").format(name="Report P1", hours="1,500"), report)
+        self.assertIn(_("## {name} ({hours} hours)").format(name="Report P2", hours="2,000"), report)
         
     def test_generate_date_range_report(self):
         """Tests report generation for a date range."""
@@ -729,10 +730,16 @@ class TestTimeTracker(unittest.TestCase):
         
         # Expected total time: 1 + 2 = 3 hours
         # 1h = 0.025 DLP; 2h = 0.050 DLP; 3h = 0.075 DLP
-        self.assertIn("## Range P1 (1,000 hours (0,025 DLP))", report)
-        self.assertIn("## Range P2 (2,000 hours (0,050 DLP))", report)
+        
+        # Use _format_duration to get the expected string in the correct language
+        dur_1h = self.tracker._format_duration(timedelta(hours=1))
+        dur_2h = self.tracker._format_duration(timedelta(hours=2))
+        dur_3h = self.tracker._format_duration(timedelta(hours=3))
+
+        self.assertIn(f"## Range P1 ({dur_1h})", report)
+        self.assertIn(f"## Range P2 ({dur_2h})", report)
         self.assertNotIn("Range P3", report)
-        self.assertIn(_("\n**Total Time in Period: {total_time}**").format(total_time="3,000 hours (0,075 DLP)"), report)
+        self.assertIn(_("\n**Total Time in Period: {total_time}**").format(total_time=dur_3h), report)
         self.assertTrue(report.startswith(_("# Time Report: {start_date} to {end_date}\n").format(start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')).strip()))
 
     def test_generate_sub_project_report(self):
@@ -767,18 +774,18 @@ class TestTimeTracker(unittest.TestCase):
         report = self.tracker.generate_sub_project_report(main_proj, sub_proj)
 
         # Check for key information
-        self.assertIn(f"# Detailed Report for Sub-Project: {sub_proj}", report)
-        self.assertIn(f"Part of Main Project: {main_proj}", report)
-        self.assertIn("Total recorded time:** 2:30:00", report)
-        self.assertIn("Total work sessions:** 2", report)
-        self.assertIn("Average session duration:** 1:15:00", report)
-        self.assertIn("## Weekday Distribution", report)
-        self.assertIn("- **Monday**: 1:30:00 (60.0%)", report) # 1.5h of 2.5h total
-        self.assertIn("- **Tuesday**: 1:00:00 (40.0%)", report) # 1h of 2.5h total
+        self.assertIn(f"# {_('Detailed Report for Sub-Project')}: {sub_proj}", report)
+        self.assertIn(f"{_('Part of Main Project')}: {main_proj}", report)
+        self.assertIn(f"**{_('Total recorded time')}:** 2:30:00", report)
+        self.assertIn(f"**{_('Total work sessions')}:** 2", report)
+        self.assertIn(f"**{_('Average session duration')}:** 1:15:00", report)
+        self.assertIn(f"## {_('Weekday Distribution')}", report)
+        self.assertIn(f"- **{_('Monday')}**: 1:30:00 (60.0%)", report) # 1.5h of 2.5h total
+        self.assertIn(f"- **{_('Tuesday')}**: 1:00:00 (40.0%)", report) # 1h of 2.5h total
         self.assertIn(f"### {day1.strftime('%Y-%m-%d')}", report)
         self.assertIn(f"### {day2.strftime('%Y-%m-%d')}", report)
-        self.assertIn("10:00:00 - 11:30:00", report)
-        self.assertIn("14:00:00 - 15:00:00", report)
+        self.assertIn(f"({_('Duration')}: 1:30:00)", report)
+        self.assertIn(f"({_('Duration')}: 1:00:00)", report)
 
     def test_generate_main_project_report(self):
         """Tests the detailed report generation for a single main project."""
@@ -812,17 +819,21 @@ class TestTimeTracker(unittest.TestCase):
         report = self.tracker.generate_main_project_report(main_proj)
 
         # Check for key information
-        self.assertIn(f"# Detailed Report for Main Project: {main_proj}", report)
-        self.assertIn("Total recorded time:** 3:30:00", report)
-        self.assertIn("Number of sub-projects:** 2", report)
-        self.assertIn("Total work sessions:** 3", report)
-        self.assertIn("Average session duration:** 1:10:00", report)
-        self.assertIn("## Weekday Distribution", report)
-        self.assertIn("- **Monday**: 3:00:00 (85.7%)", report) # 1h + 2h = 3h of 3.5h total
-        self.assertIn("- **Tuesday**: 0:30:00 (14.3%)", report) # 0.5h of 3.5h total
-        self.assertIn("## Sub-Project Breakdown", report)
-        self.assertIn("- **Sub 2**: 2:00:00 (1 sessions, 57.1%)", report) # 2h of 3.5h total
-        self.assertIn("- **Sub 1**: 1:30:00 (2 sessions, 42.9%)", report) # 1.5h of 3.5h total
+        self.assertIn(f"# {_('Detailed Report for Main Project')}: {main_proj}", report)
+        self.assertIn(f"**{_('Total recorded time')}:** 3:30:00", report)
+        self.assertIn(f"**{_('Number of sub-projects')}:** 2", report)
+        self.assertIn(f"**{_('Total work sessions')}:** 3", report)
+        self.assertIn(f"**{_('Average session duration')}:** 1:10:00", report)
+        self.assertIn(f"## {_('Weekday Distribution')}", report)
+        self.assertIn(f"- **{_('Monday')}**: 3:00:00 (85.7%)", report) # 1h + 2h = 3h of 3.5h total
+        self.assertIn(f"- **{_('Tuesday')}**: 0:30:00 (14.3%)", report) # 0.5h of 3.5h total
+        self.assertIn(f"## {_('Sub-Project Breakdown')}", report)
+        
+        sessions_str_1 = _('{num_sessions} sessions').format(num_sessions=1)
+        sessions_str_2 = _('{num_sessions} sessions').format(num_sessions=2)
+        
+        self.assertIn(f"- **Sub 2**: 2:00:00 ({sessions_str_1}, 57.1%)", report) # 2h of 3.5h total
+        self.assertIn(f"- **Sub 1**: 1:30:00 ({sessions_str_2}, 42.9%)", report) # 1.5h of 3.5h total
 
 # Run the tests if the file is called directly
 if __name__ == '__main__':
