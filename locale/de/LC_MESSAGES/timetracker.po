@@ -943,3 +943,96 @@ msgstr "Fehler bei der Wiederherstellung: {error}"
 #: update.py:193
 msgid "The backup file '{filename}' was not deleted."
 msgstr "Die Backup-Datei '{filename}' wurde nicht gelöscht."
+
+msgid "# Detailed Daily Report: {date}"
+msgstr "# Detaillierter Tagesbericht: {date}"
+
+msgid "now"
+msgstr "jetzt"
+
+msgid "\nNo time tracked for {date}."
+msgstr "\nKeine Zeit für {date} erfasst."
+
+msgid "# Detailed Report for Sub-Project: {name}"
+msgstr "# Detaillierter Bericht für Unterprojekt: {name}"
+
+msgid "Part of Main Project: {name}"
+msgstr "Teil des Hauptprojekts: {name}"
+
+msgid "Active (currently running)"
+msgstr "Aktiv (läuft gerade)"
+
+msgid "Inactive"
+msgstr "Inaktiv"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "First entry"
+msgstr "Erster Eintrag"
+
+msgid "Last activity"
+msgstr "Letzte Aktivität"
+
+msgid "Total recorded time"
+msgstr "Erfasste Gesamtzeit"
+
+msgid "Total work sessions"
+msgstr "Gesamtzahl der Arbeitssitzungen"
+
+msgid "Average session duration"
+msgstr "Durchschnittliche Sitzungsdauer"
+
+msgid "Weekday Distribution"
+msgstr "Verteilung auf Wochentage"
+
+msgid "Monday"
+msgstr "Montag"
+
+msgid "Tuesday"
+msgstr "Dienstag"
+
+msgid "Wednesday"
+msgstr "Mittwoch"
+
+msgid "Thursday"
+msgstr "Donnerstag"
+
+msgid "Friday"
+msgstr "Freitag"
+
+msgid "Saturday"
+msgstr "Samstag"
+
+msgid "Sunday"
+msgstr "Sonntag"
+
+msgid "Daily Breakdown"
+msgstr "Tagesaufschlüsselung"
+
+msgid "Duration"
+msgstr "Dauer"
+
+msgid "# Detailed Report for Main Project: {name}"
+msgstr "# Detaillierter Bericht für Hauptprojekt: {name}"
+
+msgid "Number of sub-projects"
+msgstr "Anzahl der Unterprojekte"
+
+msgid "Active (working on '{sub_name}')"
+msgstr "Aktiv (arbeitet an '{sub_name}')"
+
+msgid "Sub-Project Breakdown"
+msgstr "Aufschlüsselung nach Unterprojekten"
+
+msgid "{num_sessions} sessions"
+msgstr "{num_sessions} Sitzungen"
+
+msgid "6. Detailed Daily Report"
+msgstr "6. Detaillierter Tagesbericht"
+
+msgid "\n--- Detailed Daily Report ---"
+msgstr "\n--- Detaillierter Tagesbericht ---"
+
+msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
+msgstr "Datum eingeben (JJJJ-MM-TT) oder Enter für heute drücken: "

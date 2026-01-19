@@ -79,7 +79,7 @@ msgstr[1] "{hours} heures ({dlp} DLP)"
 msgid "closed"
 msgstr "fermé"
 
-#: TimeTracker.py:350
+#: TimeTracker.py:350 TimeTracker.py:388
 msgid "Source main project '{name}' not found."
 msgstr "Projet principal source '{name}' non trouvé."
 
@@ -98,10 +98,6 @@ msgstr "Le sous-projet '{name}' a été déplacé avec succès."
 #: TimeTracker.py:378
 msgid "A main project named '{name}' already exists."
 msgstr "Un projet principal nommé '{name}' existe déjà."
-
-#: TimeTracker.py:388
-msgid "Source main project '{name}' not found."
-msgstr "Projet principal source '{name}' non trouvé."
 
 #: TimeTracker.py:398
 msgid "Sub-project '{sub_name}' not found in '{main_name}'."
@@ -460,10 +456,6 @@ msgstr "Sélectionnez un sous-projet de '{name}' à renommer :"
 msgid "Enter the number of the sub-project: "
 msgstr "Entrez le numéro du sous-projet : "
 
-#: TimeTrackerCLI.py:187
-msgid "Enter the new name for '{name}': "
-msgstr "Entrez le nouveau nom pour '{name}' : "
-
 #: TimeTrackerCLI.py:190
 msgid "Sub-project '{old_name}' renamed to '{new_name}'."
 msgstr "Le sous-projet '{old_name}' a été renommé en '{new_name}'."
@@ -533,10 +525,6 @@ msgid "No sub-projects found inactive for more than {weeks} week."
 msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
 msgstr[0] "Aucun sous-projet inactif depuis plus de {weeks} semaine n'a été trouvé."
 msgstr[1] "Aucun sous-projet inactif depuis plus de {weeks} semaines n'a été trouvé."
-
-#: TimeTrackerCLI.py:244
-msgid "Invalid input. Please enter a valid number for weeks."
-msgstr "Entrée invalide. Veuillez entrer un nombre valide pour les semaines."
 
 #: TimeTrackerCLI.py:248
 msgid "\n--- Move Sub-Project ---"
@@ -1009,3 +997,72 @@ msgstr "Erreur lors de la restauration : {error}"
 #: update.py:193
 msgid "The backup file '{filename}' was not deleted."
 msgstr "Le fichier de sauvegarde '{filename}' n'a pas été supprimé."
+
+msgid "# Detailed Daily Report: {date}"
+msgstr "# Rapport journalier détaillé : {date}"
+
+msgid "\nNo time tracked for {date}."
+msgstr "\nAucun temps suivi pour le {date}."
+
+msgid "First entry"
+msgstr "Première entrée"
+
+msgid "Last activity"
+msgstr "Dernière activité"
+
+msgid "Total recorded time"
+msgstr "Temps total enregistré"
+
+msgid "Total work sessions"
+msgstr "Nombre total de sessions de travail"
+
+msgid "Average session duration"
+msgstr "Durée moyenne des sessions"
+
+msgid "Weekday Distribution"
+msgstr "Répartition par jour de la semaine"
+
+msgid "Monday"
+msgstr "Lundi"
+
+msgid "Tuesday"
+msgstr "Mardi"
+
+msgid "Wednesday"
+msgstr "Mercredi"
+
+msgid "Thursday"
+msgstr "Jeudi"
+
+msgid "Friday"
+msgstr "Vendredi"
+
+msgid "Saturday"
+msgstr "Samedi"
+
+msgid "Sunday"
+msgstr "Dimanche"
+
+msgid "Daily Breakdown"
+msgstr "Répartition journalière"
+
+msgid "Number of sub-projects"
+msgstr "Nombre de sous-projets"
+
+msgid "Active (working on '{sub_name}')"
+msgstr "Actif (travail sur '{sub_name}')"
+
+msgid "Sub-Project Breakdown"
+msgstr "Répartition par sous-projet"
+
+msgid "{num_sessions} sessions"
+msgstr "{num_sessions} sessions"
+
+msgid "6. Detailed Daily Report"
+msgstr "6. Rapport journalier détaillé"
+
+msgid "\n--- Detailed Daily Report ---"
+msgstr "\n--- Rapport journalier détaillé ---"
+
+msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
+msgstr "Entrez la date (AAAA-MM-JJ) ou appuyez sur Entrée pour aujourd'hui : "

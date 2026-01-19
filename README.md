@@ -101,7 +101,9 @@ To start the interactive command-line interface, run:
 ```bash
 python TimeTrackerCLI.py
 ```
+
 or
+
 ```bash
 python3 TimeTrackerCLI.py
 ```
