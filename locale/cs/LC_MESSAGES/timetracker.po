@@ -716,3 +716,96 @@ msgstr "Chyba během obnovy: {error}"
 
 msgid "The backup file '{filename}' was not deleted."
 msgstr "Záložní soubor '{filename}' nebyl smazán."
+
+msgid "# Detailed Daily Report: {date}"
+msgstr "# Podrobný denní report: {date}"
+
+msgid "now"
+msgstr "nyní"
+
+msgid "\nNo time tracked for {date}."
+msgstr "\nPro den {date} nebyl zaznamenán žádný čas."
+
+msgid "# Detailed Report for Sub-Project: {name}"
+msgstr "# Podrobný report podprojektu: {name}"
+
+msgid "Part of Main Project: {name}"
+msgstr "Součást hlavního projektu: {name}"
+
+msgid "Active (currently running)"
+msgstr "Aktivní (právě běží)"
+
+msgid "Inactive"
+msgstr "Neaktivní"
+
+msgid "Status"
+msgstr "Stav"
+
+msgid "First entry"
+msgstr "První záznam"
+
+msgid "Last activity"
+msgstr "Poslední aktivita"
+
+msgid "Total recorded time"
+msgstr "Celkový zaznamenaný čas"
+
+msgid "Total work sessions"
+msgstr "Celkový počet pracovních relací"
+
+msgid "Average session duration"
+msgstr "Průměrná délka relace"
+
+msgid "Weekday Distribution"
+msgstr "Rozložení v týdnu"
+
+msgid "Monday"
+msgstr "Pondělí"
+
+msgid "Tuesday"
+msgstr "Úterý"
+
+msgid "Wednesday"
+msgstr "Středa"
+
+msgid "Thursday"
+msgstr "Čtvrtek"
+
+msgid "Friday"
+msgstr "Pátek"
+
+msgid "Saturday"
+msgstr "Sobota"
+
+msgid "Sunday"
+msgstr "Neděle"
+
+msgid "Daily Breakdown"
+msgstr "Denní rozpis"
+
+msgid "Duration"
+msgstr "Trvání"
+
+msgid "# Detailed Report for Main Project: {name}"
+msgstr "# Podrobný report hlavního projektu: {name}"
+
+msgid "Number of sub-projects"
+msgstr "Počet podprojektů"
+
+msgid "Active (working on '{sub_name}')"
+msgstr "Aktivní (práce na '{sub_name}')"
+
+msgid "Sub-Project Breakdown"
+msgstr "Rozpis podprojektů"
+
+msgid "{num_sessions} sessions"
+msgstr "{num_sessions} relací"
+
+msgid "6. Detailed Daily Report"
+msgstr "6. Podrobný denní report"
+
+msgid "\n--- Detailed Daily Report ---"
+msgstr "\n--- Podrobný denní report ---"
+
+msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
+msgstr "Zadejte datum (RRRR-MM-DD) nebo stiskněte Enter pro dnešek: "

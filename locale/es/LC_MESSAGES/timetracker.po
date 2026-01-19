@@ -87,25 +87,9 @@ msgstr "Proyecto principal de origen '{name}' no encontrado."
 msgid "Destination main project '{name}' not found."
 msgstr "Proyecto principal de destino '{name}' no encontrado."
 
-#: TimeTracker.py:356
-msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
-msgstr "Ya existe un subproyecto llamado '{sub_name}' en '{main_name}'."
-
-#: TimeTracker.py:356
-msgid "Sub-project '{name}' moved successfully."
-msgstr "Subproyecto '{name}' movido con éxito."
-
 #: TimeTracker.py:378
 msgid "A main project named '{name}' already exists."
 msgstr "Ya existe un proyecto principal llamado '{name}'."
-
-#: TimeTracker.py:388
-msgid "Source main project '{name}' not found."
-msgstr "Proyecto principal de origen '{name}' no encontrado."
-
-#: TimeTracker.py:398
-msgid "Sub-project '{sub_name}' not found in '{main_name}'."
-msgstr "Subproyecto '{sub_name}' no encontrado en '{main_name}'."
 
 #: TimeTracker.py:406
 msgid "General"
@@ -140,11 +124,9 @@ msgstr[1] "## {name} ({hours} horas)\n"
 msgid "# Daily Time Report: {date}\n"
 msgstr "# Informe de Tiempo Diario: {date}\n"
 
-msgid "\n**Total Daily Time: {hours} hour**"
-msgid_plural "\n**Total Daily Time: {hours} hours**"
-msgstr[0] ""
-"\n"
-"**Tiempo Total Diario: {hours} hora**"
+msgid "**Total Daily Time: {hours} hour**"
+msgid_plural "**Total Daily Time: {hours} hours**"
+msgstr[0] "**Tiempo Total Diario: {hours} hora**"
 msgstr[1] "**Tiempo Total Diario: {hours} horas**"
 
 msgid "No time tracked for {date}."
@@ -177,30 +159,9 @@ msgstr "Duración"
 msgid "Part of Main Project: {name}"
 msgstr "Parte del Proyecto Principal: {name}"
 
-#: TimeTracker.py:754
-msgid "Active (currently running)"
-msgstr "Activo (en ejecución)"
-
-#: TimeTracker.py:754
-msgid "Inactive"
-msgstr "Inactivo"
-
-#: TimeTracker.py:755, TimeTracker.py:757, TimeTracker.py:759, TimeTracker.py:761, TimeTracker.py:763, TimeTracker.py:767
-msgid "Status"
-msgstr "Estado"
-
 msgid "Last activity"
 msgstr "Última actividad"
 
-#: TimeTracker.py:463
-msgid ""
-"Main project '{demoted_name}' was demoted to a sub-project under "
-"'{parent_name}'."
-msgstr ""
-"El proyecto principal '{demoted_name}' fue degradado a un subproyecto bajo '"
-"{parent_name}'."
-
- 
 #: TimeTracker.py:724
 msgid "No time entries found for sub-project '{sub_name}'."
 msgstr "No se encontraron entradas de tiempo para el subproyecto '{sub_name}'."
@@ -220,6 +181,81 @@ msgstr "Distribución del tiempo entre subproyectos:"
 #: TimeTracker.py:779
 msgid "No time entries found for main project '{name}'."
 msgstr "No se encontraron entradas de tiempo para el proyecto principal '{name}'."
+
+msgid "# Detailed Daily Report: {date}"
+msgstr "# Informe Diario Detallado: {date}"
+
+msgid "\nNo time tracked for {date}."
+msgstr "\nNo hay tiempo registrado para {date}."
+
+msgid "Active (working on '{sub_name}')"
+msgstr "Activo (trabajando en '{sub_name}')"
+
+msgid "Sub-Project Breakdown"
+msgstr "Desglose de Subproyectos"
+
+msgid "{num_sessions} sessions"
+msgstr "{num_sessions} sesiones"
+
+msgid "6. Detailed Daily Report"
+msgstr "6. Informe Diario Detallado"
+
+msgid "\n--- Detailed Daily Report ---"
+msgstr "\n--- Informe Diario Detallado ---"
+
+msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
+msgstr "Introduzca la fecha (AAAA-MM-DD) o presione Enter para hoy: "
+
+msgid "Active (currently running)"
+msgstr "Activo (actualmente en ejecución)"
+
+msgid "Inactive"
+msgstr "Inactivo"
+
+msgid "Status"
+msgstr "Estado"
+
+msgid "First entry"
+msgstr "Primera entrada"
+
+msgid "Total recorded time"
+msgstr "Tiempo total registrado"
+
+msgid "Total work sessions"
+msgstr "Total de sesiones de trabajo"
+
+msgid "Average session duration"
+msgstr "Duración media de la sesión"
+
+msgid "Weekday Distribution"
+msgstr "Distribución por día de la semana"
+
+msgid "Monday"
+msgstr "Lunes"
+
+msgid "Tuesday"
+msgstr "Martes"
+
+msgid "Wednesday"
+msgstr "Miércoles"
+
+msgid "Thursday"
+msgstr "Jueves"
+
+msgid "Friday"
+msgstr "Viernes"
+
+msgid "Saturday"
+msgstr "Sábado"
+
+msgid "Sunday"
+msgstr "Domingo"
+
+msgid "Daily Breakdown"
+msgstr "Desglose diario"
+
+msgid "Number of sub-projects"
+msgstr "Número de subproyectos"
 
 #: TimeTrackerCLI.py:21
 msgid "\n--- Project Management ---"
@@ -393,7 +429,7 @@ msgid_plural "No main-projects found inactive for more than {weeks} weeks."
 msgstr[0] "No se encontró ningún proyecto principal inactivo por más de {weeks} semana."
 msgstr[1] "No se encontraron proyectos principales inactivos por más de {weeks} semanas."
 
-#: TimeTrackerCLI.py:119
+#: TimeTrackerCLI.py:119, TimeTrackerCLI.py:245
 msgid "Invalid input. Please enter a valid number for weeks."
 msgstr "Entrada inválida. Por favor, introduzca un número válido para las semanas."
 
@@ -456,10 +492,6 @@ msgstr "Seleccione un subproyecto de '{name}' para renombrar:"
 #: TimeTrackerCLI.py:184, TimeTrackerCLI.py:214, TimeTrackerCLI.py:267, TimeTrackerCLI.py:307, TimeTrackerCLI.py:499
 msgid "Enter the number of the sub-project: "
 msgstr "Introduzca el número del subproyecto: "
-
-#: TimeTrackerCLI.py:187
-msgid "Enter the new name for '{name}': "
-msgstr "Introduzca el nuevo nombre para '{name}': "
 
 #: TimeTrackerCLI.py:190
 msgid "Sub-project '{old_name}' renamed to '{new_name}'."
@@ -529,10 +561,6 @@ msgid "No sub-projects found inactive for more than {weeks} week."
 msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
 msgstr[0] "No se encontró ningún subproyecto inactivo por más de {weeks} semana."
 msgstr[1] "No se encontraron subproyectos inactivos por más de {weeks} semanas."
-
-#: TimeTrackerCLI.py:245
-msgid "Invalid input. Please enter a valid number for weeks."
-msgstr "Entrada inválida. Por favor, introduzca un número válido para las semanas."
 
 #: TimeTrackerCLI.py:248
 msgid "\n--- Move Sub-Project ---"
@@ -693,44 +721,6 @@ msgstr "Seleccione el proyecto principal para el informe:"
 msgid "Invalid choice. Please enter a number from 0 to 5."
 msgstr "Elección inválida. Por favor, introduzca un número del 0 al 5."
 
-#: TimeTrackerCLI.py:428 TimeTrackerCLI.py:469
-msgid "\n--- Settings ---"
-msgstr "\n--- Configuración ---"
-
-#: TimeTrackerCLI.py:429 TimeTrackerCLI.py:562
-msgid "1. Change Language"
-msgstr "1. Cambiar Idioma"
-
-msgid "3. Change Data Storage Location"
-msgstr "3. Cambiar Ubicación de Almacenamiento de Datos"
-
-#: TimeTrackerCLI.py:430
-msgid "2. Restore Previous Version"
-msgstr "2. Restaurar Versión Anterior"
-
-msgid "Invalid choice. Please enter a number from 0 to 3."
-msgstr "Elección inválida. Por favor, introduzca un número del 0 al 3."
-
-#: TimeTrackerCLI.py:446 TimeTrackerCLI.py:545
-msgid "\n--- Language Settings ---"
-msgstr "\n--- Configuración de Idioma ---"
-
-#: TimeTrackerCLI.py:449 TimeTrackerCLI.py:548
-msgid "No additional languages found."
-msgstr "No se encontraron idiomas adicionales."
-
-#: TimeTrackerCLI.py:458 TimeTrackerCLI.py:587
-msgid "Language changed to '{lang}'. Please restart the application."
-msgstr "Idioma cambiado a '{lang}'. Por favor, reinicie la aplicación."
-
-#: TimeTrackerCLI.py:460 TimeTrackerCLI.py:590
-msgid "Invalid choice."
-msgstr "Elección inválida."
-
-#: TimeTrackerCLI.py:462 TimeTrackerCLI.py:592
-msgid "Invalid input. Please enter a number."
-msgstr "Entrada inválida. Por favor, introduzca un número."
-
 msgid "\n--- Data Storage Settings ---"
 msgstr "\n--- Configuración de Almacenamiento de Datos ---"
 
@@ -839,10 +829,6 @@ msgstr "0. Salir"
 #: TimeTrackerCLI.py:541
 msgid "\n--- Start Work on a Sub-Project ---"
 msgstr "\n--- Iniciar Trabajo en un Subproyecto ---"
-
-#: TimeTrackerCLI.py:497
-msgid "No sub-projects found for '{name}'."
-msgstr "No se encontraron subproyectos para '{name}'."
 
 #: TimeTrackerCLI.py:498
 msgid "Select a sub-project from '{name}':"

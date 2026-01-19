@@ -835,6 +835,51 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn(f"- **Sub 2**: 2:00:00 ({sessions_str_1}, 57.1%)", report) # 2h of 3.5h total
         self.assertIn(f"- **Sub 1**: 1:30:00 ({sessions_str_2}, 42.9%)", report) # 1.5h of 3.5h total
 
+    @unittest.mock.patch('TimeTrackerCLI.input')
+    @unittest.mock.patch('TimeTrackerCLI.print')
+    @unittest.mock.patch('os.path.isdir')
+    def test_handle_language_settings_valid_json(self, mock_isdir, mock_print, mock_input):
+        """Tests that language settings update writes valid JSON, even if file shrinks."""
+        import TimeTrackerCLI
+        
+        # Setup: Create a config.json with extra whitespace to make it large
+        # Using a large indent will make the file significantly larger than standard indent=4
+        long_config = {
+            "language": "de",
+            "some_key": "some_value"
+        }
+        
+        # Use a temporary config file for this test
+        temp_config = "test_config_lang.json"
+        with open(temp_config, 'w') as f:
+            # Write with large indentation to ensure file is large
+            json.dump(long_config, f, indent=20)
+            
+        # Patch the CONFIG_FILE constant in TimeTrackerCLI
+        original_config_file = TimeTrackerCLI.CONFIG_FILE
+        TimeTrackerCLI.CONFIG_FILE = temp_config
+        
+        try:
+            # Mock available languages check
+            mock_isdir.return_value = True
+            
+            # Simulate user input: '1' (English)
+            mock_input.side_effect = ['1'] 
+            
+            # Call the function
+            TimeTrackerCLI._handle_language_settings()
+            
+            # Verify content is valid JSON
+            with open(temp_config, 'r') as f:
+                new_config = json.load(f)
+                
+            self.assertEqual(new_config['language'], 'en')
+        finally:
+            # Cleanup
+            TimeTrackerCLI.CONFIG_FILE = original_config_file
+            if os.path.exists(temp_config):
+                os.remove(temp_config)
+
 # Run the tests if the file is called directly
 if __name__ == '__main__':
     unittest.main()

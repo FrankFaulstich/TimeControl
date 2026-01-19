@@ -515,11 +515,6 @@ def _handle_settings(tt):
 
 def _handle_language_settings():
     """Handles the language selection submenu."""
-    # This function's content remains the same as before, just moved/called from _handle_settings
-    # For brevity, I'm not including the full body here, assuming it's already implemented.
-    # The existing implementation in your context is:
-    # ... (your existing _handle_language_settings code) ...
-    # I'll include the full body in the final diff for completeness.
     while True:
         print(_("\n--- Language Settings ---"))
         supported_languages = {'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'cs': 'Čeština'}
@@ -544,12 +539,12 @@ def _handle_language_settings():
             if 1 <= choice_num <= len(available_languages):
                 selected_lang = list(available_languages.keys())[choice_num - 1]
                 # Update config.json
-                CONFIG_FILE = 'config.json'
                 with open(CONFIG_FILE, 'r+') as f:
                     config = json.load(f)
                     config['language'] = selected_lang
                     f.seek(0)
                     json.dump(config, f, indent=4)
+                    f.truncate()
                 print(_("Language changed to '{lang}'. Please restart the application.").format(lang=selected_lang))
                 return # Go back to main menu to encourage restart
             else:
@@ -559,7 +554,6 @@ def _handle_language_settings():
 
 def _handle_storage_settings(tt):
     """Handles the data storage settings."""
-    CONFIG_FILE = 'config.json'
     print(_("\n--- Data Storage Settings ---"))
     print(_("Current data file: {path}").format(path=tt.file_path))
     
@@ -720,46 +714,6 @@ def _handle_reporting(tt):
             break
         else:
             print(_("Invalid choice. Please enter a number from 0 to 6."))
-
-def _handle_language_settings():
-    """Handles the language selection submenu."""
-    while True:
-        print(_("\n--- Language Settings ---"))
-        supported_languages = {'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'cs': 'Čeština'}
-        available_languages = {lang: name for lang, name in supported_languages.items() if os.path.isdir(os.path.join('locale', lang))}
-
-        if not available_languages:
-            print(_("No additional languages found."))
-            return
-
-        for i, lang in enumerate(available_languages, 1):
-            print(f"{i}. {lang}")
-        print("--------------------------")
-        print(_("0. Back to Main Menu"))
-        print("--------------------------")
-
-        choice = input(_("Choice: "))
-        if choice == '0':
-            break
-        
-        try:
-            choice_num = int(choice)
-            if 1 <= choice_num <= len(available_languages):
-                selected_lang = list(available_languages.keys())[choice_num - 1]
-                # Update config.json
-                CONFIG_FILE = 'config.json'
-                with open(CONFIG_FILE, 'r+') as f:
-                    config = json.load(f)
-                    config['language'] = selected_lang
-                    f.seek(0)
-                    json.dump(config, f, indent=4)
-                print(_("Language changed to '{lang}'. Please restart the application.").format(lang=selected_lang))
-                return # Go back to main menu to encourage restart
-            else:
-                print(_("Invalid choice."))
-        except ValueError:
-            print(_("Invalid input. Please enter a number."))
-
 
 def run_menu():
     """
