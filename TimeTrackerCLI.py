@@ -606,8 +606,8 @@ def _handle_reporting(tt):
         print(_("1. Daily Report (Today)"))
         print(_("2. Daily Report (Specific Day)"))
         print(_("3. Date Range Report"))
-        print(_("4. Detailed Sub-Project Report")) # Yesterday's change
-        print(_("5. Detailed Main-Project Report")) # Today's change
+        print(_("4. Detailed Sub-Project Report"))
+        print(_("5. Detailed Main-Project Report"))
         print(_("6. Detailed Daily Report"))
         print("--------------------------")
         print(_("0. Back to Main Menu"))
