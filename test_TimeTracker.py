@@ -456,7 +456,7 @@ class TestTimeTracker(unittest.TestCase):
 
         success, msg = self.tracker.demote_main_project("Old Main", "New Parent")
         self.assertTrue(success)
-        self.assertIn("herabgestuft", msg)
+        self.assertIn("demoted", msg)
 
         # 1. Check if old main project is gone
         self.assertNotIn("Old Main", self.tracker.list_main_projects())
@@ -477,7 +477,7 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_sub_project("Parent", "To Demote") # Name conflict
         success, msg = self.tracker.demote_main_project("To Demote", "Parent")
         self.assertFalse(success)
-        self.assertIn("existiert bereits", msg)
+        self.assertIn("already exists", msg)
     # --- Time Tracking Method Tests ---
     
     def _create_mock_project_with_sub(self, main_name, sub_name):
