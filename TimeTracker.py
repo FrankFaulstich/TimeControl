@@ -28,7 +28,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "1.13"
+    VERSION = "1.14"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
 

@@ -28,6 +28,12 @@ def _initialize_translator():
         except IOError:
             print(f"Warning: Could not write language setting to {CONFIG_FILE}")
 
+    # If the language is English, we use the source strings directly.
+    # This avoids issues where a stale or incorrect 'en' translation file (MO)
+    # might contain translations from another language (e.g. copied from 'de').
+    if lang == 'en':
+        return lambda s: s
+
     try:
         translation = gettext.translation('timetracker', localedir='locale', languages=[lang], fallback=True)
         return translation.gettext
