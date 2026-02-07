@@ -41,6 +41,7 @@ def _handle_project_management(tt):
         print(_("15. List All Closed Sub-Projects"))
         print(_("16. Delete All Closed Sub-Projects"))
         print(_("17. Promote Sub-Project to Main-Project"))
+        print(_("18. List Completed Main Projects"))
         print("--------------------------------")
         print(_("0.  Back to Main Menu"))
         print("--------------------------------")
@@ -446,6 +447,17 @@ def _handle_project_management(tt):
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
 
+        elif choice == '18':
+            # List completed main projects
+            print(_("\n--- List Completed Main Projects ---"))
+            completed_projects = tt.list_completed_main_projects()
+            if completed_projects:
+                print(_("Main projects with only closed or no sub-projects:"))
+                for i, project in enumerate(completed_projects, 1):
+                    print(f"{i}. {project}")
+            else:
+                print(_("No completed main projects found."))
+
         elif choice == '6':
             # Demote Main-Project
             print(_("\n--- Demote Main-Project to Sub-Project ---"))
@@ -480,7 +492,7 @@ def _handle_project_management(tt):
         elif choice == '0':
             break
         else:
-            print(_("Invalid choice. Please enter a number from 0 to 17."))
+            print(_("Invalid choice. Please enter a number from 0 to 18."))
 
 def _handle_settings(tt):
     """Handles the settings submenu."""
