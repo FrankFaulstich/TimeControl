@@ -763,6 +763,28 @@ class TimeTracker:
 
         return inactive_main_projects
 
+    def list_completed_main_projects(self):
+        """
+        Lists main projects that have either no sub-projects or only closed sub-projects.
+
+        :return: A list of main project names.
+        :rtype: list[str]
+        """
+        completed_projects = []
+        for project in self.data["projects"]:
+            sub_projects = project.get("sub_projects", [])
+            
+            # If no sub-projects, it is considered completed/inactive in this context
+            if not sub_projects:
+                completed_projects.append(project["main_project_name"])
+                continue
+            
+            # Check if all sub-projects are closed
+            if all(sp.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED for sp in sub_projects):
+                completed_projects.append(project["main_project_name"])
+        
+        return completed_projects
+
     def generate_daily_report(self, report_date=None):
         """
         Generates a daily report in Markdown format, listing only projects 

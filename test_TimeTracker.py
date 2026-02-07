@@ -478,6 +478,34 @@ class TestTimeTracker(unittest.TestCase):
         success, msg = self.tracker.demote_main_project("To Demote", "Parent")
         self.assertFalse(success)
         self.assertIn("already exists", msg)
+
+    def test_list_completed_main_projects(self):
+        """Tests listing main projects with only closed or no sub-projects."""
+        # 1. Empty main project -> Should be listed
+        self.tracker.add_main_project("Empty Main")
+
+        # 2. Main with only closed sub-projects -> Should be listed
+        self.tracker.add_main_project("Closed Main")
+        self.tracker.add_sub_project("Closed Main", "Sub 1")
+        self.tracker.close_sub_project("Closed Main", "Sub 1")
+
+        # 3. Main with open sub-project -> Should NOT be listed
+        self.tracker.add_main_project("Open Main")
+        self.tracker.add_sub_project("Open Main", "Sub 2") # Open by default
+
+        # 4. Main with mixed sub-projects -> Should NOT be listed
+        self.tracker.add_main_project("Mixed Main")
+        self.tracker.add_sub_project("Mixed Main", "Closed Sub")
+        self.tracker.close_sub_project("Mixed Main", "Closed Sub")
+        self.tracker.add_sub_project("Mixed Main", "Open Sub")
+
+        completed_list = self.tracker.list_completed_main_projects()
+        
+        self.assertIn("Empty Main", completed_list)
+        self.assertIn("Closed Main", completed_list)
+        self.assertNotIn("Open Main", completed_list)
+        self.assertNotIn("Mixed Main", completed_list)
+
     # --- Time Tracking Method Tests ---
     
     def _create_mock_project_with_sub(self, main_name, sub_name):
