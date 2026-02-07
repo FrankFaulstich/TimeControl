@@ -71,13 +71,15 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(new_tracker.data["projects"][0]["main_project_name"], "Test")
         
     def test_migrate_data_structure_adds_status(self):
-        """Tests that the migration logic adds the 'status' field to sub-projects."""
-        # 1. Create a data file with an old structure (no 'status' field)
+        """Tests that the migration logic adds the 'status' field to main and sub-projects."""
+        # 1. Create a data file with an old structure (no 'status' fields)
         old_data = {
             "projects": [{
                 "main_project_name": "Old Project",
+                # Missing 'status' here
                 "sub_projects": [{
                     "sub_project_name": "Sub without status",
+                    # Missing 'status' here
                     "time_entries": []
                 }]
             }]
@@ -88,7 +90,12 @@ class TestTimeTracker(unittest.TestCase):
         # 2. Initialize the tracker, which should trigger the migration
         tracker = TimeTracker(file_path=TEST_FILE_PATH)
 
-        # 3. Check if the 'status' field was added and set to 'open'
+        # 3. Check if the 'status' field was added to main project
+        main_project = tracker.data["projects"][0]
+        self.assertIn("status", main_project)
+        self.assertEqual(main_project["status"], "open")
+
+        # 4. Check if the 'status' field was added to sub-project
         sub_project = tracker.data["projects"][0]["sub_projects"][0]
         self.assertIn("status", sub_project)
         self.assertEqual(sub_project["status"], "open")
@@ -168,12 +175,15 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(len(self.tracker.data["projects"]), 1)
         self.assertEqual(self.tracker.data["projects"][0]["main_project_name"], "Project A")
         
-    def test_list_main_projects(self):
-        """Tests listing main projects."""
+    def test_list_main_projects_returns_dicts(self):
+        """Tests listing main projects returns dicts with status."""
         self.tracker.add_main_project("Project Alpha")
         self.tracker.add_main_project("Project Beta")
         projects = self.tracker.list_main_projects()
-        self.assertEqual(projects, ["Project Alpha", "Project Beta"])
+        self.assertEqual(len(projects), 2)
+        self.assertEqual(projects[0]['main_project_name'], "Project Alpha")
+        self.assertEqual(projects[0]['status'], "open")
+        self.assertEqual(projects[1]['main_project_name'], "Project Beta")
         
     def test_delete_main_project_success(self):
         """Tests the successful deletion of a main project."""
@@ -181,7 +191,8 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_main_project("To Keep")
         success = self.tracker.delete_main_project("To Delete")
         self.assertTrue(success)
-        self.assertEqual(self.tracker.list_main_projects(), ["To Keep"])
+        projects = self.tracker.list_main_projects()
+        self.assertEqual([p['main_project_name'] for p in projects], ["To Keep"])
 
     def test_delete_main_project_not_found(self):
         """Tests deleting a non-existent main project."""
@@ -195,7 +206,8 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_main_project("Old Project Name")
         success = self.tracker.rename_main_project("Old Project Name", "New Project Name")
         self.assertTrue(success)
-        self.assertEqual(self.tracker.list_main_projects(), ["New Project Name"])
+        projects = self.tracker.list_main_projects()
+        self.assertEqual([p['main_project_name'] for p in projects], ["New Project Name"])
 
     def test_rename_main_project_not_found(self):
         """Tests renaming a non-existent main project."""
@@ -208,6 +220,25 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_main_project("Project A")
         self.tracker.add_main_project("Project B")
         self.assertFalse(self.tracker.rename_main_project("Project A", "Project B"))
+
+    def test_close_and_reopen_main_project(self):
+        """Tests closing and reopening a main project."""
+        self.tracker.add_main_project("Main Project")
+        
+        # Close
+        self.assertTrue(self.tracker.close_main_project("Main Project"))
+        projects = self.tracker.list_main_projects(status_filter='closed')
+        self.assertEqual(len(projects), 1)
+        self.assertEqual(projects[0]['main_project_name'], "Main Project")
+        self.assertEqual(projects[0]['status'], "closed")
+        self.assertEqual(len(self.tracker.list_main_projects(status_filter='open')), 0)
+
+        # Reopen
+        self.assertTrue(self.tracker.reopen_main_project("Main Project"))
+        projects = self.tracker.list_main_projects(status_filter='open')
+        self.assertEqual(len(projects), 1)
+        self.assertEqual(projects[0]['main_project_name'], "Main Project")
+        self.assertEqual(projects[0]['status'], "open")
 
     # --- Sub-Project Method Tests ---
 
@@ -418,7 +449,8 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(self.tracker.list_sub_projects("Source Main"), [])
 
         # 2. Check if new main project exists
-        self.assertIn("Promotable Sub", self.tracker.list_main_projects())
+        main_projects = [p['main_project_name'] for p in self.tracker.list_main_projects()]
+        self.assertIn("Promotable Sub", main_projects)
 
         # 3. Check if new main project has a "General" sub-project with the time entries
         new_main_subs = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Promotable Sub")]
@@ -459,7 +491,8 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("demoted", msg)
 
         # 1. Check if old main project is gone
-        self.assertNotIn("Old Main", self.tracker.list_main_projects())
+        main_projects = [p['main_project_name'] for p in self.tracker.list_main_projects()]
+        self.assertNotIn("Old Main", main_projects)
 
         # 2. Check if new sub-project exists under the new parent
         new_parent_subs = [s['sub_project_name'] for s in self.tracker.list_sub_projects("New Parent")]
