@@ -22,7 +22,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 ## Features 🚀
 
-**Project Management:** Create, list, rename, delete, move, promote, and demote main and sub-projects.
+**Project Management:** Create, list, rename, delete, close, reopen, move, promote, and demote main and sub-projects.
 
 **Time Tracking:** Start, stop, and view the current work session. Automatically stops the previous session when a new one begins.
 
@@ -131,22 +131,46 @@ The interactive CLI provides a structured menu for all operations.
 
 ```text
 --- Project Management ---
+1. Main Project Management
+2. Sub-Project Management
+--------------------------------
+0.  Back to Main Menu
+```
+
+**Main Project Management Submenu:**
+
+```text
+--- Main Project Management ---
 1.  Add Main Project
 2.  List Main Projects
 3.  Rename Main Project
-4.  Delete Main Project
-5.  List Inactive Main Projects
+4.  Close Main Project
+5.  Re-open Main Project
+6.  Delete Main Project
+7.  List Inactive Main Projects
+8.  Demote Main-Project to Sub-Project
+9.  List Completed Main Projects
 --------------------------------
-6.  Add Sub-Project
-7.  List Sub-Projects
-8.  Rename Sub-Project
-9.  Delete Sub-Project
-10. Move Sub-Project
-11. List Inactive Sub-Projects
-12. Promote Sub-Project to Main-Project
-13. Demote Main-Project to Sub-Project
+0.  Back
+```
+
+**Sub-Project Management Submenu:**
+
+```text
+--- Sub-Project Management ---
+1.  Add Sub-Project
+2.  List Sub-Projects
+3.  Rename Sub-Project
+4.  Close Sub-Project
+5.  Re-open Sub-Project
+6.  Delete Sub-Project
+7.  Move Sub-Project
+8.  List Inactive Sub-Projects
+9.  List All Closed Sub-Projects
+10. Delete All Closed Sub-Projects
+11. Promote Sub-Project to Main-Project
 --------------------------------
-0.  Back to Main Menu
+0.  Back
 ```
 
 **Reporting Submenu (Option 5):**
