@@ -135,6 +135,11 @@ class TimeTracker:
             data_changed = True # The data object itself was changed
 
         for project in self.data.get("projects", []):
+            # Migration: Add status to main projects
+            if "status" not in project:
+                project["status"] = self.STATUS_OPEN
+                data_changed = True
+
             for sub_project in project.get("sub_projects", []):
                 if "status" not in sub_project:
                     sub_project["status"] = self.STATUS_OPEN
@@ -230,19 +235,29 @@ class TimeTracker:
         """
         new_project = {
             "main_project_name": main_project_name,
-            "sub_projects": []
+            "sub_projects": [],
+            "status": self.STATUS_OPEN
         }
         self.data["projects"].append(new_project)
         self._save_data()
 
-    def list_main_projects(self):
+    def list_main_projects(self, status_filter='all'):
         """
-        Returns a list of all main project names.
+        Returns a list of main projects based on the status filter.
 
-        :return: A list of main project names.
-        :rtype: list[str]
+        :param status_filter: 'open', 'closed', or 'all'. Defaults to 'all'.
+        :return: A list of dictionaries containing 'main_project_name' and 'status'.
+        :rtype: list[dict]
         """
-        return [project["main_project_name"] for project in self.data["projects"]]
+        projects = []
+        for project in self.data["projects"]:
+            status = project.get("status", self.STATUS_OPEN)
+            if status_filter == 'all' or status == status_filter:
+                projects.append({
+                    "main_project_name": project["main_project_name"],
+                    "status": status
+                })
+        return projects
 
     def delete_main_project(self, main_project_name):
         """
@@ -281,6 +296,38 @@ class TimeTracker:
         project = self._get_project(old_name)
         if project:
             project["main_project_name"] = new_name
+            self._save_data()
+            return True
+        return False
+
+    def close_main_project(self, main_project_name):
+        """
+        Sets the status of a main project to 'closed'.
+
+        :param main_project_name: The name of the main project.
+        :type main_project_name: str
+        :return: True if the main project was closed, otherwise False.
+        :rtype: bool
+        """
+        project = self._get_project(main_project_name)
+        if project:
+            project["status"] = self.STATUS_CLOSED
+            self._save_data()
+            return True
+        return False
+
+    def reopen_main_project(self, main_project_name):
+        """
+        Sets the status of a main project to 'open'.
+
+        :param main_project_name: The name of the main project.
+        :type main_project_name: str
+        :return: True if the main project was reopened, otherwise False.
+        :rtype: bool
+        """
+        project = self._get_project(main_project_name)
+        if project:
+            project["status"] = self.STATUS_OPEN
             self._save_data()
             return True
         return False
