@@ -12,6 +12,7 @@ A simple, object-oriented Python application for tracking time spent on projects
   - [Configuration ⚙️](#configuration-️)
   - [Usage ⚙️](#usage-️)
     - [Running the Interactive CLI](#running-the-interactive-cli)
+    - [Running the Streamlit GUI CLI](#running-the-streamlit-gui-cli)
     - [CLI Menu Options](#cli-menu-options)
   - [Building the Documentation 📚](#building-the-documentation-)
   - [Data Storage 🗄️](#data-storage-️)
@@ -22,7 +23,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 ## Features 🚀
 
-**Project Management:** Create, list, rename, delete, close, reopen, move, promote, and demote main and sub-projects.
+**Project Management:** Create, list, rename, delete, close, re-open, move, promote, and demote main and sub-projects.
 
 **Time Tracking:** Start, stop, and view the current work session. Automatically stops the previous session when a new one begins.
 
@@ -43,6 +44,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **Interface:**
 
+- **Experimental GUI:** A graphical user interface based on Streamlit for a more visual experience.
 - **Interactive CLI:** A user-friendly command-line interface (`TimeTrackerCLI.py`) for manual operations.
 
 **Unit Testing:** Includes comprehensive unit tests in `test_TimeTracker.py` for feature reliability.
@@ -83,7 +85,8 @@ The application can be configured via the `config.json` file.
     "update": {
         "github_repo": "FrankFaulstich/TimeControl"
     },
-    "language": "en"
+    "language": "en",
+    "streamlit_port": 8501
 }
 ```
 
@@ -107,6 +110,21 @@ or
 ```bash
 python3 TimeTrackerCLI.py
 ```
+
+### Running the Streamlit GUI CLI
+
+To start the interactive command-line interface, run:
+
+```bash
+python TimeTrackerSL_GUI.py
+```
+
+or
+
+```bash
+python3 TimeTrackerSL_GUI.py
+```
+
 
 ### CLI Menu Options
 
