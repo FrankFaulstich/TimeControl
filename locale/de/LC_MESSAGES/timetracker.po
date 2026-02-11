@@ -379,7 +379,7 @@ msgstr "Keine Hauptprojekte gefunden. Unterprojekte können nicht aufgelistet we
 
 #: TimeTrackerCLI.py:148
 msgid "Select the main project whose sub-projects you want to list:"
-msgstr "Wähle das Hauptprojekt, dessen Unterprojekts du auflisten möchtest:"
+msgstr "Wähle das Hauptprojekt, dessen Unterprojekte du auflisten möchtest:"
 
 #: TimeTrackerCLI.py:156
 msgid "Sub-projects for '{name}':"
@@ -485,7 +485,7 @@ msgstr "\n--- Unterprojekt verschieben ---"
 
 #: TimeTrackerCLI.py:250
 msgid "You need at least two main projects to move a sub-project."
-msgstr "Es werden mindestens zwei Hauptprojekte benötigt, um ein Unterprojekt zu verschieben."
+msgstr "Du benötigst mindestens zwei Hauptprojekte, um ein Unterprojekt zu verschieben."
 
 #: TimeTrackerCLI.py:254
 msgid "Select the source main project:"
@@ -540,7 +540,7 @@ msgstr "\n--- Hauptprojekt zu Unterprojekt herabstufen ---"
 
 #: TimeTrackerCLI.py:318
 msgid "You need at least two main projects for this operation."
-msgstr "Für diesen Vorgang werden mindestens zwei Hauptprojekte benötigt."
+msgstr "Du benötigst mindestens zwei Hauptprojekte für diesen Vorgang."
 
 #: TimeTrackerCLI.py:322
 msgid "Select the main project to demote:"
@@ -563,7 +563,7 @@ msgstr "Ungültige Auswahl. Bitte eine Zahl von 0 bis 17 eingeben."
 
 #: TimeTrackerCLI.py:348
 msgid "\n--- Reporting ---"
-msgstr "\n--- Berichte ---"
+msgstr "\n--- Berichterstattung ---"
 
 #: TimeTrackerCLI.py:349
 msgid "1. Daily Report (Today)"
@@ -575,7 +575,7 @@ msgstr "2. Tagesbericht (Bestimmter Tag)"
 
 #: TimeTrackerCLI.py:351
 msgid "3. Date Range Report"
-msgstr "3. Bericht für Zeitraum"
+msgstr "3. Zeitraum-Bericht"
 
 #: TimeTrackerCLI.py:352
 msgid "4. Detailed Sub-Project Report"
@@ -603,7 +603,7 @@ msgstr "Ungültiges Datumsformat. Bitte JJJJ-MM-TT verwenden."
 
 #: TimeTrackerCLI.py:371
 msgid "\n--- Generate Report for a Date Range ---"
-msgstr "\n--- Bericht für einen Zeitraum erstellen ---"
+msgstr "\n--- Zeitraum-Bericht erstellen ---"
 
 #: TimeTrackerCLI.py:372
 msgid "Enter the start date (YYYY-MM-DD): "
@@ -774,7 +774,7 @@ msgstr "4. Projekte und Unterprojekte verwalten"
 
 #: TimeTrackerCLI.py:532
 msgid "5. Reporting"
-msgstr "5. Berichte"
+msgstr "5. Berichterstattung"
 
 #: TimeTrackerCLI.py:533
 msgid "6. Settings"
@@ -954,7 +954,7 @@ msgid "\nNo time tracked for {date}."
 msgstr "\nKeine Zeit für {date} erfasst."
 
 msgid "# Detailed Report for Sub-Project: {name}"
-msgstr "# Detaillierter Bericht für Unterprojekt: {name}"
+msgstr "# Detaillierter Unterprojekt-Bericht: {name}"
 
 msgid "Part of Main Project: {name}"
 msgstr "Teil des Hauptprojekts: {name}"
@@ -1014,7 +1014,7 @@ msgid "Duration"
 msgstr "Dauer"
 
 msgid "# Detailed Report for Main Project: {name}"
-msgstr "# Detaillierter Bericht für Hauptprojekt: {name}"
+msgstr "# Detaillierter Hauptprojekt-Bericht: {name}"
 
 msgid "Number of sub-projects"
 msgstr "Anzahl der Unterprojekte"

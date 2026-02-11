@@ -44,7 +44,7 @@ msgid "An unexpected error occurred during dependency check: {error}"
 msgstr "Během kontroly závislostí došlo k neočekávané chybě: {error}"
 
 msgid "Info: Report content has been copied to the clipboard."
-msgstr "Info: Obsah reportu byl zkopírován do schránky."
+msgstr "Info: Obsah zprávy byl zkopírován do schránky."
 
 msgid "Warning: Could not copy to clipboard. Error: {error}"
 msgstr "Varování: Nelze kopírovat do schránky. Chyba: {error}"
@@ -442,25 +442,25 @@ msgid "Invalid choice. Please enter a number from 0 to 17."
 msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 17."
 
 msgid "1. Daily Report (Today)"
-msgstr "1. Denní report (dnes)"
+msgstr "1. Denní zpráva (dnes)"
 
 msgid "2. Daily Report (Specific Day)"
-msgstr "2. Denní report (konkrétní den)"
+msgstr "2. Denní zpráva (konkrétní den)"
 
 msgid "3. Date Range Report"
-msgstr "3. Report za období"
+msgstr "3. Zpráva za období"
 
 msgid "4. Detailed Sub-Project Report"
-msgstr "4. Podrobný report podprojektu"
+msgstr "4. Podrobná zpráva o podprojektu"
 
 msgid "5. Detailed Main-Project Report"
-msgstr "5. Podrobný report hlavního projektu"
+msgstr "5. Podrobná zpráva o hlavním projektu"
 
 msgid "\n--- Generate Daily Report (Today) ---"
-msgstr "\n--- Generovat denní report (dnes) ---"
+msgstr "\n--- Generovat denní zprávu (dnes) ---"
 
 msgid "\n--- Generate Daily Report for a specific Day ---"
-msgstr "\n--- Generovat denní report pro konkrétní den ---"
+msgstr "\n--- Generovat denní zprávu pro konkrétní den ---"
 
 msgid "Enter the date (YYYY-MM-DD): "
 msgstr "Zadejte datum (RRRR-MM-DD): "
@@ -469,7 +469,7 @@ msgid "Invalid date format. Please use YYYY-MM-DD."
 msgstr "Neplatný formát data. Použijte prosím RRRR-MM-DD."
 
 msgid "\n--- Generate Report for a Date Range ---"
-msgstr "\n--- Generovat report za období ---"
+msgstr "\n--- Generovat zprávu za období ---"
 
 msgid "Enter the start date (YYYY-MM-DD): "
 msgstr "Zadejte počáteční datum (RRRR-MM-DD): "
@@ -481,19 +481,19 @@ msgid "Error: The start date cannot be after the end date."
 msgstr "Chyba: Počáteční datum nemůže být po koncovém datu."
 
 msgid "\n--- Detailed Sub-Project Report ---"
-msgstr "\n--- Podrobný report podprojektu ---"
+msgstr "\n--- Podrobná zpráva o podprojektu ---"
 
 msgid "No projects found."
 msgstr "Nebyly nalezeny žádné projekty."
 
 msgid "\nSelect the sub-project for the report:"
-msgstr "\nVyberte podprojekt pro report:"
+msgstr "\nVyberte podprojekt pro zprávu:"
 
 msgid "\n--- Detailed Main-Project Report ---"
-msgstr "\n--- Podrobný report hlavního projektu ---"
+msgstr "\n--- Podrobná zpráva o hlavním projektu ---"
 
 msgid "Select the main project for the report:"
-msgstr "Vyberte hlavní projekt pro report:"
+msgstr "Vyberte hlavní projekt pro zprávu:"
 
 msgid "Invalid choice. Please enter a number from 0 to 5."
 msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 5."
@@ -718,7 +718,7 @@ msgid "The backup file '{filename}' was not deleted."
 msgstr "Záložní soubor '{filename}' nebyl smazán."
 
 msgid "# Detailed Daily Report: {date}"
-msgstr "# Podrobný denní report: {date}"
+msgstr "# Podrobná denní zpráva: {date}"
 
 msgid "now"
 msgstr "nyní"
@@ -727,7 +727,7 @@ msgid "\nNo time tracked for {date}."
 msgstr "\nPro den {date} nebyl zaznamenán žádný čas."
 
 msgid "# Detailed Report for Sub-Project: {name}"
-msgstr "# Podrobný report podprojektu: {name}"
+msgstr "# Podrobná zpráva o podprojektu: {name}"
 
 msgid "Part of Main Project: {name}"
 msgstr "Součást hlavního projektu: {name}"
@@ -787,7 +787,7 @@ msgid "Duration"
 msgstr "Trvání"
 
 msgid "# Detailed Report for Main Project: {name}"
-msgstr "# Podrobný report hlavního projektu: {name}"
+msgstr "# Podrobná zpráva o hlavním projektu: {name}"
 
 msgid "Number of sub-projects"
 msgstr "Počet podprojektů"
@@ -802,10 +802,10 @@ msgid "{num_sessions} sessions"
 msgstr "{num_sessions} relací"
 
 msgid "6. Detailed Daily Report"
-msgstr "6. Podrobný denní report"
+msgstr "6. Podrobná denní zpráva"
 
 msgid "\n--- Detailed Daily Report ---"
-msgstr "\n--- Podrobný denní report ---"
+msgstr "\n--- Podrobná denní zpráva ---"
 
 msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
 msgstr "Zadejte datum (RRRR-MM-DD) nebo stiskněte Enter pro dnešek: "
