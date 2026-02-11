@@ -3,5 +3,6 @@
         "github_repo": "FrankFaulstich/TimeControl"
     },
     "language": "en",
-    "data_file": "data.json"
+    "data_file": "data.json",
+    "streamlit_port": 8500
 }
