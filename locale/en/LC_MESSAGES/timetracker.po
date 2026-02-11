@@ -80,17 +80,21 @@ msgstr[1] "{hours} hours ({dlp} DLP)"
 msgid "closed"
 msgstr "closed"
 
+#: TimeTracker.py:350
+msgid "Source main project '{name}' not found."
+msgstr "Source main project '{name}' not found."
+
 #: TimeTracker.py:352
 msgid "Destination main project '{name}' not found."
 msgstr "Destination main project '{name}' not found."
 
 #: TimeTracker.py:356
-msgid "Sub-project '{name}' moved successfully."
-msgstr "Sub-project '{name}' moved successfully."
+msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
+msgstr "A sub-project named '{sub_name}' already exists in '{main_name}'."
 
-#: TimeTracker.py:388
-msgid "Source main project '{name}' not found."
-msgstr "Source main project '{name}' not found."
+#: TimeTracker.py:378
+msgid "A main project named '{name}' already exists."
+msgstr "A main project named '{name}' already exists."
 
 #: TimeTracker.py:398
 msgid "Sub-project '{sub_name}' not found in '{main_name}'."
@@ -101,8 +105,8 @@ msgid "General"
 msgstr "General"
 
 #: TimeTracker.py:414
-msgid "Sub-project '{sub_name}' was promoted to a new main project."
-msgstr "Sub-project '{sub_name}' was promoted to a new main project."
+msgid "Sub-project '{name}' was promoted to a new main project."
+msgstr "Sub-project '{name}' was promoted to a new main project."
 
 #: TimeTracker.py:439
 msgid "Main project to demote '{name}' not found."
@@ -112,9 +116,9 @@ msgstr "Main project to demote '{name}' not found."
 msgid "New parent main project '{name}' not found."
 msgstr "New parent main project '{name}' not found."
 
-#: TimeTracker.py:445
-msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
-msgstr "A sub-project named '{sub_name}' already exists in '{main_name}'."
+#: TimeTracker.py:455
+msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
+msgstr "Sub-project '{old_name}' has been renamed to '{new_name}'."
 #: TimeTracker.py:463
 msgid ""
 "Main project '{demoted_name}' was demoted to a sub-project under "
@@ -122,6 +126,10 @@ msgid ""
 msgstr ""
 "Main project '{demoted_name}' was demoted to a sub-project under "
 "'{parent_name}'."
+
+#: TimeTracker.py:471
+msgid "Main project '{old_name}' renamed to '{new_name}'."
+msgstr "Main project '{old_name}' renamed to '{new_name}'."
 
 #: TimeTracker.py:651
 msgid "- {name}: {hours} hour"
@@ -206,8 +214,8 @@ msgid "9.  Rename Sub-Project"
 msgstr "9.  Rename Sub-Project"
 
 #: TimeTrackerCLI.py:32
-msgid "10. Delete Sub-Project"
-msgstr "10. Delete Sub-Project"
+msgid "10. Close Sub-Project"
+msgstr "10. Close Sub-Project"
 
 msgid "11. Re-open Sub-Project"
 msgstr "11. Re-open Sub-Project"
@@ -254,10 +262,6 @@ msgstr "Main project '{name}' added."
 msgid "\n--- List Main Projects ---"
 msgstr "\n--- List Main Projects ---"
 
-#: TimeTrackerCLI.py:55
-msgid "No main projects found."
-msgstr "No main projects found."
-
 #: TimeTrackerCLI.py:58
 msgid "\n--- Rename Main Project ---"
 msgstr "\n--- Rename Main Project ---"
@@ -274,7 +278,7 @@ msgstr "Select a main project to rename:"
 msgid "Enter the number of the main project: "
 msgstr "Enter the number of the main project: "
 
-#: TimeTrackerCLI.py:71
+#: TimeTrackerCLI.py:71 TimeTrackerCLI.py:187
 msgid "Enter the new name for '{name}': "
 msgstr "Enter the new name for '{name}': "
 
@@ -408,10 +412,6 @@ msgstr "Select a sub-project from '{name}' to rename:"
 msgid "Enter the number of the sub-project: "
 msgstr "Enter the number of the sub-project: "
 
-#: TimeTrackerCLI.py:187
-msgid "Enter the new name for '{name}': "
-msgstr "Enter the new name for '{name}': "
-
 #: TimeTrackerCLI.py:190
 msgid "Sub-project '{old_name}' renamed to '{new_name}'."
 msgstr "Sub-project '{old_name}' renamed to '{new_name}'."
@@ -484,10 +484,6 @@ msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
 msgstr[0] "No sub-projects found inactive for more than {weeks} week."
 msgstr[1] "No sub-projects found inactive for more than {weeks} weeks."
 
-#: TimeTrackerCLI.py:244
-msgid "Invalid input. Please enter a valid number for weeks."
-msgstr "Invalid input. Please enter a valid number for weeks."
-
 #: TimeTrackerCLI.py:248 TimeTrackerCLI.py:249
 msgid "\n--- Move Sub-Project ---"
 msgstr "\n--- Move Sub-Project ---"
@@ -521,8 +517,8 @@ msgid "Enter the number of the destination main project: "
 msgstr "Enter the number of the destination main project: "
 
 #: TimeTrackerCLI.py:279
-msgid "Successfully moved '{sub_name}' from '{source_main_project}' to '{dest_main_project}'."
-msgstr "Successfully moved '{sub_name}' from '{source_main_project}' to '{dest_main_project}'."
+msgid "Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'."
+msgstr "Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'."
 
 #: TimeTrackerCLI.py:281
 msgid "Error: {message}"
@@ -548,6 +544,10 @@ msgstr "\nSelect a sub-project from '{name}' to promote:"
 msgid "\n--- Demote Main-Project to Sub-Project ---"
 msgstr "\n--- Demote Main-Project to Sub-Project ---"
 
+#: TimeTrackerCLI.py:318
+msgid "You need at least two main projects for this operation."
+msgstr "You need at least two main projects for this operation."
+
 #: TimeTrackerCLI.py:323
 msgid "Select the main project to demote:"
 msgstr "Select the main project to demote:"
@@ -563,9 +563,6 @@ msgstr "\nSelect the new parent main project:"
 #: TimeTrackerCLI.py:334
 msgid "Enter the number of the new parent project: "
 msgstr "Enter the number of the new parent project: "
-
-msgid "Invalid choice. Please enter a number from 0 to 17."
-msgstr "Invalid choice. Please enter a number from 0 to 17."
 
 #: TimeTrackerCLI.py:348
 msgid "\n--- Reporting ---"
@@ -602,6 +599,10 @@ msgstr "\n--- Generate Daily Report for a specific Day ---"
 #: TimeTrackerCLI.py:364
 msgid "Enter the date (YYYY-MM-DD): "
 msgstr "Enter the date (YYYY-MM-DD): "
+
+#: TimeTrackerCLI.py:369
+msgid "Invalid date format. Please use YYYY-MM-DD."
+msgstr "Invalid date format. Please use YYYY-MM-DD."
 
 #: TimeTrackerCLI.py:371
 msgid "\n--- Generate Report for a Date Range ---"
@@ -642,24 +643,6 @@ msgstr "Select the main project for the report:"
 #: TimeTrackerCLI.py:425
 msgid "Invalid choice. Please enter a number from 0 to 5."
 msgstr "Invalid choice. Please enter a number from 0 to 5."
-
-#: TimeTrackerCLI.py:428 TimeTrackerCLI.py:469
-msgid "\n--- Settings ---"
-msgstr "\n--- Settings ---"
-
-#: TimeTrackerCLI.py:429 TimeTrackerCLI.py:563
-msgid "1. Change Language"
-msgstr "1. Change Language"
-
-msgid "3. Change Data Storage Location"
-msgstr "3. Change Data Storage Location"
-
-#: TimeTrackerCLI.py:430
-msgid "2. Restore Previous Version"
-msgstr "2. Restore Previous Version"
-
-msgid "Invalid choice. Please enter a number from 0 to 3."
-msgstr "Invalid choice. Please enter a number from 0 to 3."
 
 #: TimeTrackerCLI.py:447 TimeTrackerCLI.py:546
 msgid "\n--- Language Settings ---"
@@ -876,7 +859,7 @@ msgstr "Error checking for updates: {error}"
 
 #: update.py:49
 msgid "An unexpected error occurred while checking for updates: {error}"
-msgstr "An unexpected error occurred during dependency check: {error}"
+msgstr "An unexpected error occurred while checking for updates: {error}"
 
 #: update.py:61
 msgid "Downloading update..."
@@ -949,39 +932,3 @@ msgstr "Error during restoration: {error}"
 #: update.py:193
 msgid "The backup file '{filename}' was not deleted."
 msgstr "The backup file '{filename}' was not deleted."
-
-#: update.py:24
-msgid ""
-"Warning: Update check skipped. 'github_repo' not found in config.json or "
-"file is invalid."
-msgstr ""
-"Warning: Update check skipped. 'github_repo' not found in config.json or "
-"file is invalid."
-
-#: update.py:38
-msgid "A new version ({version}) is available."
-msgstr "A new version ({version}) is available."
-
-#: update.py:43
-msgid "Error: Download URL for the new version not found."
-msgstr "Error: Download URL for the new version not found."
-
-#: update.py:47
-msgid "Error checking for updates: {error}"
-msgstr "Error checking for updates: {error}"
-
-#: update.py:49
-msgid "An unexpected error occurred while checking for updates: {error}"
-msgstr "An unexpected error occurred while checking for updates: {error}"
-
-#: update.py:61
-msgid "Downloading update..."
-msgstr "Downloading update..."
-
-#: update.py:67
-msgid "Download complete. The update will be installed on the next start."
-msgstr "Download complete. The update will be installed on the next start."
-
-#: update.py:70
-msgid "Error downloading the update: {error}"
-msgstr "Error downloading the update: {error}"
