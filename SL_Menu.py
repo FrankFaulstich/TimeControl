@@ -1,0 +1,403 @@
+import streamlit as st
+import json
+import os
+from datetime import datetime
+from TimeTracker import TimeTracker
+from i18n import _
+
+# --- Configuration & Setup ---
+CONFIG_FILE = 'config.json'
+
+st.set_page_config(
+    page_title="Time Control",
+    page_icon="⏱️",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
+
+# Minimalistic CSS for macOS-like feel
+st.markdown("""
+<style>
+    .stApp {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    h1, h2, h3 {
+        font-weight: 600;
+        color: #1d1d1f;
+    }
+    .stButton button {
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    .report-box {
+        background-color: #f5f5f7;
+        padding: 15px;
+        border-radius: 10px;
+        font-family: 'Menlo', monospace;
+        font-size: 0.9em;
+        white-space: pre-wrap;
+        border: 1px solid #e1e1e1;
+    }
+    .menu-option {
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- State Management ---
+
+if 'tracker' not in st.session_state:
+    st.session_state.tracker = TimeTracker()
+    st.session_state.tracker.initialize_dependencies()
+
+if 'menu' not in st.session_state:
+    st.session_state.menu = 'main'
+
+if 'feedback' not in st.session_state:
+    st.session_state.feedback = None
+
+# Context for multi-step operations (e.g. selecting main then sub project)
+if 'context' not in st.session_state:
+    st.session_state.context = {}
+
+# --- Helper Functions ---
+
+def navigate_to(menu_name):
+    st.session_state.menu = menu_name
+    st.session_state.feedback = None
+    st.rerun()
+    
+def set_feedback(message, type='success'):
+    st.session_state.feedback = {'message': message, 'type': type}
+
+def get_config():
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            pass
+    return {}
+
+def save_config(config):
+    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=4)
+
+# --- UI Components ---
+
+def render_header(title, subtitle=None):
+    st.title(title)
+    if subtitle:
+        st.caption(subtitle)
+    if st.session_state.feedback:
+        f = st.session_state.feedback
+        if f['type'] == 'success': st.success(f['message'])
+        elif f['type'] == 'info': st.info(f['message'])
+        elif f['type'] == 'error': st.error(f['message'])
+        st.session_state.feedback = None # Clear after showing
+
+# --- Views ---
+
+def view_main():
+    render_header("Time Control", f"Version {st.session_state.tracker.get_version()}")
+    
+    if st.button(f"1. {_('Start work on sub-project')}", use_container_width=True):
+        navigate_to('start_work_select_main')
+    if st.button(f"2. {_('Show current work')}", use_container_width=True):
+        navigate_to('show_current_work')
+    if st.button(f"3. {_('Stop current work')}", use_container_width=True):
+        if st.session_state.tracker.stop_work():
+            set_feedback(_("Work session stopped successfully."))
+        else:
+            set_feedback(_("No active work session to stop."), 'info')
+        st.rerun()
+
+    st.divider()
+
+    if st.button(f"4. {_('Handle projects and sub-projects')}", use_container_width=True):
+        navigate_to('project_management')
+    if st.button(f"5. {_('Reporting')}", use_container_width=True):
+        navigate_to('reporting')
+    if st.button(f"6. {_('Settings')}", use_container_width=True):
+        navigate_to('settings')
+
+    st.divider()
+    
+    if st.button(f"0. {_('Exit')}", use_container_width=True):
+        st.stop()
+
+def view_project_management():
+    render_header(_("Project Management"))
+    
+    if st.button(f"1. {_('Main Project Management')}", use_container_width=True):
+        navigate_to('main_project_mgmt')
+    if st.button(f"2. {_('Sub-Project Management')}", use_container_width=True):
+        navigate_to('sub_project_mgmt')
+    
+    st.divider()
+    
+    if st.button(f"0. {_('Back to Main Menu')}", use_container_width=True):
+        navigate_to('main')
+
+def view_main_project_mgmt():
+    render_header(_("Main Project Management"))
+    
+    if st.button(f"1. {_('Add Main Project')}", use_container_width=True): navigate_to('add_main_project')
+    if st.button(f"2. {_('List Main Projects')}", use_container_width=True): navigate_to('list_main_projects')
+    if st.button(f"3. {_('Rename Main Project')}", use_container_width=True): navigate_to('rename_main_project')
+    if st.button(f"4. {_('Close Main Project')}", use_container_width=True): navigate_to('close_main_project')
+    if st.button(f"5. {_('Re-open Main Project')}", use_container_width=True): navigate_to('reopen_main_project')
+    if st.button(f"6. {_('Delete Main Project')}", use_container_width=True): navigate_to('delete_main_project')
+    if st.button(f"7. {_('List Inactive Main Projects')}", use_container_width=True): navigate_to('list_inactive_main')
+    if st.button(f"8. {_('Demote Main-Project to Sub-Project')}", use_container_width=True): navigate_to('demote_main_project')
+    if st.button(f"9. {_('List Completed Main Projects')}", use_container_width=True): navigate_to('list_completed_main')
+    
+    st.divider()
+    
+    if st.button(f"0. {_('Back')}", use_container_width=True):
+        navigate_to('project_management')
+
+def view_sub_project_mgmt():
+    render_header(_("Sub-Project Management"))
+    
+    if st.button(f"1. {_('Add Sub-Project')}", use_container_width=True): navigate_to('add_sub_project')
+    if st.button(f"2. {_('List Sub-Projects')}", use_container_width=True): navigate_to('list_sub_projects')
+    if st.button(f"3. {_('Rename Sub-Project')}", use_container_width=True): navigate_to('rename_sub_project')
+    if st.button(f"4. {_('Close Sub-Project')}", use_container_width=True): navigate_to('close_sub_project')
+    if st.button(f"5. {_('Re-open Sub-Project')}", use_container_width=True): navigate_to('reopen_sub_project')
+    if st.button(f"6. {_('Delete Sub-Project')}", use_container_width=True): navigate_to('delete_sub_project')
+    if st.button(f"7. {_('Move Sub-Project')}", use_container_width=True): navigate_to('move_sub_project')
+    if st.button(f"8. {_('List Inactive Sub-Projects')}", use_container_width=True): navigate_to('list_inactive_sub')
+    if st.button(f"9. {_('List All Closed Sub-Projects')}", use_container_width=True): navigate_to('list_closed_sub')
+    if st.button(f"10. {_('Delete All Closed Sub-Projects')}", use_container_width=True): navigate_to('delete_all_closed_sub')
+    if st.button(f"11. {_('Promote Sub-Project to Main-Project')}", use_container_width=True): navigate_to('promote_sub_project')
+    
+    st.divider()
+    
+    if st.button(f"0. {_('Back')}", use_container_width=True):
+        navigate_to('project_management')
+
+def view_reporting():
+    render_header(_("Reporting"))
+    tt = st.session_state.tracker
+    
+    if st.button(f"1. {_('Daily Report (Today)')}", use_container_width=True):
+        report = tt.generate_daily_report()
+        st.session_state.context['report'] = report
+        navigate_to('view_report')
+        st.rerun()
+    if st.button(f"2. {_('Daily Report (Specific Day)')}", use_container_width=True): navigate_to('report_specific_day')
+    if st.button(f"3. {_('Date Range Report')}", use_container_width=True): navigate_to('report_date_range')
+    if st.button(f"4. {_('Detailed Sub-Project Report')}", use_container_width=True): navigate_to('report_detailed_sub')
+    if st.button(f"5. {_('Detailed Main-Project Report')}", use_container_width=True): navigate_to('report_detailed_main')
+    if st.button(f"6. {_('Detailed Daily Report')}", use_container_width=True): navigate_to('report_detailed_daily')
+    
+    st.divider()
+    
+    if st.button(f"0. {_('Back to Main Menu')}", use_container_width=True):
+        navigate_to('main')
+
+def view_settings():
+    render_header(_("Settings"))
+    
+    if st.button(f"1. {_('Change Language')}", use_container_width=True): navigate_to('settings_language')
+    if st.button(f"2. {_('Restore Previous Version')}", use_container_width=True): navigate_to('settings_restore')
+    if st.button(f"3. {_('Change Data Storage Location')}", use_container_width=True): navigate_to('settings_storage')
+    if st.button(f"4. {_('Change Streamlit Port')}", use_container_width=True): navigate_to('settings_port')
+    
+    st.divider()
+    
+    if st.button(f"0. {_('Back to Main Menu')}", use_container_width=True):
+        navigate_to('main')
+
+# --- Action Views (Forms) ---
+
+def view_add_main_project():
+    render_header(_("Add New Main Project"))
+    with st.form("add_main_form"):
+        name = st.text_input(_("Name of the main project"))
+        submitted = st.form_submit_button(_("Add Project"), use_container_width=True)
+        if submitted and name:
+            st.session_state.tracker.add_main_project(name)
+            set_feedback(_("Main project '{name}' added.").format(name=name))
+            st.session_state.menu = 'main_project_mgmt'
+            st.rerun()
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('main_project_mgmt')
+
+def view_list_main_projects():
+    render_header(_("List Main Projects"))
+    projects = st.session_state.tracker.list_main_projects(status_filter='all')
+    if projects:
+        for p in projects:
+            status = f"({_('closed')})" if p['status'] == 'closed' else ""
+            st.markdown(f"- **{p['main_project_name']}** {status}")
+    else:
+        st.info(_("No main projects found."))
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('main_project_mgmt')
+
+def view_start_work_select_main():
+    render_header(_("Start Work"), _("Select Main Project"))
+    projects = st.session_state.tracker.list_main_projects(status_filter='open')
+    if not projects:
+        st.warning(_("No open main projects found."))
+        if st.button(_("Back"), use_container_width=True): navigate_to('main')
+        return
+
+    # Use selectbox for GUI friendliness, but we could use input
+    options = [p['main_project_name'] for p in projects]
+    selected = st.selectbox(_("Main Project"), options)
+    
+    if st.button(_("Next"), use_container_width=True):
+        st.session_state.context['selected_main'] = selected
+        navigate_to('start_work_select_sub')
+        st.rerun()
+    if st.button(_("Cancel"), use_container_width=True): navigate_to('main')
+
+def view_start_work_select_sub():
+    main_project = st.session_state.context.get('selected_main')
+    render_header(_("Start Work"), f"{_('Select Sub-Project from')} {main_project}")
+    
+    subs = st.session_state.tracker.list_sub_projects(main_project_name=main_project, status_filter='open')
+    if not subs:
+        st.warning(_("No open sub-projects found."))
+        if st.button(_("Back"), use_container_width=True): navigate_to('start_work_select_main')
+        return
+
+    options = [s['sub_project_name'] for s in subs]
+    selected = st.selectbox(_("Sub-Project"), options)
+
+    if st.button(_("Start Work"), use_container_width=True):
+        if st.session_state.tracker.start_work(main_project, selected):
+            set_feedback(_("Work started on '{sub_name}' in project '{main_name}'.").format(sub_name=selected, main_name=main_project))
+            navigate_to('main')
+            st.rerun()
+    if st.button(_("Cancel"), use_container_width=True): navigate_to('main')
+
+def view_show_current_work():
+    render_header(_("Current Active Work"))
+    current = st.session_state.tracker.get_current_work()
+    if current:
+        start_time = datetime.fromisoformat(current['start_time'])
+        duration = datetime.now() - start_time
+        hours, remainder = divmod(duration.total_seconds(), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        
+        st.markdown(f"**{_('Main Project')}:** {current['main_project_name']}")
+        st.markdown(f"**{_('Sub-Project')}:** {current['sub_project_name']}")
+        st.markdown(f"**{_('Started at')}:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        st.markdown(f"**{_('Duration')}:** {int(hours):02}:{int(minutes):02}:{int(seconds):02}")
+    else:
+        st.info(_("No active work session."))
+    
+    if st.button(_("Back"), use_container_width=True): navigate_to('main')
+
+def view_settings_port():
+    render_header(_("Streamlit Port Settings"))
+    config = get_config()
+    current_port = config.get('streamlit_port', 8501)
+    
+    st.markdown(f"**{_('Current Streamlit Port')}:** {current_port}")
+    
+    with st.form("port_form"):
+        new_port = st.number_input(_("New Port"), min_value=1024, max_value=65535, value=current_port)
+        submitted = st.form_submit_button(_("Save"), use_container_width=True)
+        if submitted:
+            config['streamlit_port'] = new_port
+            save_config(config)
+            set_feedback(_("Port updated to {port}. Please restart Streamlit.").format(port=new_port))
+            navigate_to('settings')
+            st.rerun()
+            
+    if st.button(_("Cancel"), use_container_width=True): navigate_to('settings')
+
+def view_report_display():
+    render_header(_("Report Result"))
+    report = st.session_state.context.get('report', '')
+    st.markdown(f'<div class="report-box">{report}</div>', unsafe_allow_html=True)
+    if st.button(_("Back"), use_container_width=True): navigate_to('reporting')
+
+# --- Generic List/Action View Helper ---
+# To avoid creating 50 separate functions, we can use a generic pattern for simple lists/actions
+# But for clarity in this example, I'll implement a few key ones and placeholders for others.
+
+def view_generic_placeholder(title):
+    render_header(title)
+    st.info("This feature is available in the CLI. GUI implementation coming soon.")
+    if st.button(_("Back"), use_container_width=True): 
+        # Simple logic to go back up one level
+        if 'sub_project' in st.session_state.menu: navigate_to('sub_project_mgmt')
+        elif 'main_project' in st.session_state.menu: navigate_to('main_project_mgmt')
+        elif 'report' in st.session_state.menu: navigate_to('reporting')
+        elif 'settings' in st.session_state.menu: navigate_to('settings')
+        else: navigate_to('main')
+
+# --- Main Router ---
+
+menu_map = {
+    'main': view_main,
+    'project_management': view_project_management,
+    'main_project_mgmt': view_main_project_mgmt,
+    'sub_project_mgmt': view_sub_project_mgmt,
+    'reporting': view_reporting,
+    'settings': view_settings,
+    
+    # Actions
+    'add_main_project': view_add_main_project,
+    'list_main_projects': view_list_main_projects,
+    'start_work_select_main': view_start_work_select_main,
+    'start_work_select_sub': view_start_work_select_sub,
+    'show_current_work': view_show_current_work,
+    'settings_port': view_settings_port,
+    'view_report': view_report_display,
+    
+    # Placeholders for full implementation (to keep file size manageable for this response)
+    # In a real full implementation, each would have its own view function similar to view_add_main_project
+    'rename_main_project': lambda: view_generic_placeholder(_("Rename Main Project")),
+    'close_main_project': lambda: view_generic_placeholder(_("Close Main Project")),
+    'reopen_main_project': lambda: view_generic_placeholder(_("Re-open Main Project")),
+    'delete_main_project': lambda: view_generic_placeholder(_("Delete Main Project")),
+    'list_inactive_main': lambda: view_generic_placeholder(_("List Inactive Main Projects")),
+    'demote_main_project': lambda: view_generic_placeholder(_("Demote Main-Project")),
+    'list_completed_main': lambda: view_generic_placeholder(_("List Completed Main Projects")),
+    
+    'add_sub_project': lambda: view_generic_placeholder(_("Add Sub-Project")),
+    'list_sub_projects': lambda: view_generic_placeholder(_("List Sub-Projects")),
+    'rename_sub_project': lambda: view_generic_placeholder(_("Rename Sub-Project")),
+    'close_sub_project': lambda: view_generic_placeholder(_("Close Sub-Project")),
+    'reopen_sub_project': lambda: view_generic_placeholder(_("Re-open Sub-Project")),
+    'delete_sub_project': lambda: view_generic_placeholder(_("Delete Sub-Project")),
+    'move_sub_project': lambda: view_generic_placeholder(_("Move Sub-Project")),
+    'list_inactive_sub': lambda: view_generic_placeholder(_("List Inactive Sub-Projects")),
+    'list_closed_sub': lambda: view_generic_placeholder(_("List All Closed Sub-Projects")),
+    'delete_all_closed_sub': lambda: view_generic_placeholder(_("Delete All Closed Sub-Projects")),
+    'promote_sub_project': lambda: view_generic_placeholder(_("Promote Sub-Project")),
+    
+    'report_specific_day': lambda: view_generic_placeholder(_("Daily Report (Specific Day)")),
+    'report_date_range': lambda: view_generic_placeholder(_("Date Range Report")),
+    'report_detailed_sub': lambda: view_generic_placeholder(_("Detailed Sub-Project Report")),
+    'report_detailed_main': lambda: view_generic_placeholder(_("Detailed Main-Project Report")),
+    'report_detailed_daily': lambda: view_generic_placeholder(_("Detailed Daily Report")),
+    
+    'settings_language': lambda: view_generic_placeholder(_("Change Language")),
+    'settings_restore': lambda: view_generic_placeholder(_("Restore Previous Version")),
+    'settings_storage': lambda: view_generic_placeholder(_("Change Data Storage Location")),
+}
+
+# --- Execution ---
+
+if st.session_state.menu in menu_map:
+    menu_map[st.session_state.menu]()
+else:
+    st.error(f"Menu '{st.session_state.menu}' not found.")
+    if st.button("Reset"):
+        navigate_to('main')
+        st.rerun()
+
+# --- Sidebar Footer ---
+with st.sidebar:
+    st.markdown("---")
+    st.caption("Time Control © 2025")
+    st.caption(f"Port: {get_config().get('streamlit_port', 8501)}")

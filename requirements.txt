@@ -1,3 +1,4 @@
 pyperclip
 requests
 packaging
+streamlit

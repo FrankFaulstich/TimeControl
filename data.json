@@ -28,7 +28,8 @@
           ],
           "status": "closed"
         }
-      ]
+      ],
+      "status": "open"
     },
     {
       "main_project_name": "Test 3",
@@ -43,11 +44,13 @@
           ],
           "status": "open"
         }
-      ]
+      ],
+      "status": "open"
     },
     {
       "main_project_name": "Test 4",
-      "sub_projects": []
+      "sub_projects": [],
+      "status": "open"
     }
   ]
 }

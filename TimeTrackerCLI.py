@@ -583,6 +583,7 @@ def _handle_settings(tt):
         print(_("1. Change Language"))
         print(_("2. Restore Previous Version"))
         print(_("3. Change Data Storage Location"))
+        print(_("4. Change Streamlit Port"))
         print("--------------------------")
         print(_("0. Back to Main Menu"))
         print("--------------------------")
@@ -602,10 +603,12 @@ def _handle_settings(tt):
             pass
         elif choice == '3':
             _handle_storage_settings(tt)
+        elif choice == '4':
+            _handle_port_settings()
         elif choice == '0':
             break
         else:
-            print(_("Invalid choice. Please enter a number from 0 to 3."))
+            print(_("Invalid choice. Please enter a number from 0 to 4."))
 
 def _handle_language_settings():
     """Handles the language selection submenu."""
@@ -691,6 +694,33 @@ def _handle_storage_settings(tt):
 
     except Exception as e:
         print(_("Error updating configuration: {error}").format(error=e))
+
+def _handle_port_settings():
+    """Handles the Streamlit port settings."""
+    print(_("\n--- Streamlit Port Settings ---"))
+    config = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+    
+    current_port = config.get('streamlit_port', 8501)
+    print(_("Current Streamlit Port: {port}").format(port=current_port))
+    
+    new_port_str = input(_("Enter new port (or press Enter to keep current): "))
+    if not new_port_str:
+        return
+
+    try:
+        new_port = int(new_port_str)
+        config['streamlit_port'] = new_port
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=4)
+        print(_("Port updated to {port}. Please restart Streamlit for changes to take effect.").format(port=new_port))
+    except ValueError:
+        print(_("Invalid input. Please enter a valid number."))
 
 
 def _handle_reporting(tt):
