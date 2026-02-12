@@ -4,5 +4,9 @@
     },
     "language": "en",
     "data_file": "data.json",
-    "streamlit_port": 8500
+    "streamlit_port": 8500,
+    "window_width": 800.0,
+    "window_height": 797.0,
+    "window_x": 560,
+    "window_y": -952
 }
