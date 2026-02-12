@@ -2,3 +2,4 @@ pyperclip
 requests
 packaging
 streamlit
+pywebview

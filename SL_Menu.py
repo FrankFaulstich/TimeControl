@@ -399,5 +399,5 @@ else:
 # --- Sidebar Footer ---
 with st.sidebar:
     st.markdown("---")
-    st.caption("Time Control © 2025")
+    st.caption("Time Control © 2026")
     st.caption(f"Port: {get_config().get('streamlit_port', 8501)}")
