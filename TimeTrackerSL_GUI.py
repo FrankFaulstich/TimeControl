@@ -23,7 +23,7 @@ def main():
     print(f"Starting TimeControl GUI on port {port}...")
     
     # Use sys.executable to ensure the same python environment is used
-    cmd = [sys.executable, "-m", "streamlit", "run", "TimeTrackerSL.py", "--server.port", str(port)]
+    cmd = [sys.executable, "-m", "streamlit", "run", "SL_Menu.py", "--server.port", str(port)]
     
     try:
         subprocess.run(cmd)
