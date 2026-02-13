@@ -33,8 +33,6 @@ def start_streamlit_server():
     port = 8501 # Default Streamlit port
     width = 800
     height = 600
-    x = None
-    y = None
     
     if os.path.exists(CONFIG_FILE):
         try:
@@ -43,8 +41,6 @@ def start_streamlit_server():
                 port = config.get('streamlit_port', 8501)
                 width = config.get('window_width', 400)
                 height = config.get('window_height', 800)
-                x = config.get('window_x', None)
-                y = config.get('window_y', None)
         except (json.JSONDecodeError, IOError) as e:
             print(f"Warning: Could not read config.json. Using default port 8501. Error: {e}")
 
@@ -61,9 +57,7 @@ def start_streamlit_server():
         "Time Control", 
         f"http://localhost:{port}",
         width=width,
-        height=height,
-        x=x,
-        y=y
+        height=height
     )
     
     # Save state when closing the window
