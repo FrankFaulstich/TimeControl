@@ -238,6 +238,55 @@ def view_list_main_projects():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
+def view_add_sub_project_select_main():
+    render_header(_("Add Sub-Project"), _("Step 1: Select Main Project"))
+    projects = st.session_state.tracker.list_main_projects(status_filter='open')
+    if not projects:
+        st.warning(_("No open main projects found. Please add one first."))
+        if st.button(_("Back"), use_container_width=True): navigate_to('sub_project_mgmt')
+        return
+
+    options = [p['main_project_name'] for p in projects]
+    selected = st.selectbox(_("Main Project"), options)
+    
+    if st.button(_("Next"), use_container_width=True):
+        st.session_state.context['selected_main'] = selected
+        navigate_to('add_sub_project_form')
+        st.rerun()
+    if st.button(_("Cancel"), use_container_width=True): navigate_to('sub_project_mgmt')
+
+def view_add_sub_project_form():
+    main_project = st.session_state.context.get('selected_main')
+    if not main_project:
+        set_feedback(_("No main project selected. Please start again."), "error")
+        navigate_to('add_sub_project')
+        st.rerun()
+        return
+
+    render_header(_("Add Sub-Project"), f"{_('To Main Project:')} {main_project}")
+    
+    existing_subs = [s['sub_project_name'].lower() for s in st.session_state.tracker.list_sub_projects(main_project_name=main_project)]
+
+    with st.form("add_sub_form"):
+        name = st.text_input(_("Name of the new sub-project"))
+        submitted = st.form_submit_button(_("Add Sub-Project"), use_container_width=True)
+        if submitted and name:
+            if name.lower() in existing_subs:
+                set_feedback(_("A sub-project with this name already exists in this main project."), 'error')
+                st.rerun()
+            elif st.session_state.tracker.add_sub_project(main_project, name):
+                set_feedback(_("Sub-project '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
+                st.session_state.context = {}
+                navigate_to('sub_project_mgmt')
+                st.rerun()
+            else:
+                set_feedback(_("Error: Could not find main project '{name}'.").format(name=main_project), 'error')
+                st.rerun()
+
+    if st.button(_("Cancel"), use_container_width=True): 
+        st.session_state.context = {}
+        navigate_to('sub_project_mgmt')
+
 def view_start_work_select_main():
     render_header(_("Start Work"), _("Select Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -363,7 +412,8 @@ menu_map = {
     'demote_main_project': lambda: view_generic_placeholder(_("Demote Main-Project")),
     'list_completed_main': lambda: view_generic_placeholder(_("List Completed Main Projects")),
     
-    'add_sub_project': lambda: view_generic_placeholder(_("Add Sub-Project")),
+    'add_sub_project': view_add_sub_project_select_main,
+    'add_sub_project_form': view_add_sub_project_form,
     'list_sub_projects': lambda: view_generic_placeholder(_("List Sub-Projects")),
     'rename_sub_project': lambda: view_generic_placeholder(_("Rename Sub-Project")),
     'close_sub_project': lambda: view_generic_placeholder(_("Close Sub-Project")),
