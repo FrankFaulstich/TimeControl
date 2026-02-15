@@ -341,6 +341,53 @@ def view_delete_sub_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
+def view_move_sub_project():
+    render_header(_("Move Sub-Project"))
+    
+    main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
+    if not main_projects:
+        st.info(_("No open main projects found."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('sub_project_mgmt')
+        return
+
+    main_options = [p['main_project_name'] for p in main_projects]
+    source_main = st.selectbox(_("Select Source Main Project"), main_options)
+    
+    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=source_main, status_filter='all')
+    
+    if not sub_projects:
+        st.info(_("No sub-projects found in '{name}'.").format(name=source_main))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('sub_project_mgmt')
+        return
+
+    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+    target_options = [p for p in main_options if p != source_main]
+    
+    if not target_options:
+        st.warning(_("No other main projects available to move to."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('sub_project_mgmt')
+        return
+
+    with st.form("move_sub_form"):
+        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
+        target_main = st.selectbox(_("Select Target Main Project"), target_options)
+        
+        submitted = st.form_submit_button(_("Move Sub-Project"), use_container_width=True)
+        
+        if submitted:
+            if st.session_state.tracker.move_sub_project(source_main, selected_sub, target_main):
+                set_feedback(_("Sub-project '{sub}' moved from '{src}' to '{dst}'.").format(sub=selected_sub, src=source_main, dst=target_main))
+                navigate_to('sub_project_mgmt')
+                st.rerun()
+            else:
+                st.error(_("Error: Could not move sub-project."))
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('sub_project_mgmt')
+
 def view_list_inactive_sub_projects():
     render_header(_("List Inactive Sub-Projects"))
     
@@ -727,7 +774,7 @@ menu_map = {
     'close_sub_project': view_close_sub_project,
     'reopen_sub_project': view_reopen_sub_project,
     'delete_sub_project': view_delete_sub_project,
-    'move_sub_project': lambda: view_generic_placeholder(_("Move Sub-Project")),
+    'move_sub_project': view_move_sub_project,
     'list_inactive_sub': view_list_inactive_sub_projects,
     'list_closed_sub': view_list_closed_sub_projects,
     'delete_all_closed_sub': lambda: view_generic_placeholder(_("Delete All Closed Sub-Projects")),
