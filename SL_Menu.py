@@ -675,6 +675,72 @@ def view_reopen_main_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
+def view_delete_main_project():
+    render_header(_("Delete Main Project"))
+    projects = st.session_state.tracker.list_main_projects(status_filter='all')
+    
+    if not projects:
+        st.info(_("No main projects found."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('main_project_mgmt')
+        return
+
+    options = [p['main_project_name'] for p in projects]
+    
+    with st.form("delete_main_form"):
+        selected_project = st.selectbox(_("Select Main Project"), options)
+        st.warning(_("This action cannot be undone. All associated sub-projects and time entries will be deleted."))
+        submitted = st.form_submit_button(_("Delete Project"), use_container_width=True)
+        
+        if submitted:
+            if st.session_state.tracker.delete_main_project(selected_project):
+                set_feedback(_("Main project '{name}' has been deleted.").format(name=selected_project))
+                navigate_to('main_project_mgmt')
+                st.rerun()
+            else:
+                st.error(_("Error: Main project not found."))
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('main_project_mgmt')
+
+def view_demote_main_project():
+    render_header(_("Demote Main-Project"))
+    
+    projects = st.session_state.tracker.list_main_projects(status_filter='open')
+    if not projects:
+        st.info(_("No open main projects found."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('main_project_mgmt')
+        return
+
+    options = [p['main_project_name'] for p in projects]
+    
+    with st.form("demote_main_form"):
+        selected_project = st.selectbox(_("Select Project to Demote"), options)
+        
+        target_options = [p for p in options if p != selected_project]
+        target_project = None
+        
+        if not target_options:
+            st.warning(_("No other main projects available to demote into."))
+        else:
+            target_project = st.selectbox(_("Select Target Main Project"), target_options)
+            st.info(_("This will convert '{src}' into a sub-project of '{dst}'.").format(src=selected_project, dst=target_project))
+            
+        submitted = st.form_submit_button(_("Demote Project"), disabled=not target_options, use_container_width=True)
+        
+        if submitted and target_project:
+            success, message = st.session_state.tracker.demote_main_project(selected_project, target_project)
+            if success:
+                set_feedback(message)
+                navigate_to('main_project_mgmt')
+                st.rerun()
+            else:
+                st.error(f"Error: {message}")
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('main_project_mgmt')
+
 def view_add_sub_project_select_main():
     render_header(_("Add Sub-Project"), _("Step 1: Select Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -842,9 +908,9 @@ menu_map = {
     'rename_main_project': view_rename_main_project,
     'close_main_project': view_close_main_project,
     'reopen_main_project': view_reopen_main_project,
-    'delete_main_project': lambda: view_generic_placeholder(_("Delete Main Project")),
+    'delete_main_project': view_delete_main_project,
     'list_inactive_main': lambda: view_generic_placeholder(_("List Inactive Main Projects")),
-    'demote_main_project': lambda: view_generic_placeholder(_("Demote Main-Project")),
+    'demote_main_project': view_demote_main_project,
     'list_completed_main': lambda: view_generic_placeholder(_("List Completed Main Projects")),
     
     'add_sub_project': view_add_sub_project_select_main,
