@@ -302,6 +302,45 @@ def view_reopen_sub_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
+def view_delete_sub_project():
+    render_header(_("Delete Sub-Project"))
+    
+    main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
+    if not main_projects:
+        st.info(_("No open main projects found."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('sub_project_mgmt')
+        return
+
+    main_options = [p['main_project_name'] for p in main_projects]
+    selected_main = st.selectbox(_("Select Main Project"), main_options)
+    
+    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
+    
+    if not sub_projects:
+        st.info(_("No open sub-projects to delete in '{name}'.").format(name=selected_main))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('sub_project_mgmt')
+        return
+
+    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+
+    with st.form("delete_sub_form"):
+        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
+        st.warning(_("This action cannot be undone."))
+        submitted = st.form_submit_button(_("Delete Sub-Project"), use_container_width=True)
+        
+        if submitted:
+            if st.session_state.tracker.delete_sub_project(selected_main, selected_sub):
+                set_feedback(_("Sub-project '{sub_name}' deleted from '{main_name}'.").format(sub_name=selected_sub, main_name=selected_main))
+                navigate_to('sub_project_mgmt')
+                st.rerun()
+            else:
+                st.error(_("Error: Main project or sub-project not found."))
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('sub_project_mgmt')
+
 def view_list_inactive_sub_projects():
     render_header(_("List Inactive Sub-Projects"))
     
@@ -638,7 +677,7 @@ menu_map = {
     'rename_sub_project': view_rename_sub_project,
     'close_sub_project': view_close_sub_project,
     'reopen_sub_project': view_reopen_sub_project,
-    'delete_sub_project': lambda: view_generic_placeholder(_("Delete Sub-Project")),
+    'delete_sub_project': view_delete_sub_project,
     'move_sub_project': lambda: view_generic_placeholder(_("Move Sub-Project")),
     'list_inactive_sub': view_list_inactive_sub_projects,
     'list_closed_sub': lambda: view_generic_placeholder(_("List All Closed Sub-Projects")),
