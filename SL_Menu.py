@@ -226,6 +226,44 @@ def view_add_main_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
+def view_close_sub_project():
+    render_header(_("Close Sub-Project"))
+    
+    main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
+    if not main_projects:
+        st.info(_("No open main projects found."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('sub_project_mgmt')
+        return
+
+    main_options = [p['main_project_name'] for p in main_projects]
+    selected_main = st.selectbox(_("Select Main Project"), main_options)
+    
+    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
+    
+    if not sub_projects:
+        st.info(_("No open sub-projects to close in '{name}'.").format(name=selected_main))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('sub_project_mgmt')
+        return
+
+    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+
+    with st.form("close_sub_form"):
+        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
+        submitted = st.form_submit_button(_("Close Sub-Project"), use_container_width=True)
+        
+        if submitted:
+            if st.session_state.tracker.close_sub_project(selected_main, selected_sub):
+                set_feedback(_("Sub-project '{sub_name}' in '{main_name}' has been closed.").format(sub_name=selected_sub, main_name=selected_main))
+                navigate_to('sub_project_mgmt')
+                st.rerun()
+            else:
+                st.error(_("Error: Main project or sub-project not found."))
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('sub_project_mgmt')
+
 def view_list_main_projects():
     render_header(_("List Main Projects"))
     projects = st.session_state.tracker.list_main_projects(status_filter='all')
@@ -517,7 +555,7 @@ menu_map = {
     'add_sub_project_form': view_add_sub_project_form,
     'list_sub_projects': lambda: view_generic_placeholder(_("List Sub-Projects")),
     'rename_sub_project': view_rename_sub_project,
-    'close_sub_project': lambda: view_generic_placeholder(_("Close Sub-Project")),
+    'close_sub_project': view_close_sub_project,
     'reopen_sub_project': lambda: view_generic_placeholder(_("Re-open Sub-Project")),
     'delete_sub_project': lambda: view_generic_placeholder(_("Delete Sub-Project")),
     'move_sub_project': lambda: view_generic_placeholder(_("Move Sub-Project")),
