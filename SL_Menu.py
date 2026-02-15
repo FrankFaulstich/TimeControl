@@ -308,6 +308,33 @@ def view_rename_main_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
+def view_list_sub_projects():
+    render_header(_("List Sub-Projects"))
+    
+    main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
+    if not main_projects:
+        st.info(_("No main projects found."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('sub_project_mgmt')
+        return
+
+    options = [p['main_project_name'] for p in main_projects]
+    selected_main = st.selectbox(_("Select Main Project"), options)
+    
+    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='all')
+    
+    if sub_projects:
+        st.markdown(_("Sub-projects for '{name}':").format(name=selected_main))
+        for sp in sub_projects:
+            name = sp['sub_project_name']
+            status = f"({_('closed')})" if sp['status'] == 'closed' else ""
+            st.markdown(f"- {name} {status}")
+    else:
+        st.info(_("No sub-projects found for '{name}'.").format(name=selected_main))
+        
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('sub_project_mgmt')
+
 def view_rename_sub_project():
     render_header(_("Rename Sub-Project"))
     
@@ -553,7 +580,7 @@ menu_map = {
     
     'add_sub_project': view_add_sub_project_select_main,
     'add_sub_project_form': view_add_sub_project_form,
-    'list_sub_projects': lambda: view_generic_placeholder(_("List Sub-Projects")),
+    'list_sub_projects': view_list_sub_projects,
     'rename_sub_project': view_rename_sub_project,
     'close_sub_project': view_close_sub_project,
     'reopen_sub_project': lambda: view_generic_placeholder(_("Re-open Sub-Project")),
