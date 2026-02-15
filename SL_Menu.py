@@ -428,6 +428,47 @@ def view_list_closed_sub_projects():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
+def view_promote_sub_project():
+    render_header(_("Promote Sub-Project to Main-Project"))
+    
+    main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
+    if not main_projects:
+        st.info(_("No open main projects found."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('sub_project_mgmt')
+        return
+
+    main_options = [p['main_project_name'] for p in main_projects]
+    selected_main = st.selectbox(_("Select Main Project"), main_options)
+    
+    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
+    
+    if not sub_projects:
+        st.info(_("No open sub-projects to promote in '{name}'.").format(name=selected_main))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('sub_project_mgmt')
+        return
+
+    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+
+    with st.form("promote_sub_form"):
+        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
+        st.info(_("This will create a new Main Project with the sub-project's name and move all time entries to a 'General' sub-project within it."))
+        
+        submitted = st.form_submit_button(_("Promote to Main Project"), use_container_width=True)
+        
+        if submitted:
+            success, message = st.session_state.tracker.promote_sub_project(selected_main, selected_sub)
+            if success:
+                set_feedback(message)
+                navigate_to('sub_project_mgmt')
+                st.rerun()
+            else:
+                st.error(f"Error: {message}")
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('sub_project_mgmt')
+
 def view_list_main_projects():
     render_header(_("List Main Projects"))
     projects = st.session_state.tracker.list_main_projects(status_filter='all')
@@ -778,7 +819,7 @@ menu_map = {
     'list_inactive_sub': view_list_inactive_sub_projects,
     'list_closed_sub': view_list_closed_sub_projects,
     'delete_all_closed_sub': lambda: view_generic_placeholder(_("Delete All Closed Sub-Projects")),
-    'promote_sub_project': lambda: view_generic_placeholder(_("Promote Sub-Project")),
+    'promote_sub_project': view_promote_sub_project,
     
     'report_specific_day': lambda: view_generic_placeholder(_("Daily Report (Specific Day)")),
     'report_date_range': lambda: view_generic_placeholder(_("Date Range Report")),
