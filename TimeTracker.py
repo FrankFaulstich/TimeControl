@@ -28,7 +28,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "2.1"
+    VERSION = "2.2"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
 
@@ -1212,7 +1212,7 @@ class TimeTracker:
         daily_entries.sort(key=lambda x: x[0])
 
         if daily_entries:
-            for _, line in daily_entries:
+            for _timestamp, line in daily_entries:
                 report.append(line)
         else:
             report.append(_("No time tracked for {date}.").format(date=today.strftime('%Y-%m-%d')))
