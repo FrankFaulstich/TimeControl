@@ -270,6 +270,33 @@ def view_rename_main_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
+def view_close_main_project():
+    render_header(_("Close Main Project"))
+    projects = st.session_state.tracker.list_main_projects(status_filter='open')
+    
+    if not projects:
+        st.info(_("No open main projects to close."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('main_project_mgmt')
+        return
+
+    options = [p['main_project_name'] for p in projects]
+    
+    with st.form("close_main_form"):
+        selected_project = st.selectbox(_("Select Main Project"), options)
+        submitted = st.form_submit_button(_("Close Project"), use_container_width=True)
+        
+        if submitted:
+            if st.session_state.tracker.close_main_project(selected_project):
+                set_feedback(_("Main project '{name}' has been closed.").format(name=selected_project))
+                navigate_to('main_project_mgmt')
+                st.rerun()
+            else:
+                st.error(_("Error: Main project not found."))
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('main_project_mgmt')
+
 def view_add_sub_project_select_main():
     render_header(_("Add Sub-Project"), _("Step 1: Select Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -437,7 +464,7 @@ menu_map = {
     # Placeholders for full implementation (to keep file size manageable for this response)
     # In a real full implementation, each would have its own view function similar to view_add_main_project
     'rename_main_project': view_rename_main_project,
-    'close_main_project': lambda: view_generic_placeholder(_("Close Main Project")),
+    'close_main_project': view_close_main_project,
     'reopen_main_project': lambda: view_generic_placeholder(_("Re-open Main Project")),
     'delete_main_project': lambda: view_generic_placeholder(_("Delete Main Project")),
     'list_inactive_main': lambda: view_generic_placeholder(_("List Inactive Main Projects")),
