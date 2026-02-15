@@ -521,6 +521,33 @@ def view_close_main_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
+def view_reopen_main_project():
+    render_header(_("Re-open Main Project"))
+    projects = st.session_state.tracker.list_main_projects(status_filter='closed')
+    
+    if not projects:
+        st.info(_("No closed main projects to reopen."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('main_project_mgmt')
+        return
+
+    options = [p['main_project_name'] for p in projects]
+    
+    with st.form("reopen_main_form"):
+        selected_project = st.selectbox(_("Select Main Project"), options)
+        submitted = st.form_submit_button(_("Re-open Project"), use_container_width=True)
+        
+        if submitted:
+            if st.session_state.tracker.reopen_main_project(selected_project):
+                set_feedback(_("Main project '{name}' has been reopened.").format(name=selected_project))
+                navigate_to('main_project_mgmt')
+                st.rerun()
+            else:
+                st.error(_("Error: Main project not found."))
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('main_project_mgmt')
+
 def view_add_sub_project_select_main():
     render_header(_("Add Sub-Project"), _("Step 1: Select Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -687,7 +714,7 @@ menu_map = {
     
     'rename_main_project': view_rename_main_project,
     'close_main_project': view_close_main_project,
-    'reopen_main_project': lambda: view_generic_placeholder(_("Re-open Main Project")),
+    'reopen_main_project': view_reopen_main_project,
     'delete_main_project': lambda: view_generic_placeholder(_("Delete Main Project")),
     'list_inactive_main': lambda: view_generic_placeholder(_("List Inactive Main Projects")),
     'demote_main_project': lambda: view_generic_placeholder(_("Demote Main-Project")),
