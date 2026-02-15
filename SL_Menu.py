@@ -238,6 +238,38 @@ def view_list_main_projects():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
+def view_rename_main_project():
+    render_header(_("Rename Main Project"))
+    projects = st.session_state.tracker.list_main_projects(status_filter='open')
+    
+    if not projects:
+        st.info(_("No open main projects to rename."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('main_project_mgmt')
+        return
+
+    options = [p['main_project_name'] for p in projects]
+    
+    with st.form("rename_main_form"):
+        selected_project = st.selectbox(_("Select Main Project"), options)
+        new_name = st.text_input(_("New Name"))
+        submitted = st.form_submit_button(_("Rename"), use_container_width=True)
+        
+        if submitted:
+            if not new_name:
+                st.error(_("Please enter a new name."))
+            elif new_name == selected_project:
+                st.warning(_("New name is the same as the old name."))
+            elif st.session_state.tracker.rename_main_project(selected_project, new_name):
+                set_feedback(_("Main project '{old_name}' successfully renamed to '{new_name}'.").format(old_name=selected_project, new_name=new_name))
+                navigate_to('main_project_mgmt')
+                st.rerun()
+            else:
+                st.error(_("Error: Could not rename. The new name '{new_name}' might already exist.").format(new_name=new_name))
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('main_project_mgmt')
+
 def view_add_sub_project_select_main():
     render_header(_("Add Sub-Project"), _("Step 1: Select Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -404,7 +436,7 @@ menu_map = {
     
     # Placeholders for full implementation (to keep file size manageable for this response)
     # In a real full implementation, each would have its own view function similar to view_add_main_project
-    'rename_main_project': lambda: view_generic_placeholder(_("Rename Main Project")),
+    'rename_main_project': view_rename_main_project,
     'close_main_project': lambda: view_generic_placeholder(_("Close Main Project")),
     'reopen_main_project': lambda: view_generic_placeholder(_("Re-open Main Project")),
     'delete_main_project': lambda: view_generic_placeholder(_("Delete Main Project")),
