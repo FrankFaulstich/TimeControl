@@ -359,6 +359,28 @@ def view_list_inactive_sub_projects():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
+def view_list_closed_sub_projects():
+    render_header(_("List All Closed Sub-Projects"))
+    
+    main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
+    found_any = False
+    
+    if main_projects:
+        for mp in main_projects:
+            mp_name = mp['main_project_name']
+            closed_subs = st.session_state.tracker.list_sub_projects(main_project_name=mp_name, status_filter='closed')
+            if closed_subs:
+                found_any = True
+                st.markdown(f"**{mp_name}**")
+                for sp in closed_subs:
+                    st.markdown(f"- {sp['sub_project_name']}")
+    
+    if not found_any:
+        st.info(_("No closed sub-projects found."))
+        
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('sub_project_mgmt')
+
 def view_list_main_projects():
     render_header(_("List Main Projects"))
     projects = st.session_state.tracker.list_main_projects(status_filter='all')
@@ -680,7 +702,7 @@ menu_map = {
     'delete_sub_project': view_delete_sub_project,
     'move_sub_project': lambda: view_generic_placeholder(_("Move Sub-Project")),
     'list_inactive_sub': view_list_inactive_sub_projects,
-    'list_closed_sub': lambda: view_generic_placeholder(_("List All Closed Sub-Projects")),
+    'list_closed_sub': view_list_closed_sub_projects,
     'delete_all_closed_sub': lambda: view_generic_placeholder(_("Delete All Closed Sub-Projects")),
     'promote_sub_project': lambda: view_generic_placeholder(_("Promote Sub-Project")),
     
