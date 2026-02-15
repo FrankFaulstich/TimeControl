@@ -302,6 +302,24 @@ def view_reopen_sub_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
+def view_list_inactive_sub_projects():
+    render_header(_("List Inactive Sub-Projects"))
+    
+    weeks = st.number_input(_("Weeks of inactivity"), min_value=1, value=4, step=1)
+    
+    inactive_list = st.session_state.tracker.list_inactive_sub_projects(weeks)
+    
+    if inactive_list:
+        st.markdown(_("Inactive Sub-Projects (> {weeks} weeks):").format(weeks=weeks))
+        for item in inactive_list:
+            st.markdown(f"- **{item['main_project']}** / {item['sub_project']}")
+            st.caption(f"{_('Last Activity')}: {item['last_activity']}")
+    else:
+        st.info(_("No sub-projects found inactive for more than {weeks} weeks.").format(weeks=weeks))
+        
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('sub_project_mgmt')
+
 def view_list_main_projects():
     render_header(_("List Main Projects"))
     projects = st.session_state.tracker.list_main_projects(status_filter='all')
@@ -606,8 +624,6 @@ menu_map = {
     'settings_port': view_settings_port,
     'view_report': view_report_display,
     
-    # Placeholders for full implementation (to keep file size manageable for this response)
-    # In a real full implementation, each would have its own view function similar to view_add_main_project
     'rename_main_project': view_rename_main_project,
     'close_main_project': view_close_main_project,
     'reopen_main_project': lambda: view_generic_placeholder(_("Re-open Main Project")),
@@ -624,7 +640,7 @@ menu_map = {
     'reopen_sub_project': view_reopen_sub_project,
     'delete_sub_project': lambda: view_generic_placeholder(_("Delete Sub-Project")),
     'move_sub_project': lambda: view_generic_placeholder(_("Move Sub-Project")),
-    'list_inactive_sub': lambda: view_generic_placeholder(_("List Inactive Sub-Projects")),
+    'list_inactive_sub': view_list_inactive_sub_projects,
     'list_closed_sub': lambda: view_generic_placeholder(_("List All Closed Sub-Projects")),
     'delete_all_closed_sub': lambda: view_generic_placeholder(_("Delete All Closed Sub-Projects")),
     'promote_sub_project': lambda: view_generic_placeholder(_("Promote Sub-Project")),
