@@ -703,6 +703,24 @@ def view_delete_main_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
+def view_list_inactive_main_projects():
+    render_header(_("List Inactive Main Projects"))
+    
+    weeks = st.number_input(_("Weeks of inactivity"), min_value=1, value=4, step=1)
+    
+    inactive_list = st.session_state.tracker.list_inactive_main_projects(weeks)
+    
+    if inactive_list:
+        st.markdown(_("Inactive Main Projects (> {weeks} weeks):").format(weeks=weeks))
+        for item in inactive_list:
+            st.markdown(f"- **{item['main_project']}**")
+            st.caption(f"{_('Last Activity')}: {item['last_activity']}")
+    else:
+        st.info(_("No main projects found inactive for more than {weeks} weeks.").format(weeks=weeks))
+        
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('main_project_mgmt')
+
 def view_demote_main_project():
     render_header(_("Demote Main-Project"))
     
@@ -909,7 +927,7 @@ menu_map = {
     'close_main_project': view_close_main_project,
     'reopen_main_project': view_reopen_main_project,
     'delete_main_project': view_delete_main_project,
-    'list_inactive_main': lambda: view_generic_placeholder(_("List Inactive Main Projects")),
+    'list_inactive_main': view_list_inactive_main_projects,
     'demote_main_project': view_demote_main_project,
     'list_completed_main': lambda: view_generic_placeholder(_("List Completed Main Projects")),
     
