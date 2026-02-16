@@ -759,6 +759,21 @@ def view_demote_main_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
+def view_list_completed_main():
+    render_header(_("List Completed Main Projects"))
+    
+    completed_projects = st.session_state.tracker.list_completed_main_projects()
+    
+    if completed_projects:
+        st.markdown(_("Main projects with only closed or no sub-projects:"))
+        for project_name in completed_projects:
+            st.markdown(f"- **{project_name}**")
+    else:
+        st.info(_("No completed main projects found."))
+        
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('main_project_mgmt')
+
 def view_add_sub_project_select_main():
     render_header(_("Add Sub-Project"), _("Step 1: Select Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -929,7 +944,7 @@ menu_map = {
     'delete_main_project': view_delete_main_project,
     'list_inactive_main': view_list_inactive_main_projects,
     'demote_main_project': view_demote_main_project,
-    'list_completed_main': lambda: view_generic_placeholder(_("List Completed Main Projects")),
+    'list_completed_main': view_list_completed_main,
     
     'add_sub_project': view_add_sub_project_select_main,
     'add_sub_project_form': view_add_sub_project_form,
