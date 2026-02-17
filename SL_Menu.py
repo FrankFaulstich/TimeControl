@@ -1012,6 +1012,22 @@ def view_report_detailed_main():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('reporting')
 
+def view_report_detailed_daily():
+    render_header(_("Detailed Daily Report"))
+    
+    with st.form("detailed_daily_report_form"):
+        selected_date = st.date_input(_("Select Date"), value=datetime.now())
+        submitted = st.form_submit_button(_("Generate Report"), use_container_width=True)
+        
+        if submitted:
+            report = st.session_state.tracker.generate_detailed_daily_report(selected_date)
+            st.session_state.context = {'report': report}
+            navigate_to('view_report')
+            st.rerun()
+            
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('reporting')
+
 def view_report_display():
     render_header(_("Report Result"))
     report = st.session_state.context.get('report', '')
@@ -1078,7 +1094,7 @@ menu_map = {
     'report_detailed_sub': view_report_detailed_sub_select_main,
     'report_detailed_sub_select_sub': view_report_detailed_sub_select_sub,
     'report_detailed_main': view_report_detailed_main,
-    'report_detailed_daily': lambda: view_generic_placeholder(_("Detailed Daily Report")),
+    'report_detailed_daily': view_report_detailed_daily,
     
     'settings_language': lambda: view_generic_placeholder(_("Change Language")),
     'settings_restore': lambda: view_generic_placeholder(_("Restore Previous Version")),
