@@ -938,6 +938,56 @@ def view_report_date_range():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('reporting')
 
+def view_report_detailed_sub_select_main():
+    render_header(_("Detailed Sub-Project Report"), _("Step 1: Select Main Project"))
+    
+    main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
+    if not main_projects:
+        st.info(_("No projects found."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('reporting')
+        return
+
+    main_options = [p['main_project_name'] for p in main_projects]
+    selected_main = st.selectbox(_("Select Main Project"), main_options)
+    
+    if st.button(_("Next"), use_container_width=True):
+        st.session_state.context['selected_main'] = selected_main
+        navigate_to('report_detailed_sub_select_sub')
+        st.rerun()
+        
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('reporting')
+
+def view_report_detailed_sub_select_sub():
+    main_project = st.session_state.context.get('selected_main')
+    if not main_project:
+        set_feedback(_("No main project selected. Please start again."), "error")
+        navigate_to('report_detailed_sub')
+        st.rerun()
+        return
+
+    render_header(_("Detailed Sub-Project Report"), f"{_('Step 2: Select Sub-Project from')} {main_project}")
+    
+    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=main_project, status_filter='all')
+    if not sub_projects:
+        st.info(_("No sub-projects found for '{name}'.").format(name=main_project))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('report_detailed_sub')
+        return
+
+    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+    
+    selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
+    if st.button(_("Generate Report"), use_container_width=True):
+        report = st.session_state.tracker.generate_sub_project_report(main_project, selected_sub)
+        st.session_state.context = {'report': report} # Clear context and set report
+        navigate_to('view_report')
+        st.rerun()
+            
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('report_detailed_sub')
+
 def view_report_display():
     render_header(_("Report Result"))
     report = st.session_state.context.get('report', '')
@@ -1001,7 +1051,8 @@ menu_map = {
     
     'report_specific_day': view_report_specific_day,
     'report_date_range': view_report_date_range,
-    'report_detailed_sub': lambda: view_generic_placeholder(_("Detailed Sub-Project Report")),
+    'report_detailed_sub': view_report_detailed_sub_select_main,
+    'report_detailed_sub_select_sub': view_report_detailed_sub_select_sub,
     'report_detailed_main': lambda: view_generic_placeholder(_("Detailed Main-Project Report")),
     'report_detailed_daily': lambda: view_generic_placeholder(_("Detailed Daily Report")),
     
