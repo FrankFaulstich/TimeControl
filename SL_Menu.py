@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import os
 from datetime import datetime
+import shutil
 from TimeTracker import TimeTracker
 from i18n import _
 
@@ -904,6 +905,65 @@ def view_settings_port():
             
     if st.button(_("Cancel"), use_container_width=True): navigate_to('settings')
 
+def view_settings_storage():
+    render_header(_("Change Data Storage Location"))
+    
+    current_path = st.session_state.tracker.file_path
+    st.markdown(f"**{_('Current data file')}:** `{current_path}`")
+
+    with st.form("storage_form"):
+        new_path_input = st.text_input(_("New Path for data file"), placeholder="data.json").strip()
+        
+        # Offer to move data only if the old file exists and a new path is provided
+        can_move = os.path.exists(current_path) and new_path_input and os.path.abspath(new_path_input) != os.path.abspath(current_path)
+        
+        move_data = st.checkbox(
+            _("Move existing data to the new location"), 
+            value=True, 
+            disabled=not can_move,
+            help=_("If unchecked, the old data file will remain, and a new empty one might be created at the new location on restart.")
+        )
+
+        submitted = st.form_submit_button(_("Save"), use_container_width=True)
+
+        if submitted:
+            if not new_path_input:
+                st.error(_("Please enter a new path."))
+            else:
+                # --- Security Fix: Path Traversal ---
+                # Normalize the path and ensure it's within the application's directory.
+                app_root = os.path.abspath(os.getcwd())
+                safe_path = os.path.abspath(new_path_input)
+
+                if not safe_path.startswith(app_root):
+                    st.error(_("Error: For security, the data file must be located within the application directory."))
+                else:
+                    directory = os.path.dirname(safe_path)
+                    if directory and not os.path.exists(directory):
+                        st.error(_("Error: The directory '{dir}' does not exist.").format(dir=directory))
+                    else:
+                        config = get_config()
+                        config['data_file'] = new_path_input # Store user's relative/simple path
+                        save_config(config)
+                        
+                        feedback_message = _("Storage location updated. Please restart the application for the changes to take effect.")
+                        
+                        if move_data and can_move:
+                            try:
+                                shutil.move(current_path, safe_path)
+                                feedback_message += " " + _("Data moved successfully.")
+                            except Exception as e:
+                                st.error(_("Error moving data: {error}").format(error=e))
+                                feedback_message = None # Prevent navigation on error
+
+                        if feedback_message:
+                            set_feedback(feedback_message)
+                            navigate_to('settings')
+                            st.rerun()
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('settings')
+
 def view_settings_restore():
     render_header(_("Restore Previous Version"))
     
@@ -1164,11 +1224,9 @@ menu_map = {
     'report_detailed_main': view_report_detailed_main,
     'report_detailed_daily': view_report_detailed_daily,
     
-    'settings_language': lambda: view_generic_placeholder(_("Change Language")),
-    'settings_restore': view_settings_restore,
     'settings_language': view_settings_language,
-    'settings_restore': lambda: view_generic_placeholder(_("Restore Previous Version")),
-    'settings_storage': lambda: view_generic_placeholder(_("Change Data Storage Location")),
+    'settings_restore': view_settings_restore,
+    'settings_storage': view_settings_storage,
 }
 
 # --- Execution ---
