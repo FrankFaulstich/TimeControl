@@ -914,6 +914,30 @@ def view_report_specific_day():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('reporting')
 
+def view_report_date_range():
+    render_header(_("Date Range Report"))
+    
+    with st.form("date_range_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            start_date = st.date_input(_("Start Date"), value=datetime.now())
+        with col2:
+            end_date = st.date_input(_("End Date"), value=datetime.now())
+            
+        submitted = st.form_submit_button(_("Generate Report"), use_container_width=True)
+        
+        if submitted:
+            if start_date > end_date:
+                st.error(_("Error: The start date cannot be after the end date."))
+            else:
+                report = st.session_state.tracker.generate_date_range_report(start_date, end_date)
+                st.session_state.context['report'] = report
+                navigate_to('view_report')
+                st.rerun()
+            
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('reporting')
+
 def view_report_display():
     render_header(_("Report Result"))
     report = st.session_state.context.get('report', '')
@@ -976,7 +1000,7 @@ menu_map = {
     'promote_sub_project': view_promote_sub_project,
     
     'report_specific_day': view_report_specific_day,
-    'report_date_range': lambda: view_generic_placeholder(_("Date Range Report")),
+    'report_date_range': view_report_date_range,
     'report_detailed_sub': lambda: view_generic_placeholder(_("Detailed Sub-Project Report")),
     'report_detailed_main': lambda: view_generic_placeholder(_("Detailed Main-Project Report")),
     'report_detailed_daily': lambda: view_generic_placeholder(_("Detailed Daily Report")),
