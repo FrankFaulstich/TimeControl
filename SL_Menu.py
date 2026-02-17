@@ -912,10 +912,10 @@ def view_settings_storage():
     st.markdown(f"**{_('Current data file')}:** `{current_path}`")
 
     with st.form("storage_form"):
-        new_path = st.text_input(_("New Path for data file"), placeholder=_("/path/to/your/data.json")).strip()
+        new_path_input = st.text_input(_("New Path for data file"), placeholder="data.json").strip()
         
         # Offer to move data only if the old file exists and a new path is provided
-        can_move = os.path.exists(current_path) and new_path and new_path != current_path
+        can_move = os.path.exists(current_path) and new_path_input and os.path.abspath(new_path_input) != os.path.abspath(current_path)
         
         move_data = st.checkbox(
             _("Move existing data to the new location"), 
@@ -927,31 +927,39 @@ def view_settings_storage():
         submitted = st.form_submit_button(_("Save"), use_container_width=True)
 
         if submitted:
-            if not new_path:
+            if not new_path_input:
                 st.error(_("Please enter a new path."))
             else:
-                directory = os.path.dirname(new_path)
-                if directory and not os.path.exists(directory):
-                    st.error(_("Error: The directory '{dir}' does not exist.").format(dir=directory))
-                else:
-                    config = get_config()
-                    config['data_file'] = new_path
-                    save_config(config)
-                    
-                    feedback_message = _("Storage location updated. Please restart the application for the changes to take effect.")
-                    
-                    if move_data and can_move:
-                        try:
-                            shutil.move(current_path, new_path)
-                            feedback_message += " " + _("Data moved successfully.")
-                        except Exception as e:
-                            st.error(_("Error moving data: {error}").format(error=e))
-                            feedback_message = None # Prevent navigation on error
+                # --- Security Fix: Path Traversal ---
+                # Normalize the path and ensure it's within the application's directory.
+                app_root = os.path.abspath(os.getcwd())
+                safe_path = os.path.abspath(new_path_input)
 
-                    if feedback_message:
-                        set_feedback(feedback_message)
-                        navigate_to('settings')
-                        st.rerun()
+                if not safe_path.startswith(app_root):
+                    st.error(_("Error: For security, the data file must be located within the application directory."))
+                else:
+                    directory = os.path.dirname(safe_path)
+                    if directory and not os.path.exists(directory):
+                        st.error(_("Error: The directory '{dir}' does not exist.").format(dir=directory))
+                    else:
+                        config = get_config()
+                        config['data_file'] = new_path_input # Store user's relative/simple path
+                        save_config(config)
+                        
+                        feedback_message = _("Storage location updated. Please restart the application for the changes to take effect.")
+                        
+                        if move_data and can_move:
+                            try:
+                                shutil.move(current_path, safe_path)
+                                feedback_message += " " + _("Data moved successfully.")
+                            except Exception as e:
+                                st.error(_("Error moving data: {error}").format(error=e))
+                                feedback_message = None # Prevent navigation on error
+
+                        if feedback_message:
+                            set_feedback(feedback_message)
+                            navigate_to('settings')
+                            st.rerun()
 
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('settings')
