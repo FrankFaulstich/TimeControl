@@ -5,6 +5,12 @@ from datetime import datetime
 from TimeTracker import TimeTracker
 from i18n import _
 
+try:
+    from update import restore_previous_version
+    UPDATE_MODULE_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    UPDATE_MODULE_AVAILABLE = False
+
 # --- Configuration & Setup ---
 CONFIG_FILE = 'config.json'
 
@@ -898,6 +904,32 @@ def view_settings_port():
             
     if st.button(_("Cancel"), use_container_width=True): navigate_to('settings')
 
+def view_settings_restore():
+    render_header(_("Restore Previous Version"))
+    
+    backup_zip_file = "prev-version.zip"
+
+    if not UPDATE_MODULE_AVAILABLE:
+        st.error(_("The 'update' module is not available. This feature is disabled."))
+        if st.button(_("Back"), use_container_width=True): navigate_to('settings')
+        return
+
+    if not os.path.exists(backup_zip_file):
+        st.info(_("No previous version backup '{filename}' found.").format(filename=backup_zip_file))
+        if st.button(_("Back"), use_container_width=True): navigate_to('settings')
+        return
+
+    st.warning(_("This will restore the application to the previously backed-up version. The application will then restart. You may need to manually refresh your browser if it does not reconnect automatically."))
+    
+    if st.button(_("Restore and Restart"), type="primary", use_container_width=True):
+        with st.spinner(_("Restoring and restarting...")):
+            restore_previous_version()
+        # This code is unreachable due to os.execv in the called function
+        st.success(_("Restore complete. Please restart the application."))
+            
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('settings')
+
 def view_report_specific_day():
     render_header(_("Daily Report (Specific Day)"))
     
@@ -1097,7 +1129,7 @@ menu_map = {
     'report_detailed_daily': view_report_detailed_daily,
     
     'settings_language': lambda: view_generic_placeholder(_("Change Language")),
-    'settings_restore': lambda: view_generic_placeholder(_("Restore Previous Version")),
+    'settings_restore': view_settings_restore,
     'settings_storage': lambda: view_generic_placeholder(_("Change Data Storage Location")),
 }
 
