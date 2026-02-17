@@ -988,6 +988,30 @@ def view_report_detailed_sub_select_sub():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('report_detailed_sub')
 
+def view_report_detailed_main():
+    render_header(_("Detailed Main-Project Report"))
+    
+    main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
+    if not main_projects:
+        st.info(_("No projects found."))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('reporting')
+        return
+
+    main_options = [p['main_project_name'] for p in main_projects]
+    
+    with st.form("detailed_main_report_form"):
+        selected_main = st.selectbox(_("Select Main Project"), main_options)
+        submitted = st.form_submit_button(_("Generate Report"), use_container_width=True)
+        if submitted:
+            report = st.session_state.tracker.generate_main_project_report(selected_main)
+            st.session_state.context = {'report': report}
+            navigate_to('view_report')
+            st.rerun()
+            
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('reporting')
+
 def view_report_display():
     render_header(_("Report Result"))
     report = st.session_state.context.get('report', '')
@@ -1053,7 +1077,7 @@ menu_map = {
     'report_date_range': view_report_date_range,
     'report_detailed_sub': view_report_detailed_sub_select_main,
     'report_detailed_sub_select_sub': view_report_detailed_sub_select_sub,
-    'report_detailed_main': lambda: view_generic_placeholder(_("Detailed Main-Project Report")),
+    'report_detailed_main': view_report_detailed_main,
     'report_detailed_daily': lambda: view_generic_placeholder(_("Detailed Daily Report")),
     
     'settings_language': lambda: view_generic_placeholder(_("Change Language")),
