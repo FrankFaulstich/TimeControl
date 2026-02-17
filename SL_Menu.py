@@ -898,6 +898,45 @@ def view_settings_port():
             
     if st.button(_("Cancel"), use_container_width=True): navigate_to('settings')
 
+def view_settings_language():
+    render_header(_("Change Language"))
+
+    supported_languages = {'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'cs': 'Čeština'}
+    
+    # 'en' is always available as the default
+    available_languages = {'en': 'English'}
+    # Add other languages if their locale directory exists
+    for lang, name in supported_languages.items():
+        if lang != 'en' and os.path.isdir(os.path.join('locale', lang)):
+            available_languages[lang] = name
+
+    lang_codes = list(available_languages.keys())
+    lang_names = [f"{name} ({code})" for code, name in available_languages.items()]
+
+    config = get_config()
+    current_lang_code = config.get('language', 'en')
+    
+    try:
+        current_lang_index = lang_codes.index(current_lang_code)
+    except ValueError:
+        current_lang_index = 0
+
+    with st.form("language_form"):
+        selected_lang_name = st.selectbox(_("Select Language"), options=lang_names, index=current_lang_index)
+        submitted = st.form_submit_button(_("Save"), use_container_width=True)
+
+        if submitted:
+            selected_index = lang_names.index(selected_lang_name)
+            new_lang_code = lang_codes[selected_index]
+            config['language'] = new_lang_code
+            save_config(config)
+            set_feedback(_("Language changed. Please restart the application for the changes to take effect."))
+            navigate_to('settings')
+            st.rerun()
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('settings')
+
 def view_report_specific_day():
     render_header(_("Daily Report (Specific Day)"))
     
@@ -1096,7 +1135,7 @@ menu_map = {
     'report_detailed_main': view_report_detailed_main,
     'report_detailed_daily': view_report_detailed_daily,
     
-    'settings_language': lambda: view_generic_placeholder(_("Change Language")),
+    'settings_language': view_settings_language,
     'settings_restore': lambda: view_generic_placeholder(_("Restore Previous Version")),
     'settings_storage': lambda: view_generic_placeholder(_("Change Data Storage Location")),
 }
