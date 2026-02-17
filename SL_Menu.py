@@ -898,6 +898,22 @@ def view_settings_port():
             
     if st.button(_("Cancel"), use_container_width=True): navigate_to('settings')
 
+def view_report_specific_day():
+    render_header(_("Daily Report (Specific Day)"))
+    
+    with st.form("specific_day_form"):
+        selected_date = st.date_input(_("Select Date"), value=datetime.now())
+        submitted = st.form_submit_button(_("Generate Report"), use_container_width=True)
+        
+        if submitted:
+            report = st.session_state.tracker.generate_daily_report(selected_date)
+            st.session_state.context['report'] = report
+            navigate_to('view_report')
+            st.rerun()
+            
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('reporting')
+
 def view_report_display():
     render_header(_("Report Result"))
     report = st.session_state.context.get('report', '')
@@ -959,7 +975,7 @@ menu_map = {
     'delete_all_closed_sub': view_delete_all_closed_sub_projects,
     'promote_sub_project': view_promote_sub_project,
     
-    'report_specific_day': lambda: view_generic_placeholder(_("Daily Report (Specific Day)")),
+    'report_specific_day': view_report_specific_day,
     'report_date_range': lambda: view_generic_placeholder(_("Date Range Report")),
     'report_detailed_sub': lambda: view_generic_placeholder(_("Detailed Sub-Project Report")),
     'report_detailed_main': lambda: view_generic_placeholder(_("Detailed Main-Project Report")),
