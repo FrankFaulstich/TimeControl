@@ -5,6 +5,14 @@ import sys
 import webview
 import time
 
+from TimeTracker import TimeTracker
+
+try:
+    from update import check_for_updates, download_update, install_update
+    UPDATE_AVAILABLE = True
+except ImportError:
+    UPDATE_AVAILABLE = False
+
 CONFIG_FILE = 'config.json'
 
 def save_window_state(window):
@@ -68,5 +76,21 @@ def start_streamlit_server():
     process.terminate()
 
 if __name__ == '__main__':
+    if UPDATE_AVAILABLE and os.path.exists("update.zip"):
+        print("Update found. Installing...")
+        install_update()
+        print("Restarting application...")
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
     start_streamlit_server()
     
+    if UPDATE_AVAILABLE:
+        print("Checking for updates...")
+        try:
+            tt = TimeTracker()
+            is_update, unused_version, url = check_for_updates(tt.get_version())
+            if is_update and url:
+                print("New version " + unused_version + " is available. Downloading...")
+                download_update(url)
+        except Exception as e:
+            print(f"Error checking for updates: {e}")
