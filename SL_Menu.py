@@ -1029,7 +1029,7 @@ def view_report_specific_day():
     render_header(_("Daily Report (Specific Day)"))
     
     with st.form("specific_day_form"):
-        selected_date = st.date_input(_("Select Date"), value=datetime.now())
+        selected_date = st.date_input(_("Select Date"), value=datetime.now(), format="YYYY-MM-DD")
         submitted = st.form_submit_button(_("Generate Report"), use_container_width=True)
         
         if submitted:
