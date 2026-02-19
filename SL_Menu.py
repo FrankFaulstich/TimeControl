@@ -1149,7 +1149,7 @@ def view_report_detailed_daily():
     render_header(_("Detailed Daily Report"))
     
     with st.form("detailed_daily_report_form"):
-        selected_date = st.date_input(_("Select Date"), value=datetime.now())
+        selected_date = st.date_input(_("Select Date"), value=datetime.now(), format="YYYY-MM-DD")
         submitted = st.form_submit_button(_("Generate Report"), use_container_width=True)
         
         if submitted:
