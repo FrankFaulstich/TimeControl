@@ -110,7 +110,7 @@ def view_main():
     render_header("Time Control", f"Version {st.session_state.tracker.get_version()}")
     
     if st.button(f"1. {_('Start work on sub-project')}", use_container_width=True):
-        navigate_to('start_work_select_main')
+        navigate_to('start_work')
     if st.button(f"2. {_('Show current work')}", use_container_width=True):
         navigate_to('show_current_work')
     if st.button(f"3. {_('Stop current work')}", use_container_width=True):
@@ -830,43 +830,42 @@ def view_add_sub_project_form():
         st.session_state.context = {}
         navigate_to('sub_project_mgmt')
 
-def view_start_work_select_main():
-    render_header(_("Start Work"), _("Select Main Project"))
+def view_start_work():
+    render_header(_("Start Work on Sub-Project"))
+    
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not projects:
-        st.warning(_("No open main projects found."))
-        if st.button(_("Back"), use_container_width=True): navigate_to('main')
-        return
-
-    # Use selectbox for GUI friendliness, but we could use input
-    options = [p['main_project_name'] for p in projects]
-    selected = st.selectbox(_("Main Project"), options)
-    
-    if st.button(_("Next"), use_container_width=True):
-        st.session_state.context['selected_main'] = selected
-        navigate_to('start_work_select_sub')
-        st.rerun()
-    if st.button(_("Cancel"), use_container_width=True): navigate_to('main')
-
-def view_start_work_select_sub():
-    main_project = st.session_state.context.get('selected_main')
-    render_header(_("Start Work"), f"{_('Select Sub-Project from')} {main_project}")
-    
-    subs = st.session_state.tracker.list_sub_projects(main_project_name=main_project, status_filter='open')
-    if not subs:
-        st.warning(_("No open sub-projects found."))
-        if st.button(_("Back"), use_container_width=True): navigate_to('start_work_select_main')
-        return
-
-    options = [s['sub_project_name'] for s in subs]
-    selected = st.selectbox(_("Sub-Project"), options)
-
-    if st.button(_("Start Work"), use_container_width=True):
-        if st.session_state.tracker.start_work(main_project, selected):
-            set_feedback(_("Work started on '{sub_name}' in project '{main_name}'.").format(sub_name=selected, main_name=main_project))
+        st.info(_("No open main projects found. Please add one first."))
+        if st.button(_("Back"), use_container_width=True):
             navigate_to('main')
-            st.rerun()
-    if st.button(_("Cancel"), use_container_width=True): navigate_to('main')
+        return
+
+    options = [p['main_project_name'] for p in projects]
+    selected_main = st.selectbox(_("Select Main Project"), options)
+    
+    subs = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
+    if not subs:
+        st.info(_("No open sub-projects to start work on in '{name}'.").format(name=selected_main))
+        if st.button(_("Back"), use_container_width=True):
+            navigate_to('main')
+        return
+
+    sub_options = [s['sub_project_name'] for s in subs]
+
+    with st.form("start_work_form"):
+        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
+        submitted = st.form_submit_button(_("Start Work"), use_container_width=True)
+        
+        if submitted:
+            if st.session_state.tracker.start_work(selected_main, selected_sub):
+                set_feedback(_("Work started on '{sub_name}' in project '{main_name}'.").format(sub_name=selected_sub, main_name=selected_main))
+                navigate_to('main')
+                st.rerun()
+            else:
+                st.error(_("Error starting work."))
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('main')
 
 def view_show_current_work():
     render_header(_("Current Active Work"))
@@ -1190,8 +1189,7 @@ menu_map = {
     # Actions
     'add_main_project': view_add_main_project,
     'list_main_projects': view_list_main_projects,
-    'start_work_select_main': view_start_work_select_main,
-    'start_work_select_sub': view_start_work_select_sub,
+    'start_work': view_start_work,
     'show_current_work': view_show_current_work,
     'settings_port': view_settings_port,
     'view_report': view_report_display,
