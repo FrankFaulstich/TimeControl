@@ -109,6 +109,12 @@ def render_header(title, subtitle=None):
 def view_main():
     render_header("Time Control", f"Version {st.session_state.tracker.get_version()}")
     
+    current_work = st.session_state.tracker.get_current_work()
+    if current_work:
+        st.info(f"**{_('Current Active Work')}:** {current_work['sub_project_name']} ({current_work['main_project_name']})")
+    else:
+        st.info(_("No active work session."))
+
     if st.button(f"1. {_('Start work on sub-project')}", use_container_width=True):
         navigate_to('start_work')
     if st.button(f"2. {_('Show current work')}", use_container_width=True):
