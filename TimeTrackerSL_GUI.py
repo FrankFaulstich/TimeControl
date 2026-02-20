@@ -4,6 +4,7 @@ import subprocess
 import sys
 import webview
 import time
+import threading
 
 from TimeTracker import TimeTracker
 
@@ -71,9 +72,22 @@ def start_streamlit_server():
     # Save state when closing the window
     window.events.closing += lambda: save_window_state(window)
     
+    # Monitor the Streamlit process and close the window if it exits
+    def monitor_streamlit(proc, win):
+        proc.wait()
+        try:
+            win.destroy()
+        except Exception:
+            pass
+
+    monitor_thread = threading.Thread(target=monitor_streamlit, args=(process, window))
+    monitor_thread.daemon = True
+    monitor_thread.start()
+
     webview.start()
     
-    process.terminate()
+    if process.poll() is None:
+        process.terminate()
 
 if __name__ == '__main__':
     if UPDATE_AVAILABLE and os.path.exists("update.zip"):

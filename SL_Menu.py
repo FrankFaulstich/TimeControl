@@ -138,7 +138,7 @@ def view_main():
     st.divider()
     
     if st.button(f"0. {_('Exit')}", use_container_width=True):
-        st.stop()
+        os._exit(0)
 
 def view_project_management():
     render_header(_("Project Management"))
