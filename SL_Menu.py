@@ -22,35 +22,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Minimalistic CSS for macOS-like feel
-st.markdown("""
-<style>
-    .stApp {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    h1, h2, h3 {
-        font-weight: 600;
-        color: #1d1d1f;
-    }
-    .stButton button {
-        border-radius: 8px;
-        font-weight: 500;
-    }
-    .report-box {
-        background-color: #f5f5f7;
-        padding: 15px;
-        border-radius: 10px;
-        font-family: 'Menlo', monospace;
-        font-size: 0.9em;
-        white-space: pre-wrap;
-        border: 1px solid #e1e1e1;
-    }
-    .menu-option {
-        padding: 8px 0;
-        border-bottom: 1px solid #f0f0f0;
-    }
-</style>
-""", unsafe_allow_html=True)
+def local_css(file_name):
+    if os.path.exists(file_name):
+        with open(file_name) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+local_css("style.css")
 
 # --- State Management ---
 
