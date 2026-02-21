@@ -17,7 +17,16 @@ except ImportError:
 CONFIG_FILE = 'config.json'
 
 def save_window_state(window):
-    """Saves the current window dimensions and position to config.json."""
+    """Saves the current window dimensions and position to config.json.
+
+    This function is typically called when the window is closing. It reads the
+    existing configuration, updates it with the window's geometry, and writes
+    it back to the file.
+
+    Args:
+        window: The pywebview window object whose state is to be saved.
+
+    """
     try:
         config = {}
         if os.path.exists(CONFIG_FILE):
@@ -36,9 +45,19 @@ def save_window_state(window):
 
 def start_streamlit_server():
     """
-    Reads the configuration from config.json and starts the Streamlit application
-    on the configured port.
+    Initializes and runs the pywebview GUI for the Streamlit app.
+
+    This function performs the following steps:
+    1. Reads `config.json` to get the configured port and last window geometry.
+    2. Starts the Streamlit server as a background subprocess.
+    3. Creates a `pywebview` window pointing to the local Streamlit URL.
+    4. Sets up an event handler to save the window state upon closing.
+    5. Starts a monitoring thread that closes the window if the Streamlit
+       server process terminates unexpectedly (e.g., via the Exit button).
+    6. Starts the main `pywebview` event loop.
+    7. Terminates the Streamlit subprocess when the `pywebview` window is closed.
     """
+
     port = 8501 # Default Streamlit port
     width = 800
     height = 600
@@ -74,6 +93,18 @@ def start_streamlit_server():
     
     # Monitor the Streamlit process and close the window if it exits
     def monitor_streamlit(proc, win):
+        """Monitors the Streamlit process and closes the window if it exits.
+
+        This function runs in a separate thread. It blocks until the Streamlit
+        subprocess terminates, and then destroys the pywebview window. This
+        ensures the GUI window closes when the server is stopped from within
+        the Streamlit app (e.g., by clicking an 'Exit' button).
+
+        Args:
+            proc: The subprocess object for the Streamlit server.
+            win: The pywebview window object.
+
+        """
         proc.wait()
         try:
             win.destroy()
