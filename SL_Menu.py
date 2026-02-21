@@ -22,6 +22,29 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+def get_config():
+    """
+    Reads the configuration from config.json.
+
+    :return: A dictionary containing the configuration, or an empty dict if reading fails.
+    """
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            pass
+    return {}
+
+def save_config(config):
+    """
+    Saves the given configuration dictionary to config.json.
+
+    :param config: The configuration dictionary to save.
+    """
+    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=4)
+
 def local_css(file_name):
     """
     Loads a local CSS file and injects it into the Streamlit app.
@@ -32,7 +55,8 @@ def local_css(file_name):
         with open(file_name) as f:
             st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-local_css("style.css")
+config = get_config()
+local_css(config.get('css_file', 'style.css'))
 
 # --- State Management ---
 
@@ -70,29 +94,6 @@ def set_feedback(message, type='success'):
     :param type: The type of message ('success', 'info', 'error'). Defaults to 'success'.
     """
     st.session_state.feedback = {'message': message, 'type': type}
-
-def get_config():
-    """
-    Reads the configuration from config.json.
-
-    :return: A dictionary containing the configuration, or an empty dict if reading fails.
-    """
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            pass
-    return {}
-
-def save_config(config):
-    """
-    Saves the given configuration dictionary to config.json.
-
-    :param config: The configuration dictionary to save.
-    """
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=4)
 
 # --- UI Components ---
 
@@ -245,6 +246,7 @@ def view_settings():
     if st.button(f"2. {_('Restore Previous Version')}", use_container_width=True): navigate_to('settings_restore')
     if st.button(f"3. {_('Change Data Storage Location')}", use_container_width=True): navigate_to('settings_storage')
     if st.button(f"4. {_('Change Streamlit Port')}", use_container_width=True): navigate_to('settings_port')
+    if st.button(f"5. {_('Change CSS Style')}", use_container_width=True): navigate_to('settings_css')
     
     st.divider()
     
@@ -1071,6 +1073,44 @@ def view_settings_storage():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('settings')
 
+def view_settings_css():
+    """
+    Renders the form to change the CSS file.
+    """
+    render_header(_("Change CSS Style"))
+    
+    config = get_config()
+    current_css = config.get('css_file', 'style.css')
+    st.markdown(f"**{_('Current CSS file')}:** `{current_css}`")
+    
+    # Find .css files in the current directory
+    css_files = [f for f in os.listdir('.') if f.endswith('.css')]
+    if not css_files:
+        css_files = ['style.css']
+    
+    # Ensure current_css is in the list for the selectbox index
+    if current_css not in css_files and os.path.exists(current_css):
+        css_files.append(current_css)
+    
+    try:
+        current_index = css_files.index(current_css)
+    except ValueError:
+        current_index = 0
+
+    with st.form("css_form"):
+        selected_css = st.selectbox(_("Select CSS File"), css_files, index=current_index)
+        submitted = st.form_submit_button(_("Save"), use_container_width=True)
+        
+        if submitted:
+            config['css_file'] = selected_css
+            save_config(config)
+            set_feedback(_("CSS style updated. Please restart the application for the changes to take effect."))
+            navigate_to('settings')
+            st.rerun()
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('settings')
+
 def view_settings_restore():
     """
     Renders the view to restore the application to a previous version.
@@ -1365,6 +1405,7 @@ menu_map = {
     'settings_language': view_settings_language,
     'settings_restore': view_settings_restore,
     'settings_storage': view_settings_storage,
+    'settings_css': view_settings_css,
 }
 
 # --- Execution ---
