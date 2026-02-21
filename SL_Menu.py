@@ -23,6 +23,11 @@ st.set_page_config(
 )
 
 def local_css(file_name):
+    """
+    Loads a local CSS file and injects it into the Streamlit app.
+
+    :param file_name: The path to the CSS file.
+    """
     if os.path.exists(file_name):
         with open(file_name) as f:
             st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
@@ -48,14 +53,30 @@ if 'context' not in st.session_state:
 # --- Helper Functions ---
 
 def navigate_to(menu_name):
+    """
+    Updates the session state to navigate to a different menu view.
+
+    :param menu_name: The key of the menu to navigate to (must exist in menu_map).
+    """
     st.session_state.menu = menu_name
     st.session_state.feedback = None
     st.rerun()
     
 def set_feedback(message, type='success'):
+    """
+    Sets a feedback message to be displayed in the header of the next view.
+
+    :param message: The message text.
+    :param type: The type of message ('success', 'info', 'error'). Defaults to 'success'.
+    """
     st.session_state.feedback = {'message': message, 'type': type}
 
 def get_config():
+    """
+    Reads the configuration from config.json.
+
+    :return: A dictionary containing the configuration, or an empty dict if reading fails.
+    """
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -65,12 +86,23 @@ def get_config():
     return {}
 
 def save_config(config):
+    """
+    Saves the given configuration dictionary to config.json.
+
+    :param config: The configuration dictionary to save.
+    """
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4)
 
 # --- UI Components ---
 
 def render_header(title, subtitle=None):
+    """
+    Renders the standard header for a view, including title, optional subtitle, and feedback messages.
+
+    :param title: The main title of the view.
+    :param subtitle: An optional subtitle.
+    """
     st.title(title)
     if subtitle:
         st.caption(subtitle)
@@ -84,6 +116,9 @@ def render_header(title, subtitle=None):
 # --- Views ---
 
 def view_main():
+    """
+    Renders the main menu view.
+    """
     render_header("Time Control", f"Version {st.session_state.tracker.get_version()}")
     
     current_work = st.session_state.tracker.get_current_work()
@@ -118,6 +153,9 @@ def view_main():
         os._exit(0)
 
 def view_project_management():
+    """
+    Renders the project management submenu view.
+    """
     render_header(_("Project Management"))
     
     if st.button(f"1. {_('Main Project Management')}", use_container_width=True):
@@ -131,6 +169,9 @@ def view_project_management():
         navigate_to('main')
 
 def view_main_project_mgmt():
+    """
+    Renders the main project management submenu view.
+    """
     render_header(_("Main Project Management"))
     
     if st.button(f"1. {_('Add Main Project')}", use_container_width=True): navigate_to('add_main_project')
@@ -149,6 +190,9 @@ def view_main_project_mgmt():
         navigate_to('project_management')
 
 def view_sub_project_mgmt():
+    """
+    Renders the sub-project management submenu view.
+    """
     render_header(_("Sub-Project Management"))
     
     if st.button(f"1. {_('Add Sub-Project')}", use_container_width=True): navigate_to('add_sub_project')
@@ -169,6 +213,9 @@ def view_sub_project_mgmt():
         navigate_to('project_management')
 
 def view_reporting():
+    """
+    Renders the reporting submenu view.
+    """
     render_header(_("Reporting"))
     tt = st.session_state.tracker
     
@@ -189,6 +236,9 @@ def view_reporting():
         navigate_to('main')
 
 def view_settings():
+    """
+    Renders the settings submenu view.
+    """
     render_header(_("Settings"))
     
     if st.button(f"1. {_('Change Language')}", use_container_width=True): navigate_to('settings_language')
@@ -204,6 +254,9 @@ def view_settings():
 # --- Action Views (Forms) ---
 
 def view_add_main_project():
+    """
+    Renders the form to add a new main project.
+    """
     render_header(_("Add New Main Project"))
     with st.form("add_main_form"):
         name = st.text_input(_("Name of the main project"))
@@ -217,6 +270,9 @@ def view_add_main_project():
         navigate_to('main_project_mgmt')
 
 def view_close_sub_project():
+    """
+    Renders the form to close a sub-project.
+    """
     render_header(_("Close Sub-Project"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -255,6 +311,9 @@ def view_close_sub_project():
         navigate_to('sub_project_mgmt')
 
 def view_reopen_sub_project():
+    """
+    Renders the form to re-open a closed sub-project.
+    """
     render_header(_("Re-open Sub-Project"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -293,6 +352,9 @@ def view_reopen_sub_project():
         navigate_to('sub_project_mgmt')
 
 def view_delete_sub_project():
+    """
+    Renders the form to delete a sub-project.
+    """
     render_header(_("Delete Sub-Project"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -332,6 +394,9 @@ def view_delete_sub_project():
         navigate_to('sub_project_mgmt')
 
 def view_move_sub_project():
+    """
+    Renders the form to move a sub-project to another main project.
+    """
     render_header(_("Move Sub-Project"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -379,6 +444,9 @@ def view_move_sub_project():
         navigate_to('sub_project_mgmt')
 
 def view_list_inactive_sub_projects():
+    """
+    Renders the view to list inactive sub-projects based on a configurable threshold.
+    """
     render_header(_("List Inactive Sub-Projects"))
     
     weeks = st.number_input(_("Weeks of inactivity"), min_value=1, value=4, step=1)
@@ -397,6 +465,9 @@ def view_list_inactive_sub_projects():
         navigate_to('sub_project_mgmt')
 
 def view_list_closed_sub_projects():
+    """
+    Renders the view listing all closed sub-projects.
+    """
     render_header(_("List All Closed Sub-Projects"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
@@ -419,6 +490,9 @@ def view_list_closed_sub_projects():
         navigate_to('sub_project_mgmt')
 
 def view_delete_all_closed_sub_projects():
+    """
+    Renders the view to delete all closed sub-projects at once.
+    """
     render_header(_("Delete All Closed Sub-Projects"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
@@ -458,6 +532,9 @@ def view_delete_all_closed_sub_projects():
         navigate_to('sub_project_mgmt')
 
 def view_promote_sub_project():
+    """
+    Renders the form to promote a sub-project to a main project.
+    """
     render_header(_("Promote Sub-Project to Main-Project"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -499,6 +576,9 @@ def view_promote_sub_project():
         navigate_to('sub_project_mgmt')
 
 def view_list_main_projects():
+    """
+    Renders the list of all main projects.
+    """
     render_header(_("List Main Projects"))
     projects = st.session_state.tracker.list_main_projects(status_filter='all')
     if projects:
@@ -511,6 +591,9 @@ def view_list_main_projects():
         navigate_to('main_project_mgmt')
 
 def view_rename_main_project():
+    """
+    Renders the form to rename a main project.
+    """
     render_header(_("Rename Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     
@@ -543,6 +626,9 @@ def view_rename_main_project():
         navigate_to('main_project_mgmt')
 
 def view_list_sub_projects():
+    """
+    Renders the list of sub-projects for a selected main project.
+    """
     render_header(_("List Sub-Projects"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
@@ -570,6 +656,9 @@ def view_list_sub_projects():
         navigate_to('sub_project_mgmt')
 
 def view_rename_sub_project():
+    """
+    Renders the form to rename a sub-project.
+    """
     render_header(_("Rename Sub-Project"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -612,6 +701,9 @@ def view_rename_sub_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 def view_close_main_project():
+    """
+    Renders the form to close a main project.
+    """
     render_header(_("Close Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     
@@ -639,6 +731,9 @@ def view_close_main_project():
         navigate_to('main_project_mgmt')
 
 def view_reopen_main_project():
+    """
+    Renders the form to re-open a closed main project.
+    """
     render_header(_("Re-open Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='closed')
     
@@ -666,6 +761,9 @@ def view_reopen_main_project():
         navigate_to('main_project_mgmt')
 
 def view_delete_main_project():
+    """
+    Renders the form to delete a main project.
+    """
     render_header(_("Delete Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='all')
     
@@ -694,6 +792,9 @@ def view_delete_main_project():
         navigate_to('main_project_mgmt')
 
 def view_list_inactive_main_projects():
+    """
+    Renders the view to list inactive main projects based on a configurable threshold.
+    """
     render_header(_("List Inactive Main Projects"))
     
     weeks = st.number_input(_("Weeks of inactivity"), min_value=1, value=4, step=1)
@@ -712,6 +813,9 @@ def view_list_inactive_main_projects():
         navigate_to('main_project_mgmt')
 
 def view_demote_main_project():
+    """
+    Renders the form to demote a main project to a sub-project.
+    """
     render_header(_("Demote Main-Project"))
     
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -750,6 +854,9 @@ def view_demote_main_project():
         navigate_to('main_project_mgmt')
 
 def view_list_completed_main():
+    """
+    Renders the list of completed main projects (those with only closed or no sub-projects).
+    """
     render_header(_("List Completed Main Projects"))
     
     completed_projects = st.session_state.tracker.list_completed_main_projects()
@@ -765,6 +872,9 @@ def view_list_completed_main():
         navigate_to('main_project_mgmt')
 
 def view_add_sub_project_select_main():
+    """
+    Renders the first step of adding a sub-project: selecting the main project.
+    """
     render_header(_("Add Sub-Project"), _("Step 1: Select Main Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not projects:
@@ -782,6 +892,9 @@ def view_add_sub_project_select_main():
     if st.button(_("Cancel"), use_container_width=True): navigate_to('sub_project_mgmt')
 
 def view_add_sub_project_form():
+    """
+    Renders the second step of adding a sub-project: entering the name.
+    """
     main_project = st.session_state.context.get('selected_main')
     if not main_project:
         set_feedback(_("No main project selected. Please start again."), "error")
@@ -814,6 +927,9 @@ def view_add_sub_project_form():
         navigate_to('sub_project_mgmt')
 
 def view_start_work():
+    """
+    Renders the form to start work on a sub-project.
+    """
     render_header(_("Start Work on Sub-Project"))
     
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
@@ -851,6 +967,9 @@ def view_start_work():
         navigate_to('main')
 
 def view_show_current_work():
+    """
+    Renders the view showing the currently active work session.
+    """
     render_header(_("Current Active Work"))
     current = st.session_state.tracker.get_current_work()
     if current:
@@ -869,6 +988,9 @@ def view_show_current_work():
     if st.button(_("Back"), use_container_width=True): navigate_to('main')
 
 def view_settings_port():
+    """
+    Renders the form to change the Streamlit server port.
+    """
     render_header(_("Streamlit Port Settings"))
     config = get_config()
     current_port = config.get('streamlit_port', 8501)
@@ -888,6 +1010,9 @@ def view_settings_port():
     if st.button(_("Cancel"), use_container_width=True): navigate_to('settings')
 
 def view_settings_storage():
+    """
+    Renders the form to change the data storage location.
+    """
     render_header(_("Change Data Storage Location"))
     
     current_path = st.session_state.tracker.file_path
@@ -947,6 +1072,9 @@ def view_settings_storage():
         navigate_to('settings')
 
 def view_settings_restore():
+    """
+    Renders the view to restore the application to a previous version.
+    """
     render_header(_("Restore Previous Version"))
     
     backup_zip_file = "prev-version.zip"
@@ -970,6 +1098,9 @@ def view_settings_restore():
         st.success(_("Restore complete. Please restart the application."))
             
 def view_settings_language():
+    """
+    Renders the form to change the application language.
+    """
     render_header(_("Change Language"))
 
     supported_languages = {'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'cs': 'Čeština'}
@@ -1009,6 +1140,9 @@ def view_settings_language():
         navigate_to('settings')
 
 def view_report_specific_day():
+    """
+    Renders the form to generate a daily report for a specific date.
+    """
     render_header(_("Daily Report (Specific Day)"))
     
     with st.form("specific_day_form"):
@@ -1025,6 +1159,9 @@ def view_report_specific_day():
         navigate_to('reporting')
 
 def view_report_date_range():
+    """
+    Renders the form to generate a report for a date range.
+    """
     render_header(_("Date Range Report"))
     
     with st.form("date_range_form"):
@@ -1049,6 +1186,9 @@ def view_report_date_range():
         navigate_to('reporting')
 
 def view_report_detailed_sub_select_main():
+    """
+    Renders the first step of the detailed sub-project report: selecting the main project.
+    """
     render_header(_("Detailed Sub-Project Report"), _("Step 1: Select Main Project"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
@@ -1070,6 +1210,9 @@ def view_report_detailed_sub_select_main():
         navigate_to('reporting')
 
 def view_report_detailed_sub_select_sub():
+    """
+    Renders the second step of the detailed sub-project report: selecting the sub-project.
+    """
     main_project = st.session_state.context.get('selected_main')
     if not main_project:
         set_feedback(_("No main project selected. Please start again."), "error")
@@ -1099,6 +1242,9 @@ def view_report_detailed_sub_select_sub():
         navigate_to('report_detailed_sub')
 
 def view_report_detailed_main():
+    """
+    Renders the form to generate a detailed report for a main project.
+    """
     render_header(_("Detailed Main-Project Report"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
@@ -1123,6 +1269,9 @@ def view_report_detailed_main():
         navigate_to('reporting')
 
 def view_report_detailed_daily():
+    """
+    Renders the form to generate a detailed daily report.
+    """
     render_header(_("Detailed Daily Report"))
     
     with st.form("detailed_daily_report_form"):
@@ -1139,6 +1288,9 @@ def view_report_detailed_daily():
         navigate_to('reporting')
 
 def view_report_display():
+    """
+    Renders the generated report content.
+    """
     render_header(_("Report Result"))
     report = st.session_state.context.get('report', '')
     st.markdown(f'<div class="report-box">{report}</div>', unsafe_allow_html=True)
@@ -1149,6 +1301,11 @@ def view_report_display():
 # But for clarity in this example, I'll implement a few key ones and placeholders for others.
 
 def view_generic_placeholder(title):
+    """
+    Renders a placeholder view for features not yet implemented in the GUI.
+
+    :param title: The title of the placeholder view.
+    """
     render_header(title)
     st.info("This feature is available in the CLI. GUI implementation coming soon.")
     if st.button(_("Back"), use_container_width=True): 
