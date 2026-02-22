@@ -47,7 +47,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 - **Experimental GUI:** A graphical user interface based on Streamlit for a more visual experience.
 - **Interactive CLI:** A user-friendly command-line interface (`TimeTrackerCLI.py`) for manual operations.
 
-**Unit Testing:** Includes comprehensive unit tests in `test_TimeTracker.py` for feature reliability.
+**Unit Testing:** Includes comprehensive unit tests in `tests/test_TimeTracker.py` for feature reliability.
 
 ---
 
