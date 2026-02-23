@@ -7,7 +7,7 @@ import json
 # This must be done before other local modules are imported.
 from i18n import _
 
-from TimeTracker import TimeTracker
+from tt.TimeTracker import TimeTracker
 from datetime import datetime, timedelta
 
 try:
