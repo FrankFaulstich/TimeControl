@@ -75,7 +75,7 @@ def start_streamlit_server():
     print(f"Starting TimeControl GUI on port {port}...")
     
     # Use sys.executable to ensure the same python environment is used
-    cmd = [sys.executable, "-m", "streamlit", "run", "SL_Menu.py", "--server.port", str(port), "--server.headless", "true"]
+    cmd = [sys.executable, "-m", "streamlit", "run", os.path.join("sl", "SL_Menu.py"), "--server.port", str(port), "--server.headless", "true"]
     
     process = subprocess.Popen(cmd)
     
