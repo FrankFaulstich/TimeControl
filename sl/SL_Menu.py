@@ -1,9 +1,14 @@
 import streamlit as st
 import json
 import os
+import sys
 from datetime import datetime
 import shutil
-from TimeTracker import TimeTracker
+
+# Add parent directory to path to import modules from root
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from tt.TimeTracker import TimeTracker
 from i18n import _
 
 try:
