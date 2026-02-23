@@ -7,4 +7,3 @@ data.json
 # Sphinx documentation build output
 /docs/_build/
 .DS_Store
-.DS_Store

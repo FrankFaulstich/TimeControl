@@ -117,7 +117,7 @@ class TestTimeTracker(unittest.TestCase):
         duration3 = timedelta(hours=1.5)
         self.assertEqual(self.tracker._format_duration(duration3), "1,500 hours (0,038 DLP)")
 
-    @unittest.mock.patch('TimeTracker.pyperclip')
+    @unittest.mock.patch('tt.TimeTracker.pyperclip')
     def test_copy_to_clipboard_success(self, mock_pyperclip):
         """Tests copying to clipboard when pyperclip is available."""
         # Setup mock
@@ -130,7 +130,7 @@ class TestTimeTracker(unittest.TestCase):
         # Assert
         mock_pyperclip.copy.assert_called_with(text)
 
-    @unittest.mock.patch('TimeTracker.pyperclip', None)
+    @unittest.mock.patch('tt.TimeTracker.pyperclip', None)
     @unittest.mock.patch('builtins.print')
     def test_copy_to_clipboard_not_installed(self, mock_print):
         """Tests behavior when pyperclip is not installed."""
@@ -140,7 +140,7 @@ class TestTimeTracker(unittest.TestCase):
         expected_msg = _("Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip install pyperclip`).")
         self.assertIn(expected_msg, args[0])
 
-    @unittest.mock.patch('TimeTracker.distributions')
+    @unittest.mock.patch('tt.TimeTracker.distributions')
     @unittest.mock.patch('subprocess.check_call')
     @unittest.mock.patch('sys.exit')
     @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open, read_data="packageA==1.0\npackageB")
