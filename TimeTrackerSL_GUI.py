@@ -6,7 +6,7 @@ import webview
 import time
 import threading
 
-from TimeTracker import TimeTracker
+from tt.TimeTracker import TimeTracker
 
 try:
     from update import check_for_updates, download_update, install_update

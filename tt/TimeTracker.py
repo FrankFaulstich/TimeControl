@@ -1,12 +1,10 @@
 import json
 import os
+from i18n import _
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from i18n import _
 import subprocess
 try:
     # Python 3.8+ for importlib.metadata

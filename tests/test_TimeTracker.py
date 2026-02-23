@@ -2,8 +2,13 @@ import unittest
 import unittest.mock
 import json
 import os
+import sys
 from datetime import datetime, timedelta
-from TimeTracker import TimeTracker # Assume TimeTracker.py is in the same directory
+
+# Add parent directory to path to import modules from root
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from tt.TimeTracker import TimeTracker
 from i18n import _
 
 # The temporary file path for tests
