@@ -56,8 +56,9 @@ def local_css(file_name):
 
     :param file_name: The path to the CSS file.
     """
-    if os.path.exists(file_name):
-        with open(file_name) as f:
+    file_path = os.path.join(SL_DIR, file_name)
+    if os.path.exists(file_path):
+        with open(file_path) as f:
             st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 config = get_config()
@@ -1089,12 +1090,12 @@ def view_settings_css():
     st.markdown(f"**{_('Current CSS file')}:** `{current_css}`")
     
     # Find .css files in the current directory
-    css_files = [f for f in os.listdir('.') if f.endswith('.css')]
+    css_files = [f for f in os.listdir(SL_DIR) if f.endswith('.css')]
     if not css_files:
         css_files = ['style.css']
     
     # Ensure current_css is in the list for the selectbox index
-    if current_css not in css_files and os.path.exists(current_css):
+    if current_css not in css_files and os.path.exists(os.path.join(SL_DIR, current_css)):
         css_files.append(current_css)
     
     try:
