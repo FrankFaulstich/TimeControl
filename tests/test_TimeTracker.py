@@ -568,20 +568,41 @@ class TestTimeTracker(unittest.TestCase):
         
     def test_start_work_stops_previous(self):
         """Tests if a running session is stopped when a new one is started."""
-        self._create_mock_project_with_sub("P1", "T1")
-        self._create_mock_project_with_sub("P2", "T2") # Leads to index 1
+        self._create_mock_project_with_sub("P1", "T1") # Initially at index 0
+        self._create_mock_project_with_sub("P2", "T2") # Initially at index 1
         
         # Start T1
         self.tracker.start_work("P1", "T1")
-        # Start T2 (should stop T1)
+        # Start T2 (should stop T1 and move P2 to the front)
         self.tracker.start_work("P2", "T2")
         
-        # Check if T1 has an end_time entry
-        t1_entry = self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"][0]
+        # After starting T2, P2 is at index 0, P1 is at index 1.
+        
+        # Check if T1 (in P1 at index 1) has an end_time entry
+        t1_entry = self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"][0]
         self.assertIn("end_time", t1_entry)
         
-        # Check if T2 only has a start_time
-        self.assertNotIn("end_time", self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"][0])
+        # Check if T2 (in P2 at index 0) only has a start_time
+        self.assertNotIn("end_time", self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"][0])
+
+    def test_start_work_reorders_projects(self):
+        """Tests that starting work moves the project and sub-project to the top."""
+        # Setup: P1 with S1, S2. P2 with S3.
+        self.tracker.add_main_project("P1")
+        self.tracker.add_sub_project("P1", "S1")
+        self.tracker.add_sub_project("P1", "S2") # P1 sub-projects: [S1, S2]
+        self.tracker.add_main_project("P2")
+        self.tracker.add_sub_project("P2", "S3") # Main projects: [P1, P2]
+
+        # Action 1: Start work on P1, S2. This moves S2 to the top of P1's sub-projects.
+        # Main project order should not change as P1 is already at the top.
+        self.tracker.start_work("P1", "S2")
+        self.assertEqual([p['main_project_name'] for p in self.tracker.data['projects']], ["P1", "P2"])
+        self.assertEqual([sp['sub_project_name'] for sp in self.tracker._get_project("P1")['sub_projects']], ["S2", "S1"])
+
+        # Action 2: Start work on P2, S3. This moves P2 to the top of the main projects list.
+        self.tracker.start_work("P2", "S3")
+        self.assertEqual([p['main_project_name'] for p in self.tracker.data['projects']], ["P2", "P1"])
 
     def test_stop_work_success(self):
         """Tests the successful stopping of work."""
