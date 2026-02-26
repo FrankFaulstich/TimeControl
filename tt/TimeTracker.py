@@ -644,6 +644,7 @@ class TimeTracker:
         """
         Starts a new time tracking session for a sub-project by saving the start time.
         Any currently active session is stopped before starting the new one.
+        The affected sub-project and main project are moved to the top of their respective lists.
 
         :param main_project_name: The parent main project name.
         :type main_project_name: str
@@ -654,14 +655,43 @@ class TimeTracker:
         """
         self.stop_work()
         
-        sub_project = self._get_sub_project(main_project_name, sub_project_name)
-        if sub_project:
+        main_project = None
+        main_project_index = -1
+        sub_project = None
+        sub_project_index = -1
+
+        # Find the main project and sub-project along with their indices
+        for i, p in enumerate(self.data["projects"]):
+            if p["main_project_name"] == main_project_name:
+                main_project_index = i
+                main_project = p
+                for j, sp in enumerate(p["sub_projects"]):
+                    if sp["sub_project_name"] == sub_project_name:
+                        sub_project_index = j
+                        sub_project = sp
+                        break
+                break
+
+        if sub_project and main_project:
+            # Add the new time entry
             new_entry = {
                 "start_time": datetime.now().isoformat()
             }
             sub_project["time_entries"].append(new_entry)
+
+            # Move the sub-project to the top of the list
+            if sub_project_index > 0:
+                moved_sub_project = main_project["sub_projects"].pop(sub_project_index)
+                main_project["sub_projects"].insert(0, moved_sub_project)
+
+            # Move the main project to the top of the list
+            if main_project_index > 0:
+                moved_main_project = self.data["projects"].pop(main_project_index)
+                self.data["projects"].insert(0, moved_main_project)
+
             self._save_data()
             return True
+            
         return False
 
     def stop_work(self):
