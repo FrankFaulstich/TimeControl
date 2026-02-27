@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: https://github.com/FrankFaulstich/TimeControl/issues\n"
 "POT-Creation-Date: 2025-10-30 10:00+0200\n"
-"PO-Revision-Date: 2025-10-30 10:30+0200\n"
+"PO-Revision-Date: 2025-10-30 12:00+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: French\n"
 "Language: fr\n"
@@ -1046,3 +1046,126 @@ msgstr "\n--- Rapport journalier détaillé ---"
 
 msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
 msgstr "Entrez la date (AAAA-MM-JJ) ou appuyez sur Entrée pour aujourd'hui : "
+
+msgid "Start work on sub-project"
+msgstr "Démarrer le travail sur un sous-projet"
+
+msgid "Show current work"
+msgstr "Afficher le travail en cours"
+
+msgid "Stop current work"
+msgstr "Arrêter le travail en cours"
+
+msgid "Project Management"
+msgstr "Gestion des projets"
+
+msgid "Reporting"
+msgstr "Rapports"
+
+msgid "Settings"
+msgstr "Paramètres"
+
+msgid "Main Project Management"
+msgstr "Gestion des projets principaux"
+
+msgid "Sub-Project Management"
+msgstr "Gestion des sous-projets"
+
+msgid "Add Main Project"
+msgstr "Ajouter un projet principal"
+
+msgid "List Main Projects"
+msgstr "Lister les projets principaux"
+
+msgid "Rename Main Project"
+msgstr "Renommer le projet principal"
+
+msgid "Close Main Project"
+msgstr "Fermer le projet principal"
+
+msgid "Re-open Main Project"
+msgstr "Rouvrir le projet principal"
+
+msgid "Delete Main Project"
+msgstr "Supprimer le projet principal"
+
+msgid "List Inactive Main Projects"
+msgstr "Lister les projets principaux inactifs"
+
+msgid "Demote Main-Project to Sub-Project"
+msgstr "Rétrograder un projet principal en sous-projet"
+
+msgid "List Completed Main Projects"
+msgstr "Lister les projets principaux terminés"
+
+msgid "Add Sub-Project"
+msgstr "Ajouter un sous-projet"
+
+msgid "List Sub-Projects"
+msgstr "Lister les sous-projets"
+
+msgid "Rename Sub-Project"
+msgstr "Renommer le sous-projet"
+
+msgid "Close Sub-Project"
+msgstr "Fermer le sous-projet"
+
+msgid "Re-open Sub-Project"
+msgstr "Rouvrir le sous-projet"
+
+msgid "Delete Sub-Project"
+msgstr "Supprimer le sous-projet"
+
+msgid "Move Sub-Project"
+msgstr "Déplacer le sous-projet"
+
+msgid "List Inactive Sub-Projects"
+msgstr "Lister les sous-projets inactifs"
+
+msgid "List All Closed Sub-Projects"
+msgstr "Lister tous les sous-projets fermés"
+
+msgid "Delete All Closed Sub-Projects"
+msgstr "Supprimer tous les sous-projets fermés"
+
+msgid "Promote Sub-Project to Main-Project"
+msgstr "Promouvoir un sous-projet en projet principal"
+
+msgid "Daily Report (Today)"
+msgstr "Rapport journalier (Aujourd'hui)"
+
+msgid "Daily Report (Specific Day)"
+msgstr "Rapport journalier (Jour spécifique)"
+
+msgid "Date Range Report"
+msgstr "Rapport par plage de dates"
+
+msgid "Detailed Sub-Project Report"
+msgstr "Rapport détaillé de sous-projet"
+
+msgid "Detailed Main-Project Report"
+msgstr "Rapport détaillé du projet principal"
+
+msgid "Detailed Daily Report"
+msgstr "Rapport journalier détaillé"
+
+msgid "Change Language"
+msgstr "Changer de langue"
+
+msgid "Restore Previous Version"
+msgstr "Restaurer la version précédente"
+
+msgid "Change Data Storage Location"
+msgstr "Changer l'emplacement de stockage des données"
+
+msgid "Select Action"
+msgstr "Sélectionner une action"
+
+msgid "Select Main Project"
+msgstr "Sélectionner un projet principal"
+
+msgid "Select Sub-Project"
+msgstr "Sélectionner un sous-projet"
+
+msgid "Back to Main Menu"
+msgstr "Retour au menu principal"

@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: https://github.com/FrankFaulstich/TimeControl/issues\n"
 "POT-Creation-Date: 2025-10-30 10:00+0200\n"
-"PO-Revision-Date: 2025-10-30 10:30+0200\n"
+"PO-Revision-Date: 2025-10-30 12:00+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -932,3 +932,126 @@ msgstr "Error during restoration: {error}"
 #: update.py:193
 msgid "The backup file '{filename}' was not deleted."
 msgstr "The backup file '{filename}' was not deleted."
+
+msgid "Start work on sub-project"
+msgstr "Start work on sub-project"
+
+msgid "Show current work"
+msgstr "Show current work"
+
+msgid "Stop current work"
+msgstr "Stop current work"
+
+msgid "Project Management"
+msgstr "Project Management"
+
+msgid "Reporting"
+msgstr "Reporting"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Main Project Management"
+msgstr "Main Project Management"
+
+msgid "Sub-Project Management"
+msgstr "Sub-Project Management"
+
+msgid "Add Main Project"
+msgstr "Add Main Project"
+
+msgid "List Main Projects"
+msgstr "List Main Projects"
+
+msgid "Rename Main Project"
+msgstr "Rename Main Project"
+
+msgid "Close Main Project"
+msgstr "Close Main Project"
+
+msgid "Re-open Main Project"
+msgstr "Re-open Main Project"
+
+msgid "Delete Main Project"
+msgstr "Delete Main Project"
+
+msgid "List Inactive Main Projects"
+msgstr "List Inactive Main Projects"
+
+msgid "Demote Main-Project to Sub-Project"
+msgstr "Demote Main-Project to Sub-Project"
+
+msgid "List Completed Main Projects"
+msgstr "List Completed Main Projects"
+
+msgid "Add Sub-Project"
+msgstr "Add Sub-Project"
+
+msgid "List Sub-Projects"
+msgstr "List Sub-Projects"
+
+msgid "Rename Sub-Project"
+msgstr "Rename Sub-Project"
+
+msgid "Close Sub-Project"
+msgstr "Close Sub-Project"
+
+msgid "Re-open Sub-Project"
+msgstr "Re-open Sub-Project"
+
+msgid "Delete Sub-Project"
+msgstr "Delete Sub-Project"
+
+msgid "Move Sub-Project"
+msgstr "Move Sub-Project"
+
+msgid "List Inactive Sub-Projects"
+msgstr "List Inactive Sub-Projects"
+
+msgid "List All Closed Sub-Projects"
+msgstr "List All Closed Sub-Projects"
+
+msgid "Delete All Closed Sub-Projects"
+msgstr "Delete All Closed Sub-Projects"
+
+msgid "Promote Sub-Project to Main-Project"
+msgstr "Promote Sub-Project to Main-Project"
+
+msgid "Daily Report (Today)"
+msgstr "Daily Report (Today)"
+
+msgid "Daily Report (Specific Day)"
+msgstr "Daily Report (Specific Day)"
+
+msgid "Date Range Report"
+msgstr "Date Range Report"
+
+msgid "Detailed Sub-Project Report"
+msgstr "Detailed Sub-Project Report"
+
+msgid "Detailed Main-Project Report"
+msgstr "Detailed Main-Project Report"
+
+msgid "Detailed Daily Report"
+msgstr "Detailed Daily Report"
+
+msgid "Change Language"
+msgstr "Change Language"
+
+msgid "Restore Previous Version"
+msgstr "Restore Previous Version"
+
+msgid "Change Data Storage Location"
+msgstr "Change Data Storage Location"
+
+msgid "Select Action"
+msgstr "Select Action"
+
+msgid "Select Main Project"
+msgstr "Select Main Project"
+
+msgid "Select Sub-Project"
+msgstr "Select Sub-Project"
+
+msgid "Back to Main Menu"
+msgstr "Back to Main Menu"
