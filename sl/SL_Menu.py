@@ -19,6 +19,7 @@ except (ImportError, ModuleNotFoundError):
 
 # --- Configuration & Setup ---
 CONFIG_FILE = 'config.json'
+SL_DIR = os.path.dirname(os.path.abspath(__file__))
 
 st.set_page_config(
     page_title="Time Control",
