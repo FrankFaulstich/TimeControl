@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: https://github.com/FrankFaulstich/TimeControl/issues\n"
 "POT-Creation-Date: 2025-10-30 10:00+0200\n"
-"PO-Revision-Date: 2025-10-30 10:30+0200\n"
+"PO-Revision-Date: 2025-10-30 12:00+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: Czech\n"
 "Language: cs\n"
@@ -809,3 +809,126 @@ msgstr "\n--- Podrobná denní zpráva ---"
 
 msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
 msgstr "Zadejte datum (RRRR-MM-DD) nebo stiskněte Enter pro dnešek: "
+
+msgid "Start work on sub-project"
+msgstr "Začít práci na podprojektu"
+
+msgid "Show current work"
+msgstr "Zobrazit aktuální práci"
+
+msgid "Stop current work"
+msgstr "Zastavit aktuální práci"
+
+msgid "Project Management"
+msgstr "Správa projektů"
+
+msgid "Reporting"
+msgstr "Reportování"
+
+msgid "Settings"
+msgstr "Nastavení"
+
+msgid "Main Project Management"
+msgstr "Správa hlavních projektů"
+
+msgid "Sub-Project Management"
+msgstr "Správa podprojektů"
+
+msgid "Add Main Project"
+msgstr "Přidat hlavní projekt"
+
+msgid "List Main Projects"
+msgstr "Vypsat hlavní projekty"
+
+msgid "Rename Main Project"
+msgstr "Přejmenovat hlavní projekt"
+
+msgid "Close Main Project"
+msgstr "Uzavřít hlavní projekt"
+
+msgid "Re-open Main Project"
+msgstr "Znovu otevřít hlavní projekt"
+
+msgid "Delete Main Project"
+msgstr "Smazat hlavní projekt"
+
+msgid "List Inactive Main Projects"
+msgstr "Vypsat neaktivní hlavní projekty"
+
+msgid "Demote Main-Project to Sub-Project"
+msgstr "Degradovat hlavní projekt na podprojekt"
+
+msgid "List Completed Main Projects"
+msgstr "Vypsat dokončené hlavní projekty"
+
+msgid "Add Sub-Project"
+msgstr "Přidat podprojekt"
+
+msgid "List Sub-Projects"
+msgstr "Vypsat podprojekty"
+
+msgid "Rename Sub-Project"
+msgstr "Přejmenovat podprojekt"
+
+msgid "Close Sub-Project"
+msgstr "Uzavřít podprojekt"
+
+msgid "Re-open Sub-Project"
+msgstr "Znovu otevřít podprojekt"
+
+msgid "Delete Sub-Project"
+msgstr "Smazat podprojekt"
+
+msgid "Move Sub-Project"
+msgstr "Přesunout podprojekt"
+
+msgid "List Inactive Sub-Projects"
+msgstr "Vypsat neaktivní podprojekty"
+
+msgid "List All Closed Sub-Projects"
+msgstr "Vypsat všechny uzavřené podprojekty"
+
+msgid "Delete All Closed Sub-Projects"
+msgstr "Smazat všechny uzavřené podprojekty"
+
+msgid "Promote Sub-Project to Main-Project"
+msgstr "Povýšit podprojekt na hlavní projekt"
+
+msgid "Daily Report (Today)"
+msgstr "Denní zpráva (dnes)"
+
+msgid "Daily Report (Specific Day)"
+msgstr "Denní zpráva (konkrétní den)"
+
+msgid "Date Range Report"
+msgstr "Zpráva za období"
+
+msgid "Detailed Sub-Project Report"
+msgstr "Podrobná zpráva o podprojektu"
+
+msgid "Detailed Main-Project Report"
+msgstr "Podrobná zpráva o hlavním projektu"
+
+msgid "Detailed Daily Report"
+msgstr "Podrobná denní zpráva"
+
+msgid "Change Language"
+msgstr "Změnit jazyk"
+
+msgid "Restore Previous Version"
+msgstr "Obnovit předchozí verzi"
+
+msgid "Change Data Storage Location"
+msgstr "Změnit umístění úložiště dat"
+
+msgid "Select Action"
+msgstr "Vybrat akci"
+
+msgid "Select Main Project"
+msgstr "Vybrat hlavní projekt"
+
+msgid "Select Sub-Project"
+msgstr "Vybrat podprojekt"
+
+msgid "Back to Main Menu"
+msgstr "Zpět do hlavního menu"
