@@ -1214,9 +1214,9 @@ def view_report_date_range():
     with st.form("date_range_form"):
         col1, col2 = st.columns(2)
         with col1:
-            start_date = st.date_input(_("Start Date"), value=datetime.now())
+            start_date = st.date_input(_("Start Date"), value=datetime.now(), format="YYYY-MM-DD")
         with col2:
-            end_date = st.date_input(_("End Date"), value=datetime.now())
+            end_date = st.date_input(_("End Date"), value=datetime.now(), format="YYYY-MM-DD")
             
         submitted = st.form_submit_button(_("Generate Report"), use_container_width=True)
         
