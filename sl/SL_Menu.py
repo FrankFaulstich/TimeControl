@@ -613,10 +613,10 @@ def view_rename_main_project():
         return
 
     options = [p['main_project_name'] for p in projects]
+    selected_project = st.selectbox(_("Select Main Project"), options)
     
     with st.form("rename_main_form"):
-        selected_project = st.selectbox(_("Select Main Project"), options)
-        new_name = st.text_input(_("New Name"))
+        new_name = st.text_input(_("New Name"), value=selected_project)
         submitted = st.form_submit_button(_("Rename"), use_container_width=True)
         
         if submitted:
@@ -689,10 +689,10 @@ def view_rename_sub_project():
         return
 
     sub_options = [sp['sub_project_name'] for sp in sub_projects]
+    selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
 
     with st.form("rename_sub_form"):
-        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
-        new_name = st.text_input(_("New Name"))
+        new_name = st.text_input(_("New Name"), value=selected_sub)
         submitted = st.form_submit_button(_("Rename"), use_container_width=True)
         
         if submitted:
