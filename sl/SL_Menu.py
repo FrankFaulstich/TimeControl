@@ -1340,7 +1340,10 @@ def view_report_display():
     """
     render_header(_("Report Result"))
     report = st.session_state.context.get('report', '')
-    st.markdown(f'<div class="report-box">{report}</div>', unsafe_allow_html=True)
+    # The report is a Markdown string. Wrapping it inside an HTML div with
+    # unsafe_allow_html=True prevents Streamlit from rendering the Markdown.
+    # By passing the report string directly to st.markdown, it will be correctly parsed and displayed.
+    st.markdown(report)
     if st.button(_("Back"), use_container_width=True): navigate_to('reporting')
 
 # --- Generic List/Action View Helper ---
