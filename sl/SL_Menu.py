@@ -709,6 +709,7 @@ def view_rename_sub_project():
 
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('sub_project_mgmt')
+        
 def view_close_main_project():
     """
     Renders the form to close a main project.
