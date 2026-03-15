@@ -85,8 +85,10 @@ The application can be configured via the `config.json` file.
     "update": {
         "github_repo": "FrankFaulstich/TimeControl"
     },
-    "language": "en",
-    "streamlit_port": 8501
+    "language": "de",
+    "streamlit_port": 8501,
+    "data_file": "data.json",
+    "css_file": "style.css"
 }
 ```
 
