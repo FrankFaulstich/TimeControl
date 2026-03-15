@@ -1,14 +1,13 @@
-# English translations for PACKAGE
-# Copyright (C) 2024 THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+# English translations for TimeTracker
+# Copyright (C) 2026 Frank Faulstich
+# This file is distributed under the same license as the TimeTracker package.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: https://github.com/FrankFaulstich/TimeControl/issues\n"
 "POT-Creation-Date: 2025-10-30 10:00+0200\n"
-"PO-Revision-Date: 2025-10-30 12:00+0200\n"
+"PO-Revision-Date: 2026-01-01 12:05+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -92,9 +91,15 @@ msgstr "Destination main project '{name}' not found."
 msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
 msgstr "A sub-project named '{sub_name}' already exists in '{main_name}'."
 
+msgid "Sub-project '{name}' moved successfully."
+msgstr "Sub-project '{name}' moved successfully."
+
 #: TimeTracker.py:378
 msgid "A main project named '{name}' already exists."
 msgstr "A main project named '{name}' already exists."
+
+msgid "Main project '{old_name}' renamed to '{new_name}'."
+msgstr "Main project '{old_name}' renamed to '{new_name}'."
 
 #: TimeTracker.py:398
 msgid "Sub-project '{sub_name}' not found in '{main_name}'."
@@ -104,7 +109,7 @@ msgstr "Sub-project '{sub_name}' not found in '{main_name}'."
 msgid "General"
 msgstr "General"
 
-#: TimeTracker.py:414
+#: TimeTracker.py:410
 msgid "Sub-project '{name}' was promoted to a new main project."
 msgstr "Sub-project '{name}' was promoted to a new main project."
 
@@ -127,10 +132,6 @@ msgstr ""
 "Main project '{demoted_name}' was demoted to a sub-project under "
 "'{parent_name}'."
 
-#: TimeTracker.py:471
-msgid "Main project '{old_name}' renamed to '{new_name}'."
-msgstr "Main project '{old_name}' renamed to '{new_name}'."
-
 #: TimeTracker.py:651
 msgid "- {name}: {hours} hour"
 msgid_plural "- {name}: {hours} hours"
@@ -148,9 +149,9 @@ msgid "# Daily Time Report: {date}\n"
 msgstr "# Daily Time Report: {date}\n"
 
 #: TimeTracker.py:666
-msgid "\n**Total Daily Time: {hours} hour**"
+msgid "\n**Total Daily Time: {hours} hours**"
 msgid_plural "\n**Total Daily Time: {hours} hours**"
-msgstr[0] "\n**Total Daily Time: {hours} hour**"
+msgstr[0] "\n**Total Daily Time: {hours} hours**"
 msgstr[1] "\n**Total Daily Time: {hours} hours**"
 
 #: TimeTracker.py:670
@@ -181,15 +182,15 @@ msgstr "\n--- Project Management ---"
 msgid "1.  Add Main Project"
 msgstr "1.  Add Main Project"
 
-#: TimeTrackerCLI.py:23
+#: TimeTrackerCLI.py:24
 msgid "2.  List Main Projects"
 msgstr "2.  List Main Projects"
 
-#: TimeTrackerCLI.py:25
+#: TimeTrackerCLI.py:24
 msgid "3.  Rename Main Project"
 msgstr "3.  Rename Main Project"
 
-#: TimeTrackerCLI.py:24
+#: TimeTrackerCLI.py:25
 msgid "4.  Delete Main Project"
 msgstr "4.  Delete Main Project"
 
@@ -209,11 +210,10 @@ msgstr "7.  Add Sub-Project"
 msgid "8.  List Sub-Projects"
 msgstr "8.  List Sub-Projects"
 
-#: TimeTrackerCLI.py:31
+#: TimeTrackerCLI.py:31 TimeTrackerCLI.py:32
 msgid "9.  Rename Sub-Project"
 msgstr "9.  Rename Sub-Project"
 
-#: TimeTrackerCLI.py:32
 msgid "10. Close Sub-Project"
 msgstr "10. Close Sub-Project"
 
@@ -254,13 +254,17 @@ msgstr "\n--- Add New Main Project ---"
 msgid "Name of the main project: "
 msgstr "Name of the main project: "
 
-#: TimeTrackerCLI.py:48
+#: TimeTrackerCLI.py:47
 msgid "Main project '{name}' added."
 msgstr "Main project '{name}' added."
 
 #: TimeTrackerCLI.py:50
 msgid "\n--- List Main Projects ---"
 msgstr "\n--- List Main Projects ---"
+
+#: TimeTrackerCLI.py:55 TimeTrackerCLI.py:166 TimeTrackerCLI.py:288 TimeTrackerCLI.py:411 TimeTrackerCLI.py:434 TimeTrackerCLI.py:479
+msgid "No main projects found."
+msgstr "No main projects found."
 
 #: TimeTrackerCLI.py:58
 msgid "\n--- Rename Main Project ---"
@@ -278,7 +282,7 @@ msgstr "Select a main project to rename:"
 msgid "Enter the number of the main project: "
 msgstr "Enter the number of the main project: "
 
-#: TimeTrackerCLI.py:71 TimeTrackerCLI.py:187
+#: TimeTrackerCLI.py:71
 msgid "Enter the new name for '{name}': "
 msgstr "Enter the new name for '{name}': "
 
@@ -290,7 +294,7 @@ msgstr "Main project '{old_name}' successfully renamed to '{new_name}'."
 msgid "Error: Could not rename. The new name '{new_name}' might already exist."
 msgstr "Error: Could not rename. The new name '{new_name}' might already exist."
 
-#: TimeTrackerCLI.py:78 TimeTrackerCLI.py:98 TimeTrackerCLI.py:120 TimeTrackerCLI.py:139 TimeTrackerCLI.py:160 TimeTrackerCLI.py:194 TimeTrackerCLI.py:222 TimeTrackerCLI.py:247 TimeTrackerCLI.py:284 TimeTrackerCLI.py:311 TimeTrackerCLI.py:342 TimeTrackerCLI.py:387 TimeTrackerCLI.py:431 TimeTrackerCLI.py:456 TimeTrackerCLI.py:532 TimeTrackerCLI.py:593
+#: TimeTrackerCLI.py:78 TimeTrackerCLI.py:98 TimeTrackerCLI.py:120 TimeTrackerCLI.py:139 TimeTrackerCLI.py:160 TimeTrackerCLI.py:194 TimeTrackerCLI.py:222 TimeTrackerCLI.py:247 TimeTrackerCLI.py:284 TimeTrackerCLI.py:311 TimeTrackerCLI.py:342 TimeTrackerCLI.py:387 TimeTrackerCLI.py:431 TimeTrackerCLI.py:456 TimeTrackerCLI.py:532
 msgid "Invalid input. Please enter a valid number."
 msgstr "Invalid input. Please enter a valid number."
 
@@ -302,7 +306,7 @@ msgstr "\n--- Delete Main Project ---"
 msgid "No main projects to delete."
 msgstr "No main projects to delete."
 
-#: TimeTrackerCLI.py:88
+#: TimeTrackerCLI.py:87
 msgid "Select a main project to delete:"
 msgstr "Select a main project to delete:"
 
@@ -384,7 +388,7 @@ msgstr "Select the main project whose sub-projects you want to list:"
 msgid "Sub-projects for '{name}':"
 msgstr "Sub-projects for '{name}':"
 
-#: TimeTrackerCLI.py:160
+#: TimeTrackerCLI.py:159 TimeTrackerCLI.py:262 TimeTrackerCLI.py:489
 msgid "No sub-projects found for '{name}'."
 msgstr "No sub-projects found for '{name}'."
 
@@ -392,11 +396,7 @@ msgstr "No sub-projects found for '{name}'."
 msgid "\n--- Rename Sub-Project ---"
 msgstr "\n--- Rename Sub-Project ---"
 
-#: TimeTrackerCLI.py:166 TimeTrackerCLI.py:288 TimeTrackerCLI.py:479
-msgid "No main projects found."
-msgstr "No main projects found."
-
-#: TimeTrackerCLI.py:170 TimeTrackerCLI.py:202 TimeTrackerCLI.py:483
+#: TimeTrackerCLI.py:169 TimeTrackerCLI.py:201 TimeTrackerCLI.py:414 TimeTrackerCLI.py:437 TimeTrackerCLI.py:482
 msgid "Select the main project:"
 msgstr "Select the main project:"
 
@@ -416,7 +416,7 @@ msgstr "Enter the number of the sub-project: "
 msgid "Sub-project '{old_name}' renamed to '{new_name}'."
 msgstr "Sub-project '{old_name}' renamed to '{new_name}'."
 
-#: TimeTrackerCLI.py:193
+#: TimeTrackerCLI.py:192
 msgid ""
 "Error: Could not rename. The new name might already exist or the project "
 "was not found."
@@ -458,7 +458,7 @@ msgstr "{count} closed sub-projects were deleted."
 msgid "Operation cancelled."
 msgstr "Operation cancelled."
 
-#: TimeTrackerCLI.py:219
+#: TimeTrackerCLI.py:219 TimeTrackerCLI.py:281
 msgid "Error: Main project or sub-project not found."
 msgstr "Error: Main project or sub-project not found."
 
@@ -484,7 +484,7 @@ msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
 msgstr[0] "No sub-projects found inactive for more than {weeks} week."
 msgstr[1] "No sub-projects found inactive for more than {weeks} weeks."
 
-#: TimeTrackerCLI.py:248 TimeTrackerCLI.py:249
+#: TimeTrackerCLI.py:248
 msgid "\n--- Move Sub-Project ---"
 msgstr "\n--- Move Sub-Project ---"
 
@@ -500,10 +500,6 @@ msgstr "Select the source main project:"
 msgid "Enter the number of the source main project: "
 msgstr "Enter the number of the source main project: "
 
-#: TimeTrackerCLI.py:262
-msgid "No sub-projects to move from '{name}'."
-msgstr "No sub-projects to move from '{name}'."
-
 #: TimeTrackerCLI.py:265
 msgid "\nSelect a sub-project from '{name}' to move:"
 msgstr "\nSelect a sub-project from '{name}' to move:"
@@ -517,10 +513,11 @@ msgid "Enter the number of the destination main project: "
 msgstr "Enter the number of the destination main project: "
 
 #: TimeTrackerCLI.py:279
-msgid "Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'."
-msgstr "Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'."
+msgid ""
+"Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'."
+msgstr ""
+"Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'."
 
-#: TimeTrackerCLI.py:281
 msgid "Error: {message}"
 msgstr "Error: {message}"
 
@@ -548,21 +545,24 @@ msgstr "\n--- Demote Main-Project to Sub-Project ---"
 msgid "You need at least two main projects for this operation."
 msgstr "You need at least two main projects for this operation."
 
-#: TimeTrackerCLI.py:323
+#: TimeTrackerCLI.py:322
 msgid "Select the main project to demote:"
 msgstr "Select the main project to demote:"
 
-#: TimeTrackerCLI.py:326
+#: TimeTrackerCLI.py:325
 msgid "Enter the number of the project to demote: "
 msgstr "Enter the number of the project to demote: "
 
-#: TimeTrackerCLI.py:329
+#: TimeTrackerCLI.py:328
 msgid "\nSelect the new parent main project:"
 msgstr "\nSelect the new parent main project:"
 
-#: TimeTrackerCLI.py:334
+#: TimeTrackerCLI.py:333
 msgid "Enter the number of the new parent project: "
 msgstr "Enter the number of the new parent project: "
+
+msgid "Invalid choice. Please enter a number from 0 to 17."
+msgstr "Invalid choice. Please enter a number from 0 to 17."
 
 #: TimeTrackerCLI.py:348
 msgid "\n--- Reporting ---"
@@ -608,15 +608,16 @@ msgstr "Invalid date format. Please use YYYY-MM-DD."
 msgid "\n--- Generate Report for a Date Range ---"
 msgstr "\n--- Generate Report for a Date Range ---"
 
-#: TimeTrackerCLI.py:374
+#: TimeTrackerCLI.py:373
 msgid "Enter the start date (YYYY-MM-DD): "
 msgstr "Enter the start date (YYYY-MM-DD): "
+
 
 #: TimeTrackerCLI.py:375
 msgid "Enter the end date (YYYY-MM-DD): "
 msgstr "Enter the end date (YYYY-MM-DD): "
 
-#: TimeTrackerCLI.py:378
+#: TimeTrackerCLI.py:377
 msgid "Error: The start date cannot be after the end date."
 msgstr "Error: The start date cannot be after the end date."
 
@@ -624,7 +625,7 @@ msgstr "Error: The start date cannot be after the end date."
 msgid "\n--- Detailed Sub-Project Report ---"
 msgstr "\n--- Detailed Sub-Project Report ---"
 
-#: TimeTrackerCLI.py:384 TimeTrackerCLI.py:408
+#: TimeTrackerCLI.py:384 TimeTrackerCLI.py:407
 msgid "No projects found."
 msgstr "No projects found."
 
@@ -632,7 +633,7 @@ msgstr "No projects found."
 msgid "\nSelect the sub-project for the report:"
 msgstr "\nSelect the sub-project for the report:"
 
-#: TimeTrackerCLI.py:406
+#: TimeTrackerCLI.py:405
 msgid "\n--- Detailed Main-Project Report ---"
 msgstr "\n--- Detailed Main-Project Report ---"
 
@@ -640,23 +641,41 @@ msgstr "\n--- Detailed Main-Project Report ---"
 msgid "Select the main project for the report:"
 msgstr "Select the main project for the report:"
 
-#: TimeTrackerCLI.py:425
+#: TimeTrackerCLI.py:424
 msgid "Invalid choice. Please enter a number from 0 to 5."
 msgstr "Invalid choice. Please enter a number from 0 to 5."
 
-#: TimeTrackerCLI.py:447 TimeTrackerCLI.py:546
+#: TimeTrackerCLI.py:428 TimeTrackerCLI.py:469
+msgid "\n--- Settings ---"
+msgstr "\n--- Settings ---"
+
+#: TimeTrackerCLI.py:429 TimeTrackerCLI.py:562
+msgid "1. Change Language"
+msgstr "1. Change Language"
+
+msgid "3. Change Data Storage Location"
+msgstr "3. Change Data Storage Location"
+
+#: TimeTrackerCLI.py:430
+msgid "2. Restore Previous Version"
+msgstr "2. Restore Previous Version"
+
+msgid "Invalid choice. Please enter a number from 0 to 3."
+msgstr "Invalid choice. Please enter a number from 0 to 3."
+
+#: TimeTrackerCLI.py:446 TimeTrackerCLI.py:545
 msgid "\n--- Language Settings ---"
 msgstr "\n--- Language Settings ---"
 
-#: TimeTrackerCLI.py:450 TimeTrackerCLI.py:549
+#: TimeTrackerCLI.py:449 TimeTrackerCLI.py:548
 msgid "No additional languages found."
 msgstr "No additional languages found."
 
-#: TimeTrackerCLI.py:459 TimeTrackerCLI.py:588
+#: TimeTrackerCLI.py:458 TimeTrackerCLI.py:587
 msgid "Language changed to '{lang}'. Please restart the application."
 msgstr "Language changed to '{lang}'. Please restart the application."
 
-#: TimeTrackerCLI.py:461 TimeTrackerCLI.py:591
+#: TimeTrackerCLI.py:460 TimeTrackerCLI.py:590
 msgid "Invalid choice."
 msgstr "Invalid choice."
 
@@ -697,7 +716,7 @@ msgstr "Error moving data: {error}"
 msgid "Error updating configuration: {error}"
 msgstr "Error updating configuration: {error}"
 
-#: TimeTrackerCLI.py:509
+#: TimeTrackerCLI.py:508
 msgid "\n--- Update Available ---"
 msgstr "\n--- Update Available ---"
 
@@ -705,19 +724,19 @@ msgstr "\n--- Update Available ---"
 msgid "A downloaded update is ready to be installed."
 msgstr "A downloaded update is ready to be installed."
 
-#: TimeTrackerCLI.py:511
+#: TimeTrackerCLI.py:510
 msgid "0. Skip update for now"
 msgstr "0. Skip update for now"
 
-#: TimeTrackerCLI.py:512
+#: TimeTrackerCLI.py:511
 msgid "1. Install update now"
 msgstr "1. Install update now"
 
-#: TimeTrackerCLI.py:513
+#: TimeTrackerCLI.py:512
 msgid "Enter your choice (0 or 1): "
 msgstr "Enter your choice (0 or 1): "
 
-#: TimeTrackerCLI.py:516
+#: TimeTrackerCLI.py:515
 msgid "Application is restarting to complete the update..."
 msgstr "Application is restarting to complete the update..."
 
@@ -725,7 +744,7 @@ msgstr "Application is restarting to complete the update..."
 msgid "Update installation skipped. The application will start normally."
 msgstr "Update installation skipped. The application will start normally."
 
-#: TimeTrackerCLI.py:521
+#: TimeTrackerCLI.py:520
 msgid ""
 "Invalid choice. Update installation skipped. The application will start "
 "normally."
@@ -733,7 +752,7 @@ msgstr ""
 "Invalid choice. Update installation skipped. The application will start "
 "normally."
 
-#: TimeTrackerCLI.py:526
+#: TimeTrackerCLI.py:525
 msgid "\n=== Time Control {version} ==="
 msgstr "\n=== Time Control {version} ==="
 
@@ -741,7 +760,6 @@ msgstr "\n=== Time Control {version} ==="
 msgid "--- Main Menu ---"
 msgstr "--- Main Menu ---"
 
-#: TimeTrackerCLI.py:528
 msgid "1. Start work on sub-project"
 msgstr "1. Start work on sub-project"
 
@@ -749,7 +767,7 @@ msgstr "1. Start work on sub-project"
 msgid "2. Show current work"
 msgstr "2. Show current work"
 
-#: TimeTrackerCLI.py:530
+#: TimeTrackerCLI.py:529
 msgid "3. Stop current work"
 msgstr "3. Stop current work"
 
@@ -757,7 +775,7 @@ msgstr "3. Stop current work"
 msgid "4. Handle projects and sub-projects"
 msgstr "4. Handle projects and sub-projects"
 
-#: TimeTrackerCLI.py:533
+#: TimeTrackerCLI.py:532
 msgid "5. Reporting"
 msgstr "5. Reporting"
 
@@ -765,7 +783,7 @@ msgstr "5. Reporting"
 msgid "6. Settings"
 msgstr "6. Settings"
 
-#: TimeTrackerCLI.py:536
+#: TimeTrackerCLI.py:535
 msgid "0. Exit"
 msgstr "0. Exit"
 
@@ -773,7 +791,7 @@ msgstr "0. Exit"
 msgid "\n--- Start Work on a Sub-Project ---"
 msgstr "\n--- Start Work on a Sub-Project ---"
 
-#: TimeTrackerCLI.py:497
+#: TimeTrackerCLI.py:498
 msgid "Select a sub-project from '{name}':"
 msgstr "Select a sub-project from '{name}':"
 
@@ -781,7 +799,6 @@ msgstr "Select a sub-project from '{name}':"
 msgid "Work started on '{sub_name}' in project '{main_name}'."
 msgstr "Work started on '{sub_name}' in project '{main_name}'."
 
-#: TimeTrackerCLI.py:510
 msgid "Error starting work."
 msgstr "Error starting work."
 
@@ -789,7 +806,7 @@ msgstr "Error starting work."
 msgid "\n--- Current Active Work ---"
 msgstr "\n--- Current Active Work ---"
 
-#: TimeTrackerCLI.py:524
+#: TimeTrackerCLI.py:523
 msgid "You are currently working on:"
 msgstr "You are currently working on:"
 
@@ -797,7 +814,7 @@ msgstr "You are currently working on:"
 msgid "  Main Project: {name}"
 msgstr "  Main Project: {name}"
 
-#: TimeTrackerCLI.py:526
+#: TimeTrackerCLI.py:525
 msgid "  Sub-Project:  {name}"
 msgstr "  Sub-Project:  {name}"
 
@@ -805,7 +822,7 @@ msgstr "  Sub-Project:  {name}"
 msgid "  Started at:   {date}"
 msgstr "  Started at:   {date}"
 
-#: TimeTrackerCLI.py:528
+#: TimeTrackerCLI.py:527
 msgid "  Duration:     {duration}"
 msgstr "  Duration:     {duration}"
 
@@ -813,7 +830,7 @@ msgstr "  Duration:     {duration}"
 msgid "No active work session."
 msgstr "No active work session."
 
-#: TimeTrackerCLI.py:533
+#: TimeTrackerCLI.py:532
 msgid "\n--- Stop Work ---"
 msgstr "\n--- Stop Work ---"
 
@@ -821,7 +838,7 @@ msgstr "\n--- Stop Work ---"
 msgid "Work session stopped successfully."
 msgstr "Work session stopped successfully."
 
-#: TimeTrackerCLI.py:537
+#: TimeTrackerCLI.py:536
 msgid "No active work session to stop."
 msgstr "No active work session to stop."
 
@@ -829,11 +846,11 @@ msgstr "No active work session to stop."
 msgid "\nChecking for updates..."
 msgstr "\nChecking for updates..."
 
-#: TimeTrackerCLI.py:603
+#: TimeTrackerCLI.py:602
 msgid "Exiting application. Goodbye!"
 msgstr "Exiting application. Goodbye!"
 
-#: TimeTrackerCLI.py:606
+#: TimeTrackerCLI.py:605
 msgid "Invalid choice. Please enter a number from 0 to 6."
 msgstr "Invalid choice. Please enter a number from 0 to 6."
 
@@ -933,11 +950,98 @@ msgstr "Error during restoration: {error}"
 msgid "The backup file '{filename}' was not deleted."
 msgstr "The backup file '{filename}' was not deleted."
 
-msgid "Start work on sub-project"
-msgstr "Start work on sub-project"
+msgid "# Detailed Daily Report: {date}"
+msgstr "# Detailed Daily Report: {date}"
 
-msgid "Show current work"
-msgstr "Show current work"
+msgid "now"
+msgstr "now"
+
+msgid "\nNo time tracked for {date}."
+msgstr "\nNo time tracked for {date}."
+
+msgid "# Detailed Report for Sub-Project: {name}"
+msgstr "# Detailed Report for Sub-Project: {name}"
+
+msgid "Part of Main Project: {name}"
+msgstr "Part of Main Project: {name}"
+
+msgid "Active (currently running)"
+msgstr "Active (currently running)"
+
+msgid "Inactive"
+msgstr "Inactive"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "First entry"
+msgstr "First entry"
+
+msgid "Last activity"
+msgstr "Last activity"
+
+msgid "Total recorded time"
+msgstr "Total recorded time"
+
+msgid "Total work sessions"
+msgstr "Total work sessions"
+
+msgid "Average session duration"
+msgstr "Average session duration"
+
+msgid "Weekday Distribution"
+msgstr "Weekday Distribution"
+
+msgid "Monday"
+msgstr "Monday"
+
+msgid "Tuesday"
+msgstr "Tuesday"
+
+msgid "Wednesday"
+msgstr "Wednesday"
+
+msgid "Thursday"
+msgstr "Thursday"
+
+msgid "Friday"
+msgstr "Friday"
+
+msgid "Saturday"
+msgstr "Saturday"
+
+msgid "Sunday"
+msgstr "Sunday"
+
+msgid "Daily Breakdown"
+msgstr "Daily Breakdown"
+
+msgid "Duration"
+msgstr "Duration"
+
+msgid "# Detailed Report for Main Project: {name}"
+msgstr "# Detailed Report for Main Project: {name}"
+
+msgid "Number of sub-projects"
+msgstr "Number of sub-projects"
+
+msgid "Active (working on '{sub_name}')"
+msgstr "Active (working on '{sub_name}')"
+
+msgid "Sub-Project Breakdown"
+msgstr "Sub-Project Breakdown"
+
+msgid "{num_sessions} sessions"
+msgstr "{num_sessions} sessions"
+
+msgid "6. Detailed Daily Report"
+msgstr "6. Detailed Daily Report"
+
+msgid "\n--- Detailed Daily Report ---"
+msgstr "\n--- Detailed Daily Report ---"
+
+msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
+msgstr "Enter the date (YYYY-MM-DD) or press Enter for today: "
 
 msgid "Stop current work"
 msgstr "Stop current work"
