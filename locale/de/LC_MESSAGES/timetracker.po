@@ -1,7 +1,6 @@
-# German translations for PACKAGE
-# Copyright (C) 2024 THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+# German translations for TimeTracker
+# Copyright (C) 2026 Frank Faulstich
+# This file is distributed under the same license as the TimeTracker package.
 #
 msgid ""
 msgstr ""
@@ -92,9 +91,15 @@ msgstr "Ziel-Hauptprojekt '{name}' nicht gefunden."
 msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
 msgstr "Ein Unterprojekt mit dem Namen '{sub_name}' existiert bereits in '{main_name}'."
 
+msgid "Sub-project '{name}' moved successfully."
+msgstr "Unterprojekt '{name}' erfolgreich verschoben."
+
 #: TimeTracker.py:378
 msgid "A main project named '{name}' already exists."
 msgstr "Ein Hauptprojekt mit dem Namen '{name}' existiert bereits."
+
+msgid "Main project '{old_name}' renamed to '{new_name}'."
+msgstr "Hauptprojekt '{old_name}' wurde in '{new_name}' umbenannt."
 
 #: TimeTracker.py:398
 msgid "Sub-project '{sub_name}' not found in '{main_name}'."
@@ -210,9 +215,8 @@ msgstr "8.  Unterprojekte auflisten"
 msgid "9.  Rename Sub-Project"
 msgstr "9.  Unterprojekt umbenennen"
 
-#: TimeTrackerCLI.py:32
-msgid "10. Delete Sub-Project"
-msgstr "10. Unterprojekt löschen"
+msgid "10. Close Sub-Project"
+msgstr "10. Unterprojekt schließen"
 
 msgid "11. Re-open Sub-Project"
 msgstr "11. Unterprojekt wieder öffnen"
@@ -795,6 +799,9 @@ msgstr "Wähle ein Unterprojekt von '{name}' aus:"
 #: TimeTrackerCLI.py:507
 msgid "Work started on '{sub_name}' in project '{main_name}'."
 msgstr "Arbeit an '{sub_name}' im Projekt '{main_name}' begonnen."
+
+msgid "Error starting work."
+msgstr "Fehler beim Starten der Arbeit."
 
 #: TimeTrackerCLI.py:514
 msgid "\n--- Current Active Work ---"
