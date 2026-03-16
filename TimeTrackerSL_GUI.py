@@ -32,11 +32,11 @@ def save_window_state(window):
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 config = json.load(f)
-        
-        config['window_width'] = window.width
-        config['window_height'] = window.height
-        config['window_x'] = window.x
-        config['window_y'] = window.y
+
+        config['window_width'] = int(window.width)
+        config['window_height'] = int(window.height)
+        config['window_x'] = int(window.x)
+        config['window_y'] = int(window.y)
         
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4)
@@ -61,16 +61,20 @@ def start_streamlit_server():
     port = 8501 # Default Streamlit port
     width = 800
     height = 600
+    x = None
+    y = None
     
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 port = config.get('streamlit_port', 8501)
-                width = config.get('window_width', 400)
-                height = config.get('window_height', 800)
+                width = config.get('window_width', 800)
+                height = config.get('window_height', 600)
+                x = config.get('window_x', None)
+                y = config.get('window_y', None)
         except (json.JSONDecodeError, IOError) as e:
-            print(f"Warning: Could not read config.json. Using default port 8501. Error: {e}")
+            print(f"Warning: Could not read config.json. Using default settings. Error: {e}")
 
     print(f"Starting TimeControl GUI on port {port}...")
     
@@ -84,8 +88,11 @@ def start_streamlit_server():
     window = webview.create_window(
         "Time Control", 
         f"http://localhost:{port}",
-        width=width,
-        height=height
+        width=int(width),
+        height=int(height),
+        x=x,
+        y=y,
+        frameless=False
     )
     
     # Save state when closing the window

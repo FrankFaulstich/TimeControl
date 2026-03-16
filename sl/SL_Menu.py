@@ -59,7 +59,7 @@ def local_css(file_name):
     """
     file_path = os.path.join(SL_DIR, file_name)
     if os.path.exists(file_path):
-        with open(file_path) as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 config = get_config()
