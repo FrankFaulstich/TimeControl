@@ -4,10 +4,10 @@
     },
     "language": "en",
     "data_file": "data.json",
-    "streamlit_port": 8500,
-    "window_width": 800.0,
-    "window_height": 797.0,
-    "window_x": 465,
-    "window_y": -660,
+    "streamlit_port": 8501,
+    "window_width": 2998,
+    "window_height": 1721,
+    "window_x": 0,
+    "window_y": 66,
     "css_file": "style.css"
 }
