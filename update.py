@@ -203,3 +203,20 @@ def restore_previous_version():
     except Exception as e:
         print(_("Error during restoration: {error}").format(error=e))
         print(_("The backup file '{filename}' was not deleted.").format(filename=backup_zip_file))
+
+if __name__ == "__main__":
+    try:
+        from tt.TimeTracker import TimeTracker
+        current_version = TimeTracker.VERSION
+    except ImportError:
+        print(_("Error: Could not import TimeTracker to get the current version."))
+        sys.exit(1)
+
+    print(_("Checking for updates..."))
+    is_update, new_version, url = check_for_updates(current_version)
+
+    if is_update and url:
+        if download_update(url):
+            install_update()
+    else:
+        print(_("No updates available."))
