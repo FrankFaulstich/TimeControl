@@ -2,7 +2,10 @@ import json
 import os
 import subprocess
 import sys
-import webview
+try:
+    import webview
+except ImportError:
+    webview = None
 import time
 import threading
 
@@ -78,54 +81,65 @@ def start_streamlit_server():
 
     print(f"Starting TimeControl GUI on port {port}...")
     
+    # Determine headless mode based on webview availability
+    headless_mode = "true" if webview else "false"
+    
     # Use sys.executable to ensure the same python environment is used
-    cmd = [sys.executable, "-m", "streamlit", "run", os.path.join("sl", "SL_Menu.py"), "--server.port", str(port), "--server.headless", "true"]
+    cmd = [sys.executable, "-m", "streamlit", "run", os.path.join("sl", "SL_Menu.py"), "--server.port", str(port), "--server.headless", headless_mode]
     
     process = subprocess.Popen(cmd)
     
-    time.sleep(2) # Wait for Streamlit to initialize
-    
-    window = webview.create_window(
-        "Time Control", 
-        f"http://localhost:{port}",
-        width=int(width),
-        height=int(height),
-        x=x,
-        y=y,
-        frameless=False
-    )
-    
-    # Save state when closing the window
-    window.events.closing += lambda: save_window_state(window)
-    
-    # Monitor the Streamlit process and close the window if it exits
-    def monitor_streamlit(proc, win):
-        """Monitors the Streamlit process and closes the window if it exits.
+    if webview:
+        time.sleep(2) # Wait for Streamlit to initialize
+        
+        window = webview.create_window(
+            "Time Control", 
+            f"http://localhost:{port}",
+            width=int(width),
+            height=int(height),
+            x=x,
+            y=y,
+            frameless=False
+        )
+        
+        # Save state when closing the window
+        window.events.closing += lambda: save_window_state(window)
+        
+        # Monitor the Streamlit process and close the window if it exits
+        def monitor_streamlit(proc, win):
+            """Monitors the Streamlit process and closes the window if it exits.
 
-        This function runs in a separate thread. It blocks until the Streamlit
-        subprocess terminates, and then destroys the pywebview window. This
-        ensures the GUI window closes when the server is stopped from within
-        the Streamlit app (e.g., by clicking an 'Exit' button).
+            This function runs in a separate thread. It blocks until the Streamlit
+            subprocess terminates, and then destroys the pywebview window. This
+            ensures the GUI window closes when the server is stopped from within
+            the Streamlit app (e.g., by clicking an 'Exit' button).
 
-        Args:
-            proc: The subprocess object for the Streamlit server.
-            win: The pywebview window object.
+            Args:
+                proc: The subprocess object for the Streamlit server.
+                win: The pywebview window object.
 
-        """
-        proc.wait()
+            """
+            proc.wait()
+            try:
+                win.destroy()
+            except Exception:
+                pass
+
+        monitor_thread = threading.Thread(target=monitor_streamlit, args=(process, window))
+        monitor_thread.daemon = True
+        monitor_thread.start()
+
+        webview.start()
+        
+        if process.poll() is None:
+            process.terminate()
+    else:
+        print("Warning: 'webview' module not found. Opening in system browser instead.")
         try:
-            win.destroy()
-        except Exception:
-            pass
-
-    monitor_thread = threading.Thread(target=monitor_streamlit, args=(process, window))
-    monitor_thread.daemon = True
-    monitor_thread.start()
-
-    webview.start()
-    
-    if process.poll() is None:
-        process.terminate()
+            process.wait()
+        except KeyboardInterrupt:
+            if process.poll() is None:
+                process.terminate()
 
 if __name__ == '__main__':
     if UPDATE_AVAILABLE and os.path.exists("update.zip"):
@@ -134,12 +148,14 @@ if __name__ == '__main__':
         print("Restarting application...")
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
+    tt = TimeTracker()
+    tt.initialize_dependencies()
+
     start_streamlit_server()
     
     if UPDATE_AVAILABLE:
         print("Checking for updates...")
         try:
-            tt = TimeTracker()
             is_update, unused_version, url = check_for_updates(tt.get_version())
             if is_update and url:
                 print("New version " + unused_version + " is available. Downloading...")

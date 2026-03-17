@@ -5,9 +5,9 @@
     "language": "en",
     "data_file": "data.json",
     "streamlit_port": 8501,
-    "window_width": 2998,
-    "window_height": 1721,
-    "window_x": 0,
-    "window_y": 66,
+    "window_width": 2496,
+    "window_height": 2322,
+    "window_x": -491,
+    "window_y": -2670,
     "css_file": "style.css"
 }

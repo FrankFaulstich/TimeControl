@@ -28,7 +28,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "2.7.1"
+    VERSION = "2.7.2"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
 
@@ -81,7 +81,7 @@ class TimeTracker:
 
         try:
             installed_packages_dist = distributions()
-            installed_packages = {dist.metadata['Name'].lower() for dist in installed_packages_dist}
+            installed_packages = {dist.metadata['Name'].lower() for dist in installed_packages_dist if dist.metadata and dist.metadata['Name']}
             
             missing_packages = []
             for req in requirements: # e.g., "requests==2.28.1"
@@ -92,17 +92,21 @@ class TimeTracker:
 
             if missing_packages:
                 print(_("Some required packages are missing. Attempting to install them..."))
-                try:
-                    for package in missing_packages:
-                        print(_("Installing {package}...").format(package=package))
+                failed_packages = []
+                for package in missing_packages:
+                    print(_("Installing {package}...").format(package=package))
+                    try:
                         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-                    
+                    except subprocess.CalledProcessError:
+                        print(_("Failed to install {package}. Continuing without it.").format(package=package))
+                        failed_packages.append(package)
+
+                if not failed_packages:
                     print(_("\nDependencies installed successfully."))
                     print(_("Please restart the application for the changes to take effect."))
                     sys.exit(0)
-                except subprocess.CalledProcessError:
-                    print(_("\nError: Failed to install dependencies. Please install them manually using: pip install -r {requirements_path}").format(requirements_path=requirements_path))
-                    sys.exit(1)
+                else:
+                    print(_("\nWarning: Some dependencies could not be installed: {packages}").format(packages=", ".join(failed_packages)))
         except Exception as e:
             print(_("An unexpected error occurred during dependency check: {error}").format(error=e))
 
