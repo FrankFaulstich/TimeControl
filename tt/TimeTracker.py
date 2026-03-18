@@ -1236,8 +1236,8 @@ class TimeTracker:
                             duration_str = str(duration).split('.')[0]
                             start_time_str = start_time.strftime('%H:%M:%S')
                             
-                            # Format: Start time, end time, time required, main project, sub-project
-                            line = f"{start_time_str}, {end_time_str}, {duration_str}, {main_project_name}, {sub_project_name}"
+                            # Format as a list item for proper Markdown rendering
+                            line = f"- {start_time_str}, {end_time_str}, {duration_str}, {main_project_name}, {sub_project_name}"
                             daily_entries.append((start_time, line))
                     except (ValueError, KeyError):
                         continue
