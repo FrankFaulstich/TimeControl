@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import os
 import sys
+import re
 from datetime import datetime
 import shutil
 
@@ -121,6 +122,10 @@ def render_header(title, subtitle=None):
         elif f['type'] == 'error': st.error(f['message'])
         st.session_state.feedback = None # Clear after showing
 
+def t_label(key):
+    """Translates the key and removes leading numbering (e.g., '1. ') from the result."""
+    return re.sub(r'^\d+\.\s*', '', _(key))
+
 # --- Views ---
 
 def view_main():
@@ -135,11 +140,11 @@ def view_main():
     else:
         st.info(_("No active work session."))
 
-    if st.button(f"1. {_('Start work on sub-project')}", use_container_width=True):
+    if st.button(t_label("1. Start work on sub-project"), use_container_width=True):
         navigate_to('start_work')
-    if st.button(f"2. {_('Show current work')}", use_container_width=True):
+    if st.button(t_label("2. Show current work"), use_container_width=True):
         navigate_to('show_current_work')
-    if st.button(f"3. {_('Stop current work')}", use_container_width=True):
+    if st.button(t_label("3. Stop current work"), use_container_width=True):
         if st.session_state.tracker.stop_work():
             set_feedback(_("Work session stopped successfully."))
         else:
@@ -148,16 +153,16 @@ def view_main():
 
     st.divider()
 
-    if st.button(f"4. {_('Handle projects and sub-projects')}", use_container_width=True):
+    if st.button(t_label("4. Handle projects and sub-projects"), use_container_width=True):
         navigate_to('project_management')
-    if st.button(f"5. {_('Reporting')}", use_container_width=True):
+    if st.button(t_label("5. Reporting"), use_container_width=True):
         navigate_to('reporting')
-    if st.button(f"6. {_('Settings')}", use_container_width=True):
+    if st.button(t_label("6. Settings"), use_container_width=True):
         navigate_to('settings')
 
     st.divider()
     
-    if st.button(f"0. {_('Exit')}", use_container_width=True):
+    if st.button(t_label("0. Exit"), use_container_width=True):
         os._exit(0)
 
 def view_project_management():
@@ -166,14 +171,14 @@ def view_project_management():
     """
     render_header(_("Project Management"))
     
-    if st.button(f"1. {_('Main Project Management')}", use_container_width=True):
+    if st.button(t_label("1. Main Project Management"), use_container_width=True):
         navigate_to('main_project_mgmt')
-    if st.button(f"2. {_('Sub-Project Management')}", use_container_width=True):
+    if st.button(t_label("2. Sub-Project Management"), use_container_width=True):
         navigate_to('sub_project_mgmt')
     
     st.divider()
     
-    if st.button(f"0. {_('Back to Main Menu')}", use_container_width=True):
+    if st.button(t_label("0.  Back to Main Menu"), use_container_width=True):
         navigate_to('main')
 
 def view_main_project_mgmt():
@@ -182,19 +187,19 @@ def view_main_project_mgmt():
     """
     render_header(_("Main Project Management"))
     
-    if st.button(f"1. {_('Add Main Project')}", use_container_width=True): navigate_to('add_main_project')
-    if st.button(f"2. {_('List Main Projects')}", use_container_width=True): navigate_to('list_main_projects')
-    if st.button(f"3. {_('Rename Main Project')}", use_container_width=True): navigate_to('rename_main_project')
-    if st.button(f"4. {_('Close Main Project')}", use_container_width=True): navigate_to('close_main_project')
-    if st.button(f"5. {_('Re-open Main Project')}", use_container_width=True): navigate_to('reopen_main_project')
-    if st.button(f"6. {_('Delete Main Project')}", use_container_width=True): navigate_to('delete_main_project')
-    if st.button(f"7. {_('List Inactive Main Projects')}", use_container_width=True): navigate_to('list_inactive_main')
-    if st.button(f"8. {_('Demote Main-Project to Sub-Project')}", use_container_width=True): navigate_to('demote_main_project')
-    if st.button(f"9. {_('List Completed Main Projects')}", use_container_width=True): navigate_to('list_completed_main')
+    if st.button(t_label("1.  Add Main Project"), use_container_width=True): navigate_to('add_main_project')
+    if st.button(t_label("2.  List Main Projects"), use_container_width=True): navigate_to('list_main_projects')
+    if st.button(t_label("3.  Rename Main Project"), use_container_width=True): navigate_to('rename_main_project')
+    if st.button(t_label("4.  Close Main Project"), use_container_width=True): navigate_to('close_main_project')
+    if st.button(t_label("5.  Re-open Main Project"), use_container_width=True): navigate_to('reopen_main_project')
+    if st.button(t_label("6.  Delete Main Project"), use_container_width=True): navigate_to('delete_main_project')
+    if st.button(t_label("7.  List Inactive Main Projects"), use_container_width=True): navigate_to('list_inactive_main')
+    if st.button(t_label("8.  Demote Main-Project to Sub-Project"), use_container_width=True): navigate_to('demote_main_project')
+    if st.button(t_label("9.  List Completed Main Projects"), use_container_width=True): navigate_to('list_completed_main')
     
     st.divider()
     
-    if st.button(f"0. {_('Back')}", use_container_width=True):
+    if st.button(t_label("0.  Back"), use_container_width=True):
         navigate_to('project_management')
 
 def view_sub_project_mgmt():
@@ -203,21 +208,21 @@ def view_sub_project_mgmt():
     """
     render_header(_("Sub-Project Management"))
     
-    if st.button(f"1. {_('Add Sub-Project')}", use_container_width=True): navigate_to('add_sub_project')
-    if st.button(f"2. {_('List Sub-Projects')}", use_container_width=True): navigate_to('list_sub_projects')
-    if st.button(f"3. {_('Rename Sub-Project')}", use_container_width=True): navigate_to('rename_sub_project')
-    if st.button(f"4. {_('Close Sub-Project')}", use_container_width=True): navigate_to('close_sub_project')
-    if st.button(f"5. {_('Re-open Sub-Project')}", use_container_width=True): navigate_to('reopen_sub_project')
-    if st.button(f"6. {_('Delete Sub-Project')}", use_container_width=True): navigate_to('delete_sub_project')
-    if st.button(f"7. {_('Move Sub-Project')}", use_container_width=True): navigate_to('move_sub_project')
-    if st.button(f"8. {_('List Inactive Sub-Projects')}", use_container_width=True): navigate_to('list_inactive_sub')
-    if st.button(f"9. {_('List All Closed Sub-Projects')}", use_container_width=True): navigate_to('list_closed_sub')
-    if st.button(f"10. {_('Delete All Closed Sub-Projects')}", use_container_width=True): navigate_to('delete_all_closed_sub')
-    if st.button(f"11. {_('Promote Sub-Project to Main-Project')}", use_container_width=True): navigate_to('promote_sub_project')
+    if st.button(t_label("1.  Add Sub-Project"), use_container_width=True): navigate_to('add_sub_project')
+    if st.button(t_label("2.  List Sub-Projects"), use_container_width=True): navigate_to('list_sub_projects')
+    if st.button(t_label("3.  Rename Sub-Project"), use_container_width=True): navigate_to('rename_sub_project')
+    if st.button(t_label("4.  Close Sub-Project"), use_container_width=True): navigate_to('close_sub_project')
+    if st.button(t_label("5.  Re-open Sub-Project"), use_container_width=True): navigate_to('reopen_sub_project')
+    if st.button(t_label("6.  Delete Sub-Project"), use_container_width=True): navigate_to('delete_sub_project')
+    if st.button(t_label("7.  Move Sub-Project"), use_container_width=True): navigate_to('move_sub_project')
+    if st.button(t_label("8.  List Inactive Sub-Projects"), use_container_width=True): navigate_to('list_inactive_sub')
+    if st.button(t_label("9.  List All Closed Sub-Projects"), use_container_width=True): navigate_to('list_closed_sub')
+    if st.button(t_label("10. Delete All Closed Sub-Projects"), use_container_width=True): navigate_to('delete_all_closed_sub')
+    if st.button(t_label("11. Promote Sub-Project to Main-Project"), use_container_width=True): navigate_to('promote_sub_project')
     
     st.divider()
     
-    if st.button(f"0. {_('Back')}", use_container_width=True):
+    if st.button(t_label("0.  Back"), use_container_width=True):
         navigate_to('project_management')
 
 def view_reporting():
@@ -227,20 +232,20 @@ def view_reporting():
     render_header(_("Reporting"))
     tt = st.session_state.tracker
     
-    if st.button(f"1. {_('Daily Report (Today)')}", use_container_width=True):
+    if st.button(t_label("1. Daily Report (Today)"), use_container_width=True):
         report = tt.generate_daily_report()
         st.session_state.context['report'] = report
         navigate_to('view_report')
         st.rerun()
-    if st.button(f"2. {_('Daily Report (Specific Day)')}", use_container_width=True): navigate_to('report_specific_day')
-    if st.button(f"3. {_('Date Range Report')}", use_container_width=True): navigate_to('report_date_range')
-    if st.button(f"4. {_('Detailed Sub-Project Report')}", use_container_width=True): navigate_to('report_detailed_sub')
-    if st.button(f"5. {_('Detailed Main-Project Report')}", use_container_width=True): navigate_to('report_detailed_main')
-    if st.button(f"6. {_('Detailed Daily Report')}", use_container_width=True): navigate_to('report_detailed_daily')
+    if st.button(t_label("2. Daily Report (Specific Day)"), use_container_width=True): navigate_to('report_specific_day')
+    if st.button(t_label("3. Date Range Report"), use_container_width=True): navigate_to('report_date_range')
+    if st.button(t_label("4. Detailed Sub-Project Report"), use_container_width=True): navigate_to('report_detailed_sub')
+    if st.button(t_label("5. Detailed Main-Project Report"), use_container_width=True): navigate_to('report_detailed_main')
+    if st.button(t_label("6. Detailed Daily Report"), use_container_width=True): navigate_to('report_detailed_daily')
     
     st.divider()
     
-    if st.button(f"0. {_('Back to Main Menu')}", use_container_width=True):
+    if st.button(t_label("0. Back to Main Menu"), use_container_width=True):
         navigate_to('main')
 
 def view_settings():
@@ -249,15 +254,15 @@ def view_settings():
     """
     render_header(_("Settings"))
     
-    if st.button(f"1. {_('Change Language')}", use_container_width=True): navigate_to('settings_language')
-    if st.button(f"2. {_('Restore Previous Version')}", use_container_width=True): navigate_to('settings_restore')
-    if st.button(f"3. {_('Change Data Storage Location')}", use_container_width=True): navigate_to('settings_storage')
-    if st.button(f"4. {_('Change Streamlit Port')}", use_container_width=True): navigate_to('settings_port')
-    if st.button(f"5. {_('Change CSS Style')}", use_container_width=True): navigate_to('settings_css')
+    if st.button(t_label("1. Change Language"), use_container_width=True): navigate_to('settings_language')
+    if st.button(t_label("2. Restore Previous Version"), use_container_width=True): navigate_to('settings_restore')
+    if st.button(t_label("3. Change Data Storage Location"), use_container_width=True): navigate_to('settings_storage')
+    if st.button(t_label("4. Change Streamlit Port"), use_container_width=True): navigate_to('settings_port')
+    if st.button(_("Change CSS Style"), use_container_width=True): navigate_to('settings_css')
     
     st.divider()
     
-    if st.button(f"0. {_('Back to Main Menu')}", use_container_width=True):
+    if st.button(t_label("0. Back to Main Menu"), use_container_width=True):
         navigate_to('main')
 
 # --- Action Views (Forms) ---
