@@ -53,7 +53,8 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 ## Prerequisites 📋
 
-- **Python 3.8 - 3.14:** Ensure you have Python 3 installed on your system. You can download it from [python.org](https://www.python.org/).
+- **Python 3.9 - 3.14:** Ensure you have Python 3 installed on your system. You can download it from [python.org](https://www.python.org/).
+  *(Note: Python 3.14 is currently not supported on Windows due to dependency issues.)*
 
 ---
 
