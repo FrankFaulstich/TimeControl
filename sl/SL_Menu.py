@@ -259,6 +259,7 @@ def view_settings():
     if st.button(t_label("3. Change Data Storage Location"), use_container_width=True): navigate_to('settings_storage')
     if st.button(t_label("4. Change Streamlit Port"), use_container_width=True): navigate_to('settings_port')
     if st.button(_("Change CSS Style"), use_container_width=True): navigate_to('settings_css')
+    if st.button(_("Change View Mode"), use_container_width=True): navigate_to('settings_view_mode')
     
     st.divider()
     
@@ -1124,6 +1125,39 @@ def view_settings_css():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('settings')
 
+def view_settings_view_mode():
+    """
+    Renders the form to change the application view mode (Webview vs Browser).
+    """
+    render_header(_("Change View Mode"))
+    config = get_config()
+    current_mode = config.get('view_mode', 'webview')
+    
+    # Map internal values to display labels
+    modes = {'webview': _('App Window (Webview)'), 'browser': _('System Browser')}
+    mode_keys = list(modes.keys())
+    mode_labels = list(modes.values())
+    
+    try:
+        current_index = mode_keys.index(current_mode)
+    except ValueError:
+        current_index = 0
+
+    with st.form("view_mode_form"):
+        selected_label = st.selectbox(_("Select View Mode"), mode_labels, index=current_index)
+        submitted = st.form_submit_button(_("Save"), use_container_width=True)
+        
+        if submitted:
+            new_mode = mode_keys[mode_labels.index(selected_label)]
+            config['view_mode'] = new_mode
+            save_config(config)
+            set_feedback(_("View mode updated. Please restart the application for the changes to take effect."))
+            navigate_to('settings')
+            st.rerun()
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('settings')
+
 def view_settings_restore():
     """
     Renders the view to restore the application to a previous version.
@@ -1422,6 +1456,7 @@ menu_map = {
     'settings_restore': view_settings_restore,
     'settings_storage': view_settings_storage,
     'settings_css': view_settings_css,
+    'settings_view_mode': view_settings_view_mode,
 }
 
 # --- Execution ---
