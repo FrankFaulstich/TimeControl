@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+import webbrowser
 try:
     import webview
 except ImportError:
@@ -66,6 +67,7 @@ def start_streamlit_server():
     height = 600
     x = None
     y = None
+    view_mode = 'webview'
     
     if os.path.exists(CONFIG_FILE):
         try:
@@ -76,20 +78,21 @@ def start_streamlit_server():
                 height = config.get('window_height', 600)
                 x = config.get('window_x', None)
                 y = config.get('window_y', None)
+                view_mode = config.get('view_mode', 'webview')
         except (json.JSONDecodeError, IOError) as e:
             print(f"Warning: Could not read config.json. Using default settings. Error: {e}")
 
     print(f"Starting TimeControl GUI on port {port}...")
     
     # Determine headless mode based on webview availability
-    headless_mode = "true" if webview else "false"
+    headless_mode = "true"
     
     # Use sys.executable to ensure the same python environment is used
     cmd = [sys.executable, "-m", "streamlit", "run", os.path.join("sl", "SL_Menu.py"), "--server.port", str(port), "--server.headless", headless_mode]
     
     process = subprocess.Popen(cmd)
     
-    if webview:
+    if webview and view_mode == 'webview':
         time.sleep(2) # Wait for Streamlit to initialize
         
         window = webview.create_window(
@@ -134,7 +137,11 @@ def start_streamlit_server():
         if process.poll() is None:
             process.terminate()
     else:
-        print("Warning: 'webview' module not found. Opening in system browser instead.")
+        if not webview:
+            print("Warning: 'webview' module not found. Opening in system browser instead.")
+        
+        time.sleep(2)
+        webbrowser.open(f"http://localhost:{port}")
         try:
             process.wait()
         except KeyboardInterrupt:
