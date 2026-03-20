@@ -103,8 +103,8 @@ class TimeTracker:
 
                 if not failed_packages:
                     print(_("\nDependencies installed successfully."))
-                    print(_("Please restart the application for the changes to take effect."))
-                    sys.exit(0)
+                    print(_("Restarting application..."))
+                    os.execv(sys.executable, [sys.executable] + sys.argv)
                 else:
                     print(_("\nWarning: Some dependencies could not be installed: {packages}").format(packages=", ".join(failed_packages)))
         except Exception as e:
