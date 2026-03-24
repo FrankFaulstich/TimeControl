@@ -10,5 +10,6 @@
     "window_x": 265,
     "window_y": -662,
     "css_file": "style.css",
-    "view_mode": "webview"
+    "view_mode": "webview",
+    "soap_port": 8600
 }
