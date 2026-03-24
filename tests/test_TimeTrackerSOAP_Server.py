@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch, NonCallableMagicMock
+from unittest.mock import MagicMock, patch
 import sys
 import os
 from datetime import date
@@ -19,9 +19,16 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         cls.tt_patcher = patch('tt.TimeTracker.TimeTracker')
         cls.MockTimeTrackerClass = cls.tt_patcher.start()
         
-        # Ensure the mock instance is not callable.
-        # Spyne interprets callable attributes as auxiliary methods, causing errors if mixed with @rpc.
-        cls.MockTimeTrackerClass.return_value = NonCallableMagicMock()
+        # Spyne performs introspection on service class attributes.
+        # MagicMock objects can confuse Spyne (e.g., by having __get__, looking like descriptors).
+        # We use a simple wrapper to hide the mock from Spyne's introspection.
+        class TrackerWrapper:
+            def __init__(self):
+                self._mock = MagicMock()
+            def __getattr__(self, name):
+                return getattr(self._mock, name)
+        
+        cls.MockTimeTrackerClass.return_value = TrackerWrapper()
         
         # Attempt to import the server module
         try:
@@ -42,7 +49,8 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         # Reset mock for every test
         # TimeControlService.tracker is an instance of our MockTimeTrackerClass
         self.service = self.soap_server.TimeControlService
-        self.mock_tracker = self.service.tracker
+        # The tracker is now our Wrapper. Access the underlying mock for assertions.
+        self.mock_tracker = self.service.tracker._mock
         self.mock_tracker.reset_mock()
         
         # Context object for Spyne methods (often needed, mocked here)
