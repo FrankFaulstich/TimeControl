@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, NonCallableMagicMock
 import sys
 import os
 from datetime import date
@@ -18,6 +18,10 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         # Patch the TimeTracker class where it is defined
         cls.tt_patcher = patch('tt.TimeTracker.TimeTracker')
         cls.MockTimeTrackerClass = cls.tt_patcher.start()
+        
+        # Ensure the mock instance is not callable.
+        # Spyne interprets callable attributes as auxiliary methods, causing errors if mixed with @rpc.
+        cls.MockTimeTrackerClass.return_value = NonCallableMagicMock()
         
         # Attempt to import the server module
         try:
