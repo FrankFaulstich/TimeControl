@@ -3,3 +3,5 @@ requests
 packaging
 streamlit
 pywebview
+spyne
+lxml
