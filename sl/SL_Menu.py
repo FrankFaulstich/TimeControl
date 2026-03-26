@@ -123,8 +123,12 @@ def render_header(title, subtitle=None):
         st.session_state.feedback = None # Clear after showing
 
 def t_label(key):
-    """Translates the key and removes leading numbering (e.g., '1. ') from the result."""
-    return re.sub(r'^\d+\.\s*', '', _(key))
+    """Translates the key and removes leading numbering."""
+    match = re.match(r'^(\d+\.?\s*)(.*)', key)
+    if match:
+        _numbering, text = match.groups()
+        return _(text)
+    return _(key)
 
 # --- Views ---
 
@@ -132,7 +136,7 @@ def view_main():
     """
     Renders the main menu view.
     """
-    render_header("Time Control", f"Version {st.session_state.tracker.get_version()}")
+    render_header(_("Time Control"), f"Version {st.session_state.tracker.get_version()}")
     
     current_work = st.session_state.tracker.get_current_work()
     if current_work:

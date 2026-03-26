@@ -1053,6 +1053,9 @@ msgstr "Aktuelle Arbeit anzeigen"
 msgid "Stop current work"
 msgstr "Aktuelle Arbeit beenden"
 
+msgid "Handle projects and sub-projects"
+msgstr "Projekte und Unterprojekte verwalten"
+
 msgid "Project Management"
 msgstr "Projektverwaltung"
 
@@ -1166,3 +1169,75 @@ msgstr "Unterprojekt auswählen"
 
 msgid "Back to Main Menu"
 msgstr "Zurück zum Hauptmenü"
+
+msgid "Time Control"
+msgstr "Zeitkontrolle"
+
+msgid "Change CSS Style"
+msgstr "CSS-Stil ändern"
+
+msgid "Change View Mode"
+msgstr "Anzeigemodus ändern"
+
+msgid "Back"
+msgstr "Zurück"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Next"
+msgstr "Weiter"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "Add Project"
+msgstr "Projekt hinzufügen"
+
+msgid "Close Project"
+msgstr "Projekt schließen"
+
+msgid "Re-open Project"
+msgstr "Projekt wieder öffnen"
+
+msgid "Delete Project"
+msgstr "Projekt löschen"
+
+msgid "Demote Project"
+msgstr "Projekt herabstufen"
+
+msgid "Promote to Main Project"
+msgstr "Zum Hauptprojekt befördern"
+
+msgid "Start Work"
+msgstr "Arbeit beginnen"
+
+msgid "Generate Report"
+msgstr "Bericht erstellen"
+
+msgid "Delete All"
+msgstr "Alle löschen"
+
+msgid "Restore and Restart"
+msgstr "Wiederherstellen und neu starten"
+
+msgid "Current CSS file"
+msgstr "Aktuelle CSS-Datei"
+
+msgid "Select CSS File"
+msgstr "CSS-Datei auswählen"
+
+msgid "CSS style updated. Please restart the application for the changes to take effect."
+msgstr "CSS-Stil aktualisiert. Bitte die Anwendung für die Änderungen neu starten."
+
+msgid "App Window (Webview)"
+msgstr "App-Fenster (Webview)"
+
+msgid "System Browser"
+msgstr "System-Browser"
+
+msgid "Select View Mode"
+msgstr "Anzeigemodus auswählen"
+
+msgid "View mode updated. Please restart the application for the changes to take effect."
+msgstr "Anzeigemodus aktualisiert. Bitte die Anwendung für die Änderungen neu starten."

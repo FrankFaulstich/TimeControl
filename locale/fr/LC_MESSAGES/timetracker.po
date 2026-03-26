@@ -79,6 +79,12 @@ msgstr[1] "{hours} heures ({dlp} DLP)"
 msgid "closed"
 msgstr "fermé"
 
+msgid "open"
+msgstr "ouvert"
+
+msgid "all"
+msgstr "tous"
+
 #: TimeTracker.py:350
 msgid "Source main project '{name}' not found."
 msgstr "Projet principal source '{name}' non trouvé."
