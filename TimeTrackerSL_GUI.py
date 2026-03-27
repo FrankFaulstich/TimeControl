@@ -39,8 +39,6 @@ def save_window_state(window):
 
         config['window_width'] = int(window.width)
         config['window_height'] = int(window.height)
-        config['window_x'] = int(window.x)
-        config['window_y'] = int(window.y)
         
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4)
@@ -76,8 +74,6 @@ def start_streamlit_server():
                 port = config.get('streamlit_port', 8501)
                 width = config.get('window_width', 800)
                 height = config.get('window_height', 600)
-                x = config.get('window_x', None)
-                y = config.get('window_y', None)
                 view_mode = config.get('view_mode', 'webview')
         except (json.JSONDecodeError, IOError) as e:
             print(f"Warning: Could not read config.json. Using default settings. Error: {e}")
@@ -96,12 +92,10 @@ def start_streamlit_server():
         time.sleep(2) # Wait for Streamlit to initialize
         
         window = webview.create_window(
-            "Time Control", 
+            "Time Control",
             f"http://localhost:{port}",
             width=int(width),
             height=int(height),
-            x=x,
-            y=y,
             frameless=False
         )
         

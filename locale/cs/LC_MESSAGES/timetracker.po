@@ -932,3 +932,72 @@ msgstr "Vybrat podprojekt"
 
 msgid "Back to Main Menu"
 msgstr "Zpět do hlavního menu"
+
+msgid "Time Control"
+msgstr "Kontrola času"
+
+msgid "Change CSS Style"
+msgstr "Změnit styl CSS"
+
+msgid "Change View Mode"
+msgstr "Změnit režim zobrazení"
+
+msgid "Back"
+msgstr "Zpět"
+
+msgid "Cancel"
+msgstr "Zrušit"
+
+msgid "Next"
+msgstr "Další"
+
+msgid "Save"
+msgstr "Uložit"
+
+msgid "Add Project"
+msgstr "Přidat projekt"
+
+msgid "Close Project"
+msgstr "Zavřít projekt"
+
+msgid "Re-open Project"
+msgstr "Znovu otevřít projekt"
+
+msgid "Delete Project"
+msgstr "Smazat projekt"
+
+msgid "Demote Project"
+msgstr "Degradovat projekt"
+
+msgid "Start Work"
+msgstr "Začít práci"
+
+msgid "Generate Report"
+msgstr "Vytvořit zprávu"
+
+msgid "Delete All"
+msgstr "Smazat vše"
+
+msgid "Restore and Restart"
+msgstr "Obnovit a restartovat"
+
+msgid "Current CSS file"
+msgstr "Aktuální soubor CSS"
+
+msgid "Select CSS File"
+msgstr "Vybrat soubor CSS"
+
+msgid "CSS style updated. Please restart the application for the changes to take effect."
+msgstr "Styl CSS byl aktualizován. Pro projevení změn restartujte aplikaci."
+
+msgid "App Window (Webview)"
+msgstr "Okno aplikace (Webview)"
+
+msgid "System Browser"
+msgstr "Systémový prohlížeč"
+
+msgid "Select View Mode"
+msgstr "Vyberte režim zobrazení"
+
+msgid "View mode updated. Please restart the application for the changes to take effect."
+msgstr "Režim zobrazení byl aktualizován. Pro projevení změn restartujte aplikaci."

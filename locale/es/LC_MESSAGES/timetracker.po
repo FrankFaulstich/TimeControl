@@ -79,6 +79,12 @@ msgstr[1] "{hours} horas ({dlp} DLP)"
 msgid "closed"
 msgstr "cerrado"
 
+msgid "open"
+msgstr "abierto"
+
+msgid "all"
+msgstr "todos"
+
 #: TimeTracker.py:350
 msgid "Source main project '{name}' not found."
 msgstr "Proyecto principal de origen '{name}' no encontrado."
@@ -1364,3 +1370,54 @@ msgstr "Seleccionar Subproyecto"
 
 msgid "Back to Main Menu"
 msgstr "Volver al Menú Principal"
+
+msgid "Add"
+msgstr "Añadir"
+
+msgid "Delete"
+msgstr "Eliminar"
+
+msgid "Rename"
+msgstr "Renombrar"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Reopen"
+msgstr "Reabrir"
+
+msgid "Yes"
+msgstr "Sí"
+
+msgid "No"
+msgstr "No"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Confirm"
+msgstr "Confirmar"
+
+msgid "Submit"
+msgstr "Enviar"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Generate Report"
+msgstr "Generar Informe"
+
+msgid "Start"
+msgstr "Iniciar"
+
+msgid "Stop"
+msgstr "Detener"
+
+msgid "Step 1: Select Main Project"
+msgstr "Paso 1: Seleccionar Proyecto Principal"
+
+msgid "Refresh"
+msgstr "Actualizar"
