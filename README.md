@@ -90,6 +90,7 @@ The application can be configured via the `config.json` file.
     },
     "language": "de",
     "streamlit_port": 8501,
+    "soap_port": 8600,
     "data_file": "data.json",
     "css_file": "style.css"
 }
@@ -97,6 +98,7 @@ The application can be configured via the `config.json` file.
 
 - **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions.
 - **`language`**: The user interface language ("en", "de", "fr", "es", "cs").
+- **`soap_port`**: The port on which the SOAP server listens (default: 8600).
 
 ---
 
