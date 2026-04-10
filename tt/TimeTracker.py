@@ -808,6 +808,13 @@ class TimeTracker:
         inactive_main_projects = []
 
         for project in self.data["projects"]:
+            # Skip closed main projects or those where all sub-projects are closed
+            if project.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED:
+                continue
+            sub_projects = project.get("sub_projects", [])
+            if sub_projects and all(sp.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED for sp in sub_projects):
+                continue
+
             latest_activity = None
             is_active = False
 
