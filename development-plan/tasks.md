@@ -8,11 +8,11 @@ Durch die Erweiterung soll die Verwendung eine Todo-Liste überflüssig gemacht 
 
 ### Tasks
 
-Aus den Sub-Projekten werden Tasks. (#307)
+Aus den Sub-Projekten werden Tasks. [#307](https://github.com/FrankFaulstich/TimeControl/issues/307)
 
 Bei der Umsetzung wird sich an den Möglichkeiten von Microsoft To Do orientiert.
 
-Tasks bekommen folgende neue Eigenschaften (#308):
+Tasks bekommen folgende neue Eigenschaften [#308](https://github.com/FrankFaulstich/TimeControl/issues/308)
 
 - Fälligkeitsdatum
 - `today`
@@ -35,11 +35,12 @@ Folgende Eigenschaften werden erweitert:
 
 ### Neue Ansichten
 
-#### Task-Ansicht (#309)
+#### Task-Ansicht [#309](https://github.com/FrankFaulstich/TimeControl/issues/309)
+
 
 Es wird eine Ansicht hinzugefügt, in der ein einzelner Task angezeigt werden kann. Darin lässt sich das Fälligkeitsdatum ändern und Notizen bearbeiten.
 
-#### Task-Liste (#310)
+#### Task-Liste [#310](https://github.com/FrankFaulstich/TimeControl/issues/310)
 
 Listet alle Tasks auf, deren Status nicht `closed` ist.
 
@@ -51,17 +52,17 @@ In der Task-Liste kann eingestellt werden, welche Tasks angezeigt werden sollen 
 - überfällige Tasks
 - ungeplante Tasks
 
-#### Today (#311)
+#### Today [#311](https://github.com/FrankFaulstich/TimeControl/issues/311)
 
 Enthält alle Tasks mit der Eigenschaft `today`.
 
 ### Zu ändernde Ansichten
 
-#### Hinzufügen von Tasks (#312)
+#### Hinzufügen von Tasks [#312](https://github.com/FrankFaulstich/TimeControl/issues/312)
 
 Hier wird die Möglichkeit geschaffen, ein Fälligkeitsdatum hinzuzufügen.
 
-### Wiederkehrende Tasks (#313)
+### Wiederkehrende Tasks [#313](https://github.com/FrankFaulstich/TimeControl/issues/313)
 
 Von dieser speziellen Art von Tasks wird eine Kopie erzeugt, wenn der Task auf `done` gesetzt wurde.
 
@@ -72,7 +73,7 @@ Perioden:
 - wöchentlich
 - monatlich
 
-### Tasks per E-Mail hinzufügen (US #xxx)
+### Tasks per E-Mail hinzufügen [#314](https://github.com/FrankFaulstich/TimeControl/issues/314)
 
 Es wird regelmäßig eine E-Mailadresse abgerufen. Die vorhanden Mails werden in Tasks umgewandelt. Der Task wir als ungeplanter Task eingefügt.
 
