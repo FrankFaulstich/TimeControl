@@ -8,11 +8,11 @@ Durch die Erweiterung soll die Verwendung eine Todo-Liste überflüssig gemacht 
 
 ### Tasks
 
-Tasks sind eine spezielle Art von Sub-Projekten. Es muss noch entschieden werden, ob andere Sub-Projekte überhaupt noch gebraucht werden. Eventuell ist es sinnvoll, die Sub-Projekte einfach zu erweitern.
+Aus den Sub-Projekten werden Tasks. (#307)
 
 Bei der Umsetzung wird sich an den Möglichkeiten von Microsoft To Do orientiert.
 
-Tasks bekommen folgende neue Eigenschaften:
+Tasks bekommen folgende neue Eigenschaften (#308):
 
 - Fälligkeitsdatum
 - `today`
@@ -30,16 +30,16 @@ Folgende Eigenschaften werden erweitert:
   - `closed`
     - Erscheint nicht mehr in den Auswahllisten.
     - Ist bereits umgesetzt.
-- Notizen
+- Notizen (`note`)
   - Textfeld für Notizen im Markdown-Format.
 
 ### Neue Ansichten
 
-#### Task-Ansicht
+#### Task-Ansicht (#309)
 
 Es wird eine Ansicht hinzugefügt, in der ein einzelner Task angezeigt werden kann. Darin lässt sich das Fälligkeitsdatum ändern und Notizen bearbeiten.
 
-#### Task-Liste
+#### Task-Liste (#310)
 
 Listet alle Tasks auf, deren Status nicht `closed` ist.
 
@@ -51,22 +51,29 @@ In der Task-Liste kann eingestellt werden, welche Tasks angezeigt werden sollen 
 - überfällige Tasks
 - ungeplante Tasks
 
-#### Wochenübersicht
+#### Today (#311)
 
-Zeigt alle Tasks, die vom aktuellen Datum an innerhalb einer Woche fällig sind. Die Tasks werden in Wochentagen einsortiert.
-
-Einzelne Tasks können angeklickt und in der Task-Ansicht bearbeitet werden.
+Enthält alle Tasks mit der Eigenschaft `today`.
 
 ### Zu ändernde Ansichten
 
-#### Hinzufügen von Sub-Projekten
+#### Hinzufügen von Tasks (#312)
 
 Hier wird die Möglichkeit geschaffen, ein Fälligkeitsdatum hinzuzufügen.
 
-### Wiederkehrende Tasks
+### Wiederkehrende Tasks (#313)
 
 Von dieser speziellen Art von Tasks wird eine Kopie erzeugt, wenn der Task auf `done` gesetzt wurde.
 
-### Tasks per E-Mail hinzufügen
+Perioden:
 
-Es wird regelmäßig eine E-Mailadresse abgerufen. Die vorhanden Mails werden in Tasks umgewandelt. Die E-Mailadresse wird in der config.json gespeichert.
+- täglich
+- an allen Arbeitstagen
+- wöchentlich
+- monatlich
+
+### Tasks per E-Mail hinzufügen (US #xxx)
+
+Es wird regelmäßig eine E-Mailadresse abgerufen. Die vorhanden Mails werden in Tasks umgewandelt. Der Task wir als ungeplanter Task eingefügt.
+
+Die E-Mailadresse wird in der config.json gespeichert.
