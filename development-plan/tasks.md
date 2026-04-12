@@ -1,80 +1,79 @@
-# Integration eine Aufgabenverwaltung
+# Integration of a Task Management System
 
-## Zweck
+## Purpose
 
-Durch die Erweiterung soll die Verwendung eine Todo-Liste überflüssig gemacht werden.
+This extension is intended to eliminate the need for a to-do list.
 
-## Umsetzung
+## Implementation
 
 ### Tasks
 
-Aus den Sub-Projekten werden Tasks. [#307](https://github.com/FrankFaulstich/TimeControl/issues/307)
+Subprojects will be converted into tasks. [#307](https://github.com/FrankFaulstich/TimeControl/issues/307)
 
-Bei der Umsetzung wird sich an den Möglichkeiten von Microsoft To Do orientiert.
+The implementation will be based on the features of Microsoft To Do.
 
-Tasks bekommen folgende neue Eigenschaften [#308](https://github.com/FrankFaulstich/TimeControl/issues/308)
+Tasks will have the following new properties [#308](https://github.com/FrankFaulstich/TimeControl/issues/308)
 
-- Fälligkeitsdatum
+- Due date
 - `today`
-  - Erscheint in der Tagesliste "Mein Tag".
+  - Appears in the “My Day” daily list.
 
-Folgende Eigenschaften werden erweitert:
+The following properties will be expanded:
 
 - Status:
   - `open`
-    - Ist bereits umgesetzt.
-  - `planed`
-    - Der Task hat ein Fälligkeitsdatum.
+    - Already implemented.
+  - `planned`
+    - The task has a due date.
   - `done`
-    - ist erledigt
+    - Completed
   - `closed`
-    - Erscheint nicht mehr in den Auswahllisten.
-    - Ist bereits umgesetzt.
-- Notizen (`note`)
-  - Textfeld für Notizen im Markdown-Format.
+    - No longer appears in the dropdown lists.
+    - Has already been implemented.
+- Notes (`note`)
+  - Text field for notes in Markdown format.
 
-### Neue Ansichten
+### New Views
 
-#### Task-Ansicht [#309](https://github.com/FrankFaulstich/TimeControl/issues/309)
+#### Task View [#309](https://github.com/FrankFaulstich/TimeControl/issues/309)
 
+A view is added in which a single task can be displayed. In this view, you can change the due date and edit notes.
 
-Es wird eine Ansicht hinzugefügt, in der ein einzelner Task angezeigt werden kann. Darin lässt sich das Fälligkeitsdatum ändern und Notizen bearbeiten.
+#### Task List [#310](https://github.com/FrankFaulstich/TimeControl/issues/310)
 
-#### Task-Liste [#310](https://github.com/FrankFaulstich/TimeControl/issues/310)
+Lists all tasks whose status is not `closed`.
 
-Listet alle Tasks auf, deren Status nicht `closed` ist.
+In the task list, you can configure which tasks should be displayed and how they should be sorted.
 
-In der Task-Liste kann eingestellt werden, welche Tasks angezeigt werden sollen und wie sie sortiert werden sollen.
-
-- Tagesübersicht
-- Morgen
-- Wochenübersicht
-- überfällige Tasks
-- ungeplante Tasks
+- Daily overview
+- Tomorrow
+- Weekly overview
+- Overdue tasks
+- Unplanned tasks
 
 #### Today [#311](https://github.com/FrankFaulstich/TimeControl/issues/311)
 
-Enthält alle Tasks mit der Eigenschaft `today`.
+Contains all tasks with the `today` property.
 
-### Zu ändernde Ansichten
+### Views to Modify
 
-#### Hinzufügen von Tasks [#312](https://github.com/FrankFaulstich/TimeControl/issues/312)
+#### Adding Tasks [#312](https://github.com/FrankFaulstich/TimeControl/issues/312)
 
-Hier wird die Möglichkeit geschaffen, ein Fälligkeitsdatum hinzuzufügen.
+This feature allows you to add a due date.
 
-### Wiederkehrende Tasks [#313](https://github.com/FrankFaulstich/TimeControl/issues/313)
+### Recurring tasks [#313](https://github.com/FrankFaulstich/TimeControl/issues/313)
 
-Von dieser speziellen Art von Tasks wird eine Kopie erzeugt, wenn der Task auf `done` gesetzt wurde.
+A copy of this specific type of task is created when the task is marked as `done`.
 
-Perioden:
+Periods:
 
-- täglich
-- an allen Arbeitstagen
-- wöchentlich
-- monatlich
+- daily
+- on all workdays
+- weekly
+- monthly
 
-### Tasks per E-Mail hinzufügen [#314](https://github.com/FrankFaulstich/TimeControl/issues/314)
+### Add Tasks via Email [#314](https://github.com/FrankFaulstich/TimeControl/issues/314)
 
-Es wird regelmäßig eine E-Mailadresse abgerufen. Die vorhanden Mails werden in Tasks umgewandelt. Der Task wir als ungeplanter Task eingefügt.
+An email address is checked regularly. Existing emails are converted into tasks. The task is added as an unscheduled task.
 
-Die E-Mailadresse wird in der config.json gespeichert.
+The email address is stored in config.json.
