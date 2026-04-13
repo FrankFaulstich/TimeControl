@@ -65,47 +65,47 @@ msgstr[2] "{hours} hodin ({dlp} DLP)"
 msgid "closed"
 msgstr "uzavřeno"
 
-msgid "Source main project '{name}' not found."
-msgstr "Zdrojový hlavní projekt '{name}' nebyl nalezen."
+msgid "Source project '{name}' not found."
+msgstr "Zdrojový projekt '{name}' nebyl nalezen."
 
-msgid "Destination main project '{name}' not found."
-msgstr "Cílový hlavní projekt '{name}' nebyl nalezen."
+msgid "Destination project '{name}' not found."
+msgstr "Cílový projekt '{name}' nebyl nalezen."
 
-msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
-msgstr "Podprojekt s názvem '{sub_name}' již v projektu '{main_name}' existuje."
+msgid "A task named '{sub_name}' already exists in '{main_name}'."
+msgstr "Úkol s názvem '{sub_name}' již v projektu '{main_name}' existuje."
 
-msgid "Sub-project '{name}' moved successfully."
-msgstr "Podprojekt '{name}' byl úspěšně přesunut."
+msgid "Task '{name}' moved successfully."
+msgstr "Úkol '{name}' byl úspěšně přesunut."
 
-msgid "A main project named '{name}' already exists."
-msgstr "Hlavní projekt s názvem '{name}' již existuje."
+msgid "A project named '{name}' already exists."
+msgstr "Projekt s názvem '{name}' již existuje."
 
-msgid "Main project '{old_name}' renamed to '{new_name}'."
-msgstr "Hlavní projekt '{old_name}' přejmenován na '{new_name}'."
+msgid "Project '{old_name}' renamed to '{new_name}'."
+msgstr "Projekt '{old_name}' přejmenován na '{new_name}'."
 
-msgid "Sub-project '{sub_name}' not found in '{main_name}'."
-msgstr "Podprojekt '{sub_name}' nebyl v projektu '{main_name}' nalezen."
+msgid "Task '{sub_name}' not found in '{main_name}'."
+msgstr "Úkol '{sub_name}' nebyl v projektu '{main_name}' nalezen."
 
 msgid "General"
 msgstr "Obecné"
 
-msgid "Sub-project '{name}' was promoted to a new main project."
-msgstr "Podprojekt '{name}' byl povýšen na nový hlavní projekt."
+msgid "Task '{name}' was promoted to a new project."
+msgstr "Úkol '{name}' byl povýšen na nový projekt."
 
-msgid "Main project to demote '{name}' not found."
-msgstr "Hlavní projekt k degradaci '{name}' nebyl nalezen."
+msgid "Project to demote '{name}' not found."
+msgstr "Projekt k degradaci '{name}' nebyl nalezen."
 
-msgid "New parent main project '{name}' not found."
-msgstr "Nový nadřazený hlavní projekt '{name}' nebyl nalezen."
+msgid "New parent project '{name}' not found."
+msgstr "Nový nadřazený projekt '{name}' nebyl nalezen."
 
-msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
-msgstr "Podprojekt '{old_name}' byl přejmenován na '{new_name}'."
+msgid "Task '{old_name}' has been renamed to '{new_name}'."
+msgstr "Úkol '{old_name}' byl přejmenován na '{new_name}'."
 
 msgid ""
-"Main project '{demoted_name}' was demoted to a sub-project under "
+"Project '{demoted_name}' was demoted to a task under "
 "'{parent_name}'."
 msgstr ""
-"Hlavní projekt '{demoted_name}' byl degradován na podprojekt pod '"
+"Projekt '{demoted_name}' byl degradován na úkol pod '"
 "{parent_name}'."
 
 msgid "# Daily Time Report: {date}\n"
@@ -141,56 +141,56 @@ msgstr "Mezi {start_date} a {end_date} nebyl zaznamenán žádný čas."
 msgid "\n--- Project Management ---"
 msgstr "\n--- Správa projektů ---"
 
-msgid "1.  Add Main Project"
-msgstr "1.  Přidat hlavní projekt"
+msgid "1.  Add Project"
+msgstr "1.  Přidat projekt"
 
-msgid "2.  List Main Projects"
-msgstr "2.  Vypsat hlavní projekty"
+msgid "2.  List Projects"
+msgstr "2.  Vypsat projekty"
 
-msgid "3.  Rename Main Project"
-msgstr "3.  Přejmenovat hlavní projekt"
+msgid "3.  Rename Project"
+msgstr "3.  Přejmenovat projekt"
 
-msgid "4.  Delete Main Project"
-msgstr "4.  Smazat hlavní projekt"
+msgid "4.  Delete Project"
+msgstr "4.  Smazat projekt"
 
-msgid "5.  List Inactive Main Projects"
-msgstr "5.  Vypsat neaktivní hlavní projekty"
+msgid "5.  List Inactive Projects"
+msgstr "5.  Vypsat neaktivní projekty"
 
-msgid "6.  Demote Main-Project to Sub-Project"
-msgstr "6.  Degradovat hlavní projekt na podprojekt"
+msgid "6.  Demote Project to Task"
+msgstr "6.  Degradovat projekt na úkol"
 
-msgid "7.  Add Sub-Project"
-msgstr "7.  Přidat podprojekt"
+msgid "7.  Add Task"
+msgstr "7.  Přidat úkol"
 
-msgid "8.  List Sub-Projects"
-msgstr "8.  Vypsat podprojekty"
+msgid "8.  List Tasks"
+msgstr "8.  Vypsat úkoly"
 
-msgid "9.  Rename Sub-Project"
-msgstr "9.  Přejmenovat podprojekt"
+msgid "9.  Rename Task"
+msgstr "9.  Přejmenovat úkol"
 
-msgid "10. Close Sub-Project"
-msgstr "10. Uzavřít podprojekt"
+msgid "10. Close Task"
+msgstr "10. Uzavřít úkol"
 
-msgid "11. Re-open Sub-Project"
-msgstr "11. Znovu otevřít podprojekt"
+msgid "11. Re-open Task"
+msgstr "11. Znovu otevřít úkol"
 
-msgid "12. Delete Sub-Project"
-msgstr "12. Smazat podprojekt"
+msgid "12. Delete Task"
+msgstr "12. Smazat úkol"
 
-msgid "13. Move Sub-Project"
-msgstr "13. Přesunout podprojekt"
+msgid "13. Move Task"
+msgstr "13. Přesunout úkol"
 
-msgid "14. List Inactive Sub-Projects"
-msgstr "14. Vypsat neaktivní podprojekty"
+msgid "14. List Inactive Tasks"
+msgstr "14. Vypsat neaktivní úkoly"
 
-msgid "15. List All Closed Sub-Projects"
-msgstr "15. Vypsat všechny uzavřené podprojekty"
+msgid "15. List All Closed Tasks"
+msgstr "15. Vypsat všechny uzavřené úkoly"
 
-msgid "16. Delete All Closed Sub-Projects"
-msgstr "16. Smazat všechny uzavřené podprojekty"
+msgid "16. Delete All Closed Tasks"
+msgstr "16. Smazat všechny uzavřené úkoly"
 
-msgid "17. Promote Sub-Project to Main-Project"
-msgstr "17. Povýšit podprojekt na hlavní projekt"
+msgid "17. Promote Task to Project"
+msgstr "17. Povýšit úkol na projekt"
 
 msgid "0.  Back to Main Menu"
 msgstr "0.  Zpět do hlavního menu"
@@ -198,39 +198,39 @@ msgstr "0.  Zpět do hlavního menu"
 msgid "Choice: "
 msgstr "Volba: "
 
-msgid "\n--- Add New Main Project ---"
-msgstr "\n--- Přidat nový hlavní projekt ---"
+msgid "\n--- Add New Project ---"
+msgstr "\n--- Přidat nový projekt ---"
 
-msgid "Name of the main project: "
-msgstr "Název hlavního projektu: "
+msgid "Name of the project: "
+msgstr "Název projektu: "
 
-msgid "Main project '{name}' added."
-msgstr "Hlavní projekt '{name}' byl přidán."
+msgid "Project '{name}' added."
+msgstr "Projekt '{name}' byl přidán."
 
-msgid "\n--- List Main Projects ---"
-msgstr "\n--- Seznam hlavních projektů ---"
+msgid "\n--- List Projects ---"
+msgstr "\n--- Seznam projektů ---"
 
-msgid "No main projects found."
-msgstr "Nebyly nalezeny žádné hlavní projekty."
+msgid "No projects found."
+msgstr "Nebyly nalezeny žádné projekty."
 
-msgid "\n--- Rename Main Project ---"
-msgstr "\n--- Přejmenovat hlavní projekt ---"
+msgid "\n--- Rename Project ---"
+msgstr "\n--- Přejmenovat projekt ---"
 
-msgid "No main projects to rename."
-msgstr "Žádné hlavní projekty k přejmenování."
+msgid "No projects to rename."
+msgstr "Žádné projekty k přejmenování."
 
-msgid "Select a main project to rename:"
-msgstr "Vyberte hlavní projekt k přejmenování:"
+msgid "Select a project to rename:"
+msgstr "Vyberte projekt k přejmenování:"
 
-msgid "Enter the number of the main project: "
-msgstr "Zadejte číslo hlavního projektu: "
+msgid "Enter the number of the project: "
+msgstr "Zadejte číslo projektu: "
 
 msgid "Enter the new name for '{name}': "
 msgstr "Zadejte nový název pro '{name}': "
 
 msgid ""
-"Main project '{old_name}' successfully renamed to '{new_name}'."
-msgstr "Hlavní projekt '{old_name}' byl úspěšně přejmenován na '{new_name}'."
+"Project '{old_name}' successfully renamed to '{new_name}'."
+msgstr "Projekt '{old_name}' byl úspěšně přejmenován na '{new_name}'."
 
 msgid ""
 "Error: Could not rename. The new name '{new_name}' might already exist."
@@ -239,23 +239,23 @@ msgstr "Chyba: Nelze přejmenovat. Nový název '{new_name}' již možná existu
 msgid "Invalid input. Please enter a valid number."
 msgstr "Neplatný vstup. Zadejte prosím platné číslo."
 
-msgid "\n--- Delete Main Project ---"
-msgstr "\n--- Smazat hlavní projekt ---"
+msgid "\n--- Delete Project ---"
+msgstr "\n--- Smazat projekt ---"
 
-msgid "No main projects to delete."
-msgstr "Žádné hlavní projekty ke smazání."
+msgid "No projects to delete."
+msgstr "Žádné projekty ke smazání."
 
-msgid "Select a main project to delete:"
-msgstr "Vyberte hlavní projekt ke smazání:"
+msgid "Select a project to delete:"
+msgstr "Vyberte projekt ke smazání:"
 
-msgid "Main project '{name}' deleted."
-msgstr "Hlavní projekt '{name}' byl smazán."
+msgid "Project '{name}' deleted."
+msgstr "Projekt '{name}' byl smazán."
 
-msgid "Error: Main project '{name}' not found."
-msgstr "Chyba: Hlavní projekt '{name}' nebyl nalezen."
+msgid "Error: Project '{name}' not found."
+msgstr "Chyba: Projekt '{name}' nebyl nalezen."
 
-msgid "\n--- List Inactive Main-Projects ---"
-msgstr "\n--- Seznam neaktivních hlavních projektů ---"
+msgid "\n--- List Inactive Projects ---"
+msgstr "\n--- Seznam neaktivních projektů ---"
 
 msgid "Enter the number of weeks without activity (e.g., 8): "
 msgstr "Zadejte počet týdnů bez aktivity (např. 8): "
@@ -263,71 +263,71 @@ msgstr "Zadejte počet týdnů bez aktivity (např. 8): "
 msgid "Please enter a positive number."
 msgstr "Zadejte prosím kladné číslo."
 
-msgid "\nInactive Main-Projects (>{weeks} weeks):"
-msgstr "\nNeaktivní hlavní projekty (>{weeks} týdnů):"
+msgid "\nInactive Projects (>{weeks} weeks):"
+msgstr "\nNeaktivní projekty (>{weeks} týdnů):"
 
-msgid "  - Main Project: {name}"
-msgstr "  - Hlavní projekt: {name}"
+msgid "  - Project: {name}"
+msgstr "  - Projekt: {name}"
 
 msgid "    Last Activity: {date}"
 msgstr "    Poslední aktivita: {date}"
 
-msgid "No main-projects found inactive for more than {weeks} week."
-msgid_plural "No main-projects found inactive for more than {weeks} weeks."
-msgstr[0] "Nebyl nalezen žádný hlavní projekt neaktivní déle než {weeks} týden."
-msgstr[1] "Nebyly nalezeny žádné hlavní projekty neaktivní déle než {weeks} týdny."
-msgstr[2] "Nebyly nalezeny žádné hlavní projekty neaktivní déle než {weeks} týdnů."
+msgid "No projects found inactive for more than {weeks} week."
+msgid_plural "No projects found inactive for more than {weeks} weeks."
+msgstr[0] "Nebyl nalezen žádný projekt neaktivní déle než {weeks} týden."
+msgstr[1] "Nebyly nalezeny žádné projekty neaktivní déle než {weeks} týdny."
+msgstr[2] "Nebyly nalezeny žádné projekty neaktivní déle než {weeks} týdnů."
 
 msgid "Invalid input. Please enter a valid number for weeks."
 msgstr "Neplatný vstup. Zadejte prosím platné číslo pro týdny."
 
-msgid "\n--- Add New Sub-Project ---"
-msgstr "\n--- Přidat nový podprojekt ---"
+msgid "\n--- Add New Task ---"
+msgstr "\n--- Přidat nový úkol ---"
 
-msgid "No main projects found. Please add one first."
-msgstr "Nebyly nalezeny žádné hlavní projekty. Nejprve prosím nějaký přidejte."
+msgid "No projects found. Please add one first."
+msgstr "Nebyly nalezeny žádné projekty. Nejprve prosím nějaký přidejte."
 
-msgid "Select a main project to add a sub-project to:"
-msgstr "Vyberte hlavní projekt, do kterého chcete přidat podprojekt:"
+msgid "Select a project to add a task to:"
+msgstr "Vyberte projekt, do kterého chcete přidat úkol:"
 
-msgid "Name of the new sub-project: "
-msgstr "Název nového podprojektu: "
+msgid "Name of the new task: "
+msgstr "Název nového úkolu: "
 
-msgid "Sub-project '{sub_name}' added to '{main_name}'."
-msgstr "Podprojekt '{sub_name}' byl přidán do '{main_name}'."
+msgid "Task '{sub_name}' added to '{main_name}'."
+msgstr "Úkol '{sub_name}' byl přidán do '{main_name}'."
 
-msgid "\n--- List Sub-Projects ---"
-msgstr "\n--- Seznam podprojektů ---"
+msgid "\n--- List Tasks ---"
+msgstr "\n--- Seznam úkolů ---"
 
-msgid "No main projects found. Cannot list sub-projects."
-msgstr "Nebyly nalezeny žádné hlavní projekty. Nelze vypsat podprojekty."
+msgid "No projects found. Cannot list tasks."
+msgstr "Nebyly nalezeny žádné projekty. Nelze vypsat úkoly."
 
-msgid "Select the main project whose sub-projects you want to list:"
-msgstr "Vyberte hlavní projekt, jehož podprojekty chcete vypsat:"
+msgid "Select the project whose tasks you want to list:"
+msgstr "Vyberte projekt, jehož úkoly chcete vypsat:"
 
-msgid "Sub-projects for '{name}':"
-msgstr "Podprojekty pro '{name}':"
+msgid "Tasks for '{name}':"
+msgstr "Úkoly pro '{name}':"
 
-msgid "No sub-projects found for '{name}'."
-msgstr "Pro '{name}' nebyly nalezeny žádné podprojekty."
+msgid "No tasks found for '{name}'."
+msgstr "Pro '{name}' nebyly nalezeny žádné úkoly."
 
-msgid "\n--- Rename Sub-Project ---"
-msgstr "\n--- Přejmenovat podprojekt ---"
+msgid "\n--- Rename Task ---"
+msgstr "\n--- Přejmenovat úkol ---"
 
-msgid "Select the main project:"
-msgstr "Vyberte hlavní projekt:"
+msgid "Select the project:"
+msgstr "Vyberte projekt:"
 
-msgid "No sub-projects to rename for '{name}'."
-msgstr "Žádné podprojekty k přejmenování pro '{name}'."
+msgid "No tasks to rename for '{name}'."
+msgstr "Žádné úkoly k přejmenování pro '{name}'."
 
-msgid "Select a sub-project from '{name}' to rename:"
-msgstr "Vyberte podprojekt z '{name}' k přejmenování:"
+msgid "Select a task from '{name}' to rename:"
+msgstr "Vyberte úkol z '{name}' k přejmenování:"
 
-msgid "Enter the number of the sub-project: "
-msgstr "Zadejte číslo podprojektu: "
+msgid "Enter the number of the task: "
+msgstr "Zadejte číslo úkolu: "
 
-msgid "Sub-project '{old_name}' renamed to '{new_name}'."
-msgstr "Podprojekt '{old_name}' byl přejmenován na '{new_name}'."
+msgid "Task '{old_name}' renamed to '{new_name}'."
+msgstr "Úkol '{old_name}' byl přejmenován na '{new_name}'."
 
 msgid ""
 "Error: Could not rename. The new name might already exist or the project "
@@ -336,104 +336,104 @@ msgstr ""
 "Chyba: Nelze přejmenovat. Nový název již možná existuje nebo projekt nebyl "
 "nalezen."
 
-msgid "\n--- Delete Sub-Project ---"
-msgstr "\n--- Smazat podprojekt ---"
+msgid "\n--- Delete Task ---"
+msgstr "\n--- Smazat úkol ---"
 
-msgid "No sub-projects to delete for '{name}'."
-msgstr "Žádné podprojekty ke smazání pro '{name}'."
+msgid "No tasks to delete for '{name}'."
+msgstr "Žádné úkoly ke smazání pro '{name}'."
 
-msgid "Select a sub-project from '{name}' to delete:"
-msgstr "Vyberte podprojekt z '{name}' ke smazání:"
+msgid "Select a task from '{name}' to delete:"
+msgstr "Vyberte úkol z '{name}' ke smazání:"
 
-msgid "Sub-project '{sub_name}' deleted from '{main_name}'."
-msgstr "Podprojekt '{sub_name}' byl smazán z '{main_name}'."
+msgid "Task '{sub_name}' deleted from '{main_name}'."
+msgstr "Úkol '{sub_name}' byl smazán z '{main_name}'."
 
-msgid "\n--- List All Closed Sub-Projects ---"
-msgstr "\n--- Seznam všech uzavřených podprojektů ---"
+msgid "\n--- List All Closed Tasks ---"
+msgstr "\n--- Seznam všech uzavřených úkolů ---"
 
-msgid "No closed sub-projects found."
-msgstr "Nebyly nalezeny žádné uzavřené podprojekty."
+msgid "No closed tasks found."
+msgstr "Nebyly nalezeny žádné uzavřené úkoly."
 
-msgid "Error: Main project or sub-project not found."
-msgstr "Chyba: Hlavní projekt nebo podprojekt nebyl nalezen."
+msgid "Error: Project or task not found."
+msgstr "Chyba: Projekt nebo úkol nebyl nalezen."
 
-msgid "\n--- List Inactive Sub-Projects ---"
-msgstr "\n--- Seznam neaktivních podprojektů ---"
+msgid "\n--- List Inactive Tasks ---"
+msgstr "\n--- Seznam neaktivních úkolů ---"
 
 msgid "Enter the number of weeks without activity (e.g., 4): "
 msgstr "Zadejte počet týdnů bez aktivity (např. 4): "
 
-msgid "\nInactive Sub-Projects (>{weeks} weeks):"
-msgstr "\nNeaktivní podprojekty (>{weeks} týdnů):"
+msgid "\nInactive Tasks (>{weeks} weeks):"
+msgstr "\nNeaktivní úkoly (>{weeks} týdnů):"
 
-msgid "    Sub-Project: {name}"
-msgstr "    Podprojekt: {name}"
+msgid "    Task: {name}"
+msgstr "    Úkol: {name}"
 
-msgid "No sub-projects found inactive for more than {weeks} week."
-msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
-msgstr[0] "Nebyl nalezen žádný podprojekt neaktivní déle než {weeks} týden."
-msgstr[1] "Nebyly nalezeny žádné podprojekty neaktivní déle než {weeks} týdny."
-msgstr[2] "Nebyly nalezeny žádné podprojekty neaktivní déle než {weeks} týdnů."
+msgid "No tasks found inactive for more than {weeks} week."
+msgid_plural "No tasks found inactive for more than {weeks} weeks."
+msgstr[0] "Nebyl nalezen žádný úkol neaktivní déle než {weeks} týden."
+msgstr[1] "Nebyly nalezeny žádné úkoly neaktivní déle než {weeks} týdny."
+msgstr[2] "Nebyly nalezeny žádné úkoly neaktivní déle než {weeks} týdnů."
 
-msgid "\n--- Move Sub-Project ---"
-msgstr "\n--- Přesunout podprojekt ---"
+msgid "\n--- Move Task ---"
+msgstr "\n--- Přesunout úkol ---"
 
-msgid "You need at least two main projects to move a sub-project."
-msgstr "K přesunutí podprojektu potřebujete alespoň dva hlavní projekty."
+msgid "You need at least two projects to move a task."
+msgstr "K přesunutí úkolu potřebujete alespoň dva projekty."
 
-msgid "Select the source main project:"
-msgstr "Vyberte zdrojový hlavní projekt:"
+msgid "Select the source project:"
+msgstr "Vyberte zdrojový projekt:"
 
-msgid "Enter the number of the source main project: "
-msgstr "Zadejte číslo zdrojového hlavního projektu: "
+msgid "Enter the number of the source project: "
+msgstr "Zadejte číslo zdrojového projektu: "
 
-msgid "No sub-projects to move from '{name}'."
-msgstr "Žádné podprojekty k přesunutí z '{name}'."
+msgid "No tasks to move from '{name}'."
+msgstr "Žádné úkoly k přesunutí z '{name}'."
 
-msgid "\nSelect a sub-project from '{name}' to move:"
-msgstr "\nVyberte podprojekt z '{name}' k přesunutí:"
+msgid "\nSelect a task from '{name}' to move:"
+msgstr "\nVyberte úkol z '{name}' k přesunutí:"
 
-msgid "\nSelect the destination main project:"
-msgstr "\nVyberte cílový hlavní projekt:"
+msgid "\nSelect the destination project:"
+msgstr "\nVyberte cílový projekt:"
 
-msgid "Enter the number of the destination main project: "
-msgstr "Zadejte číslo cílového hlavního projektu: "
+msgid "Enter the number of the destination project: "
+msgstr "Zadejte číslo cílového projektu: "
 
 msgid ""
 "Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'."
 msgstr ""
-"Podprojekt '{sub_name}' byl úspěšně přesunut z '{source_name}' do "
+"Úkol '{sub_name}' byl úspěšně přesunut z '{source_name}' do "
 "'{dest_name}'."
 
 msgid "Error: {message}"
 msgstr "Chyba: {message}"
 
-msgid "\n--- Promote Sub-Project to Main-Project ---"
-msgstr "\n--- Povýšit podprojekt na hlavní projekt ---"
+msgid "\n--- Promote Task to Project ---"
+msgstr "\n--- Povýšit úkol na projekt ---"
 
-msgid "Select the main project containing the sub-project to promote:"
-msgstr "Vyberte hlavní projekt obsahující podprojekt k povýšení:"
+msgid "Select the project containing the task to promote:"
+msgstr "Vyberte projekt obsahující úkol k povýšení:"
 
-msgid "No sub-projects to promote in '{name}'."
-msgstr "Žádné podprojekty k povýšení v '{name}'."
+msgid "No tasks to promote in '{name}'."
+msgstr "Žádné úkoly k povýšení v '{name}'."
 
-msgid "\nSelect a sub-project from '{name}' to promote:"
-msgstr "\nVyberte podprojekt z '{name}' k povýšení:"
+msgid "\nSelect a task from '{name}' to promote:"
+msgstr "\nVyberte úkol z '{name}' k povýšení:"
 
-msgid "\n--- Demote Main-Project to Sub-Project ---"
-msgstr "\n--- Degradovat hlavní projekt na podprojekt ---"
+msgid "\n--- Demote Project to Task ---"
+msgstr "\n--- Degradovat projekt na úkol ---"
 
-msgid "You need at least two main projects for this operation."
-msgstr "Pro tuto operaci potřebujete alespoň dva hlavní projekty."
+msgid "You need at least two projects for this operation."
+msgstr "Pro tuto operaci potřebujete alespoň dva projekty."
 
-msgid "Select the main project to demote:"
-msgstr "Vyberte hlavní projekt k degradaci:"
+msgid "Select the project to demote:"
+msgstr "Vyberte projekt k degradaci:"
 
 msgid "Enter the number of the project to demote: "
 msgstr "Zadejte číslo projektu k degradaci: "
 
-msgid "\nSelect the new parent main project:"
-msgstr "\nVyberte nový nadřazený hlavní projekt:"
+msgid "\nSelect the new parent project:"
+msgstr "\nVyberte nový nadřazený projekt:"
 
 msgid "Enter the number of the new parent project: "
 msgstr "Zadejte číslo nového nadřazeného projektu: "
@@ -450,11 +450,11 @@ msgstr "2. Denní zpráva (konkrétní den)"
 msgid "3. Date Range Report"
 msgstr "3. Zpráva za období"
 
-msgid "4. Detailed Sub-Project Report"
-msgstr "4. Podrobná zpráva o podprojektu"
+msgid "4. Detailed Task Report"
+msgstr "4. Podrobná zpráva o úkolu"
 
-msgid "5. Detailed Main-Project Report"
-msgstr "5. Podrobná zpráva o hlavním projektu"
+msgid "5. Detailed Project Report"
+msgstr "5. Podrobná zpráva o projektu"
 
 msgid "\n--- Generate Daily Report (Today) ---"
 msgstr "\n--- Generovat denní zprávu (dnes) ---"
@@ -480,20 +480,17 @@ msgstr "Zadejte koncové datum (RRRR-MM-DD): "
 msgid "Error: The start date cannot be after the end date."
 msgstr "Chyba: Počáteční datum nemůže být po koncovém datu."
 
-msgid "\n--- Detailed Sub-Project Report ---"
-msgstr "\n--- Podrobná zpráva o podprojektu ---"
+msgid "\n--- Detailed Task Report ---"
+msgstr "\n--- Podrobná zpráva o úkolu ---"
 
-msgid "No projects found."
-msgstr "Nebyly nalezeny žádné projekty."
+msgid "\nSelect the task for the report:"
+msgstr "\nVyberte úkol pro zprávu:"
 
-msgid "\nSelect the sub-project for the report:"
-msgstr "\nVyberte podprojekt pro zprávu:"
+msgid "\n--- Detailed Project Report ---"
+msgstr "\n--- Podrobná zpráva o projektu ---"
 
-msgid "\n--- Detailed Main-Project Report ---"
-msgstr "\n--- Podrobná zpráva o hlavním projektu ---"
-
-msgid "Select the main project for the report:"
-msgstr "Vyberte hlavní projekt pro zprávu:"
+msgid "Select the project for the report:"
+msgstr "Vyberte projekt pro zprávu:"
 
 msgid "Invalid choice. Please enter a number from 0 to 5."
 msgstr "Neplatná volba. Zadejte prosím číslo od 0 do 5."
@@ -582,8 +579,8 @@ msgstr "=== Time Control {version} ==="
 msgid "--- Main Menu ---"
 msgstr "--- Hlavní menu ---"
 
-msgid "1. Start work on sub-project"
-msgstr "1. Začít práci na podprojektu"
+msgid "1. Start work on task"
+msgstr "1. Začít práci na úkolu"
 
 msgid "2. Show current work"
 msgstr "2. Zobrazit aktuální práci"
@@ -591,8 +588,8 @@ msgstr "2. Zobrazit aktuální práci"
 msgid "3. Stop current work"
 msgstr "3. Zastavit aktuální práci"
 
-msgid "4. Handle projects and sub-projects"
-msgstr "4. Spravovat projekty a podprojekty"
+msgid "4. Handle projects and tasks"
+msgstr "4. Spravovat projekty a úkoly"
 
 msgid "5. Reporting"
 msgstr "5. Reportování"
@@ -603,8 +600,8 @@ msgstr "6. Nastavení"
 msgid "0. Exit"
 msgstr "0. Konec"
 
-msgid "\n--- Start Work on a Sub-Project ---"
-msgstr "\n--- Začít práci na podprojektu ---"
+msgid "\n--- Start Work on a Task ---"
+msgstr "\n--- Začít práci na úkolu ---"
 
 msgid "Work started on '{sub_name}' in project '{main_name}'."
 msgstr "Práce na '{sub_name}' v projektu '{main_name}' byla zahájena."
@@ -618,11 +615,11 @@ msgstr "\n--- Aktuální aktivní práce ---"
 msgid "You are currently working on:"
 msgstr "Právě pracujete na:"
 
-msgid "  Main Project: {name}"
-msgstr "  Hlavní projekt: {name}"
+msgid "  Project: {name}"
+msgstr "  Projekt: {name}"
 
-msgid "  Sub-Project:  {name}"
-msgstr "  Podprojekt:   {name}"
+msgid "  Task:  {name}"
+msgstr "  Úkol:   {name}"
 
 msgid "  Started at:   {date}"
 msgstr "  Zahájeno v:   {date}"
@@ -687,36 +684,6 @@ msgstr "Aktualizace byla úspěšně nainstalována."
 msgid "Error during update installation: {error}"
 msgstr "Chyba během instalace aktualizace: {error}"
 
-msgid "Creating backup of current version before update..."
-msgstr "Vytvářím zálohu aktuální verze před aktualizací..."
-
-msgid "Backup created successfully as {filename}."
-msgstr "Záloha byla úspěšně vytvořena jako {filename}."
-
-msgid "Warning: Could not create backup. Error: {error}"
-msgstr "Varování: Nepodařilo se vytvořit zálohu. Chyba: {error}"
-
-msgid "Error: No previous version backup '{filename}' found."
-msgstr "Chyba: Nebyla nalezena žádná záloha předchozí verze '{filename}'."
-
-msgid "Restoring previous version from '{filename}'..."
-msgstr "Obnovuji předchozí verzi ze souboru '{filename}'..."
-
-msgid "Skipping user data file: {filename}. It will not be overwritten during restore."
-msgstr "Přeskakuji soubor s uživatelskými daty: {filename}. Během obnovy nebude přepsán."
-
-msgid "Previous version restored successfully."
-msgstr "Předchozí verze byla úspěšně obnovena."
-
-msgid "Restarting application to apply changes..."
-msgstr "Restartuji aplikaci pro aplikaci změn..."
-
-msgid "Error during restoration: {error}"
-msgstr "Chyba během obnovy: {error}"
-
-msgid "The backup file '{filename}' was not deleted."
-msgstr "Záložní soubor '{filename}' nebyl smazán."
-
 msgid "# Detailed Daily Report: {date}"
 msgstr "# Podrobná denní zpráva: {date}"
 
@@ -726,11 +693,11 @@ msgstr "nyní"
 msgid "\nNo time tracked for {date}."
 msgstr "\nPro den {date} nebyl zaznamenán žádný čas."
 
-msgid "# Detailed Report for Sub-Project: {name}"
-msgstr "# Podrobná zpráva o podprojektu: {name}"
+msgid "# Detailed Report for Task: {name}"
+msgstr "# Podrobná zpráva o úkolu: {name}"
 
-msgid "Part of Main Project: {name}"
-msgstr "Součást hlavního projektu: {name}"
+msgid "Part of Project: {name}"
+msgstr "Součást projektu: {name}"
 
 msgid "Active (currently running)"
 msgstr "Aktivní (právě běží)"
@@ -786,17 +753,17 @@ msgstr "Denní rozpis"
 msgid "Duration"
 msgstr "Trvání"
 
-msgid "# Detailed Report for Main Project: {name}"
-msgstr "# Podrobná zpráva o hlavním projektu: {name}"
+msgid "# Detailed Report for Project: {name}"
+msgstr "# Podrobná zpráva o projektu: {name}"
 
-msgid "Number of sub-projects"
-msgstr "Počet podprojektů"
+msgid "Number of tasks"
+msgstr "Počet úkolů"
 
 msgid "Active (working on '{sub_name}')"
 msgstr "Aktivní (práce na '{sub_name}')"
 
-msgid "Sub-Project Breakdown"
-msgstr "Rozpis podprojektů"
+msgid "Task Breakdown"
+msgstr "Rozpis úkolů"
 
 msgid "{num_sessions} sessions"
 msgstr "{num_sessions} relací"
@@ -810,15 +777,6 @@ msgstr "\n--- Podrobná denní zpráva ---"
 msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
 msgstr "Zadejte datum (RRRR-MM-DD) nebo stiskněte Enter pro dnešek: "
 
-msgid "Start work on sub-project"
-msgstr "Začít práci na podprojektu"
-
-msgid "Show current work"
-msgstr "Zobrazit aktuální práci"
-
-msgid "Stop current work"
-msgstr "Zastavit aktuální práci"
-
 msgid "Project Management"
 msgstr "Správa projektů"
 
@@ -828,71 +786,59 @@ msgstr "Reportování"
 msgid "Settings"
 msgstr "Nastavení"
 
-msgid "Main Project Management"
-msgstr "Správa hlavních projektů"
+msgid "Task Management"
+msgstr "Správa úkolů"
 
-msgid "Sub-Project Management"
-msgstr "Správa podprojektů"
+msgid "List Projects"
+msgstr "Vypsat projekty"
 
-msgid "Add Main Project"
-msgstr "Přidat hlavní projekt"
+msgid "Rename Project"
+msgstr "Přejmenovat projekt"
 
-msgid "List Main Projects"
-msgstr "Vypsat hlavní projekty"
+msgid "Re-open Project"
+msgstr "Znovu otevřít projekt"
 
-msgid "Rename Main Project"
-msgstr "Přejmenovat hlavní projekt"
+msgid "Delete Project"
+msgstr "Smazat projekt"
 
-msgid "Close Main Project"
-msgstr "Uzavřít hlavní projekt"
+msgid "Demote Project to Task"
+msgstr "Degradovat projekt na úkol"
 
-msgid "Re-open Main Project"
-msgstr "Znovu otevřít hlavní projekt"
+msgid "List Completed Projects"
+msgstr "Vypsat dokončené projekty"
 
-msgid "Delete Main Project"
-msgstr "Smazat hlavní projekt"
+msgid "Add Task"
+msgstr "Přidat úkol"
 
-msgid "List Inactive Main Projects"
-msgstr "Vypsat neaktivní hlavní projekty"
+msgid "List Tasks"
+msgstr "Vypsat úkoly"
 
-msgid "Demote Main-Project to Sub-Project"
-msgstr "Degradovat hlavní projekt na podprojekt"
+msgid "Rename Task"
+msgstr "Přejmenovat úkol"
 
-msgid "List Completed Main Projects"
-msgstr "Vypsat dokončené hlavní projekty"
+msgid "Close Task"
+msgstr "Uzavřít úkol"
 
-msgid "Add Sub-Project"
-msgstr "Přidat podprojekt"
+msgid "Re-open Task"
+msgstr "Znovu otevřít úkol"
 
-msgid "List Sub-Projects"
-msgstr "Vypsat podprojekty"
+msgid "Delete Task"
+msgstr "Smazat úkol"
 
-msgid "Rename Sub-Project"
-msgstr "Přejmenovat podprojekt"
+msgid "Move Task"
+msgstr "Přesunout úkol"
 
-msgid "Close Sub-Project"
-msgstr "Uzavřít podprojekt"
+msgid "List Inactive Tasks"
+msgstr "Vypsat neaktivní úkoly"
 
-msgid "Re-open Sub-Project"
-msgstr "Znovu otevřít podprojekt"
+msgid "List All Closed Tasks"
+msgstr "Vypsat všechny uzavřené úkoly"
 
-msgid "Delete Sub-Project"
-msgstr "Smazat podprojekt"
+msgid "Delete All Closed Tasks"
+msgstr "Smazat všechny uzavřené úkoly"
 
-msgid "Move Sub-Project"
-msgstr "Přesunout podprojekt"
-
-msgid "List Inactive Sub-Projects"
-msgstr "Vypsat neaktivní podprojekty"
-
-msgid "List All Closed Sub-Projects"
-msgstr "Vypsat všechny uzavřené podprojekty"
-
-msgid "Delete All Closed Sub-Projects"
-msgstr "Smazat všechny uzavřené podprojekty"
-
-msgid "Promote Sub-Project to Main-Project"
-msgstr "Povýšit podprojekt na hlavní projekt"
+msgid "Promote Task to Project"
+msgstr "Povýšit úkol na projekt"
 
 msgid "Daily Report (Today)"
 msgstr "Denní zpráva (dnes)"
@@ -903,32 +849,17 @@ msgstr "Denní zpráva (konkrétní den)"
 msgid "Date Range Report"
 msgstr "Zpráva za období"
 
-msgid "Detailed Sub-Project Report"
-msgstr "Podrobná zpráva o podprojektu"
+msgid "Detailed Task Report"
+msgstr "Podrobná zpráva o úkolu"
 
-msgid "Detailed Main-Project Report"
-msgstr "Podrobná zpráva o hlavním projektu"
+msgid "Detailed Project Report"
+msgstr "Podrobná zpráva o projektu"
 
-msgid "Detailed Daily Report"
-msgstr "Podrobná denní zpráva"
+msgid "Select Project"
+msgstr "Vybrat projekt"
 
-msgid "Change Language"
-msgstr "Změnit jazyk"
-
-msgid "Restore Previous Version"
-msgstr "Obnovit předchozí verzi"
-
-msgid "Change Data Storage Location"
-msgstr "Změnit umístění úložiště dat"
-
-msgid "Select Action"
-msgstr "Vybrat akci"
-
-msgid "Select Main Project"
-msgstr "Vybrat hlavní projekt"
-
-msgid "Select Sub-Project"
-msgstr "Vybrat podprojekt"
+msgid "Select Task"
+msgstr "Vybrat úkol"
 
 msgid "Back to Main Menu"
 msgstr "Zpět do hlavního menu"
@@ -959,12 +890,6 @@ msgstr "Přidat projekt"
 
 msgid "Close Project"
 msgstr "Zavřít projekt"
-
-msgid "Re-open Project"
-msgstr "Znovu otevřít projekt"
-
-msgid "Delete Project"
-msgstr "Smazat projekt"
 
 msgid "Demote Project"
 msgstr "Degradovat projekt"

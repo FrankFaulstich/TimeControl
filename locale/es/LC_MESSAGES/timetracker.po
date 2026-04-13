@@ -1266,71 +1266,68 @@ msgstr "Informes"
 msgid "Settings"
 msgstr "Configuración"
 
-msgid "Main Project Management"
-msgstr "Gestión de Proyectos Principales"
+msgid "Task Management"
+msgstr "Gestión de Tareas"
 
-msgid "Sub-Project Management"
-msgstr "Gestión de Subproyectos"
+msgid "Add Project"
+msgstr "Añadir Proyecto"
 
-msgid "Add Main Project"
-msgstr "Añadir Proyecto Principal"
+msgid "List Projects"
+msgstr "Listar Proyectos"
 
-msgid "List Main Projects"
-msgstr "Listar Proyectos Principales"
+msgid "Rename Project"
+msgstr "Renombrar Proyecto"
 
-msgid "Rename Main Project"
-msgstr "Renombrar Proyecto Principal"
+msgid "Close Project"
+msgstr "Cerrar Proyecto"
 
-msgid "Close Main Project"
-msgstr "Cerrar Proyecto Principal"
+msgid "Re-open Project"
+msgstr "Reabrir Proyecto"
 
-msgid "Re-open Main Project"
-msgstr "Reabrir Proyecto Principal"
+msgid "Delete Project"
+msgstr "Eliminar Proyecto"
 
-msgid "Delete Main Project"
-msgstr "Eliminar Proyecto Principal"
+msgid "List Inactive Projects"
+msgstr "Listar Proyectos Inactivos"
 
-msgid "List Inactive Main Projects"
-msgstr "Listar Proyectos Principales Inactivos"
+msgid "Demote Project to Task"
+msgstr "Degradar Proyecto a Tarea"
 
-msgid "Demote Main-Project to Sub-Project"
-msgstr "Degradar Proyecto Principal a Subproyecto"
+msgid "List Completed Projects"
+msgstr "Listar Proyectos Completados"
 
-msgid "List Completed Main Projects"
-msgstr "Listar Proyectos Principales Completados"
+msgid "Add Task"
+msgstr "Añadir Tarea"
 
-msgid "Add Sub-Project"
-msgstr "Añadir Subproyecto"
+msgid "List Tasks"
+msgstr "Listar Tareas"
 
-msgid "List Sub-Projects"
-msgstr "Listar Subproyectos"
+msgid "Rename Task"
+msgstr "Renombrar Tarea"
 
-msgid "Rename Sub-Project"
-msgstr "Renombrar Subproyecto"
+msgid "Close Task"
+msgstr "Cerrar Tarea"
 
-msgid "Close Sub-Project"
-msgstr "Cerrar Subproyecto"
+msgid "Re-open Task"
+msgstr "Reabrir Tarea"
 
-msgid "Re-open Sub-Project"
-msgstr "Reabrir Subproyecto"
+msgid "Delete Task"
+msgstr "Eliminar Tarea"
 
-msgid "Delete Sub-Project"
-msgstr "Eliminar Subproyecto"
+msgid "Move Task"
+msgstr "Mover Tarea"
 
-msgid "Move Sub-Project"
-msgstr "Mover Subproyecto"
+msgid "List Inactive Tasks"
+msgstr "Listar Tareas Inactivas"
 
-msgid "List Inactive Sub-Projects"
-msgstr "Listar Subproyectos Inactivos"
+msgid "List All Closed Tasks"
+msgstr "Listar Todas las Tareas Cerradas"
 
-msgid "List All Closed Sub-Projects"
-msgstr "Listar Todos los Subproyectos Cerrados"
+msgid "Delete All Closed Tasks"
+msgstr "Eliminar Todas las Tareas Cerradas"
 
-msgid "Delete All Closed Sub-Projects"
-msgstr "Eliminar Todos los Subproyectos Cerrados"
-
-msgid "Promote Sub-Project to Main-Project"
-msgstr "Promover Subproyecto a Proyecto Principal"
+msgid "Promote Task to Project"
+msgstr "Promover Tarea a Proyecto"
 
 msgid "Daily Report (Today)"
 msgstr "Informe Diario (Hoy)"
@@ -1341,11 +1338,11 @@ msgstr "Informe Diario (Día Específico)"
 msgid "Date Range Report"
 msgstr "Informe por Rango de Fechas"
 
-msgid "Detailed Sub-Project Report"
-msgstr "Informe Detallado de Subproyecto"
+msgid "Detailed Task Report"
+msgstr "Informe Detallado de Tarea"
 
-msgid "Detailed Main-Project Report"
-msgstr "Informe Detallado de Proyecto Principal"
+msgid "Detailed Project Report"
+msgstr "Informe Detallado de Proyecto"
 
 msgid "Detailed Daily Report"
 msgstr "Informe Diario Detallado"
@@ -1362,11 +1359,11 @@ msgstr "Cambiar Ubicación de Almacenamiento de Datos"
 msgid "Select Action"
 msgstr "Seleccionar Acción"
 
-msgid "Select Main Project"
-msgstr "Seleccionar Proyecto Principal"
+msgid "Select Project"
+msgstr "Seleccionar Proyecto"
 
-msgid "Select Sub-Project"
-msgstr "Seleccionar Subproyecto"
+msgid "Select Task"
+msgstr "Seleccionar Tarea"
 
 msgid "Back to Main Menu"
 msgstr "Volver al Menú Principal"
