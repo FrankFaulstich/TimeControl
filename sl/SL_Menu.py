@@ -144,7 +144,7 @@ def view_main():
     else:
         st.info(_("No active work session."))
 
-    if st.button(t_label("1. Start work on sub-project"), use_container_width=True):
+    if st.button(t_label("1. Start work on task"), use_container_width=True):
         navigate_to('start_work')
     if st.button(t_label("2. Show current work"), use_container_width=True):
         navigate_to('show_current_work')
@@ -157,7 +157,7 @@ def view_main():
 
     st.divider()
 
-    if st.button(t_label("4. Handle projects and sub-projects"), use_container_width=True):
+    if st.button(t_label("4. Handle projects and tasks"), use_container_width=True):
         navigate_to('project_management')
     if st.button(t_label("5. Reporting"), use_container_width=True):
         navigate_to('reporting')
@@ -175,9 +175,9 @@ def view_project_management():
     """
     render_header(_("Project Management"))
     
-    if st.button(t_label("1. Main Project Management"), use_container_width=True):
+    if st.button(t_label("1. Project Management"), use_container_width=True):
         navigate_to('main_project_mgmt')
-    if st.button(t_label("2. Sub-Project Management"), use_container_width=True):
+    if st.button(t_label("2. Task Management"), use_container_width=True):
         navigate_to('sub_project_mgmt')
     
     st.divider()
@@ -189,17 +189,17 @@ def view_main_project_mgmt():
     """
     Renders the main project management submenu view.
     """
-    render_header(_("Main Project Management"))
+    render_header(_("Project Management"))
     
-    if st.button(t_label("1.  Add Main Project"), use_container_width=True): navigate_to('add_main_project')
-    if st.button(t_label("2.  List Main Projects"), use_container_width=True): navigate_to('list_main_projects')
-    if st.button(t_label("3.  Rename Main Project"), use_container_width=True): navigate_to('rename_main_project')
-    if st.button(t_label("4.  Close Main Project"), use_container_width=True): navigate_to('close_main_project')
-    if st.button(t_label("5.  Re-open Main Project"), use_container_width=True): navigate_to('reopen_main_project')
-    if st.button(t_label("6.  Delete Main Project"), use_container_width=True): navigate_to('delete_main_project')
-    if st.button(t_label("7.  List Inactive Main Projects"), use_container_width=True): navigate_to('list_inactive_main')
-    if st.button(t_label("8.  Demote Main-Project to Sub-Project"), use_container_width=True): navigate_to('demote_main_project')
-    if st.button(t_label("9.  List Completed Main Projects"), use_container_width=True): navigate_to('list_completed_main')
+    if st.button(t_label("1.  Add Project"), use_container_width=True): navigate_to('add_main_project')
+    if st.button(t_label("2.  List Projects"), use_container_width=True): navigate_to('list_main_projects')
+    if st.button(t_label("3.  Rename Project"), use_container_width=True): navigate_to('rename_main_project')
+    if st.button(t_label("4.  Close Project"), use_container_width=True): navigate_to('close_main_project')
+    if st.button(t_label("5.  Re-open Project"), use_container_width=True): navigate_to('reopen_main_project')
+    if st.button(t_label("6.  Delete Project"), use_container_width=True): navigate_to('delete_main_project')
+    if st.button(t_label("7.  List Inactive Projects"), use_container_width=True): navigate_to('list_inactive_main')
+    if st.button(t_label("8.  Demote Project to Task"), use_container_width=True): navigate_to('demote_main_project')
+    if st.button(t_label("9.  List Completed Projects"), use_container_width=True): navigate_to('list_completed_main')
     
     st.divider()
     
@@ -208,21 +208,21 @@ def view_main_project_mgmt():
 
 def view_sub_project_mgmt():
     """
-    Renders the sub-project management submenu view.
+    Renders the task management submenu view.
     """
-    render_header(_("Sub-Project Management"))
+    render_header(_("Task Management"))
     
-    if st.button(t_label("1.  Add Sub-Project"), use_container_width=True): navigate_to('add_sub_project')
-    if st.button(t_label("2.  List Sub-Projects"), use_container_width=True): navigate_to('list_sub_projects')
-    if st.button(t_label("3.  Rename Sub-Project"), use_container_width=True): navigate_to('rename_sub_project')
-    if st.button(t_label("4.  Close Sub-Project"), use_container_width=True): navigate_to('close_sub_project')
-    if st.button(t_label("5.  Re-open Sub-Project"), use_container_width=True): navigate_to('reopen_sub_project')
-    if st.button(t_label("6.  Delete Sub-Project"), use_container_width=True): navigate_to('delete_sub_project')
-    if st.button(t_label("7.  Move Sub-Project"), use_container_width=True): navigate_to('move_sub_project')
-    if st.button(t_label("8.  List Inactive Sub-Projects"), use_container_width=True): navigate_to('list_inactive_sub')
-    if st.button(t_label("9.  List All Closed Sub-Projects"), use_container_width=True): navigate_to('list_closed_sub')
-    if st.button(t_label("10. Delete All Closed Sub-Projects"), use_container_width=True): navigate_to('delete_all_closed_sub')
-    if st.button(t_label("11. Promote Sub-Project to Main-Project"), use_container_width=True): navigate_to('promote_sub_project')
+    if st.button(t_label("1.  Add Task"), use_container_width=True): navigate_to('add_sub_project')
+    if st.button(t_label("2.  List Tasks"), use_container_width=True): navigate_to('list_sub_projects')
+    if st.button(t_label("3.  Rename Task"), use_container_width=True): navigate_to('rename_sub_project')
+    if st.button(t_label("4.  Close Task"), use_container_width=True): navigate_to('close_sub_project')
+    if st.button(t_label("5.  Re-open Task"), use_container_width=True): navigate_to('reopen_sub_project')
+    if st.button(t_label("6.  Delete Task"), use_container_width=True): navigate_to('delete_sub_project')
+    if st.button(t_label("7.  Move Task"), use_container_width=True): navigate_to('move_sub_project')
+    if st.button(t_label("8.  List Inactive Tasks"), use_container_width=True): navigate_to('list_inactive_sub')
+    if st.button(t_label("9.  List All Closed Tasks"), use_container_width=True): navigate_to('list_closed_sub')
+    if st.button(t_label("10. Delete All Closed Tasks"), use_container_width=True): navigate_to('delete_all_closed_sub')
+    if st.button(t_label("11. Promote Task to Project"), use_container_width=True): navigate_to('promote_sub_project')
     
     st.divider()
     
@@ -243,8 +243,8 @@ def view_reporting():
         st.rerun()
     if st.button(t_label("2. Daily Report (Specific Day)"), use_container_width=True): navigate_to('report_specific_day')
     if st.button(t_label("3. Date Range Report"), use_container_width=True): navigate_to('report_date_range')
-    if st.button(t_label("4. Detailed Sub-Project Report"), use_container_width=True): navigate_to('report_detailed_sub')
-    if st.button(t_label("5. Detailed Main-Project Report"), use_container_width=True): navigate_to('report_detailed_main')
+    if st.button(t_label("4. Detailed Task Report"), use_container_width=True): navigate_to('report_detailed_sub')
+    if st.button(t_label("5. Detailed Project Report"), use_container_width=True): navigate_to('report_detailed_main')
     if st.button(t_label("6. Detailed Daily Report"), use_container_width=True): navigate_to('report_detailed_daily')
     
     st.divider()
@@ -276,13 +276,13 @@ def view_add_main_project():
     """
     Renders the form to add a new main project.
     """
-    render_header(_("Add New Main Project"))
+    render_header(_("Add New Project"))
     with st.form("add_main_form"):
-        name = st.text_input(_("Name of the main project"))
+        name = st.text_input(_("Name of the project"))
         submitted = st.form_submit_button(_("Add Project"), use_container_width=True)
         if submitted and name:
             st.session_state.tracker.add_main_project(name)
-            set_feedback(_("Main project '{name}' added.").format(name=name))
+            set_feedback(_("Project '{name}' added.").format(name=name))
             st.session_state.menu = 'main_project_mgmt'
             st.rerun()
     if st.button(_("Cancel"), use_container_width=True):
@@ -290,24 +290,24 @@ def view_add_main_project():
 
 def view_close_sub_project():
     """
-    Renders the form to close a sub-project.
+    Renders the form to close a task.
     """
-    render_header(_("Close Sub-Project"))
+    render_header(_("Close Task"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not main_projects:
-        st.info(_("No open main projects found."))
+        st.info(_("No open projects found."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
 
     main_options = [p['main_project_name'] for p in main_projects]
-    selected_main = st.selectbox(_("Select Main Project"), main_options)
+    selected_main = st.selectbox(_("Select Project"), main_options)
     
     sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
     
     if not sub_projects:
-        st.info(_("No open sub-projects to close in '{name}'.").format(name=selected_main))
+        st.info(_("No open tasks to close in '{name}'.").format(name=selected_main))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
@@ -315,40 +315,40 @@ def view_close_sub_project():
     sub_options = [sp['sub_project_name'] for sp in sub_projects]
 
     with st.form("close_sub_form"):
-        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
-        submitted = st.form_submit_button(_("Close Sub-Project"), use_container_width=True)
+        selected_sub = st.selectbox(_("Select Task"), sub_options)
+        submitted = st.form_submit_button(_("Close Task"), use_container_width=True)
         
         if submitted:
             if st.session_state.tracker.close_sub_project(selected_main, selected_sub):
-                set_feedback(_("Sub-project '{sub_name}' in '{main_name}' has been closed.").format(sub_name=selected_sub, main_name=selected_main))
+                set_feedback(_("Task '{sub_name}' in '{main_name}' has been closed.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('sub_project_mgmt')
                 st.rerun()
             else:
-                st.error(_("Error: Main project or sub-project not found."))
+                st.error(_("Error: Main project or task not found."))
 
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
 def view_reopen_sub_project():
     """
-    Renders the form to re-open a closed sub-project.
+    Renders the form to re-open a closed task.
     """
-    render_header(_("Re-open Sub-Project"))
+    render_header(_("Re-open Task"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not main_projects:
-        st.info(_("No open main projects found."))
+        st.info(_("No open projects found."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
 
     main_options = [p['main_project_name'] for p in main_projects]
-    selected_main = st.selectbox(_("Select Main Project"), main_options)
+    selected_main = st.selectbox(_("Select Project"), main_options)
     
     sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='closed')
     
     if not sub_projects:
-        st.info(_("No closed sub-projects to reopen in '{name}'.").format(name=selected_main))
+        st.info(_("No closed tasks to reopen in '{name}'.").format(name=selected_main))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
@@ -356,40 +356,40 @@ def view_reopen_sub_project():
     sub_options = [sp['sub_project_name'] for sp in sub_projects]
 
     with st.form("reopen_sub_form"):
-        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
-        submitted = st.form_submit_button(_("Re-open Sub-Project"), use_container_width=True)
+        selected_sub = st.selectbox(_("Select Task"), sub_options)
+        submitted = st.form_submit_button(_("Re-open Task"), use_container_width=True)
         
         if submitted:
             if st.session_state.tracker.reopen_sub_project(selected_main, selected_sub):
-                set_feedback(_("Sub-project '{sub_name}' in '{main_name}' has been reopened.").format(sub_name=selected_sub, main_name=selected_main))
+                set_feedback(_("Task '{sub_name}' in '{main_name}' has been reopened.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('sub_project_mgmt')
                 st.rerun()
             else:
-                st.error(_("Error: Main project or sub-project not found."))
+                st.error(_("Error: Main project or task not found."))
 
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
 def view_delete_sub_project():
     """
-    Renders the form to delete a sub-project.
+    Renders the form to delete a task.
     """
-    render_header(_("Delete Sub-Project"))
+    render_header(_("Delete Task"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not main_projects:
-        st.info(_("No open main projects found."))
+        st.info(_("No open projects found."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
 
     main_options = [p['main_project_name'] for p in main_projects]
-    selected_main = st.selectbox(_("Select Main Project"), main_options)
+    selected_main = st.selectbox(_("Select Project"), main_options)
     
     sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
     
     if not sub_projects:
-        st.info(_("No open sub-projects to delete in '{name}'.").format(name=selected_main))
+        st.info(_("No open tasks to delete in '{name}'.").format(name=selected_main))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
@@ -397,41 +397,41 @@ def view_delete_sub_project():
     sub_options = [sp['sub_project_name'] for sp in sub_projects]
 
     with st.form("delete_sub_form"):
-        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
+        selected_sub = st.selectbox(_("Select Task"), sub_options)
         st.warning(_("This action cannot be undone."))
-        submitted = st.form_submit_button(_("Delete Sub-Project"), use_container_width=True)
+        submitted = st.form_submit_button(_("Delete Task"), use_container_width=True)
         
         if submitted:
             if st.session_state.tracker.delete_sub_project(selected_main, selected_sub):
-                set_feedback(_("Sub-project '{sub_name}' deleted from '{main_name}'.").format(sub_name=selected_sub, main_name=selected_main))
+                set_feedback(_("Task '{sub_name}' deleted from '{main_name}'.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('sub_project_mgmt')
                 st.rerun()
             else:
-                st.error(_("Error: Main project or sub-project not found."))
+                st.error(_("Error: Main project or task not found."))
 
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
 def view_move_sub_project():
     """
-    Renders the form to move a sub-project to another main project.
+    Renders the form to move a task to another main project.
     """
-    render_header(_("Move Sub-Project"))
+    render_header(_("Move Task"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not main_projects:
-        st.info(_("No open main projects found."))
+        st.info(_("No open projects found."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
 
     main_options = [p['main_project_name'] for p in main_projects]
-    source_main = st.selectbox(_("Select Source Main Project"), main_options)
+    source_main = st.selectbox(_("Select Source Project"), main_options)
     
     sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=source_main, status_filter='all')
     
     if not sub_projects:
-        st.info(_("No sub-projects found in '{name}'.").format(name=source_main))
+        st.info(_("No tasks found in '{name}'.").format(name=source_main))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
@@ -440,54 +440,54 @@ def view_move_sub_project():
     target_options = [p for p in main_options if p != source_main]
     
     if not target_options:
-        st.warning(_("No other main projects available to move to."))
+        st.warning(_("No other projects available to move to."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
 
     with st.form("move_sub_form"):
-        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
-        target_main = st.selectbox(_("Select Target Main Project"), target_options)
+        selected_sub = st.selectbox(_("Select Task"), sub_options)
+        target_main = st.selectbox(_("Select Target Project"), target_options)
         
-        submitted = st.form_submit_button(_("Move Sub-Project"), use_container_width=True)
+        submitted = st.form_submit_button(_("Move Task"), use_container_width=True)
         
         if submitted:
             if st.session_state.tracker.move_sub_project(source_main, selected_sub, target_main):
-                set_feedback(_("Sub-project '{sub}' moved from '{src}' to '{dst}'.").format(sub=selected_sub, src=source_main, dst=target_main))
+                set_feedback(_("Task '{sub}' moved from '{src}' to '{dst}'.").format(sub=selected_sub, src=source_main, dst=target_main))
                 navigate_to('sub_project_mgmt')
                 st.rerun()
             else:
-                st.error(_("Error: Could not move sub-project."))
+                st.error(_("Error: Could not move task."))
 
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
 def view_list_inactive_sub_projects():
     """
-    Renders the view to list inactive sub-projects based on a configurable threshold.
+    Renders the view to list inactive tasks based on a configurable threshold.
     """
-    render_header(_("List Inactive Sub-Projects"))
+    render_header(_("List Inactive Tasks"))
     
     weeks = st.number_input(_("Weeks of inactivity"), min_value=1, value=4, step=1)
     
     inactive_list = st.session_state.tracker.list_inactive_sub_projects(weeks)
     
     if inactive_list:
-        st.markdown(_("Inactive Sub-Projects (> {weeks} weeks):").format(weeks=weeks))
+        st.markdown(_("Inactive Tasks (> {weeks} weeks):").format(weeks=weeks))
         for item in inactive_list:
             st.markdown(f"- **{item['main_project']}** / {item['sub_project']}")
             st.caption(f"{_('Last Activity')}: {item['last_activity']}")
     else:
-        st.info(_("No sub-projects found inactive for more than {weeks} weeks.").format(weeks=weeks))
+        st.info(_("No tasks found inactive for more than {weeks} weeks.").format(weeks=weeks))
         
     if st.button(_("Back"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
 def view_list_closed_sub_projects():
     """
-    Renders the view listing all closed sub-projects.
+    Renders the view listing all closed tasks.
     """
-    render_header(_("List All Closed Sub-Projects"))
+    render_header(_("List All Closed Tasks"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
     found_any = False
@@ -503,16 +503,16 @@ def view_list_closed_sub_projects():
                     st.markdown(f"- {sp['sub_project_name']}")
     
     if not found_any:
-        st.info(_("No closed sub-projects found."))
+        st.info(_("No closed tasks found."))
         
     if st.button(_("Back"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
 def view_delete_all_closed_sub_projects():
     """
-    Renders the view to delete all closed sub-projects at once.
+    Renders the view to delete all closed tasks at once.
     """
-    render_header(_("Delete All Closed Sub-Projects"))
+    render_header(_("Delete All Closed Tasks"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
     to_delete = []
@@ -526,12 +526,12 @@ def view_delete_all_closed_sub_projects():
                     to_delete.append((mp_name, sp['sub_project_name']))
     
     if not to_delete:
-        st.info(_("No closed sub-projects found."))
+        st.info(_("No closed tasks found."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
 
-    st.warning(_("Are you sure you want to delete {count} closed sub-projects? This action cannot be undone.").format(count=len(to_delete)))
+    st.warning(_("Are you sure you want to delete {count} closed tasks? This action cannot be undone.").format(count=len(to_delete)))
     
     with st.expander(_("Show projects to delete")):
         for mp, sp in to_delete:
@@ -543,7 +543,7 @@ def view_delete_all_closed_sub_projects():
             if st.session_state.tracker.delete_sub_project(mp, sp):
                 deleted_count += 1
         
-        set_feedback(_("Successfully deleted {count} sub-projects.").format(count=deleted_count))
+        set_feedback(_("Successfully deleted {count} tasks.").format(count=deleted_count))
         navigate_to('sub_project_mgmt')
         st.rerun()
         
@@ -552,24 +552,24 @@ def view_delete_all_closed_sub_projects():
 
 def view_promote_sub_project():
     """
-    Renders the form to promote a sub-project to a main project.
+    Renders the form to promote a task to a project.
     """
-    render_header(_("Promote Sub-Project to Main-Project"))
+    render_header(_("Promote Task to Project"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not main_projects:
-        st.info(_("No open main projects found."))
+        st.info(_("No open projects found."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
 
     main_options = [p['main_project_name'] for p in main_projects]
-    selected_main = st.selectbox(_("Select Main Project"), main_options)
+    selected_main = st.selectbox(_("Select Project"), main_options)
     
     sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
     
     if not sub_projects:
-        st.info(_("No open sub-projects to promote in '{name}'.").format(name=selected_main))
+        st.info(_("No open tasks to promote in '{name}'.").format(name=selected_main))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
@@ -577,10 +577,10 @@ def view_promote_sub_project():
     sub_options = [sp['sub_project_name'] for sp in sub_projects]
 
     with st.form("promote_sub_form"):
-        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
-        st.info(_("This will create a new Main Project with the sub-project's name and move all time entries to a 'General' sub-project within it."))
+        selected_sub = st.selectbox(_("Select Task"), sub_options)
+        st.info(_("This will create a new Project with the task's name and move all time entries to a 'General' task within it."))
         
-        submitted = st.form_submit_button(_("Promote to Main Project"), use_container_width=True)
+        submitted = st.form_submit_button(_("Promote to Project"), use_container_width=True)
         
         if submitted:
             success, message = st.session_state.tracker.promote_sub_project(selected_main, selected_sub)
@@ -598,32 +598,32 @@ def view_list_main_projects():
     """
     Renders the list of all main projects.
     """
-    render_header(_("List Main Projects"))
+    render_header(_("List Projects"))
     projects = st.session_state.tracker.list_main_projects(status_filter='all')
     if projects:
         for p in projects:
             status = f"({_('closed')})" if p['status'] == 'closed' else ""
             st.markdown(f"- **{p['main_project_name']}** {status}")
     else:
-        st.info(_("No main projects found."))
+        st.info(_("No projects found."))
     if st.button(_("Back"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
 def view_rename_main_project():
     """
-    Renders the form to rename a main project.
+    Renders the form to rename a project.
     """
-    render_header(_("Rename Main Project"))
+    render_header(_("Rename Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     
     if not projects:
-        st.info(_("No open main projects to rename."))
+        st.info(_("No open projects to rename."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('main_project_mgmt')
         return
 
     options = [p['main_project_name'] for p in projects]
-    selected_project = st.selectbox(_("Select Main Project"), options)
+    selected_project = st.selectbox(_("Select Project"), options)
     
     with st.form("rename_main_form"):
         new_name = st.text_input(_("New Name"), value=selected_project)
@@ -635,7 +635,7 @@ def view_rename_main_project():
             elif new_name == selected_project:
                 st.warning(_("New name is the same as the old name."))
             elif st.session_state.tracker.rename_main_project(selected_project, new_name):
-                set_feedback(_("Main project '{old_name}' successfully renamed to '{new_name}'.").format(old_name=selected_project, new_name=new_name))
+                set_feedback(_("Project '{old_name}' successfully renamed to '{new_name}'.").format(old_name=selected_project, new_name=new_name))
                 navigate_to('main_project_mgmt')
                 st.rerun()
             else:
@@ -646,60 +646,60 @@ def view_rename_main_project():
 
 def view_list_sub_projects():
     """
-    Renders the list of sub-projects for a selected main project.
+    Renders the list of tasks for a selected main project.
     """
-    render_header(_("List Sub-Projects"))
+    render_header(_("List Tasks"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
     if not main_projects:
-        st.info(_("No main projects found."))
+        st.info(_("No projects found."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
 
     options = [p['main_project_name'] for p in main_projects]
-    selected_main = st.selectbox(_("Select Main Project"), options)
+    selected_main = st.selectbox(_("Select Project"), options)
     
     sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='all')
     
     if sub_projects:
-        st.markdown(_("Sub-projects for '{name}':").format(name=selected_main))
+        st.markdown(_("Tasks for '{name}':").format(name=selected_main))
         for sp in sub_projects:
             name = sp['sub_project_name']
             status = f"({_('closed')})" if sp['status'] == 'closed' else ""
             st.markdown(f"- {name} {status}")
     else:
-        st.info(_("No sub-projects found for '{name}'.").format(name=selected_main))
+        st.info(_("No tasks found for '{name}'.").format(name=selected_main))
         
     if st.button(_("Back"), use_container_width=True):
         navigate_to('sub_project_mgmt')
 
 def view_rename_sub_project():
     """
-    Renders the form to rename a sub-project.
+    Renders the form to rename a task.
     """
-    render_header(_("Rename Sub-Project"))
+    render_header(_("Rename Task"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not main_projects:
-        st.info(_("No open main projects found."))
+        st.info(_("No open projects found."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
 
     main_options = [p['main_project_name'] for p in main_projects]
-    selected_main = st.selectbox(_("Select Main Project"), main_options)
+    selected_main = st.selectbox(_("Select Project"), main_options)
     
     sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
     
     if not sub_projects:
-        st.info(_("No open sub-projects to rename in '{name}'.").format(name=selected_main))
+        st.info(_("No open tasks to rename in '{name}'.").format(name=selected_main))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('sub_project_mgmt')
         return
 
     sub_options = [sp['sub_project_name'] for sp in sub_projects]
-    selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
+    selected_sub = st.selectbox(_("Select Task"), sub_options)
 
     with st.form("rename_sub_form"):
         new_name = st.text_input(_("New Name"), value=selected_sub)
@@ -711,7 +711,7 @@ def view_rename_sub_project():
             elif new_name == selected_sub:
                 st.warning(_("New name is the same as the old name."))
             elif st.session_state.tracker.rename_sub_project(selected_main, selected_sub, new_name):
-                set_feedback(_("Sub-project '{old_name}' renamed to '{new_name}'.").format(old_name=selected_sub, new_name=new_name))
+                set_feedback(_("Task '{old_name}' renamed to '{new_name}'.").format(old_name=selected_sub, new_name=new_name))
                 navigate_to('sub_project_mgmt')
                 st.rerun()
             else:
@@ -722,13 +722,13 @@ def view_rename_sub_project():
         
 def view_close_main_project():
     """
-    Renders the form to close a main project.
+    Renders the form to close a project.
     """
-    render_header(_("Close Main Project"))
+    render_header(_("Close Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     
     if not projects:
-        st.info(_("No open main projects to close."))
+        st.info(_("No open projects to close."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('main_project_mgmt')
         return
@@ -736,29 +736,29 @@ def view_close_main_project():
     options = [p['main_project_name'] for p in projects]
     
     with st.form("close_main_form"):
-        selected_project = st.selectbox(_("Select Main Project"), options)
+        selected_project = st.selectbox(_("Select Project"), options)
         submitted = st.form_submit_button(_("Close Project"), use_container_width=True)
         
         if submitted:
             if st.session_state.tracker.close_main_project(selected_project):
-                set_feedback(_("Main project '{name}' has been closed.").format(name=selected_project))
+                set_feedback(_("Project '{name}' has been closed.").format(name=selected_project))
                 navigate_to('main_project_mgmt')
                 st.rerun()
             else:
-                st.error(_("Error: Main project not found."))
+                st.error(_("Error: Project not found."))
 
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
 def view_reopen_main_project():
     """
-    Renders the form to re-open a closed main project.
+    Renders the form to re-open a closed project.
     """
-    render_header(_("Re-open Main Project"))
+    render_header(_("Re-open Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='closed')
     
     if not projects:
-        st.info(_("No closed main projects to reopen."))
+        st.info(_("No closed projects to reopen."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('main_project_mgmt')
         return
@@ -766,29 +766,29 @@ def view_reopen_main_project():
     options = [p['main_project_name'] for p in projects]
     
     with st.form("reopen_main_form"):
-        selected_project = st.selectbox(_("Select Main Project"), options)
+        selected_project = st.selectbox(_("Select Project"), options)
         submitted = st.form_submit_button(_("Re-open Project"), use_container_width=True)
         
         if submitted:
             if st.session_state.tracker.reopen_main_project(selected_project):
-                set_feedback(_("Main project '{name}' has been reopened.").format(name=selected_project))
+                set_feedback(_("Project '{name}' has been reopened.").format(name=selected_project))
                 navigate_to('main_project_mgmt')
                 st.rerun()
             else:
-                st.error(_("Error: Main project not found."))
+                st.error(_("Error: Project not found."))
 
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
 def view_delete_main_project():
     """
-    Renders the form to delete a main project.
+    Renders the form to delete a project.
     """
-    render_header(_("Delete Main Project"))
+    render_header(_("Delete Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='all')
     
     if not projects:
-        st.info(_("No main projects found."))
+        st.info(_("No projects found."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('main_project_mgmt')
         return
@@ -796,51 +796,51 @@ def view_delete_main_project():
     options = [p['main_project_name'] for p in projects]
     
     with st.form("delete_main_form"):
-        selected_project = st.selectbox(_("Select Main Project"), options)
-        st.warning(_("This action cannot be undone. All associated sub-projects and time entries will be deleted."))
+        selected_project = st.selectbox(_("Select Project"), options)
+        st.warning(_("This action cannot be undone. All associated tasks and time entries will be deleted."))
         submitted = st.form_submit_button(_("Delete Project"), use_container_width=True)
         
         if submitted:
             if st.session_state.tracker.delete_main_project(selected_project):
-                set_feedback(_("Main project '{name}' has been deleted.").format(name=selected_project))
+                set_feedback(_("Project '{name}' has been deleted.").format(name=selected_project))
                 navigate_to('main_project_mgmt')
                 st.rerun()
             else:
-                st.error(_("Error: Main project not found."))
+                st.error(_("Error: Project not found."))
 
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
 def view_list_inactive_main_projects():
     """
-    Renders the view to list inactive main projects based on a configurable threshold.
+    Renders the view to list inactive projects based on a configurable threshold.
     """
-    render_header(_("List Inactive Main Projects"))
+    render_header(_("List Inactive Projects"))
     
     weeks = st.number_input(_("Weeks of inactivity"), min_value=1, value=4, step=1)
     
     inactive_list = st.session_state.tracker.list_inactive_main_projects(weeks)
     
     if inactive_list:
-        st.markdown(_("Inactive Main Projects (> {weeks} weeks):").format(weeks=weeks))
+        st.markdown(_("Inactive Projects (> {weeks} weeks):").format(weeks=weeks))
         for item in inactive_list:
             st.markdown(f"- **{item['main_project']}**")
             st.caption(f"{_('Last Activity')}: {item['last_activity']}")
     else:
-        st.info(_("No main projects found inactive for more than {weeks} weeks.").format(weeks=weeks))
+        st.info(_("No projects found inactive for more than {weeks} weeks.").format(weeks=weeks))
         
     if st.button(_("Back"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
 def view_demote_main_project():
     """
-    Renders the form to demote a main project to a sub-project.
+    Renders the form to demote a project to a task.
     """
-    render_header(_("Demote Main-Project"))
+    render_header(_("Demote Project"))
     
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not projects:
-        st.info(_("No open main projects found."))
+        st.info(_("No open projects found."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('main_project_mgmt')
         return
@@ -854,10 +854,10 @@ def view_demote_main_project():
         target_project = None
         
         if not target_options:
-            st.warning(_("No other main projects available to demote into."))
+            st.warning(_("No other projects available to demote into."))
         else:
-            target_project = st.selectbox(_("Select Target Main Project"), target_options)
-            st.info(_("This will convert '{src}' into a sub-project of '{dst}'.").format(src=selected_project, dst=target_project))
+            target_project = st.selectbox(_("Select Target Project"), target_options)
+            st.info(_("This will convert '{src}' into a task of '{dst}'.").format(src=selected_project, dst=target_project))
             
         submitted = st.form_submit_button(_("Demote Project"), disabled=not target_options, use_container_width=True)
         
@@ -875,35 +875,35 @@ def view_demote_main_project():
 
 def view_list_completed_main():
     """
-    Renders the list of completed main projects (those with only closed or no sub-projects).
+    Renders the list of completed projects (those with only closed or no tasks).
     """
-    render_header(_("List Completed Main Projects"))
+    render_header(_("List Completed Projects"))
     
     completed_projects = st.session_state.tracker.list_completed_main_projects()
     
     if completed_projects:
-        st.markdown(_("Main projects with only closed or no sub-projects:"))
+        st.markdown(_("Projects with only closed or no tasks:"))
         for project_name in completed_projects:
             st.markdown(f"- **{project_name}**")
     else:
-        st.info(_("No completed main projects found."))
+        st.info(_("No completed projects found."))
         
     if st.button(_("Back"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
 def view_add_sub_project_select_main():
     """
-    Renders the first step of adding a sub-project: selecting the main project.
+    Renders the first step of adding a task: selecting the project.
     """
-    render_header(_("Add Sub-Project"), _("Step 1: Select Main Project"))
+    render_header(_("Add Task"), _("Step 1: Select Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not projects:
-        st.warning(_("No open main projects found. Please add one first."))
+        st.warning(_("No open projects found. Please add one first."))
         if st.button(_("Back"), use_container_width=True): navigate_to('sub_project_mgmt')
         return
 
     options = [p['main_project_name'] for p in projects]
-    selected = st.selectbox(_("Main Project"), options)
+    selected = st.selectbox(_("Project"), options)
     
     if st.button(_("Next"), use_container_width=True):
         st.session_state.context['selected_main'] = selected
@@ -913,33 +913,33 @@ def view_add_sub_project_select_main():
 
 def view_add_sub_project_form():
     """
-    Renders the second step of adding a sub-project: entering the name.
+    Renders the second step of adding a task: entering the name.
     """
     main_project = st.session_state.context.get('selected_main')
     if not main_project:
-        set_feedback(_("No main project selected. Please start again."), "error")
+        set_feedback(_("No project selected. Please start again."), "error")
         navigate_to('add_sub_project')
         st.rerun()
         return
 
-    render_header(_("Add Sub-Project"), f"{_('To Main Project:')} {main_project}")
+    render_header(_("Add Task"), f"{_('To Project:')} {main_project}")
     
     existing_subs = [s['sub_project_name'].lower() for s in st.session_state.tracker.list_sub_projects(main_project_name=main_project)]
 
     with st.form("add_sub_form"):
-        name = st.text_input(_("Name of the new sub-project"))
-        submitted = st.form_submit_button(_("Add Sub-Project"), use_container_width=True)
+        name = st.text_input(_("Name of the new task"))
+        submitted = st.form_submit_button(_("Add Task"), use_container_width=True)
         if submitted and name:
             if name.lower() in existing_subs:
-                set_feedback(_("A sub-project with this name already exists in this main project."), 'error')
+                set_feedback(_("A task with this name already exists in this project."), 'error')
                 st.rerun()
             elif st.session_state.tracker.add_sub_project(main_project, name):
-                set_feedback(_("Sub-project '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
+                set_feedback(_("Task '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
                 st.session_state.context = {}
                 navigate_to('sub_project_mgmt')
                 st.rerun()
             else:
-                set_feedback(_("Error: Could not find main project '{name}'.").format(name=main_project), 'error')
+                set_feedback(_("Error: Could not find project '{name}'.").format(name=main_project), 'error')
                 st.rerun()
 
     if st.button(_("Cancel"), use_container_width=True): 
@@ -948,23 +948,23 @@ def view_add_sub_project_form():
 
 def view_start_work():
     """
-    Renders the form to start work on a sub-project.
+    Renders the form to start work on a task.
     """
-    render_header(_("Start Work on Sub-Project"))
+    render_header(_("Start Work on Task"))
     
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not projects:
-        st.info(_("No open main projects found. Please add one first."))
+        st.info(_("No open projects found. Please add one first."))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('main')
         return
 
     options = [p['main_project_name'] for p in projects]
-    selected_main = st.selectbox(_("Select Main Project"), options)
+    selected_main = st.selectbox(_("Select Project"), options)
     
     subs = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
     if not subs:
-        st.info(_("No open sub-projects to start work on in '{name}'.").format(name=selected_main))
+        st.info(_("No open tasks to start work on in '{name}'.").format(name=selected_main))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('main')
         return
@@ -972,7 +972,7 @@ def view_start_work():
     sub_options = [s['sub_project_name'] for s in subs]
 
     with st.form("start_work_form"):
-        selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
+        selected_sub = st.selectbox(_("Select Task"), sub_options)
         submitted = st.form_submit_button(_("Start Work"), use_container_width=True)
         
         if submitted:
@@ -998,8 +998,8 @@ def view_show_current_work():
         hours, remainder = divmod(duration.total_seconds(), 3600)
         minutes, seconds = divmod(remainder, 60)
         
-        st.markdown(f"**{_('Main Project')}:** {current['main_project_name']}")
-        st.markdown(f"**{_('Sub-Project')}:** {current['sub_project_name']}")
+        st.markdown(f"**{_('Project')}:** {current['main_project_name']}")
+        st.markdown(f"**{_('Task')}:** {current['sub_project_name']}")
         st.markdown(f"**{_('Started at')}:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
         st.markdown(f"**{_('Duration')}:** {int(hours):02}:{int(minutes):02}:{int(seconds):02}")
     else:
@@ -1278,9 +1278,9 @@ def view_report_date_range():
 
 def view_report_detailed_sub_select_main():
     """
-    Renders the first step of the detailed sub-project report: selecting the main project.
+    Renders the first step of the detailed task report: selecting the project.
     """
-    render_header(_("Detailed Sub-Project Report"), _("Step 1: Select Main Project"))
+    render_header(_("Detailed Task Report"), _("Step 1: Select Project"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
     if not main_projects:
@@ -1290,7 +1290,7 @@ def view_report_detailed_sub_select_main():
         return
 
     main_options = [p['main_project_name'] for p in main_projects]
-    selected_main = st.selectbox(_("Select Main Project"), main_options)
+    selected_main = st.selectbox(_("Select Project"), main_options)
     
     if st.button(_("Next"), use_container_width=True):
         st.session_state.context['selected_main'] = selected_main
@@ -1302,27 +1302,27 @@ def view_report_detailed_sub_select_main():
 
 def view_report_detailed_sub_select_sub():
     """
-    Renders the second step of the detailed sub-project report: selecting the sub-project.
+    Renders the second step of the detailed task report: selecting the task.
     """
     main_project = st.session_state.context.get('selected_main')
     if not main_project:
-        set_feedback(_("No main project selected. Please start again."), "error")
+        set_feedback(_("No project selected. Please start again."), "error")
         navigate_to('report_detailed_sub')
         st.rerun()
         return
 
-    render_header(_("Detailed Sub-Project Report"), f"{_('Step 2: Select Sub-Project from')} {main_project}")
+    render_header(_("Detailed Task Report"), f"{_('Step 2: Select Task from')} {main_project}")
     
     sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=main_project, status_filter='all')
     if not sub_projects:
-        st.info(_("No sub-projects found for '{name}'.").format(name=main_project))
+        st.info(_("No tasks found for '{name}'.").format(name=main_project))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('report_detailed_sub')
         return
 
     sub_options = [sp['sub_project_name'] for sp in sub_projects]
     
-    selected_sub = st.selectbox(_("Select Sub-Project"), sub_options)
+    selected_sub = st.selectbox(_("Select Task"), sub_options)
     if st.button(_("Generate Report"), use_container_width=True):
         report = st.session_state.tracker.generate_sub_project_report(main_project, selected_sub)
         st.session_state.context = {'report': report} # Clear context and set report
@@ -1334,9 +1334,9 @@ def view_report_detailed_sub_select_sub():
 
 def view_report_detailed_main():
     """
-    Renders the form to generate a detailed report for a main project.
+    Renders the form to generate a detailed report for a project.
     """
-    render_header(_("Detailed Main-Project Report"))
+    render_header(_("Detailed Project Report"))
     
     main_projects = st.session_state.tracker.list_main_projects(status_filter='all')
     if not main_projects:
@@ -1348,7 +1348,7 @@ def view_report_detailed_main():
     main_options = [p['main_project_name'] for p in main_projects]
     
     with st.form("detailed_main_report_form"):
-        selected_main = st.selectbox(_("Select Main Project"), main_options)
+        selected_main = st.selectbox(_("Select Project"), main_options)
         submitted = st.form_submit_button(_("Generate Report"), use_container_width=True)
         if submitted:
             report = st.session_state.tracker.generate_main_project_report(selected_main)

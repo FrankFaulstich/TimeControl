@@ -86,57 +86,57 @@ msgid "all"
 msgstr "tous"
 
 #: TimeTracker.py:350
-msgid "Source main project '{name}' not found."
-msgstr "Projet principal source '{name}' non trouvé."
+msgid "Source project '{name}' not found."
+msgstr "Projet source '{name}' non trouvé."
 
 #: TimeTracker.py:352
-msgid "Destination main project '{name}' not found."
-msgstr "Projet principal de destination '{name}' non trouvé."
+msgid "Destination project '{name}' not found."
+msgstr "Projet de destination '{name}' non trouvé."
 
 #: TimeTracker.py:356
-msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
-msgstr "Un sous-projet nommé '{sub_name}' existe déjà dans '{main_name}'."
+msgid "A task named '{sub_name}' already exists in '{main_name}'."
+msgstr "Une tâche nommée '{sub_name}' existe déjà dans '{main_name}'."
 
-msgid "Sub-project '{name}' moved successfully."
-msgstr "Le sous-projet '{name}' a été déplacé avec succès."
+msgid "Task '{name}' moved successfully."
+msgstr "La tâche '{name}' a été déplacée avec succès."
 
 #: TimeTracker.py:378
-msgid "A main project named '{name}' already exists."
-msgstr "Un projet principal nommé '{name}' existe déjà."
+msgid "A project named '{name}' already exists."
+msgstr "Un projet nommé '{name}' existe déjà."
 
-msgid "Main project '{old_name}' renamed to '{new_name}'."
-msgstr "Le projet principal '{old_name}' a été renommé en '{new_name}'."
+msgid "Project '{old_name}' renamed to '{new_name}'."
+msgstr "Le projet '{old_name}' a été renommé en '{new_name}'."
 
 #: TimeTracker.py:398
-msgid "Sub-project '{sub_name}' not found in '{main_name}'."
-msgstr "Sous-projet '{sub_name}' non trouvé dans '{main_name}'."
+msgid "Task '{sub_name}' not found in '{main_name}'."
+msgstr "La tâche '{sub_name}' n'a pas été trouvée dans '{main_name}'."
 
 #: TimeTracker.py:406
 msgid "General"
 msgstr "Général"
 
 #: TimeTracker.py:410
-msgid "Sub-project '{name}' was promoted to a new main project."
-msgstr "Le sous-projet '{name}' a été promu en nouveau projet principal."
+msgid "Task '{name}' was promoted to a new project."
+msgstr "La tâche '{name}' a été promue en nouveau projet."
 
 #: TimeTracker.py:439
-msgid "Main project to demote '{name}' not found."
-msgstr "Le projet principal à rétrograder '{name}' n'a pas été trouvé."
+msgid "Project to demote '{name}' not found."
+msgstr "Le projet à rétrograder '{name}' n'a pas été trouvé."
 
 #: TimeTracker.py:441
-msgid "New parent main project '{name}' not found."
-msgstr "Le nouveau projet principal parent '{name}' n'a pas été trouvé."
+msgid "New parent project '{name}' not found."
+msgstr "Le nouveau projet parent '{name}' n'a pas été trouvé."
 
 #: TimeTracker.py:455
-msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
-msgstr "Le sous-projet '{old_name}' a été renommé en '{new_name}'."
+msgid "Task '{old_name}' has been renamed to '{new_name}'."
+msgstr "La tâche '{old_name}' a été renommée en '{new_name}'."
 
 #: TimeTracker.py:463
 msgid ""
-"Main project '{demoted_name}' was demoted to a sub-project under "
+"Project '{demoted_name}' was demoted to a task under "
 "'{parent_name}'."
 msgstr ""
-"Le projet principal '{demoted_name}' a été rétrogradé en sous-projet sous "
+"Le projet '{demoted_name}' a été rétrogradé en tâche sous "
 "'{parent_name}'."
 
 #: TimeTracker.py:651
@@ -279,64 +279,64 @@ msgid "\n--- Project Management ---"
 msgstr "\n--- Gestion des projets ---"
 
 #: TimeTrackerCLI.py:22
-msgid "1.  Add Main Project"
-msgstr "1.  Ajouter un projet principal"
+msgid "1.  Add Project"
+msgstr "1.  Ajouter un projet"
 
 #: TimeTrackerCLI.py:24
-msgid "2.  List Main Projects"
-msgstr "2.  Lister les projets principaux"
+msgid "2.  List Projects"
+msgstr "2.  Lister les projets"
 
 #: TimeTrackerCLI.py:24
-msgid "3.  Rename Main Project"
-msgstr "3.  Renommer le projet principal"
+msgid "3.  Rename Project"
+msgstr "3.  Renommer le projet"
 
 #: TimeTrackerCLI.py:25
-msgid "4.  Delete Main Project"
-msgstr "4.  Supprimer le projet principal"
+msgid "4.  Delete Project"
+msgstr "4.  Supprimer le projet"
 
 #: TimeTrackerCLI.py:26
-msgid "5.  List Inactive Main Projects"
-msgstr "5.  Lister les projets principaux inactifs"
+msgid "5.  List Inactive Projects"
+msgstr "5.  Lister les projets inactifs"
 
 #: TimeTrackerCLI.py:27
-msgid "6.  Demote Main-Project to Sub-Project"
-msgstr "6.  Rétrograder un projet principal en sous-projet"
+msgid "6.  Demote Project to Task"
+msgstr "6.  Rétrograder un projet en tâche"
 
 #: TimeTrackerCLI.py:29
-msgid "7.  Add Sub-Project"
-msgstr "7.  Ajouter un sous-projet"
+msgid "7.  Add Task"
+msgstr "7.  Ajouter une tâche"
 
 #: TimeTrackerCLI.py:30
-msgid "8.  List Sub-Projects"
-msgstr "8.  Lister les sous-projets"
+msgid "8.  List Tasks"
+msgstr "8.  Lister les tâches"
 
 #: TimeTrackerCLI.py:31 TimeTrackerCLI.py:32
-msgid "9.  Rename Sub-Project"
-msgstr "9.  Renommer le sous-projet"
+msgid "9.  Rename Task"
+msgstr "9.  Renommer la tâche"
 
-msgid "10. Close Sub-Project"
-msgstr "10. Fermer le sous-projet"
+msgid "10. Close Task"
+msgstr "10. Fermer la tâche"
 
-msgid "11. Re-open Sub-Project"
-msgstr "11. Rouvrir un sous-projet"
+msgid "11. Re-open Task"
+msgstr "11. Rouvrir une tâche"
 
-msgid "12. Delete Sub-Project"
-msgstr "12. Supprimer le sous-projet"
+msgid "12. Delete Task"
+msgstr "12. Supprimer la tâche"
 
-msgid "13. Move Sub-Project"
-msgstr "13. Déplacer le sous-projet"
+msgid "13. Move Task"
+msgstr "13. Déplacer la tâche"
 
-msgid "14. List Inactive Sub-Projects"
-msgstr "14. Lister les sous-projets inactifs"
+msgid "14. List Inactive Tasks"
+msgstr "14. Lister les tâches inactives"
 
-msgid "15. List All Closed Sub-Projects"
-msgstr "15. Lister tous les sous-projets fermés"
+msgid "15. List All Closed Tasks"
+msgstr "15. Lister toutes les tâches fermées"
 
-msgid "16. Delete All Closed Sub-Projects"
-msgstr "16. Supprimer tous les sous-projets fermés"
+msgid "16. Delete All Closed Tasks"
+msgstr "16. Supprimer toutes les tâches fermées"
 
-msgid "17. Promote Sub-Project to Main-Project"
-msgstr "17. Promouvoir un sous-projet en projet principal"
+msgid "17. Promote Task to Project"
+msgstr "17. Promouvoir une tâche en projet"
 
 #: TimeTrackerCLI.py:37 TimeTrackerCLI.py:403 TimeTrackerCLI.py:461 TimeTrackerCLI.py:539
 msgid "0.  Back to Main Menu"
@@ -347,48 +347,48 @@ msgid "Choice: "
 msgstr "Choix : "
 
 #: TimeTrackerCLI.py:44
-msgid "\n--- Add New Main Project ---"
-msgstr "\n--- Ajouter un nouveau projet principal ---"
+msgid "\n--- Add New Project ---"
+msgstr "\n--- Ajouter un nouveau projet ---"
 
 #: TimeTrackerCLI.py:45
-msgid "Name of the main project: "
-msgstr "Nom du projet principal : "
+msgid "Name of the project: "
+msgstr "Nom du projet : "
 
 #: TimeTrackerCLI.py:48
-msgid "Main project '{name}' added."
-msgstr "Projet principal '{name}' ajouté."
+msgid "Project '{name}' added."
+msgstr "Projet '{name}' ajouté."
 
 #: TimeTrackerCLI.py:50 TimeTrackerCLI.py:55
-msgid "\n--- List Main Projects ---"
-msgstr "\n--- Lister les projets principaux ---"
+msgid "\n--- List Projects ---"
+msgstr "\n--- Lister les projets ---"
 
 #: TimeTrackerCLI.py:55 TimeTrackerCLI.py:166 TimeTrackerCLI.py:288 TimeTrackerCLI.py:411 TimeTrackerCLI.py:434 TimeTrackerCLI.py:479
-msgid "No main projects found."
-msgstr "Aucun projet principal trouvé."
+msgid "No projects found."
+msgstr "Aucun projet trouvé."
 
 #: TimeTrackerCLI.py:58
-msgid "\n--- Rename Main Project ---"
-msgstr "\n--- Renommer le projet principal ---"
+msgid "\n--- Rename Project ---"
+msgstr "\n--- Renommer le projet ---"
 
 #: TimeTrackerCLI.py:61
-msgid "No main projects to rename."
-msgstr "Aucun projet principal à renommer."
+msgid "No projects to rename."
+msgstr "Aucun projet à renommer."
 
 #: TimeTrackerCLI.py:64
-msgid "Select a main project to rename:"
-msgstr "Sélectionnez un projet principal à renommer :"
+msgid "Select a project to rename:"
+msgstr "Sélectionnez un projet à renommer :"
 
 #: TimeTrackerCLI.py:68
-msgid "Enter the number of the main project: "
-msgstr "Entrez le numéro du projet principal : "
+msgid "Enter the number of the project: "
+msgstr "Entrez le numéro du projet : "
 
 #: TimeTrackerCLI.py:71
 msgid "Enter the new name for '{name}': "
 msgstr "Entrez le nouveau nom pour '{name}' : "
 
 #: TimeTrackerCLI.py:74
-msgid "Main project '{old_name}' successfully renamed to '{new_name}'."
-msgstr "Le projet principal '{old_name}' a été renommé en '{new_name}' avec succès."
+msgid "Project '{old_name}' successfully renamed to '{new_name}'."
+msgstr "Le projet '{old_name}' a été renommé en '{new_name}' avec succès."
 
 #: TimeTrackerCLI.py:76
 msgid "Error: Could not rename. The new name '{new_name}' might already exist."
@@ -399,28 +399,28 @@ msgid "Invalid input. Please enter a valid number."
 msgstr "Entrée invalide. Veuillez entrer un numéro valide."
 
 #: TimeTrackerCLI.py:81
-msgid "\n--- Delete Main Project ---"
-msgstr "\n--- Supprimer le projet principal ---"
+msgid "\n--- Delete Project ---"
+msgstr "\n--- Supprimer le projet ---"
 
 #: TimeTrackerCLI.py:84
-msgid "No main projects to delete."
-msgstr "Aucun projet principal à supprimer."
+msgid "No projects to delete."
+msgstr "Aucun projet à supprimer."
 
 #: TimeTrackerCLI.py:87
-msgid "Select a main project to delete:"
-msgstr "Sélectionnez un projet principal à supprimer :"
+msgid "Select a project to delete:"
+msgstr "Sélectionnez un projet à supprimer :"
 
 #: TimeTrackerCLI.py:93
-msgid "Main project '{name}' deleted."
-msgstr "Projet principal '{name}' supprimé."
+msgid "Project '{name}' deleted."
+msgstr "Projet '{name}' supprimé."
 
 #: TimeTrackerCLI.py:95
-msgid "Error: Main project '{name}' not found."
-msgstr "Erreur : Projet principal '{name}' non trouvé."
+msgid "Error: Project '{name}' not found."
+msgstr "Erreur : Projet '{name}' non trouvé."
 
 #: TimeTrackerCLI.py:101
-msgid "\n--- List Inactive Main-Projects ---"
-msgstr "\n--- Lister les projets principaux inactifs ---"
+msgid "\n--- List Inactive Projects ---"
+msgstr "\n--- Lister les projets inactifs ---"
 
 #: TimeTrackerCLI.py:103
 msgid "Enter the number of weeks without activity (e.g., 8): "
@@ -676,12 +676,12 @@ msgid "3. Date Range Report"
 msgstr "3. Rapport par plage de dates"
 
 #: TimeTrackerCLI.py:352
-msgid "4. Detailed Sub-Project Report"
-msgstr "4. Rapport détaillé de sous-projet"
+msgid "4. Detailed Task Report"
+msgstr "4. Rapport détaillé de tâche"
 
 #: TimeTrackerCLI.py:353
-msgid "5. Detailed Main-Project Report"
-msgstr "5. Rapport détaillé du projet principal"
+msgid "5. Detailed Project Report"
+msgstr "5. Rapport détaillé de projet"
 
 #: TimeTrackerCLI.py:359
 msgid "\n--- Generate Daily Report (Today) ---"
@@ -715,24 +715,20 @@ msgid "Error: The start date cannot be after the end date."
 msgstr "Erreur : La date de début ne peut pas être postérieure à la date de fin."
 
 #: TimeTrackerCLI.py:383
-msgid "\n--- Detailed Sub-Project Report ---"
-msgstr "\n--- Rapport détaillé de sous-projet ---"
-
-#: TimeTrackerCLI.py:384 TimeTrackerCLI.py:407
-msgid "No projects found."
-msgstr "Aucun projet trouvé."
+msgid "\n--- Detailed Task Report ---"
+msgstr "\n--- Rapport détaillé de tâche ---"
 
 #: TimeTrackerCLI.py:397
 msgid "\nSelect the sub-project for the report:"
 msgstr "\nSélectionnez le sous-projet pour le rapport :"
 
 #: TimeTrackerCLI.py:405
-msgid "\n--- Detailed Main-Project Report ---"
-msgstr "\n--- Rapport détaillé du projet principal ---"
+msgid "\n--- Detailed Project Report ---"
+msgstr "\n--- Rapport détaillé de projet ---"
 
 #: TimeTrackerCLI.py:417
-msgid "Select the main project for the report:"
-msgstr "Sélectionnez le projet principal pour le rapport :"
+msgid "Select the project for the report:"
+msgstr "Sélectionnez le projet pour le rapport :"
 
 #: TimeTrackerCLI.py:424
 msgid "Invalid choice. Please enter a number from 0 to 5."
@@ -853,8 +849,8 @@ msgstr "\n=== Time Control {version} ==="
 msgid "--- Main Menu ---"
 msgstr "--- Menu principal ---"
 
-msgid "1. Start work on sub-project"
-msgstr "1. Démarrer le travail sur un sous-projet"
+msgid "1. Start work on task"
+msgstr "1. Démarrer le travail sur une tâche"
 
 #: TimeTrackerCLI.py:528
 msgid "2. Show current work"
@@ -865,8 +861,8 @@ msgid "3. Stop current work"
 msgstr "3. Arrêter le travail en cours"
 
 #: TimeTrackerCLI.py:531
-msgid "4. Handle projects and sub-projects"
-msgstr "4. Gérer les projets et sous-projets"
+msgid "4. Handle projects and tasks"
+msgstr "4. Gérer les projets et les tâches"
 
 #: TimeTrackerCLI.py:532
 msgid "5. Reporting"
@@ -881,12 +877,12 @@ msgid "0. Exit"
 msgstr "0. Quitter"
 
 #: TimeTrackerCLI.py:541
-msgid "\n--- Start Work on a Sub-Project ---"
-msgstr "\n--- Démarrer le travail sur un sous-projet ---"
+msgid "\n--- Start Work on a Task ---"
+msgstr "\n--- Démarrer le travail sur une tâche ---"
 
 #: TimeTrackerCLI.py:498
-msgid "Select a sub-project from '{name}':"
-msgstr "Sélectionnez un sous-projet de '{name}' :"
+msgid "Select a task from '{name}':"
+msgstr "Sélectionnez une tâche de '{name}' :"
 
 #: TimeTrackerCLI.py:507
 msgid "Work started on '{sub_name}' in project '{main_name}'."
@@ -904,12 +900,12 @@ msgid "You are currently working on:"
 msgstr "Vous travaillez actuellement sur :"
 
 #: TimeTrackerCLI.py:524
-msgid "  Main Project: {name}"
-msgstr "  Projet principal : {name}"
+msgid "  Project: {name}"
+msgstr "  Projet : {name}"
 
 #: TimeTrackerCLI.py:525
-msgid "  Sub-Project:  {name}"
-msgstr "  Sous-projet :  {name}"
+msgid "  Task:  {name}"
+msgstr "  Tâche :  {name}"
 
 #: TimeTrackerCLI.py:526
 msgid "  Started at:   {date}"
