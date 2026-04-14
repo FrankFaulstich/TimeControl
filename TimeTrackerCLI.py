@@ -277,8 +277,9 @@ def _handle_sub_project_management(tt):
                 due_date = due_date_str if due_date_str else None
                 today_str = input(_("Add to 'Today' list? (y/n, default n): ")).strip().lower()
                 today = (today_str == 'y')
+                note = input(_("Note (Markdown supported): ")).strip()
                 
-                if tt.add_sub_project(main_project_name, sub_project_name, due_date, today):
+                if tt.add_sub_project(main_project_name, sub_project_name, due_date, today, note):
                     print(_("Sub-project '{sub_name}' added.").format(sub_name=sub_project_name))
                 else:
                     print(_("Error: Main project '{name}' not found.").format(name=main_project_name))
@@ -608,6 +609,7 @@ def _handle_sub_project_management(tt):
                 old_sub_name = sub_projects[sub_choice - 1]['sub_project_name']
                 old_due = sub_projects[sub_choice - 1].get('due_date', '')
                 old_today = sub_projects[sub_choice - 1].get('today', False)
+                old_note = sub_projects[sub_choice - 1].get('note', '')
 
                 new_name = input(_("New name (press Enter to keep '{name}'): ").format(name=old_sub_name)) or old_sub_name
                 new_due = input(_("New due date (YYYY-MM-DD, current: '{due}', enter '-' to clear): ").format(due=old_due)).strip()
@@ -616,7 +618,11 @@ def _handle_sub_project_management(tt):
                 today_input = input(_("Is this for today? (current: {current}, y/n, press Enter to keep): ").format(current=old_today)).strip().lower()
                 final_today = old_today if today_input == '' else (today_input == 'y')
 
-                if tt.update_sub_project(main_project_name, old_sub_name, new_name, final_due, final_today):
+                print(_("Current Note: {note}").format(note=old_note))
+                new_note = input(_("New note (press Enter to keep current): ")).strip()
+                final_note = new_note if new_note else old_note
+
+                if tt.update_sub_project(main_project_name, old_sub_name, new_name, final_due, final_today, final_note):
                     print(_("Task updated successfully."))
                 else:
                     print(_("Error updating task."))

@@ -28,7 +28,8 @@
           ],
           "status": "closed",
           "due_date": null,
-          "today": false
+          "today": false,
+          "note": ""
         }
       ],
       "status": "open"
@@ -46,7 +47,8 @@
           ],
           "status": "open",
           "due_date": null,
-          "today": false
+          "today": false,
+          "note": ""
         }
       ],
       "status": "open"
