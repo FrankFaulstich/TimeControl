@@ -307,6 +307,8 @@ def _handle_sub_project_management(tt):
                         name = sp['sub_project_name']
                         due = f" [{_('Due')}: {sp['due_date']}]" if sp.get('due_date') else ""
                         today_mark = f" *{_('Today')}*" if sp.get('today') else ""
+                        if sp['status'] == 'done':
+                            name = f"~~{name}~~"
                         if sp['status'] == 'closed':
                             print(f"{i}. {name} ({_('closed')}){due}{today_mark}")
                         else:
@@ -622,7 +624,11 @@ def _handle_sub_project_management(tt):
                 new_note = input(_("New note (press Enter to keep current): ")).strip()
                 final_note = new_note if new_note else old_note
 
-                if tt.update_sub_project(main_project_name, old_sub_name, new_name, final_due, final_today, final_note):
+                old_status = sub_projects[sub_choice - 1].get('status', 'open')
+                done_input = input(_("Is this task done? (current: {current}, y/n, press Enter to keep): ").format(current=old_status)).strip().lower()
+                final_status = old_status if done_input == '' else ('done' if done_input == 'y' else 'open')
+
+                if tt.update_sub_project(main_project_name, old_sub_name, new_name, final_due, final_today, final_note, final_status):
                     print(_("Task updated successfully."))
                 else:
                     print(_("Error updating task."))

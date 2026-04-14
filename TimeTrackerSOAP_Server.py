@@ -130,9 +130,9 @@ class TimeControlService(ServiceBase):
     def rename_sub_project(ctx, main_project_name, old_name, new_name):
         return ctx.service.tracker.rename_sub_project(main_project_name, old_name, new_name)
 
-    @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, _returns=Boolean)
-    def update_sub_project(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None):
-        return ctx.service.tracker.update_sub_project(main_project_name, old_name, new_name, due_date, today, note)
+    @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, Unicode, _returns=Boolean)
+    def update_sub_project(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None):
+        return ctx.service.tracker.update_sub_project(main_project_name, old_name, new_name, due_date, today, note, status)
 
     @rpc(Unicode, Unicode, Unicode, _returns=OperationResultModel)
     def move_sub_project(ctx, old_main, sub_name, new_main):

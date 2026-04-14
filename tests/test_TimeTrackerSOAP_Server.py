@@ -60,6 +60,16 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         self.mock_tracker.add_main_project.assert_called_with("Test Project")
         self.assertTrue(result)
 
+    def test_add_sub_project(self):
+        self.mock_tracker.add_sub_project.return_value = True
+        result = self.soap_server.TimeControlService.add_sub_project(
+            self.ctx, "Main", "Sub", "2025-12-24", True, "Note"
+        )
+        self.mock_tracker.add_sub_project.assert_called_with(
+            "Main", "Sub", "2025-12-24", True, "Note"
+        )
+        self.assertTrue(result)
+
     def test_list_main_projects(self):
         # Setup mock return values
         self.mock_tracker.list_main_projects.return_value = [
@@ -100,6 +110,16 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].sub_project_name, 'Sub 1')
         self.assertIsInstance(results[0], self.soap_server.SubProjectModel)
+
+    def test_update_sub_project(self):
+        self.mock_tracker.update_sub_project.return_value = True
+        result = self.soap_server.TimeControlService.update_sub_project(
+            self.ctx, "Main", "Old", "New", "2025-01-01", True, "Note", "done"
+        )
+        self.mock_tracker.update_sub_project.assert_called_with(
+            "Main", "Old", "New", "2025-01-01", True, "Note", "done"
+        )
+        self.assertTrue(result)
 
     def test_start_work(self):
         self.mock_tracker.start_work.return_value = True

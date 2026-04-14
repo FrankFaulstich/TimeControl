@@ -667,8 +667,9 @@ def view_list_sub_projects():
         st.markdown(_("Tasks for '{name}':").format(name=selected_main))
         for sp in sub_projects:
             name = sp['sub_project_name']
-            status = f"({_('closed')})" if sp['status'] == 'closed' else ""
-            st.markdown(f"- {name} {status}")
+            status_text = f"({_('closed')})" if sp['status'] == 'closed' else ""
+            display_name = f"~~{name}~~" if sp['status'] == 'done' else name
+            st.markdown(f"- {display_name} {status_text}")
     else:
         st.info(_("No tasks found for '{name}'.").format(name=selected_main))
         
@@ -993,38 +994,47 @@ def view_edit_sub_project_form():
     
     render_header(_("Edit Task"), f"{main_project} / {sub_name}")
     
-    with st.form("edit_sub_form"):
-        new_name = st.text_input(_("Task Name"), value=sub_name)
-        
+    # Initialisiere Session-State für das Datum, um interaktives Leeren zu ermöglichen
+    if 'edit_due_date' not in st.session_state:
         curr_due = task_details.get('due_date')
-        default_date = None
-        if curr_due:
-            try:
-                default_date = datetime.fromisoformat(curr_due).date()
-            except ValueError:
-                pass
+        st.session_state.edit_due_date = datetime.fromisoformat(curr_due).date() if curr_due else None
+
+    new_name = st.text_input(_("Task Name"), value=sub_name)
+
+    col_date, col_clear = st.columns([3, 1])
+    with col_date:
+        new_due = st.date_input(_("Due Date"), value=st.session_state.edit_due_date)
+        st.session_state.edit_due_date = new_due
+    with col_clear:
+        st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
+        if st.button(_("Clear"), use_container_width=True, help=_("Remove the due date")):
+            st.session_state.edit_due_date = None
+            st.rerun()
+
+    is_today = st.checkbox(_("Today"), value=task_details.get('today', False))
+    is_done = st.checkbox(_("Done"), value=(task_details.get('status') == 'done'))
+    new_note = st.text_area(_("Notes (Markdown)"), value=task_details.get('note', ''), height=150)
+    
+    st.divider()
+
+    if st.button(_("Save Changes"), type="primary", use_container_width=True):
+        final_due = st.session_state.edit_due_date.isoformat() if st.session_state.edit_due_date else None
+        new_status = 'done' if is_done else 'open'
         
-        new_due = st.date_input(_("Due Date"), value=default_date)
-        clear_due = st.checkbox(_("Clear due date"))
-        is_today = st.checkbox(_("Today"), value=task_details.get('today', False))
-        new_note = st.text_area(_("Notes (Markdown)"), value=task_details.get('note', ''), height=150)
-        
-        submitted = st.form_submit_button(_("Save Changes"), use_container_width=True)
-        if submitted:
-            # Conversion: datetime.date -> ISO string for storage
-            final_due = None if clear_due else (new_due.isoformat() if new_due else None)
-            
-            if st.session_state.tracker.update_sub_project(main_project, sub_name, new_name, final_due, is_today, new_note):
-                set_feedback(_("Task updated successfully."))
-                st.session_state.context = {}
-                navigate_to('sub_project_mgmt')
-                st.rerun()
-            else:
-                st.error(_("Error: Could not update task."))
+        if st.session_state.tracker.update_sub_project(main_project, sub_name, new_name, final_due, is_today, new_note, new_status):
+            set_feedback(_("Task updated successfully."))
+            if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
+            st.session_state.context = {}
+            navigate_to('sub_project_mgmt')
+            st.rerun()
+        else:
+            st.error(_("Error: Could not update task."))
 
     if st.button(_("Cancel"), use_container_width=True):
+        if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
         st.session_state.context = {}
         navigate_to('sub_project_mgmt')
+        st.rerun()
 
 def view_start_work():
     """

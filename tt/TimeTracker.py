@@ -31,6 +31,7 @@ class TimeTracker:
     VERSION = "3.1.1"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
+    STATUS_DONE = "done"
 
     def __init__(self, file_path=None):
         """
@@ -405,7 +406,7 @@ class TimeTracker:
         for project in projects_to_search:
             for sub_project in project.get("sub_projects", []):
                 status = sub_project.get("status", self.STATUS_OPEN)
-                if status_filter == 'all' or status == status_filter:
+                if status_filter == 'all' or status == status_filter or (status_filter == self.STATUS_OPEN and status == self.STATUS_DONE):
                     results.append({
                         "main_project_name": project["main_project_name"],
                         "sub_project_name": sub_project["sub_project_name"],
@@ -522,7 +523,7 @@ class TimeTracker:
                     return True
         return False
 
-    def update_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name=None, due_date=None, today=None, note=None):
+    def update_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name=None, due_date=None, today=None, note=None, status=None):
         """
         Updates a sub-project's properties (name and/or due date).
 
@@ -532,6 +533,7 @@ class TimeTracker:
         :param due_date: New due date (optional, ISO string or None).
         :param today: New today status (optional, bool).
         :param note: New note (optional, str).
+        :param status: New status (optional, str).
         :return: True if successful.
         """
         project = self._get_project(main_project_name)
@@ -555,6 +557,10 @@ class TimeTracker:
                 # Update note if provided
                 if note is not None:
                     sub_project["note"] = note
+                
+                # Update status if provided
+                if status is not None:
+                    sub_project["status"] = status
                 
                 self._save_data()
                 return True
