@@ -151,6 +151,9 @@ class TimeTracker:
                 if "due_date" not in sub_project:
                     sub_project["due_date"] = None
                     data_changed = True
+                if "today" not in sub_project:
+                    sub_project["today"] = False
+                    data_changed = True
         return data_changed
 
     def _save_data(self):
@@ -339,7 +342,7 @@ class TimeTracker:
             return True
         return False
 
-    def add_sub_project(self, main_project_name, sub_project_name, due_date=None):
+    def add_sub_project(self, main_project_name, sub_project_name, due_date=None, today=False):
         """
         Adds a new sub-project to a specified main project.
 
@@ -349,6 +352,8 @@ class TimeTracker:
         :type sub_project_name: str
         :param due_date: Optional due date for the task (ISO string YYYY-MM-DD).
         :type due_date: str or None
+        :param today: Whether the task is for today.
+        :type today: bool
         :return: True if the sub-project was added successfully, otherwise False (if main project not found).
         :rtype: bool
         """
@@ -358,7 +363,8 @@ class TimeTracker:
                 "sub_project_name": sub_project_name,
                 "time_entries": [],
                 "status": self.STATUS_OPEN,
-                "due_date": due_date
+                "due_date": due_date,
+                "today": today
             }
             project["sub_projects"].append(new_sub_project)
             self._save_data()
@@ -398,7 +404,8 @@ class TimeTracker:
                         "main_project_name": project["main_project_name"],
                         "sub_project_name": sub_project["sub_project_name"],
                         "status": status,
-                        "due_date": sub_project.get("due_date")
+                        "due_date": sub_project.get("due_date"),
+                        "today": sub_project.get("today", False)
                     })
         return results
 
@@ -508,7 +515,7 @@ class TimeTracker:
                     return True
         return False
 
-    def update_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name=None, due_date=None):
+    def update_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name=None, due_date=None, today=None):
         """
         Updates a sub-project's properties (name and/or due date).
 
@@ -516,6 +523,7 @@ class TimeTracker:
         :param old_sub_project_name: Current name of the sub-project.
         :param new_sub_project_name: New name (optional).
         :param due_date: New due date (optional, ISO string or None).
+        :param today: New today status (optional, bool).
         :return: True if successful.
         """
         project = self._get_project(main_project_name)
@@ -531,6 +539,10 @@ class TimeTracker:
                 
                 # Update due_date (always update to what's provided)
                 sub_project["due_date"] = due_date
+                
+                # Update today status if provided
+                if today is not None:
+                    sub_project["today"] = today
                 
                 self._save_data()
                 return True

@@ -930,13 +930,14 @@ def view_add_sub_project_form():
     with st.form("add_sub_form"):
         name = st.text_input(_("Name of the new task"))
         due_date = st.date_input(_("Due date"), value=None)
+        today = st.checkbox(_("Today"))
         submitted = st.form_submit_button(_("Add Task"), use_container_width=True)
         if submitted and name:
             due_date_str = due_date.isoformat() if due_date else None
             if name.lower() in existing_subs:
                 set_feedback(_("A task with this name already exists in this project."), 'error')
                 st.rerun()
-            elif st.session_state.tracker.add_sub_project(main_project, name, due_date_str):
+            elif st.session_state.tracker.add_sub_project(main_project, name, due_date_str, today):
                 set_feedback(_("Task '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
                 st.session_state.context = {}
                 navigate_to('sub_project_mgmt')
@@ -1004,13 +1005,14 @@ def view_edit_sub_project_form():
         
         new_due = st.date_input(_("Due Date"), value=default_date)
         clear_due = st.checkbox(_("Clear due date"))
+        is_today = st.checkbox(_("Today"), value=task_details.get('today', False))
         
         submitted = st.form_submit_button(_("Save Changes"), use_container_width=True)
         if submitted:
             # Conversion: datetime.date -> ISO string for storage
             final_due = None if clear_due else (new_due.isoformat() if new_due else None)
             
-            if st.session_state.tracker.update_sub_project(main_project, sub_name, new_name, final_due):
+            if st.session_state.tracker.update_sub_project(main_project, sub_name, new_name, final_due, is_today):
                 set_feedback(_("Task updated successfully."))
                 st.session_state.context = {}
                 navigate_to('sub_project_mgmt')
