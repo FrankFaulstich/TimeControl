@@ -249,6 +249,7 @@ def _handle_sub_project_management(tt):
         print(_("9.  List All Closed Sub-Projects"))
         print(_("10. Delete All Closed Sub-Projects"))
         print(_("11. Promote Sub-Project to Main-Project"))
+        print(_("12. Edit Task (Name & Due Date)"))
         print("--------------------------------")
         print(_("0.  Back"))
         print("--------------------------------")
@@ -272,8 +273,14 @@ def _handle_sub_project_management(tt):
                 main_project_name = main_projects[main_project_choice - 1]['main_project_name']
 
                 sub_project_name = input(_('Name of the new sub-project: '))
-                if tt.add_sub_project(main_project_name, sub_project_name):
-                    print(_("Sub-project '{sub_name}' added to '{main_name}'.").format(sub_name=sub_project_name, main_name=main_project_name))
+                due_date_str = input(_("Due date (YYYY-MM-DD, press Enter to skip): ")).strip()
+                due_date = due_date_str if due_date_str else None
+                today_str = input(_("Add to 'Today' list? (y/n, default n): ")).strip().lower()
+                today = (today_str == 'y')
+                note = input(_("Note (Markdown supported): ")).strip()
+                
+                if tt.add_sub_project(main_project_name, sub_project_name, due_date, today, note):
+                    print(_("Sub-project '{sub_name}' added.").format(sub_name=sub_project_name))
                 else:
                     print(_("Error: Main project '{name}' not found.").format(name=main_project_name))
             except (ValueError, IndexError):
@@ -298,10 +305,14 @@ def _handle_sub_project_management(tt):
                     print(_("Sub-projects for '{name}':").format(name=main_project_name))
                     for i, sp in enumerate(sub_projects_details, 1):
                         name = sp['sub_project_name']
+                        due = f" [{_('Due')}: {sp['due_date']}]" if sp.get('due_date') else ""
+                        today_mark = f" *{_('Today')}*" if sp.get('today') else ""
+                        if sp['status'] == 'done':
+                            name = f"~~{name}~~"
                         if sp['status'] == 'closed':
-                            print(f"{i}. {name} ({_('closed')})")
+                            print(f"{i}. {name} ({_('closed')}){due}{today_mark}")
                         else:
-                            print(f"{i}. {name}")
+                            print(f"{i}. {name}{due}{today_mark}")
                 else:
                     print(_("No sub-projects found for '{name}'.").format(name=main_project_name))
             except (ValueError, IndexError):
@@ -570,6 +581,59 @@ def _handle_sub_project_management(tt):
 
             except (ValueError, IndexError):
                 print(_("Invalid input. Please enter a valid number."))
+
+        elif choice == '12':
+            # Edit Sub-Project
+            print(_("\n--- Edit Task ---"))
+            main_projects = tt.list_main_projects(status_filter='open')
+            if not main_projects:
+                print(_("No open projects found."))
+                continue
+
+            print(_("Select the main project:"))
+            for i, project in enumerate(main_projects, 1):
+                print(f"{i}. {project['main_project_name']}")
+
+            try:
+                main_project_choice = int(input(_("Enter the number of the main project: ")))
+                main_project_name = main_projects[main_project_choice - 1]['main_project_name']
+
+                sub_projects = tt.list_sub_projects(main_project_name=main_project_name, status_filter='open')
+                if not sub_projects:
+                    print(_("No open tasks in '{name}'.").format(name=main_project_name))
+                    continue
+
+                print(_("Select a task to edit:"))
+                for i, sp in enumerate(sub_projects, 1):
+                    print(f"{i}. {sp['sub_project_name']}")
+
+                sub_choice = int(input(_("Enter the number: ")))
+                old_sub_name = sub_projects[sub_choice - 1]['sub_project_name']
+                old_due = sub_projects[sub_choice - 1].get('due_date', '')
+                old_today = sub_projects[sub_choice - 1].get('today', False)
+                old_note = sub_projects[sub_choice - 1].get('note', '')
+
+                new_name = input(_("New name (press Enter to keep '{name}'): ").format(name=old_sub_name)) or old_sub_name
+                new_due = input(_("New due date (YYYY-MM-DD, current: '{due}', enter '-' to clear): ").format(due=old_due)).strip()
+                final_due = None if new_due == '-' else (new_due if new_due else (old_due if old_due else None))
+                
+                today_input = input(_("Is this for today? (current: {current}, y/n, press Enter to keep): ").format(current=old_today)).strip().lower()
+                final_today = old_today if today_input == '' else (today_input == 'y')
+
+                print(_("Current Note: {note}").format(note=old_note))
+                new_note = input(_("New note (press Enter to keep current): ")).strip()
+                final_note = new_note if new_note else old_note
+
+                old_status = sub_projects[sub_choice - 1].get('status', 'open')
+                done_input = input(_("Is this task done? (current: {current}, y/n, press Enter to keep): ").format(current=old_status)).strip().lower()
+                final_status = old_status if done_input == '' else ('done' if done_input == 'y' else 'open')
+
+                if tt.update_sub_project(main_project_name, old_sub_name, new_name, final_due, final_today, final_note, final_status):
+                    print(_("Task updated successfully."))
+                else:
+                    print(_("Error updating task."))
+            except (ValueError, IndexError):
+                print(_("Invalid input."))
 
         elif choice == '0':
             break

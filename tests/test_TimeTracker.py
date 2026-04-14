@@ -75,16 +75,14 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(len(new_tracker.data["projects"]), 1)
         self.assertEqual(new_tracker.data["projects"][0]["main_project_name"], "Test")
         
-    def test_migrate_data_structure_adds_status(self):
-        """Tests that the migration logic adds the 'status' field to main and sub-projects."""
-        # 1. Create a data file with an old structure (no 'status' fields)
+    def test_migrate_data_structure_adds_new_fields(self):
+        """Tests that the migration logic adds missing fields (status, due_date, today, note)."""
+        # 1. Create a data file with an old structure
         old_data = {
             "projects": [{
                 "main_project_name": "Old Project",
-                # Missing 'status' here
                 "sub_projects": [{
-                    "sub_project_name": "Sub without status",
-                    # Missing 'status' here
+                    "sub_project_name": "Sub without new fields",
                     "time_entries": []
                 }]
             }]
@@ -95,15 +93,15 @@ class TestTimeTracker(unittest.TestCase):
         # 2. Initialize the tracker, which should trigger the migration
         tracker = TimeTracker(file_path=TEST_FILE_PATH)
 
-        # 3. Check if the 'status' field was added to main project
+        # 3. Check if fields were added
         main_project = tracker.data["projects"][0]
         self.assertIn("status", main_project)
-        self.assertEqual(main_project["status"], "open")
 
-        # 4. Check if the 'status' field was added to sub-project
         sub_project = tracker.data["projects"][0]["sub_projects"][0]
-        self.assertIn("status", sub_project)
-        self.assertEqual(sub_project["status"], "open")
+        self.assertEqual(sub_project.get("status"), "open")
+        self.assertIn("due_date", sub_project)
+        self.assertEqual(sub_project.get("today"), False)
+        self.assertEqual(sub_project.get("note"), "")
 
     def test_format_duration(self):
         """Tests the _format_duration helper method."""
@@ -255,6 +253,50 @@ class TestTimeTracker(unittest.TestCase):
         sub_projects = self.tracker.data["projects"][0]["sub_projects"]
         self.assertEqual(len(sub_projects), 1)
         self.assertEqual(sub_projects[0]["sub_project_name"], "Sub Task 1")
+
+    def test_add_sub_project_with_new_fields(self):
+        """Tests adding a sub-project with due_date, today, and note."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_sub_project("Main", "Task", due_date="2025-12-31", today=True, note="Test Note")
+        
+        sub = self.tracker.list_sub_projects("Main")[0]
+        self.assertEqual(sub["due_date"], "2025-12-31")
+        self.assertEqual(sub["today"], True)
+        self.assertEqual(sub["note"], "Test Note")
+
+    def test_update_sub_project_success(self):
+        """Tests updating all new task properties."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_sub_project("Main", "OldName")
+        
+        success = self.tracker.update_sub_project(
+            "Main", "OldName", 
+            new_sub_project_name="NewName",
+            due_date="2025-01-01",
+            today=True,
+            note="Updated Note",
+            status="done"
+        )
+        
+        self.assertTrue(success)
+        sub = self.tracker.list_sub_projects("Main", status_filter='all')[0]
+        self.assertEqual(sub["sub_project_name"], "NewName")
+        self.assertEqual(sub["due_date"], "2025-01-01")
+        self.assertEqual(sub["today"], True)
+        self.assertEqual(sub["note"], "Updated Note")
+        self.assertEqual(sub["status"], "done")
+
+    def test_list_sub_projects_done_status(self):
+        """Tests that 'done' tasks are included when filtering for 'open'."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_sub_project("Main", "OpenTask")
+        self.tracker.add_sub_project("Main", "DoneTask")
+        self.tracker.update_sub_project("Main", "DoneTask", status="done")
+        
+        open_tasks = self.tracker.list_sub_projects("Main", status_filter='open')
+        task_names = [t["sub_project_name"] for t in open_tasks]
+        self.assertIn("OpenTask", task_names)
+        self.assertIn("DoneTask", task_names)
 
     def test_add_sub_project_main_not_found(self):
         """Tests adding a sub-project to a non-existent main project."""
