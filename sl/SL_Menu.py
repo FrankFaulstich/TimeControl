@@ -221,6 +221,7 @@ def view_sub_project_mgmt():
     if st.button(t_label("7.  Move Task"), use_container_width=True): navigate_to('move_sub_project')
     if st.button(t_label("8.  List Inactive Tasks"), use_container_width=True): navigate_to('list_inactive_sub')
     if st.button(t_label("9.  List All Closed Tasks"), use_container_width=True): navigate_to('list_closed_sub')
+    if st.button(_("Edit Task"), use_container_width=True): navigate_to('edit_sub_project')
     if st.button(t_label("10. Delete All Closed Tasks"), use_container_width=True): navigate_to('delete_all_closed_sub')
     if st.button(t_label("11. Promote Task to Project"), use_container_width=True): navigate_to('promote_sub_project')
     
@@ -928,12 +929,14 @@ def view_add_sub_project_form():
 
     with st.form("add_sub_form"):
         name = st.text_input(_("Name of the new task"))
+        due_date = st.date_input(_("Due date"), value=None)
         submitted = st.form_submit_button(_("Add Task"), use_container_width=True)
         if submitted and name:
+            due_date_str = due_date.isoformat() if due_date else None
             if name.lower() in existing_subs:
                 set_feedback(_("A task with this name already exists in this project."), 'error')
                 st.rerun()
-            elif st.session_state.tracker.add_sub_project(main_project, name):
+            elif st.session_state.tracker.add_sub_project(main_project, name, due_date_str):
                 set_feedback(_("Task '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
                 st.session_state.context = {}
                 navigate_to('sub_project_mgmt')
@@ -943,6 +946,79 @@ def view_add_sub_project_form():
                 st.rerun()
 
     if st.button(_("Cancel"), use_container_width=True): 
+        st.session_state.context = {}
+        navigate_to('sub_project_mgmt')
+
+def view_edit_sub_project_select_main():
+    """Step 1 of editing a task: Select the main project."""
+    render_header(_("Edit Task"), _("Step 1: Select Project"))
+    projects = st.session_state.tracker.list_main_projects(status_filter='open')
+    if not projects:
+        st.warning(_("No open projects found."))
+        if st.button(_("Back"), use_container_width=True): navigate_to('sub_project_mgmt')
+        return
+    selected = st.selectbox(_("Project"), [p['main_project_name'] for p in projects])
+    if st.button(_("Next"), use_container_width=True):
+        st.session_state.context['selected_main'] = selected
+        navigate_to('edit_sub_project_select_sub')
+        st.rerun()
+    if st.button(_("Cancel"), use_container_width=True): navigate_to('sub_project_mgmt')
+
+def view_edit_sub_project_select_sub():
+    """Step 2 of editing a task: Select the task from the chosen project."""
+    main_project = st.session_state.context.get('selected_main')
+    render_header(_("Edit Task"), f"{_('Step 2: Select Task from')} {main_project}")
+    subs = st.session_state.tracker.list_sub_projects(main_project_name=main_project, status_filter='open')
+    if not subs:
+        st.info(_("No open tasks found."))
+        if st.button(_("Back"), use_container_width=True): navigate_to('edit_sub_project')
+        return
+    selected_sub = st.selectbox(_("Select Task"), [s['sub_project_name'] for s in subs])
+    if st.button(_("Next"), use_container_width=True):
+        st.session_state.context['selected_sub'] = selected_sub
+        navigate_to('edit_sub_project_form')
+        st.rerun()
+    if st.button(_("Back"), use_container_width=True): navigate_to('edit_sub_project')
+
+def view_edit_sub_project_form():
+    """Step 3 of editing a task: Change name and due date."""
+    main_project = st.session_state.context.get('selected_main')
+    sub_name = st.session_state.context.get('selected_sub')
+    
+    # Find current details to pre-fill the form
+    all_subs = st.session_state.tracker.list_sub_projects(main_project_name=main_project)
+    task_details = next((s for s in all_subs if s['sub_project_name'] == sub_name), {})
+    
+    render_header(_("Edit Task"), f"{main_project} / {sub_name}")
+    
+    with st.form("edit_sub_form"):
+        new_name = st.text_input(_("Task Name"), value=sub_name)
+        
+        curr_due = task_details.get('due_date')
+        default_date = None
+        if curr_due:
+            try:
+                default_date = datetime.fromisoformat(curr_due).date()
+            except ValueError:
+                pass
+        
+        new_due = st.date_input(_("Due Date"), value=default_date)
+        clear_due = st.checkbox(_("Clear due date"))
+        
+        submitted = st.form_submit_button(_("Save Changes"), use_container_width=True)
+        if submitted:
+            # Conversion: datetime.date -> ISO string for storage
+            final_due = None if clear_due else (new_due.isoformat() if new_due else None)
+            
+            if st.session_state.tracker.update_sub_project(main_project, sub_name, new_name, final_due):
+                set_feedback(_("Task updated successfully."))
+                st.session_state.context = {}
+                navigate_to('sub_project_mgmt')
+                st.rerun()
+            else:
+                st.error(_("Error: Could not update task."))
+
+    if st.button(_("Cancel"), use_container_width=True):
         st.session_state.context = {}
         navigate_to('sub_project_mgmt')
 
@@ -1439,6 +1515,9 @@ menu_map = {
     'add_sub_project': view_add_sub_project_select_main,
     'add_sub_project_form': view_add_sub_project_form,
     'list_sub_projects': view_list_sub_projects,
+    'edit_sub_project': view_edit_sub_project_select_main,
+    'edit_sub_project_select_sub': view_edit_sub_project_select_sub,
+    'edit_sub_project_form': view_edit_sub_project_form,
     'rename_sub_project': view_rename_sub_project,
     'close_sub_project': view_close_sub_project,
     'reopen_sub_project': view_reopen_sub_project,

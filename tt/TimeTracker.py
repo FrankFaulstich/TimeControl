@@ -148,6 +148,9 @@ class TimeTracker:
                 if "status" not in sub_project:
                     sub_project["status"] = self.STATUS_OPEN
                     data_changed = True
+                if "due_date" not in sub_project:
+                    sub_project["due_date"] = None
+                    data_changed = True
         return data_changed
 
     def _save_data(self):
@@ -336,7 +339,7 @@ class TimeTracker:
             return True
         return False
 
-    def add_sub_project(self, main_project_name, sub_project_name):
+    def add_sub_project(self, main_project_name, sub_project_name, due_date=None):
         """
         Adds a new sub-project to a specified main project.
 
@@ -344,6 +347,8 @@ class TimeTracker:
         :type main_project_name: str
         :param sub_project_name: The name of the sub-project to add.
         :type sub_project_name: str
+        :param due_date: Optional due date for the task (ISO string YYYY-MM-DD).
+        :type due_date: str or None
         :return: True if the sub-project was added successfully, otherwise False (if main project not found).
         :rtype: bool
         """
@@ -352,7 +357,8 @@ class TimeTracker:
             new_sub_project = {
                 "sub_project_name": sub_project_name,
                 "time_entries": [],
-                "status": self.STATUS_OPEN
+                "status": self.STATUS_OPEN,
+                "due_date": due_date
             }
             project["sub_projects"].append(new_sub_project)
             self._save_data()
@@ -391,7 +397,8 @@ class TimeTracker:
                     results.append({
                         "main_project_name": project["main_project_name"],
                         "sub_project_name": sub_project["sub_project_name"],
-                        "status": status
+                        "status": status,
+                        "due_date": sub_project.get("due_date")
                     })
         return results
 
@@ -499,6 +506,34 @@ class TimeTracker:
                     sub_project["sub_project_name"] = new_sub_project_name
                     self._save_data()
                     return True
+        return False
+
+    def update_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name=None, due_date=None):
+        """
+        Updates a sub-project's properties (name and/or due date).
+
+        :param main_project_name: Name of the main project.
+        :param old_sub_project_name: Current name of the sub-project.
+        :param new_sub_project_name: New name (optional).
+        :param due_date: New due date (optional, ISO string or None).
+        :return: True if successful.
+        """
+        project = self._get_project(main_project_name)
+        if project:
+            if new_sub_project_name and new_sub_project_name != old_sub_project_name:
+                if any(sp["sub_project_name"] == new_sub_project_name for sp in project["sub_projects"]):
+                    return False
+
+            sub_project = self._get_sub_project(main_project_name, old_sub_project_name)
+            if sub_project:
+                if new_sub_project_name:
+                    sub_project["sub_project_name"] = new_sub_project_name
+                
+                # Update due_date (always update to what's provided)
+                sub_project["due_date"] = due_date
+                
+                self._save_data()
+                return True
         return False
 
     def move_sub_project(self, old_main_project_name, sub_project_name, new_main_project_name):
