@@ -105,7 +105,7 @@ class TimeControlService(ServiceBase):
 
     # --- Sub Project Management ---
 
-    @rpc(Unicode, Unicode, _returns=Boolean)
+    @rpc(Unicode, Unicode, Unicode, Boolean, Unicode, _returns=Boolean)
     def add_sub_project(ctx, main_project_name, sub_project_name, due_date=None, today=False, note=""):
         return ctx.service.tracker.add_sub_project(main_project_name, sub_project_name, due_date, today, note)
 
