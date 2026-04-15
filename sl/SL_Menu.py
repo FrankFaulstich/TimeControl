@@ -3,7 +3,7 @@ import json
 import os
 import sys
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 import shutil
 
 # Add parent directory to path to import modules from root
@@ -155,6 +155,9 @@ def view_main():
             set_feedback(_("No active work session to stop."), 'info')
         st.rerun()
 
+    if st.button(_("Aufgabenplanung"), use_container_width=True):
+        navigate_to('task_planning')
+
     st.divider()
 
     if st.button(t_label("4. Handle projects and tasks"), use_container_width=True):
@@ -168,6 +171,64 @@ def view_main():
     
     if st.button(t_label("0. Exit"), use_container_width=True):
         os._exit(0)
+
+def view_task_planning():
+    """
+    Renders the task planning view, showing all tasks that are not closed.
+    """
+    render_header(_("Aufgabenplanung"))
+
+    filter_options = [
+        _("Today"), 
+        _("Tomorrow"), 
+        _("Weekly overview"), 
+        _("Overdue tasks"), 
+        _("Unplanned tasks"), 
+        _("All")
+    ]
+    selected_filter = st.selectbox(_("Filter"), options=filter_options, index=0)
+
+    tasks = st.session_state.tracker.list_sub_projects(status_filter='open')
+    
+    # Filter Logic
+    today_dt = datetime.now().date()
+    today_str = today_dt.isoformat()
+    tomorrow_str = (today_dt + timedelta(days=1)).isoformat()
+    next_week_str = (today_dt + timedelta(days=7)).isoformat()
+
+    if selected_filter == _("Today"):
+        tasks = [t for t in tasks if t.get('today') or t.get('due_date') == today_str]
+    elif selected_filter == _("Tomorrow"):
+        tasks = [t for t in tasks if t.get('due_date') == tomorrow_str]
+    elif selected_filter == _("Weekly overview"):
+        tasks = [t for t in tasks if t.get('due_date') and today_str <= t.get('due_date') <= next_week_str]
+    elif selected_filter == _("Overdue tasks"):
+        tasks = [t for t in tasks if t.get('due_date') and t.get('due_date') < today_str and t.get('status') != 'done']
+    elif selected_filter == _("Unplanned tasks"):
+        tasks = [t for t in tasks if not t.get('due_date') and not t.get('today')]
+
+    if tasks:
+        current_main = None
+        for task in tasks:
+            if task['main_project_name'] != current_main:
+                current_main = task['main_project_name']
+                st.subheader(current_main)
+            
+            name = task['sub_project_name']
+            status = task.get('status')
+            
+            # Display name with strikethrough if done
+            display_name = f"~~{name}~~" if status == 'done' else name
+            
+            due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
+            today_info = " ⭐" if task.get('today') else ""
+            
+            st.markdown(f"- {display_name}{due_info}{today_info}")
+    else:
+        st.info(_("No tasks found."))
+        
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('main')
 
 def view_project_management():
     """
@@ -1504,6 +1565,7 @@ def view_generic_placeholder(title):
 
 menu_map = {
     'main': view_main,
+    'task_planning': view_task_planning,
     'project_management': view_project_management,
     'main_project_mgmt': view_main_project_mgmt,
     'sub_project_mgmt': view_sub_project_mgmt,
