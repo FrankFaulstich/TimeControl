@@ -158,6 +158,9 @@ def view_main():
     if st.button(_("Aufgabenplanung"), use_container_width=True):
         navigate_to('task_planning')
 
+    if st.button(_("Today View"), use_container_width=True):
+        navigate_to('today_view')
+
     st.divider()
 
     if st.button(t_label("4. Handle projects and tasks"), use_container_width=True):
@@ -227,6 +230,41 @@ def view_task_planning():
     else:
         st.info(_("No tasks found."))
         
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('main')
+
+def view_today_tasks():
+    """
+    Renders the view showing all tasks marked as 'today' and not closed.
+    """
+    render_header(_("Today's Tasks"))
+
+    # Get all open/done tasks
+    tasks = st.session_state.tracker.list_sub_projects(status_filter='open')
+    
+    # Filter for tasks marked as 'today'
+    today_tasks = [t for t in tasks if t.get('today')]
+
+    if today_tasks:
+        # Group tasks by main project for better organization
+        today_tasks_grouped = {}
+        for task in today_tasks:
+            main_proj = task['main_project_name']
+            if main_proj not in today_tasks_grouped:
+                today_tasks_grouped[main_proj] = []
+            today_tasks_grouped[main_proj].append(task)
+        
+        for main_proj_name, sub_tasks in today_tasks_grouped.items():
+            st.subheader(main_proj_name)
+            for task in sub_tasks:
+                name = task['sub_project_name']
+                status = task.get('status')
+                display_name = f"~~{name}~~" if status == 'done' else name
+                due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
+                st.markdown(f"- {display_name}{due_info}")
+    else:
+        st.info(_("No tasks for today."))
+
     if st.button(_("Back"), use_container_width=True):
         navigate_to('main')
 
@@ -1566,6 +1604,7 @@ def view_generic_placeholder(title):
 menu_map = {
     'main': view_main,
     'task_planning': view_task_planning,
+    'today_view': view_today_tasks, # New view for today's tasks
     'project_management': view_project_management,
     'main_project_mgmt': view_main_project_mgmt,
     'sub_project_mgmt': view_sub_project_mgmt,
