@@ -139,10 +139,19 @@ def view_main():
     render_header(_("Time Control"), f"Version {st.session_state.tracker.get_version()}")
     
     current_work = st.session_state.tracker.get_current_work()
-    if current_work:
-        st.info(f"**{_('Current Active Work')}:** {current_work['sub_project_name']} ({current_work['main_project_name']})")
-    else:
-        st.info(_("No active work session."))
+
+    col_info, col_edit = st.columns([6, 1])
+    with col_info:
+        if current_work:
+            st.info(f"**{_('Current Active Work')}:** {current_work['sub_project_name']} ({current_work['main_project_name']})")
+        else:
+            st.info(_("No active work session."))
+    with col_edit:
+        st.markdown("<div style='padding-top: 6px;'></div>", unsafe_allow_html=True)
+        if st.button("✎", help=_("Aktuellen Task bearbeiten"), disabled=not current_work, use_container_width=True):
+            st.session_state.context['selected_main'] = current_work['main_project_name']
+            st.session_state.context['selected_sub'] = current_work['sub_project_name']
+            navigate_to('edit_sub_project_form')
 
     if st.button(t_label("1. Start work on task"), use_container_width=True):
         navigate_to('start_work')
@@ -1202,7 +1211,7 @@ def view_edit_sub_project_form():
 
     col_date, col_clear = st.columns([5, 1])
     with col_date:
-        new_due = st.date_input(_("Due Date"), value=st.session_state.edit_due_date)
+        new_due = st.date_input(_("Due Date"), value=st.session_state.edit_due_date, format="YYYY-MM-DD")
         st.session_state.edit_due_date = new_due
     with col_clear:
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
