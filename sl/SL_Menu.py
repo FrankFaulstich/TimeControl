@@ -1174,13 +1174,13 @@ def view_edit_sub_project_form():
 
     new_name = st.text_input(_("Task Name"), value=sub_name)
 
-    col_date, col_clear = st.columns([3, 1])
+    col_date, col_clear = st.columns([5, 1])
     with col_date:
         new_due = st.date_input(_("Due Date"), value=st.session_state.edit_due_date)
         st.session_state.edit_due_date = new_due
     with col_clear:
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-        if st.button(_("Clear"), use_container_width=True, help=_("Remove the due date")):
+        if st.button("✖️", use_container_width=True, help=_("Clear")):
             st.session_state.edit_due_date = None
             st.rerun()
 
