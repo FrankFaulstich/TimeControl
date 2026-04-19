@@ -1029,7 +1029,7 @@ def view_add_sub_project_form():
 
     with st.form("add_sub_form"):
         name = st.text_input(_("Name of the new task"))
-        due_date = st.date_input(_("Due date"), value=None)
+        due_date = st.date_input(_("Due date"), value=None, format="YYYY-MM-DD")
         today = st.checkbox(_("Today"))
         note = st.text_area(_("Notes (Markdown)"), height=100)
         submitted = st.form_submit_button(_("Add Task"), use_container_width=True)
