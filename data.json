@@ -29,7 +29,10 @@
           "status": "closed",
           "due_date": null,
           "today": false,
-          "note": ""
+          "note": "",
+          "recurring": false,
+          "frequency": "daily",
+          "userdefined_days": 1
         }
       ],
       "status": "open"
@@ -48,7 +51,10 @@
           "status": "open",
           "due_date": null,
           "today": false,
-          "note": ""
+          "note": "",
+          "recurring": false,
+          "frequency": "daily",
+          "userdefined_days": 1
         }
       ],
       "status": "open"

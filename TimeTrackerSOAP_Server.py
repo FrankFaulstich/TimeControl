@@ -39,6 +39,9 @@ class SubProjectModel(ComplexModel):
     due_date = Unicode(min_occurs=0, nillable=True)
     today = Boolean
     note = Unicode
+    recurring = Boolean
+    frequency = Unicode
+    userdefined_days = Integer
 
 class InactiveProjectModel(ComplexModel):
     main_project = Unicode
@@ -105,9 +108,9 @@ class TimeControlService(ServiceBase):
 
     # --- Sub Project Management ---
 
-    @rpc(Unicode, Unicode, Unicode, Boolean, Unicode, _returns=Boolean)
-    def add_sub_project(ctx, main_project_name, sub_project_name, due_date=None, today=False, note=""):
-        return ctx.service.tracker.add_sub_project(main_project_name, sub_project_name, due_date, today, note)
+    @rpc(Unicode, Unicode, Unicode, Boolean, Unicode, Boolean, Unicode, Integer, _returns=Boolean)
+    def add_sub_project(ctx, main_project_name, sub_project_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1):
+        return ctx.service.tracker.add_sub_project(main_project_name, sub_project_name, due_date, today, note, recurring, frequency, userdefined_days)
 
     @rpc(Unicode, Unicode, _returns=Array(SubProjectModel))
     def list_sub_projects(ctx, main_project_name=None, status_filter='all'):
@@ -130,9 +133,9 @@ class TimeControlService(ServiceBase):
     def rename_sub_project(ctx, main_project_name, old_name, new_name):
         return ctx.service.tracker.rename_sub_project(main_project_name, old_name, new_name)
 
-    @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, Unicode, _returns=Boolean)
-    def update_sub_project(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None):
-        return ctx.service.tracker.update_sub_project(main_project_name, old_name, new_name, due_date, today, note, status)
+    @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, Unicode, Boolean, Unicode, Integer, _returns=Boolean)
+    def update_sub_project(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None):
+        return ctx.service.tracker.update_sub_project(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days)
 
     @rpc(Unicode, Unicode, Unicode, _returns=OperationResultModel)
     def move_sub_project(ctx, old_main, sub_name, new_main):

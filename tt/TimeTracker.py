@@ -2,7 +2,8 @@ import json
 import os
 from i18n import _
 from decimal import Decimal, ROUND_HALF_UP
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+import calendar
 
 import sys
 import subprocess
@@ -157,6 +158,15 @@ class TimeTracker:
                     data_changed = True
                 if "note" not in sub_project:
                     sub_project["note"] = ""
+                    data_changed = True
+                if "recurring" not in sub_project:
+                    sub_project["recurring"] = False
+                    data_changed = True
+                if "frequency" not in sub_project:
+                    sub_project["frequency"] = "daily"
+                    data_changed = True
+                if "userdefined_days" not in sub_project:
+                    sub_project["userdefined_days"] = 1
                     data_changed = True
         return data_changed
 
@@ -346,7 +356,7 @@ class TimeTracker:
             return True
         return False
 
-    def add_sub_project(self, main_project_name, sub_project_name, due_date=None, today=False, note=""):
+    def add_sub_project(self, main_project_name, sub_project_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1):
         """
         Adds a new sub-project to a specified main project.
 
@@ -360,6 +370,9 @@ class TimeTracker:
         :type today: bool
         :param note: Notes for the task (Markdown format).
         :type note: str
+        :param recurring: Whether the task is recurring.
+        :param frequency: Freq (daily, on all business days, weekly, monthly, userdefined).
+        :param userdefined_days: Number of days for userdefined frequency.
         :return: True if the sub-project was added successfully, otherwise False (if main project not found).
         :rtype: bool
         """
@@ -371,7 +384,10 @@ class TimeTracker:
                 "status": self.STATUS_OPEN,
                 "due_date": due_date,
                 "today": today,
-                "note": note
+                "note": note,
+                "recurring": recurring,
+                "frequency": frequency,
+                "userdefined_days": userdefined_days
             }
             project["sub_projects"].append(new_sub_project)
             self._save_data()
@@ -413,7 +429,10 @@ class TimeTracker:
                         "status": status,
                         "due_date": sub_project.get("due_date"),
                         "today": sub_project.get("today", False),
-                        "note": sub_project.get("note", "")
+                        "note": sub_project.get("note", ""),
+                        "recurring": sub_project.get("recurring", False),
+                        "frequency": sub_project.get("frequency", "daily"),
+                        "userdefined_days": sub_project.get("userdefined_days", 1)
                     })
         return results
 
@@ -523,9 +542,9 @@ class TimeTracker:
                     return True
         return False
 
-    def update_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name=None, due_date=None, today=None, note=None, status=None):
+    def update_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None):
         """
-        Updates a sub-project's properties (name and/or due date).
+        Updates a sub-project's properties.
 
         :param main_project_name: Name of the main project.
         :param old_sub_project_name: Current name of the sub-project.
@@ -534,6 +553,9 @@ class TimeTracker:
         :param today: New today status (optional, bool).
         :param note: New note (optional, str).
         :param status: New status (optional, str).
+        :param recurring: Recurring status (optional, bool).
+        :param frequency: Frequency (optional, str).
+        :param userdefined_days: Days for userdefined frequency (optional, int).
         :return: True if successful.
         """
         project = self._get_project(main_project_name)
@@ -544,6 +566,13 @@ class TimeTracker:
 
             sub_project = self._get_sub_project(main_project_name, old_sub_project_name)
             if sub_project:
+                # Handle recurring task generation
+                is_completing = (status == self.STATUS_DONE and sub_project.get("status") != self.STATUS_DONE)
+                is_recurring = recurring if recurring is not None else sub_project.get("recurring", False)
+                
+                if is_completing and is_recurring:
+                    self._create_next_recurring_instance(project, sub_project, due_date, recurring, frequency, userdefined_days)
+
                 if new_sub_project_name:
                     sub_project["sub_project_name"] = new_sub_project_name
                 
@@ -562,9 +591,65 @@ class TimeTracker:
                 if status is not None:
                     sub_project["status"] = status
                 
+                if recurring is not None:
+                    sub_project["recurring"] = recurring
+                if frequency is not None:
+                    sub_project["frequency"] = frequency
+                if userdefined_days is not None:
+                    sub_project["userdefined_days"] = userdefined_days
+                
                 self._save_data()
                 return True
         return False
+
+    def _create_next_recurring_instance(self, project, sub_project, due_date_param, recurring_param, freq_param, ud_days_param):
+        freq = freq_param if freq_param is not None else sub_project.get("frequency", "daily")
+        ud_days = ud_days_param if ud_days_param is not None else sub_project.get("userdefined_days", 1)
+        base_due = due_date_param if due_date_param is not None else sub_project.get("due_date")
+        
+        next_due = self._calculate_next_due_date(base_due, freq, ud_days)
+        
+        new_task = {
+            "sub_project_name": sub_project["sub_project_name"],
+            "time_entries": [],
+            "status": self.STATUS_OPEN,
+            "due_date": next_due,
+            "today": sub_project.get("today", False),
+            "note": sub_project.get("note", ""),
+            "recurring": True,
+            "frequency": freq,
+            "userdefined_days": ud_days
+        }
+        project["sub_projects"].append(new_task)
+
+    def _calculate_next_due_date(self, base_due_str, frequency, ud_days):
+        if base_due_str:
+            try:
+                base_date = datetime.fromisoformat(base_due_str).date()
+            except ValueError:
+                base_date = date.today()
+        else:
+            base_date = date.today()
+            
+        if frequency == "daily":
+            next_date = base_date + timedelta(days=1)
+        elif frequency == "on all business days":
+            next_date = base_date + timedelta(days=1)
+            while next_date.weekday() >= 5: # 5=Sat, 6=Sun
+                next_date += timedelta(days=1)
+        elif frequency == "weekly":
+            next_date = base_date + timedelta(weeks=1)
+        elif frequency == "monthly":
+            month = base_date.month % 12 + 1
+            year = base_date.year + (base_date.month // 12)
+            last_day = calendar.monthrange(year, month)[1]
+            next_date = date(year, month, min(base_date.day, last_day))
+        elif frequency == "userdefined":
+            next_date = base_date + timedelta(days=ud_days)
+        else:
+            next_date = base_date + timedelta(days=1)
+            
+        return next_date.isoformat()
 
     def move_sub_project(self, old_main_project_name, sub_project_name, new_main_project_name):
         """
