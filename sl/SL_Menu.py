@@ -1044,31 +1044,64 @@ def view_add_sub_project_form():
 
     render_header(_("Add Task"), f"{_('To Project:')} {main_project}")
     
+    # Inject CSS for full-height responsive layout and styled preview
+    st.markdown("""
+        <style>
+        div[data-testid="stTabPanel"], div[data-baseweb='textarea'] {
+            height: calc(100vh - 480px) !important;
+            min-height: 250px;
+        }
+        div[data-baseweb='textarea'] textarea, .note-preview-box {
+            height: 100% !important;
+        }
+        .note-preview-box {
+            border: 1px solid rgba(49, 51, 63, 0.2);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
     existing_subs = [s['sub_project_name'].lower() for s in st.session_state.tracker.list_sub_projects(main_project_name=main_project)]
 
-    with st.form("add_sub_form"):
-        name = st.text_input(_("Name of the new task"))
+    name = st.text_input(_("Name of the new task"))
+    if "new_task_note" not in st.session_state:
+        st.session_state.new_task_note = ""
+    
+    col_date, col_today = st.columns([2, 1])
+    with col_date:
         due_date = st.date_input(_("Due date"), value=None, format="YYYY-MM-DD")
+    with col_today:
+        st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
         today = st.checkbox(_("Today"))
-        note = st.text_area(_("Notes (Markdown)"), height=100)
-        submitted = st.form_submit_button(_("Add Task"), use_container_width=True)
-        if submitted and name:
-            due_date_str = due_date.isoformat() if due_date else None
-            if name.lower() in existing_subs:
+
+    tab_edit, tab_preview = st.tabs([_("Edit"), _("Preview")])
+    with tab_edit:
+        st.text_area(_("Notes (Markdown)"), key="new_task_note", label_visibility="collapsed")
+    with tab_preview:
+        st.markdown('<div class="note-preview-box">', unsafe_allow_html=True)
+        st.markdown(st.session_state.new_task_note if st.session_state.new_task_note else f"*{_('No notes provided.')}*")
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.divider()
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        if st.button(_("Add Task"), type="primary", use_container_width=True):
+            if not name:
+                st.error(_("Please enter a name."))
+            elif name.lower() in existing_subs:
                 set_feedback(_("A task with this name already exists in this project."), 'error')
-                st.rerun()
-            elif st.session_state.tracker.add_sub_project(main_project, name, due_date_str, today, note):
+            elif st.session_state.tracker.add_sub_project(main_project, name, due_date.isoformat() if due_date else None, today, st.session_state.new_task_note):
                 set_feedback(_("Task '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
+                if "new_task_note" in st.session_state: del st.session_state.new_task_note
                 st.session_state.context = {}
                 navigate_to('sub_project_mgmt')
-                st.rerun()
-            else:
-                set_feedback(_("Error: Could not find project '{name}'.").format(name=main_project), 'error')
-                st.rerun()
-
-    if st.button(_("Cancel"), use_container_width=True): 
-        st.session_state.context = {}
-        navigate_to('sub_project_mgmt')
+    with col_btn2:
+        if st.button(_("Cancel"), use_container_width=True): 
+            if "new_task_note" in st.session_state: del st.session_state.new_task_note
+            st.session_state.context = {}
+            navigate_to('sub_project_mgmt')
 
 def view_edit_sub_project_select_main():
     """Step 1 of editing a task: Select the main project."""
@@ -1112,10 +1145,32 @@ def view_edit_sub_project_form():
     
     render_header(_("Edit Task"), f"{main_project} / {sub_name}")
     
+    # Inject CSS for full-height responsive layout and styled preview
+    st.markdown("""
+        <style>
+        div[data-testid="stTabPanel"], div[data-baseweb='textarea'] {
+            height: calc(100vh - 560px) !important;
+            min-height: 200px;
+        }
+        div[data-baseweb='textarea'] textarea, .note-preview-box {
+            height: 100% !important;
+        }
+        .note-preview-box {
+            border: 1px solid rgba(49, 51, 63, 0.2);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
     # Initialisiere Session-State für das Datum, um interaktives Leeren zu ermöglichen
     if 'edit_due_date' not in st.session_state:
         curr_due = task_details.get('due_date')
         st.session_state.edit_due_date = datetime.fromisoformat(curr_due).date() if curr_due else None
+
+    if 'edit_task_note' not in st.session_state:
+        st.session_state.edit_task_note = task_details.get('note', '')
 
     new_name = st.text_input(_("Task Name"), value=sub_name)
 
@@ -1129,30 +1184,42 @@ def view_edit_sub_project_form():
             st.session_state.edit_due_date = None
             st.rerun()
 
-    is_today = st.checkbox(_("Today"), value=task_details.get('today', False))
-    is_done = st.checkbox(_("Done"), value=(task_details.get('status') == 'done'))
-    new_note = st.text_area(_("Notes (Markdown)"), value=task_details.get('note', ''), height=150)
+    col_today, col_done = st.columns(2)
+    with col_today:
+        is_today = st.checkbox(_("Today"), value=task_details.get('today', False))
+    with col_done:
+        is_done = st.checkbox(_("Done"), value=(task_details.get('status') == 'done'))
+
+    tab_edit, tab_preview = st.tabs([_("Edit"), _("Preview")])
+    with tab_edit:
+        st.text_area(_("Notes (Markdown)"), key="edit_task_note", label_visibility="collapsed")
+    with tab_preview:
+        st.markdown('<div class="note-preview-box">', unsafe_allow_html=True)
+        st.markdown(st.session_state.edit_task_note if st.session_state.edit_task_note else f"*{_('No notes provided.')}*")
+        st.markdown('</div>', unsafe_allow_html=True)
     
     st.divider()
+    col_save, col_cancel = st.columns(2)
+    with col_save:
+        if st.button(_("Save Changes"), type="primary", use_container_width=True):
+            final_due = st.session_state.edit_due_date.isoformat() if st.session_state.edit_due_date else None
+            new_status = 'done' if is_done else 'open'
+            
+            if st.session_state.tracker.update_sub_project(main_project, sub_name, new_name, final_due, is_today, st.session_state.edit_task_note, new_status):
+                set_feedback(_("Task updated successfully."))
+                if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
+                if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
+                st.session_state.context = {}
+                navigate_to('sub_project_mgmt')
+            else:
+                st.error(_("Error: Could not update task."))
 
-    if st.button(_("Save Changes"), type="primary", use_container_width=True):
-        final_due = st.session_state.edit_due_date.isoformat() if st.session_state.edit_due_date else None
-        new_status = 'done' if is_done else 'open'
-        
-        if st.session_state.tracker.update_sub_project(main_project, sub_name, new_name, final_due, is_today, new_note, new_status):
-            set_feedback(_("Task updated successfully."))
+    with col_cancel:
+        if st.button(_("Cancel"), use_container_width=True):
             if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
+            if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
             st.session_state.context = {}
             navigate_to('sub_project_mgmt')
-            st.rerun()
-        else:
-            st.error(_("Error: Could not update task."))
-
-    if st.button(_("Cancel"), use_container_width=True):
-        if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
-        st.session_state.context = {}
-        navigate_to('sub_project_mgmt')
-        st.rerun()
 
 def view_start_work():
     """
