@@ -66,7 +66,7 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
             self.ctx, "Main", "Sub", "2025-12-24", True, "Note"
         )
         self.mock_tracker.add_sub_project.assert_called_with(
-            "Main", "Sub", "2025-12-24", True, "Note"
+            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1
         )
         self.assertTrue(result)
 
@@ -117,7 +117,7 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
             self.ctx, "Main", "Old", "New", "2025-01-01", True, "Note", "done"
         )
         self.mock_tracker.update_sub_project.assert_called_with(
-            "Main", "Old", "New", "2025-01-01", True, "Note", "done"
+            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None
         )
         self.assertTrue(result)
 

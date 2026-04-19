@@ -1048,7 +1048,7 @@ def view_add_sub_project_form():
     st.markdown("""
         <style>
         div[data-testid="stTabPanel"], div[data-baseweb='textarea'] {
-            height: calc(100vh - 480px) !important;
+            height: calc(100vh - 560px) !important;
             min-height: 250px;
         }
         div[data-baseweb='textarea'] textarea, .note-preview-box {
@@ -1069,12 +1069,29 @@ def view_add_sub_project_form():
     if "new_task_note" not in st.session_state:
         st.session_state.new_task_note = ""
     
-    col_date, col_today = st.columns([2, 1])
+    col_date, col_today, col_rec = st.columns([2, 1, 1])
     with col_date:
         due_date = st.date_input(_("Due date"), value=None, format="YYYY-MM-DD")
     with col_today:
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
         today = st.checkbox(_("Today"))
+    with col_rec:
+        st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
+        is_recurring = st.checkbox(_("Recurring"))
+
+    # Frequency options for recurring tasks
+    freq_options = ["daily", "on all business days", "weekly", "monthly", "userdefined"]
+    freq_labels = [_("daily"), _("on all business days"), _("weekly"), _("monthly"), _("userdefined")]
+    
+    col_freq, col_ud = st.columns([2, 1])
+    with col_freq:
+        selected_label = st.selectbox(_("Frequency"), options=freq_labels, index=0, disabled=not is_recurring)
+        final_freq = freq_options[freq_labels.index(selected_label)]
+    with col_ud:
+        ud_days = st.number_input(
+            _("Days"), min_value=1, value=1, step=1, 
+            disabled=not (is_recurring and final_freq == "userdefined")
+        )
 
     tab_edit, tab_preview = st.tabs([_("Edit"), _("Preview")])
     with tab_edit:
@@ -1092,7 +1109,16 @@ def view_add_sub_project_form():
                 st.error(_("Please enter a name."))
             elif name.lower() in existing_subs:
                 set_feedback(_("A task with this name already exists in this project."), 'error')
-            elif st.session_state.tracker.add_sub_project(main_project, name, due_date.isoformat() if due_date else None, today, st.session_state.new_task_note):
+            elif st.session_state.tracker.add_sub_project(
+                main_project, 
+                name, 
+                due_date.isoformat() if due_date else None, 
+                today, 
+                st.session_state.new_task_note,
+                recurring=is_recurring,
+                frequency=final_freq,
+                userdefined_days=ud_days
+            ):
                 set_feedback(_("Task '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
                 if "new_task_note" in st.session_state: del st.session_state.new_task_note
                 st.session_state.context = {}
@@ -1184,11 +1210,28 @@ def view_edit_sub_project_form():
             st.session_state.edit_due_date = None
             st.rerun()
 
-    col_today, col_done = st.columns(2)
+    col_today, col_done, col_rec = st.columns(3)
     with col_today:
         is_today = st.checkbox(_("Today"), value=task_details.get('today', False))
     with col_done:
         is_done = st.checkbox(_("Done"), value=(task_details.get('status') == 'done'))
+    with col_rec:
+        is_recurring = st.checkbox(_("Recurring"), value=task_details.get('recurring', False))
+
+    freq_options = ["daily", "on all business days", "weekly", "monthly", "userdefined"]
+    freq_labels = [_("daily"), _("on all business days"), _("weekly"), _("monthly"), _("userdefined")]
+    curr_freq = task_details.get('frequency', 'daily')
+    try:
+        freq_idx = freq_options.index(curr_freq)
+    except ValueError:
+        freq_idx = 0
+
+    col_freq, col_ud = st.columns([2, 1])
+    with col_freq:
+        selected_label = st.selectbox(_("Frequency"), options=freq_labels, index=freq_idx, disabled=not is_recurring)
+        final_freq = freq_options[freq_labels.index(selected_label)]
+    with col_ud:
+        ud_days = st.number_input(_("Days"), min_value=1, value=task_details.get('userdefined_days', 1), step=1, disabled=not (is_recurring and final_freq == "userdefined"))
 
     tab_edit, tab_preview = st.tabs([_("Edit"), _("Preview")])
     with tab_edit:
@@ -1205,7 +1248,18 @@ def view_edit_sub_project_form():
             final_due = st.session_state.edit_due_date.isoformat() if st.session_state.edit_due_date else None
             new_status = 'done' if is_done else 'open'
             
-            if st.session_state.tracker.update_sub_project(main_project, sub_name, new_name, final_due, is_today, st.session_state.edit_task_note, new_status):
+            if st.session_state.tracker.update_sub_project(
+                main_project, 
+                sub_name, 
+                new_name, 
+                final_due, 
+                is_today, 
+                st.session_state.edit_task_note, 
+                new_status,
+                recurring=is_recurring,
+                frequency=final_freq,
+                userdefined_days=ud_days
+            ):
                 set_feedback(_("Task updated successfully."))
                 if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
                 if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
