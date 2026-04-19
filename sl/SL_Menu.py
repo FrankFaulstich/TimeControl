@@ -239,9 +239,28 @@ def view_today_tasks():
     """
     render_header(_("Today's Tasks"))
 
-    # Get all open/done tasks
+    # Get all open tasks
     tasks = st.session_state.tracker.list_sub_projects(status_filter='open')
-    
+    today_dt = datetime.now().date()
+    today_str = today_dt.isoformat()
+
+    # Auto-cleanup: remove 'today' flag from overdue tasks
+    changed = False
+    for t in tasks:
+        if t.get('today') and t.get('due_date') and t.get('due_date') < today_str:
+            st.session_state.tracker.update_sub_project(
+                t['main_project_name'],
+                t['sub_project_name'],
+                due_date=t['due_date'],
+                today=False,
+                note=t.get('note'),
+                status=t.get('status')
+            )
+            changed = True
+
+    if changed:
+        tasks = st.session_state.tracker.list_sub_projects(status_filter='open')
+
     # Filter for tasks marked as 'today'
     today_tasks = [t for t in tasks if t.get('today')]
 
