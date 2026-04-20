@@ -29,7 +29,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.4"
+    VERSION = "3.4.1"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -611,7 +611,7 @@ class TimeTracker:
         
         new_task = {
             "sub_project_name": sub_project["sub_project_name"],
-            "time_entries": [],
+            "time_entries": [], # Start with a fresh, empty list for the new instance
             "status": self.STATUS_OPEN,
             "due_date": next_due,
             "today": sub_project.get("today", False),
