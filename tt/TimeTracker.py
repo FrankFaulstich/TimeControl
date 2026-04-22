@@ -457,17 +457,17 @@ class TimeTracker:
                         if due_date or is_today:
                             continue
 
-                    results.append({
-                        "main_project_name": project["main_project_name"],
-                        "sub_project_name": sub_project["sub_project_name"],
-                        "status": status,
-                        "due_date": sub_project.get("due_date"),
-                        "today": sub_project.get("today", False),
-                        "note": sub_project.get("note", ""),
-                        "recurring": sub_project.get("recurring", False),
-                        "frequency": sub_project.get("frequency", "daily"),
-                        "userdefined_days": sub_project.get("userdefined_days", 1)
-                    })
+                results.append({
+                    "main_project_name": project["main_project_name"],
+                    "sub_project_name": sub_project["sub_project_name"],
+                    "status": status,
+                    "due_date": sub_project.get("due_date"),
+                    "today": sub_project.get("today", False),
+                    "note": sub_project.get("note", ""),
+                    "recurring": sub_project.get("recurring", False),
+                    "frequency": sub_project.get("frequency", "daily"),
+                    "userdefined_days": sub_project.get("userdefined_days", 1)
+                })
         return results
 
     def cleanup_overdue_today_tasks(self):
