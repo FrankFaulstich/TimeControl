@@ -140,15 +140,45 @@ def view_main():
     
     current_work = st.session_state.tracker.get_current_work()
 
-    col_info, col_edit = st.columns([6, 1])
+    # Custom CSS to keep the info box and edit button side-by-side and the button square
+    st.markdown("""
+        <style>
+        /* Target the first horizontal block (columns) in the main view */
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: flex-start !important;
+            gap: 0.5rem !important;
+        }
+        /* Ensure the info column takes remaining space */
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(1) {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+        }
+        /* Fixed width for the button column and make button square */
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2) {
+            flex: 0 0 50px !important;
+            width: 50px !important;
+            min-width: 50px !important;
+        }
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2) button {
+            width: 50px !important;
+            height: 48px !important;
+            padding: 0 !important;
+            margin-top: 4px !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    col_info, col_edit = st.columns([5, 1])
     with col_info:
         if current_work:
             st.info(f"**{_('Current Active Work')}:** {current_work['sub_project_name']} ({current_work['main_project_name']})")
         else:
             st.info(_("No active work session."))
     with col_edit:
-        st.markdown("<div style='padding-top: 6px;'></div>", unsafe_allow_html=True)
-        if st.button("✎", help=_("Aktuellen Task bearbeiten"), disabled=not current_work, use_container_width=True):
+        if st.button("✎", help=_("Aktuellen Task bearbeiten"), disabled=not current_work):
             st.session_state.context['selected_main'] = current_work['main_project_name']
             st.session_state.context['selected_sub'] = current_work['sub_project_name']
             navigate_to('edit_sub_project_form')
