@@ -3,7 +3,7 @@ import unittest.mock
 import json
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 # Add parent directory to path to import modules from root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -297,6 +297,57 @@ class TestTimeTracker(unittest.TestCase):
         task_names = [t["sub_project_name"] for t in open_tasks]
         self.assertIn("OpenTask", task_names)
         self.assertIn("DoneTask", task_names)
+
+    def test_list_sub_projects_planning_filters(self):
+        """Tests the new planning filters in list_sub_projects."""
+        self.tracker.add_main_project("Planning")
+        today_str = date.today().isoformat()
+        tomorrow_str = (date.today() + timedelta(days=1)).isoformat()
+        
+        self.tracker.add_sub_project("Planning", "DueToday", due_date=today_str)
+        self.tracker.add_sub_project("Planning", "StarredOnly", today=True)
+        self.tracker.add_sub_project("Planning", "DueTomorrow", due_date=tomorrow_str)
+        self.tracker.add_sub_project("Planning", "Unplanned", today=False, due_date=None)
+        self.tracker.add_sub_project("Planning", "FutureTask", due_date="2099-01-01")
+        
+        # Test 'today' filter (should show due today OR starred)
+        today_tasks = self.tracker.list_sub_projects(planning_filter='today')
+        names = [t['sub_project_name'] for t in today_tasks]
+        self.assertIn("DueToday", names)
+        self.assertIn("StarredOnly", names)
+        self.assertNotIn("DueTomorrow", names)
+        self.assertNotIn("FutureTask", names)
+        self.assertEqual(len(names), 2)
+
+        # Test 'tomorrow' filter
+        tomorrow_tasks = self.tracker.list_sub_projects(planning_filter='tomorrow')
+        self.assertEqual(len(tomorrow_tasks), 1)
+        self.assertEqual(tomorrow_tasks[0]['sub_project_name'], "DueTomorrow")
+
+        # Test 'unplanned' filter
+        unplanned_tasks = self.tracker.list_sub_projects(planning_filter='unplanned')
+        self.assertEqual(len(unplanned_tasks), 1)
+        self.assertEqual(unplanned_tasks[0]['sub_project_name'], "Unplanned")
+
+    def test_cleanup_overdue_today_tasks(self):
+        """Tests the auto-cleanup logic for starred tasks."""
+        self.tracker.add_main_project("Cleanup")
+        yesterday_str = (date.today() - timedelta(days=1)).isoformat()
+        
+        # This task is marked for 'today' but its due date was yesterday
+        self.tracker.add_sub_project("Cleanup", "LateTask", due_date=yesterday_str, today=True)
+        
+        # Run cleanup
+        changed = self.tracker.cleanup_overdue_today_tasks()
+        self.assertTrue(changed)
+        
+        # Check results: Star should be gone, but task remains
+        tasks = self.tracker.list_sub_projects("Cleanup", planning_filter='today')
+        self.assertEqual(len(tasks), 0) # No longer in 'today' filter
+        
+        all_tasks = self.tracker.list_sub_projects("Cleanup")
+        self.assertEqual(all_tasks[0]['sub_project_name'], "LateTask")
+        self.assertFalse(all_tasks[0]['today'])
 
     def test_add_sub_project_main_not_found(self):
         """Tests adding a sub-project to a non-existent main project."""

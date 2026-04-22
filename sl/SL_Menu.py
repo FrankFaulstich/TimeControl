@@ -200,24 +200,19 @@ def view_task_planning():
     ]
     selected_filter = st.selectbox(_("Filter"), options=filter_options, index=0)
 
-    tasks = st.session_state.tracker.list_sub_projects(status_filter='open')
-    
-    # Filter Logic
-    today_dt = datetime.now().date()
-    today_str = today_dt.isoformat()
-    tomorrow_str = (today_dt + timedelta(days=1)).isoformat()
-    next_week_str = (today_dt + timedelta(days=7)).isoformat()
+    filter_map = {
+        _("Today"): 'today',
+        _("Tomorrow"): 'tomorrow',
+        _("Weekly overview"): 'weekly',
+        _("Overdue tasks"): 'overdue',
+        _("Unplanned tasks"): 'unplanned'
+    }
+    planning_filter = filter_map.get(selected_filter)
 
-    if selected_filter == _("Today"):
-        tasks = [t for t in tasks if t.get('today') or t.get('due_date') == today_str]
-    elif selected_filter == _("Tomorrow"):
-        tasks = [t for t in tasks if t.get('due_date') == tomorrow_str]
-    elif selected_filter == _("Weekly overview"):
-        tasks = [t for t in tasks if t.get('due_date') and today_str <= t.get('due_date') <= next_week_str]
-    elif selected_filter == _("Overdue tasks"):
-        tasks = [t for t in tasks if t.get('due_date') and t.get('due_date') < today_str and t.get('status') != 'done']
-    elif selected_filter == _("Unplanned tasks"):
-        tasks = [t for t in tasks if not t.get('due_date') and not t.get('today')]
+    if planning_filter == 'today':
+        st.session_state.tracker.cleanup_overdue_today_tasks()
+
+    tasks = st.session_state.tracker.list_sub_projects(planning_filter=planning_filter)
 
     if tasks:
         current_main = None
@@ -248,30 +243,11 @@ def view_today_tasks():
     """
     render_header(_("Today's Tasks"))
 
-    # Get all open tasks
-    tasks = st.session_state.tracker.list_sub_projects(status_filter='open')
-    today_dt = datetime.now().date()
-    today_str = today_dt.isoformat()
-
-    # Auto-cleanup: remove 'today' flag from overdue tasks
-    changed = False
-    for t in tasks:
-        if t.get('today') and t.get('due_date') and t.get('due_date') < today_str:
-            st.session_state.tracker.update_sub_project(
-                t['main_project_name'],
-                t['sub_project_name'],
-                due_date=t['due_date'],
-                today=False,
-                note=t.get('note'),
-                status=t.get('status')
-            )
-            changed = True
-
-    if changed:
-        tasks = st.session_state.tracker.list_sub_projects(status_filter='open')
-
-    # Filter for tasks marked as 'today'
-    today_tasks = [t for t in tasks if t.get('today')]
+    st.session_state.tracker.cleanup_overdue_today_tasks()
+    
+    # Here we show tasks that are explicitly marked as 'today' (⭐)
+    all_open = st.session_state.tracker.list_sub_projects(status_filter='open')
+    today_tasks = [t for t in all_open if t.get('today')]
 
     if today_tasks:
         # Group tasks by main project for better organization

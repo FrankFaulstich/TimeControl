@@ -394,7 +394,7 @@ class TimeTracker:
             return True
         return False
     
-    def list_sub_projects(self, main_project_name=None, status_filter='all'):
+    def list_sub_projects(self, main_project_name=None, status_filter='all', planning_filter=None):
         """
         Lists sub-projects based on specified filters.
 
