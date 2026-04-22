@@ -394,7 +394,7 @@ class TimeTracker:
             return True
         return False
     
-    def list_sub_projects(self, main_project_name=None, status_filter='all'):
+    def list_sub_projects(self, main_project_name=None, status_filter='all', planning_filter=None):
         """
         Lists sub-projects based on specified filters.
 
@@ -419,22 +419,74 @@ class TimeTracker:
         if main_project_name:
             projects_to_search = [p for p in projects_to_search if p.get("main_project_name") == main_project_name]
 
+        today_dt = date.today()
+        today_str = today_dt.isoformat()
+        tomorrow_str = (today_dt + timedelta(days=1)).isoformat()
+        next_week_str = (today_dt + timedelta(days=7)).isoformat()
+
         for project in projects_to_search:
             for sub_project in project.get("sub_projects", []):
                 status = sub_project.get("status", self.STATUS_OPEN)
-                if status_filter == 'all' or status == status_filter or (status_filter == self.STATUS_OPEN and status == self.STATUS_DONE):
-                    results.append({
-                        "main_project_name": project["main_project_name"],
-                        "sub_project_name": sub_project["sub_project_name"],
-                        "status": status,
-                        "due_date": sub_project.get("due_date"),
-                        "today": sub_project.get("today", False),
-                        "note": sub_project.get("note", ""),
-                        "recurring": sub_project.get("recurring", False),
-                        "frequency": sub_project.get("frequency", "daily"),
-                        "userdefined_days": sub_project.get("userdefined_days", 1)
-                    })
+                
+                # Default status filter logic
+                if not (status_filter == 'all' or status == status_filter or (status_filter == self.STATUS_OPEN and status == self.STATUS_DONE)):
+                    continue
+
+                # Planning filter logic
+                if planning_filter:
+                    # In planning views, we usually exclude 'done' and 'closed' tasks
+                    if status in [self.STATUS_DONE, self.STATUS_CLOSED]:
+                        continue
+                        
+                    due_date = sub_project.get("due_date")
+                    is_today = sub_project.get("today", False)
+                    
+                    if planning_filter == 'today':
+                        if not (is_today or due_date == today_str):
+                            continue
+                    elif planning_filter == 'tomorrow':
+                        if due_date != tomorrow_str:
+                            continue
+                    elif planning_filter == 'weekly':
+                        if not (due_date and today_str <= due_date <= next_week_str):
+                            continue
+                    elif planning_filter == 'overdue':
+                        if not (due_date and due_date < today_str):
+                            continue
+                    elif planning_filter == 'unplanned':
+                        if due_date or is_today:
+                            continue
+
+                results.append({
+                    "main_project_name": project["main_project_name"],
+                    "sub_project_name": sub_project["sub_project_name"],
+                    "status": status,
+                    "due_date": sub_project.get("due_date"),
+                    "today": sub_project.get("today", False),
+                    "note": sub_project.get("note", ""),
+                    "recurring": sub_project.get("recurring", False),
+                    "frequency": sub_project.get("frequency", "daily"),
+                    "userdefined_days": sub_project.get("userdefined_days", 1)
+                })
         return results
+
+    def cleanup_overdue_today_tasks(self):
+        """
+        Removes the 'today' flag (⭐) from tasks that have a due date in the past.
+        
+        :return: True if any task was updated and saved.
+        :rtype: bool
+        """
+        today_str = date.today().isoformat()
+        changed = False
+        for project in self.data.get("projects", []):
+            for sub_project in project.get("sub_projects", []):
+                if sub_project.get('today') and sub_project.get('due_date') and sub_project.get('due_date') < today_str:
+                    sub_project['today'] = False
+                    changed = True
+        if changed:
+            self._save_data()
+        return changed
 
     def delete_sub_project(self, main_project_name, sub_project_name):
         """
