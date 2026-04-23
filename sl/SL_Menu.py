@@ -174,7 +174,7 @@ def view_main():
     col_info, col_edit = st.columns([5, 1])
     with col_info:
         if current_work:
-            st.info(f"**{_('Current Active Work')}:** {current_work['sub_project_name']} ({current_work['main_project_name']})")
+            st.info(f"**{_('Current Active Work')}:** {current_work['task_name']} ({current_work['main_project_name']})")
         else:
             st.info(_("No active work session."))
     with col_edit:
