@@ -243,35 +243,35 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(projects[0]['main_project_name'], "Main Project")
         self.assertEqual(projects[0]['status'], "open")
 
-    # --- Sub-Project Method Tests ---
+    # --- Task Method Tests ---
 
-    def test_add_sub_project_success(self):
-        """Tests the successful addition of a sub-project."""
+    def test_add_task_success(self):
+        """Tests the successful addition of a task."""
         self.tracker.add_main_project("Main Test")
-        success = self.tracker.add_sub_project("Main Test", "Sub Task 1")
+        success = self.tracker.add_task("Main Test", "Sub Task 1")
         self.assertTrue(success)
-        sub_projects = self.tracker.data["projects"][0]["sub_projects"]
-        self.assertEqual(len(sub_projects), 1)
-        self.assertEqual(sub_projects[0]["sub_project_name"], "Sub Task 1")
+        tasks = self.tracker.data["projects"][0]["tasks"]
+        self.assertEqual(len(tasks), 1)
+        self.assertEqual(tasks[0]["task_name"], "Sub Task 1")
 
-    def test_add_sub_project_with_new_fields(self):
-        """Tests adding a sub-project with due_date, today, and note."""
+    def test_add_task_with_new_fields(self):
+        """Tests adding a task with due_date, today, and note."""
         self.tracker.add_main_project("Main")
-        self.tracker.add_sub_project("Main", "Task", due_date="2025-12-31", today=True, note="Test Note")
+        self.tracker.add_task("Main", "Task", due_date="2025-12-31", today=True, note="Test Note")
         
-        sub = self.tracker.list_sub_projects("Main")[0]
+        sub = self.tracker.list_tasks("Main")[0]
         self.assertEqual(sub["due_date"], "2025-12-31")
         self.assertEqual(sub["today"], True)
         self.assertEqual(sub["note"], "Test Note")
 
-    def test_update_sub_project_success(self):
+    def test_update_task_success(self):
         """Tests updating all new task properties."""
         self.tracker.add_main_project("Main")
-        self.tracker.add_sub_project("Main", "OldName")
+        self.tracker.add_task("Main", "OldName")
         
-        success = self.tracker.update_sub_project(
+        success = self.tracker.update_task(
             "Main", "OldName", 
-            new_sub_project_name="NewName",
+            new_task_name="NewName",
             due_date="2025-01-01",
             today=True,
             note="Updated Note",
@@ -279,40 +279,40 @@ class TestTimeTracker(unittest.TestCase):
         )
         
         self.assertTrue(success)
-        sub = self.tracker.list_sub_projects("Main", status_filter='all')[0]
-        self.assertEqual(sub["sub_project_name"], "NewName")
+        sub = self.tracker.list_tasks("Main", status_filter='all')[0]
+        self.assertEqual(sub["task_name"], "NewName")
         self.assertEqual(sub["due_date"], "2025-01-01")
         self.assertEqual(sub["today"], True)
         self.assertEqual(sub["note"], "Updated Note")
         self.assertEqual(sub["status"], "done")
 
-    def test_list_sub_projects_done_status(self):
+    def test_list_tasks_done_status(self):
         """Tests that 'done' tasks are included when filtering for 'open'."""
         self.tracker.add_main_project("Main")
-        self.tracker.add_sub_project("Main", "OpenTask")
-        self.tracker.add_sub_project("Main", "DoneTask")
-        self.tracker.update_sub_project("Main", "DoneTask", status="done")
+        self.tracker.add_task("Main", "OpenTask")
+        self.tracker.add_task("Main", "DoneTask")
+        self.tracker.update_task("Main", "DoneTask", status="done")
         
-        open_tasks = self.tracker.list_sub_projects("Main", status_filter='open')
-        task_names = [t["sub_project_name"] for t in open_tasks]
+        open_tasks = self.tracker.list_tasks("Main", status_filter='open')
+        task_names = [t["task_name"] for t in open_tasks]
         self.assertIn("OpenTask", task_names)
         self.assertIn("DoneTask", task_names)
 
-    def test_list_sub_projects_planning_filters(self):
-        """Tests the new planning filters in list_sub_projects."""
+    def test_list_tasks_planning_filters(self):
+        """Tests the new planning filters in list_tasks."""
         self.tracker.add_main_project("Planning")
         today_str = date.today().isoformat()
         tomorrow_str = (date.today() + timedelta(days=1)).isoformat()
         
-        self.tracker.add_sub_project("Planning", "DueToday", due_date=today_str)
-        self.tracker.add_sub_project("Planning", "StarredOnly", today=True)
-        self.tracker.add_sub_project("Planning", "DueTomorrow", due_date=tomorrow_str)
-        self.tracker.add_sub_project("Planning", "Unplanned", today=False, due_date=None)
-        self.tracker.add_sub_project("Planning", "FutureTask", due_date="2099-01-01")
+        self.tracker.add_task("Planning", "DueToday", due_date=today_str)
+        self.tracker.add_task("Planning", "StarredOnly", today=True)
+        self.tracker.add_task("Planning", "DueTomorrow", due_date=tomorrow_str)
+        self.tracker.add_task("Planning", "Unplanned", today=False, due_date=None)
+        self.tracker.add_task("Planning", "FutureTask", due_date="2099-01-01")
         
         # Test 'today' filter (should show due today OR starred)
-        today_tasks = self.tracker.list_sub_projects(planning_filter='today')
-        names = [t['sub_project_name'] for t in today_tasks]
+        today_tasks = self.tracker.list_tasks(planning_filter='today')
+        names = [t['task_name'] for t in today_tasks]
         self.assertIn("DueToday", names)
         self.assertIn("StarredOnly", names)
         self.assertNotIn("DueTomorrow", names)
@@ -320,14 +320,14 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(len(names), 2)
 
         # Test 'tomorrow' filter
-        tomorrow_tasks = self.tracker.list_sub_projects(planning_filter='tomorrow')
+        tomorrow_tasks = self.tracker.list_tasks(planning_filter='tomorrow')
         self.assertEqual(len(tomorrow_tasks), 1)
-        self.assertEqual(tomorrow_tasks[0]['sub_project_name'], "DueTomorrow")
+        self.assertEqual(tomorrow_tasks[0]['task_name'], "DueTomorrow")
 
         # Test 'unplanned' filter
-        unplanned_tasks = self.tracker.list_sub_projects(planning_filter='unplanned')
+        unplanned_tasks = self.tracker.list_tasks(planning_filter='unplanned')
         self.assertEqual(len(unplanned_tasks), 1)
-        self.assertEqual(unplanned_tasks[0]['sub_project_name'], "Unplanned")
+        self.assertEqual(unplanned_tasks[0]['task_name'], "Unplanned")
 
     def test_cleanup_overdue_today_tasks(self):
         """Tests the auto-cleanup logic for starred tasks."""
@@ -335,205 +335,201 @@ class TestTimeTracker(unittest.TestCase):
         yesterday_str = (date.today() - timedelta(days=1)).isoformat()
         
         # This task is marked for 'today' but its due date was yesterday
-        self.tracker.add_sub_project("Cleanup", "LateTask", due_date=yesterday_str, today=True)
+        self.tracker.add_task("Cleanup", "LateTask", due_date=yesterday_str, today=True)
         
         # Run cleanup
         changed = self.tracker.cleanup_overdue_today_tasks()
         self.assertTrue(changed)
         
         # Check results: Star should be gone, but task remains
-        tasks = self.tracker.list_sub_projects("Cleanup", planning_filter='today')
+        tasks = self.tracker.list_tasks("Cleanup", planning_filter='today')
         self.assertEqual(len(tasks), 0) # No longer in 'today' filter
         
-        all_tasks = self.tracker.list_sub_projects("Cleanup")
-        self.assertEqual(all_tasks[0]['sub_project_name'], "LateTask")
+        all_tasks = self.tracker.list_tasks("Cleanup")
+        self.assertEqual(all_tasks[0]['task_name'], "LateTask")
         self.assertFalse(all_tasks[0]['today'])
 
-    def test_add_sub_project_main_not_found(self):
-        """Tests adding a sub-project to a non-existent main project."""
-        success = self.tracker.add_sub_project("Non Existent", "Sub Task 1")
+    def test_add_task_main_not_found(self):
+        """Tests adding a task to a non-existent main project."""
+        success = self.tracker.add_task("Non Existent", "Sub Task 1")
         self.assertFalse(success)
 
-    def test_list_sub_projects_unified_method(self):
-        """Tests the unified list_sub_projects method with various filters."""
+    def test_list_tasks_unified_method(self):
+        """Tests the unified list_tasks method with various filters."""
         self.tracker.add_main_project("Main List")
-        self.tracker.add_sub_project("Main List", "Sub A")
-        self.tracker.add_sub_project("Main List", "Sub B")
-        self.tracker.add_sub_project("Main List", "Closed Sub")
-        self.tracker.close_sub_project("Main List", "Closed Sub")
+        self.tracker.add_task("Main List", "Sub A")
+        self.tracker.add_task("Main List", "Sub B")
+        self.tracker.add_task("Main List", "Closed Sub")
+        self.tracker.close_task("Main List", "Closed Sub")
 
         # Test 1: List all for a specific main project
-        all_subs = self.tracker.list_sub_projects(main_project_name="Main List", status_filter='all')
+        all_subs = self.tracker.list_tasks(main_project_name="Main List", status_filter='all')
         self.assertEqual(len(all_subs), 3)
-        self.assertEqual([s['sub_project_name'] for s in all_subs], ["Sub A", "Sub B", "Closed Sub"])
+        self.assertEqual([s['task_name'] for s in all_subs], ["Sub A", "Sub B", "Closed Sub"])
 
         # Test 2: List only open for a specific main project
-        open_subs = self.tracker.list_sub_projects(main_project_name="Main List", status_filter='open')
+        open_subs = self.tracker.list_tasks(main_project_name="Main List", status_filter='open')
         self.assertEqual(len(open_subs), 2)
-        self.assertEqual([s['sub_project_name'] for s in open_subs], ["Sub A", "Sub B"])
+        self.assertEqual([s['task_name'] for s in open_subs], ["Sub A", "Sub B"])
 
         # Test 3: List only closed for a specific main project
-        closed_subs = self.tracker.list_sub_projects(main_project_name="Main List", status_filter='closed')
+        closed_subs = self.tracker.list_tasks(main_project_name="Main List", status_filter='closed')
         self.assertEqual(len(closed_subs), 1)
-        self.assertEqual(closed_subs[0]['sub_project_name'], "Closed Sub")
+        self.assertEqual(closed_subs[0]['task_name'], "Closed Sub")
 
         # Test 4: List all closed across all projects
         self.tracker.add_main_project("Another Main")
-        self.tracker.add_sub_project("Another Main", "Another Closed")
-        self.tracker.close_sub_project("Another Main", "Another Closed")
-        all_closed = self.tracker.list_sub_projects(status_filter='closed')
+        self.tracker.add_task("Another Main", "Another Closed")
+        self.tracker.close_task("Another Main", "Another Closed")
+        all_closed = self.tracker.list_tasks(status_filter='closed')
         self.assertEqual(len(all_closed), 2)
-        closed_names = {s['sub_project_name'] for s in all_closed}
+        closed_names = {s['task_name'] for s in all_closed}
         self.assertEqual(closed_names, {"Closed Sub", "Another Closed"})
 
-        # Test 5: Non-existent project returns empty list
-        self.assertEqual(self.tracker.list_sub_projects("Unknown Project"), [])
-
-    def test_close_and_reopen_sub_project(self):
-        """Tests closing and reopening a sub-project and verifies status changes."""
+    def test_close_and_reopen_task(self):
+        """Tests closing and reopening a task and verifies status changes."""
         self.tracker.add_main_project("Main")
-        self.tracker.add_sub_project("Main", "Open Sub 1") # status: 'open' by default
-        self.tracker.add_sub_project("Main", "To Be Closed")
-        self.tracker.add_sub_project("Main", "Open Sub 2")
+        self.tracker.add_task("Main", "Open Sub 1") # status: 'open' by default
+        self.tracker.add_task("Main", "To Be Closed")
+        self.tracker.add_task("Main", "Open Sub 2")
 
         # Verify it's open first
-        open_subs_before = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Main", status_filter='open')]
+        open_subs_before = [s['task_name'] for s in self.tracker.list_tasks("Main", status_filter='open')]
         self.assertIn("To Be Closed", open_subs_before)
 
         # Close it
-        success = self.tracker.close_sub_project("Main", "To Be Closed")
+        success = self.tracker.close_task("Main", "To Be Closed")
         self.assertTrue(success)
 
         # Verify it's now closed
-        sub_project = self.tracker.data["projects"][0]["sub_projects"][0]
-        open_subs_after_close = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Main", status_filter='open')]
+        open_subs_after_close = [s['task_name'] for s in self.tracker.list_tasks("Main", status_filter='open')]
         self.assertNotIn("To Be Closed", open_subs_after_close)
-        closed_subs = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Main", status_filter='closed')]
+        closed_subs = [s['task_name'] for s in self.tracker.list_tasks("Main", status_filter='closed')]
         self.assertIn("To Be Closed", closed_subs)
 
         # Reopen it
-        success_reopen = self.tracker.reopen_sub_project("Main", "To Be Closed")
+        success_reopen = self.tracker.reopen_task("Main", "To Be Closed")
         self.assertTrue(success_reopen)
-        open_subs_after_reopen = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Main", status_filter='open')]
+        open_subs_after_reopen = [s['task_name'] for s in self.tracker.list_tasks("Main", status_filter='open')]
         self.assertIn("To Be Closed", open_subs_after_reopen)
 
-    def test_close_sub_project_not_found(self):
-        """Tests closing a non-existent sub-project."""
+    def test_close_task_not_found(self):
+        """Tests closing a non-existent task."""
         self.tracker.add_main_project("Main")
-        self.assertFalse(self.tracker.close_sub_project("Main", "Non-Existent"))
+        self.assertFalse(self.tracker.close_task("Main", "Non-Existent"))
 
-    def test_delete_sub_project_success(self):
-        """Tests the successful deletion of a sub-project."""
+    def test_delete_task_success(self):
+        """Tests the successful deletion of a task."""
         self.tracker.add_main_project("Main Test")
-        self.tracker.add_sub_project("Main Test", "Sub To Delete")
-        self.tracker.add_sub_project("Main Test", "Sub To Keep")
+        self.tracker.add_task("Main Test", "Sub To Delete")
+        self.tracker.add_task("Main Test", "Sub To Keep")
 
-        success = self.tracker.delete_sub_project("Main Test", "Sub To Delete")
+        success = self.tracker.delete_task("Main Test", "Sub To Delete")
         self.assertTrue(success)
-        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("Main Test")], ["Sub To Keep"])
+        self.assertEqual([s['task_name'] for s in self.tracker.list_tasks("Main Test")], ["Sub To Keep"])
 
-    def test_delete_sub_project_not_found(self):
-        """Tests deleting a non-existent sub-project."""
+    def test_delete_task_not_found(self):
+        """Tests deleting a non-existent task."""
         self.tracker.add_main_project("Main Test")
-        self.tracker.add_sub_project("Main Test", "Sub 1")
+        self.tracker.add_task("Main Test", "Sub 1")
         
-        success = self.tracker.delete_sub_project("Main Test", "Non Existent Sub")
+        success = self.tracker.delete_task("Main Test", "Non Existent Sub")
         self.assertFalse(success)
-        self.assertEqual(len(self.tracker.list_sub_projects("Main Test")), 1)
+        self.assertEqual(len(self.tracker.list_tasks("Main Test")), 1)
 
-    def test_delete_all_closed_sub_projects(self):
-        """Tests deleting all closed sub-projects across all main projects."""
+    def test_delete_all_closed_tasks(self):
+        """Tests deleting all closed tasks across all main projects."""
         # Setup
         self.tracker.add_main_project("P1")
-        self.tracker.add_sub_project("P1", "Open1")
-        self.tracker.add_sub_project("P1", "Closed1")
-        self.tracker.close_sub_project("P1", "Closed1")
+        self.tracker.add_task("P1", "Open1")
+        self.tracker.add_task("P1", "Closed1")
+        self.tracker.close_task("P1", "Closed1")
         
         self.tracker.add_main_project("P2")
-        self.tracker.add_sub_project("P2", "Closed2")
-        self.tracker.close_sub_project("P2", "Closed2")
-        self.tracker.add_sub_project("P2", "Closed3")
-        self.tracker.close_sub_project("P2", "Closed3")
+        self.tracker.add_task("P2", "Closed2")
+        self.tracker.close_task("P2", "Closed2")
+        self.tracker.add_task("P2", "Closed3")
+        self.tracker.close_task("P2", "Closed3")
         
         self.tracker.add_main_project("P3")
-        self.tracker.add_sub_project("P3", "Open2")
+        self.tracker.add_task("P3", "Open2")
 
         # Action
-        deleted_count = self.tracker.delete_all_closed_sub_projects()
+        deleted_count = self.tracker.delete_all_closed_tasks()
 
         # Assertions
         self.assertEqual(deleted_count, 3)
-        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("P1")], ["Open1"])
-        self.assertEqual(self.tracker.list_sub_projects("P2"), [])
-        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("P3")], ["Open2"])
+        self.assertEqual([s['task_name'] for s in self.tracker.list_tasks("P1")], ["Open1"])
+        self.assertEqual(self.tracker.list_tasks("P2"), [])
+        self.assertEqual([s['task_name'] for s in self.tracker.list_tasks("P3")], ["Open2"])
 
-    def test_rename_sub_project_success(self):
-        """Tests the successful renaming of a sub-project."""
+    def test_rename_task_success(self):
+        """Tests the successful renaming of a task."""
         self.tracker.add_main_project("Main")
-        self.tracker.add_sub_project("Main", "Old Name")
-        success = self.tracker.rename_sub_project("Main", "Old Name", "New Name")
+        self.tracker.add_task("Main", "Old Name")
+        success = self.tracker.rename_task("Main", "Old Name", "New Name")
         self.assertTrue(success)
-        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("Main")], ["New Name"])
+        self.assertEqual([s['task_name'] for s in self.tracker.list_tasks("Main")], ["New Name"])
 
-    def test_rename_sub_project_main_not_found(self):
+    def test_rename_task_main_not_found(self):
         """Tests renaming when the main project does not exist."""
-        self.assertFalse(self.tracker.rename_sub_project("Non-Existent", "Old", "New"))
+        self.assertFalse(self.tracker.rename_task("Non-Existent", "Old", "New"))
 
-    def test_rename_sub_project_sub_not_found(self):
-        """Tests renaming when the sub-project does not exist."""
+    def test_rename_task_sub_not_found(self):
+        """Tests renaming when the task does not exist."""
         self.tracker.add_main_project("Main")
-        self.assertFalse(self.tracker.rename_sub_project("Main", "Non-Existent", "New"))
+        self.assertFalse(self.tracker.rename_task("Main", "Non-Existent", "New"))
 
-    def test_rename_sub_project_new_name_exists(self):
+    def test_rename_task_new_name_exists(self):
         """Tests that renaming fails if the new name already exists."""
         self.tracker.add_main_project("Main")
-        self.tracker.add_sub_project("Main", "Sub A")
-        self.tracker.add_sub_project("Main", "Sub B")
+        self.tracker.add_task("Main", "Sub A")
+        self.tracker.add_task("Main", "Sub B")
         # Attempt to rename "Sub A" to "Sub B"
-        success = self.tracker.rename_sub_project("Main", "Sub A", "Sub B")
+        success = self.tracker.rename_task("Main", "Sub A", "Sub B")
         self.assertFalse(success)
-        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("Main")], ["Sub A", "Sub B"])
+        self.assertEqual([s['task_name'] for s in self.tracker.list_tasks("Main")], ["Sub A", "Sub B"])
 
-    def test_move_sub_project_success(self):
-        """Tests moving a sub-project successfully."""
+    def test_move_task_success(self):
+        """Tests moving a task successfully."""
         self.tracker.add_main_project("Source")
-        self.tracker.add_sub_project("Source", "Task 1")
+        self.tracker.add_task("Source", "Task 1")
         self.tracker.add_main_project("Destination")
 
-        success, msg = self.tracker.move_sub_project("Source", "Task 1", "Destination")
+        success, msg = self.tracker.move_task("Source", "Task 1", "Destination")
         self.assertTrue(success)
-        self.assertEqual(self.tracker.list_sub_projects("Source"), [])
-        self.assertEqual([s['sub_project_name'] for s in self.tracker.list_sub_projects("Destination")], ["Task 1"])
+        self.assertEqual(self.tracker.list_tasks("Source"), [])
+        self.assertEqual([s['task_name'] for s in self.tracker.list_tasks("Destination")], ["Task 1"])
 
-    def test_move_sub_project_source_not_found(self):
+    def test_move_task_source_not_found(self):
         """Tests moving from a non-existent source main project."""
         self.tracker.add_main_project("Destination")
-        success, msg = self.tracker.move_sub_project("Non-Existent", "Task 1", "Destination")
+        success, msg = self.tracker.move_task("Non-Existent", "Task 1", "Destination")
         self.assertFalse(success)
         self.assertEqual(msg, _("Source main project '{name}' not found.").format(name="Non-Existent"))
 
-    def test_move_sub_project_dest_not_found(self):
+    def test_move_task_dest_not_found(self):
         """Tests moving to a non-existent destination main project."""
         self.tracker.add_main_project("Source")
-        self.tracker.add_sub_project("Source", "Task 1")
-        success, msg = self.tracker.move_sub_project("Source", "Task 1", "Non-Existent")
+        self.tracker.add_task("Source", "Task 1")
+        success, msg = self.tracker.move_task("Source", "Task 1", "Non-Existent")
         self.assertFalse(success)
         self.assertEqual(msg, _("Destination main project '{name}' not found.").format(name="Non-Existent"))
 
-    def test_move_sub_project_name_conflict(self):
-        """Tests moving a sub-project when the name exists in the destination."""
+    def test_move_task_name_conflict(self):
+        """Tests moving a task when the name exists in the destination."""
         self.tracker.add_main_project("Source")
-        self.tracker.add_sub_project("Source", "Task 1")
+        self.tracker.add_task("Source", "Task 1")
         self.tracker.add_main_project("Destination")
-        self.tracker.add_sub_project("Destination", "Task 1")
-        success, msg = self.tracker.move_sub_project("Source", "Task 1", "Destination")
+        self.tracker.add_task("Destination", "Task 1")
+        success, msg = self.tracker.move_task("Source", "Task 1", "Destination")
         self.assertFalse(success)
-        self.assertEqual(msg, _("A sub-project named '{sub_name}' already exists in '{main_name}'.").format(sub_name="Task 1", main_name="Destination"))
+        self.assertEqual(msg, _("A task named '{task_name}' already exists in '{main_name}'.").format(task_name="Task 1", main_name="Destination"))
         
-    def test_promote_sub_project_success(self):
-        """Tests promoting a sub-project to a main project successfully."""
+    def test_promote_task_to_project_success(self):
+        """Tests promoting a task to a main project successfully."""
         self.tracker.add_main_project("Source Main")
-        self.tracker.add_sub_project("Source Main", "Promotable Sub")
+        self.tracker.add_task("Source Main", "Promotable Sub")
         # Add a time entry to ensure it's carried over
         self.tracker.start_work("Source Main", "Promotable Sub")
         self.tracker.stop_work()
@@ -544,29 +540,29 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("was promoted", msg)
 
         # 1. Check if original sub-project is gone
-        self.assertEqual(self.tracker.list_sub_projects("Source Main"), [])
+        self.assertEqual(self.tracker.list_tasks("Source Main"), [])
 
         # 2. Check if new main project exists
         main_projects = [p['main_project_name'] for p in self.tracker.list_main_projects()]
         self.assertIn("Promotable Sub", main_projects)
 
         # 3. Check if new main project has a "General" sub-project with the time entries
-        new_main_subs = [s['sub_project_name'] for s in self.tracker.list_sub_projects("Promotable Sub")]
+        new_main_subs = [s['task_name'] for s in self.tracker.list_tasks("Promotable Sub")]
         self.assertEqual(new_main_subs, [_("General")])
         
         new_main_project_data = next(p for p in self.tracker.data["projects"] if p["main_project_name"] == "Promotable Sub")
-        general_sub = new_main_project_data["sub_projects"][0]
-        self.assertEqual(len(general_sub["time_entries"]), 1)
-        self.assertIn("start_time", general_sub["time_entries"][0])
-        self.assertIn("end_time", general_sub["time_entries"][0])
+        general_task = new_main_project_data["tasks"][0]
+        self.assertEqual(len(general_task["time_entries"]), 1)
+        self.assertIn("start_time", general_task["time_entries"][0])
+        self.assertIn("end_time", general_task["time_entries"][0])
 
-    def test_promote_sub_project_name_conflict(self):
+    def test_promote_task_to_project_name_conflict(self):
         """Tests that promoting fails if a main project with the same name already exists."""
         self.tracker.add_main_project("Source Main")
-        self.tracker.add_sub_project("Source Main", "Existing Name")
+        self.tracker.add_task("Source Main", "Existing Name")
         self.tracker.add_main_project("Existing Name") # This is the conflict
 
-        success, msg = self.tracker.promote_sub_project("Source Main", "Existing Name")
+        success, msg = self.tracker.promote_task_to_project("Source Main", "Existing Name")
         self.assertFalse(success)
         self.assertEqual(msg, _("A main project named '{name}' already exists.").format(name="Existing Name"))
 
@@ -599,7 +595,7 @@ class TestTimeTracker(unittest.TestCase):
         # 3. Check if all time entries were consolidated
         new_parent_project_data = next(p for p in self.tracker.data["projects"] if p["main_project_name"] == "New Parent")
         newly_demoted_task = next(t for t in new_parent_project_data["tasks"] if t["task_name"] == "Old Main")
-        self.assertEqual(len(newly_demoted_sub["time_entries"]), 2)
+        self.assertEqual(len(newly_demoted_task["time_entries"]), 2)
 
     def test_demote_main_project_name_conflict(self):
         """Tests that demoting fails if a task with the same name already exists in the parent."""
@@ -617,18 +613,18 @@ class TestTimeTracker(unittest.TestCase):
 
         # 2. Main with only closed sub-projects -> Should be listed
         self.tracker.add_main_project("Closed Main")
-        self.tracker.add_sub_project("Closed Main", "Sub 1")
-        self.tracker.close_sub_project("Closed Main", "Sub 1")
+        self.tracker.add_task("Closed Main", "Sub 1")
+        self.tracker.close_task("Closed Main", "Sub 1")
 
         # 3. Main with open sub-project -> Should NOT be listed
         self.tracker.add_main_project("Open Main")
-        self.tracker.add_sub_project("Open Main", "Sub 2") # Open by default
+        self.tracker.add_task("Open Main", "Sub 2") # Open by default
 
         # 4. Main with mixed sub-projects -> Should NOT be listed
         self.tracker.add_main_project("Mixed Main")
-        self.tracker.add_sub_project("Mixed Main", "Closed Sub")
-        self.tracker.close_sub_project("Mixed Main", "Closed Sub")
-        self.tracker.add_sub_project("Mixed Main", "Open Sub")
+        self.tracker.add_task("Mixed Main", "Closed Sub")
+        self.tracker.close_task("Mixed Main", "Closed Sub")
+        self.tracker.add_task("Mixed Main", "Open Sub")
 
         completed_list = self.tracker.list_completed_main_projects()
         
@@ -672,26 +668,26 @@ class TestTimeTracker(unittest.TestCase):
         # After starting T2, P2 is at index 0, P1 is at index 1.
         
         # Check if T1 (in P1 at index 1) has an end_time entry
-        t1_entry = self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"][0]
+        t1_entry = self.tracker.data["projects"][1]["tasks"][0]["time_entries"][0]
         self.assertIn("end_time", t1_entry)
         
         # Check if T2 (in P2 at index 0) only has a start_time
-        self.assertNotIn("end_time", self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"][0])
+        self.assertNotIn("end_time", self.tracker.data["projects"][0]["tasks"][0]["time_entries"][0])
 
     def test_start_work_reorders_projects(self):
         """Tests that starting work moves the project and sub-project to the top."""
         # Setup: P1 with S1, S2. P2 with S3.
         self.tracker.add_main_project("P1")
-        self.tracker.add_sub_project("P1", "S1")
-        self.tracker.add_sub_project("P1", "S2") # P1 sub-projects: [S1, S2]
+        self.tracker.add_task("P1", "S1")
+        self.tracker.add_task("P1", "S2") # P1 tasks: [S1, S2]
         self.tracker.add_main_project("P2")
-        self.tracker.add_sub_project("P2", "S3") # Main projects: [P1, P2]
+        self.tracker.add_task("P2", "S3") # Main projects: [P1, P2]
 
         # Action 1: Start work on P1, S2. This moves S2 to the top of P1's sub-projects.
         # Main project order should not change as P1 is already at the top.
         self.tracker.start_work("P1", "S2")
         self.assertEqual([p['main_project_name'] for p in self.tracker.data['projects']], ["P1", "P2"])
-        self.assertEqual([sp['sub_project_name'] for sp in self.tracker._get_project("P1")['sub_projects']], ["S2", "S1"])
+        self.assertEqual([sp['task_name'] for sp in self.tracker._get_project("P1")['tasks']], ["S2", "S1"])
 
         # Action 2: Start work on P2, S3. This moves P2 to the top of the main projects list.
         self.tracker.start_work("P2", "S3")
@@ -699,18 +695,18 @@ class TestTimeTracker(unittest.TestCase):
 
     def test_stop_work_success(self):
         """Tests the successful stopping of work."""
-        self._create_mock_project_with_sub("P1", "T1")
+        self._create_mock_project_with_task("P1", "T1")
         self.tracker.start_work("P1", "T1")
         
         success = self.tracker.stop_work()
         self.assertTrue(success)
         
-        entry = self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"][0]
+        entry = self.tracker.data["projects"][0]["tasks"][0]["time_entries"][0]
         self.assertIn("end_time", entry)
         
     def test_stop_work_no_active_session(self):
         """Tests stopping when no active session is running."""
-        self._create_mock_project_with_sub("P1", "T1")
+        self._create_mock_project_with_task("P1", "T1")
         
         # Stop without having started before
         success = self.tracker.stop_work()
@@ -730,13 +726,13 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIsNone(self.tracker.get_current_work())
 
         # Case 2: Start work
-        self._create_mock_project_with_sub("Main", "Sub")
+        self._create_mock_project_with_task("Main", "Sub")
         self.tracker.start_work("Main", "Sub")
         
         current_work = self.tracker.get_current_work()
         self.assertIsNotNone(current_work)
         self.assertEqual(current_work["main_project_name"], "Main")
-        self.assertEqual(current_work["sub_project_name"], "Sub")
+        self.assertEqual(current_work["task_name"], "Sub")
         self.assertIn("start_time", current_work)
 
         # Case 3: Stop work
@@ -745,27 +741,27 @@ class TestTimeTracker(unittest.TestCase):
         
     # --- Inactivity Method Tests ---
 
-    def test_list_inactive_sub_projects(self):
+    def test_list_inactive_tasks(self):
         """Tests listing inactive sub-projects."""
         now = datetime.now()
         
         # P1: Active project (started 1 week ago, stopped 1 day ago) -> should NOT be listed
-        self._create_mock_project_with_sub("P1_Active", "T1_Recent")
-        self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"].append({
+        self._create_mock_project_with_task("P1_Active", "T1_Recent")
+        self.tracker.data["projects"][0]["tasks"][0]["time_entries"].append({
             "start_time": (now - timedelta(weeks=1)).isoformat(),
             "end_time": (now - timedelta(days=1)).isoformat()
         })
 
         # P2: Inactive project (stopped 5 weeks ago) -> should be listed (at 4 weeks threshold)
-        self._create_mock_project_with_sub("P2_Inactive", "T2_Old")
-        self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"].append({
+        self._create_mock_project_with_task("P2_Inactive", "T2_Old")
+        self.tracker.data["projects"][1]["tasks"][0]["time_entries"].append({
             "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
             "end_time": (now - timedelta(weeks=5)).isoformat()
         })
 
         # P3: Running project (should be ignored)
-        self._create_mock_project_with_sub("P3_Running", "T3_Open")
-        self.tracker.data["projects"][2]["sub_projects"][0]["time_entries"].append({
+        self._create_mock_project_with_task("P3_Running", "T3_Open")
+        self.tracker.data["projects"][2]["tasks"][0]["time_entries"].append({
             "start_time": (now - timedelta(days=1)).isoformat()
         })
         
@@ -773,15 +769,15 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker._save_data()
         
         # Test with 4 weeks inactivity threshold
-        inactive_list = self.tracker.list_inactive_sub_projects(inactive_weeks=4)
+        inactive_list = self.tracker.list_inactive_tasks(inactive_weeks=4)
         
         # Expectation: Only P2_Inactive should be listed
         self.assertEqual(len(inactive_list), 1)
-        self.assertEqual(inactive_list[0]['sub_project'], "T2_Old")
+        self.assertEqual(inactive_list[0]['task_name'], "T2_Old")
         self.assertEqual(inactive_list[0]['main_project'], "P2_Inactive")
         
         # Test with 6 weeks inactivity threshold (should be empty)
-        inactive_list_6w = self.tracker.list_inactive_sub_projects(inactive_weeks=6)
+        inactive_list_6w = self.tracker.list_inactive_tasks(inactive_weeks=6)
         self.assertEqual(len(inactive_list_6w), 0)
 
     def test_list_inactive_main_projects(self):
@@ -790,8 +786,8 @@ class TestTimeTracker(unittest.TestCase):
         
         # P1: Active main project (last activity 1 day ago) -> should NOT be listed
         self.tracker.add_main_project("P1_Active")
-        self.tracker.add_sub_project("P1_Active", "T1_Recent")
-        self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"].append({
+        self.tracker.add_task("P1_Active", "T1_Recent")
+        self.tracker.data["projects"][0]["tasks"][0]["time_entries"].append({
             "start_time": (now - timedelta(days=2)).isoformat(),
             "end_time": (now - timedelta(days=1)).isoformat()
         })

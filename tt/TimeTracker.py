@@ -821,45 +821,45 @@ class TimeTracker:
         if not new_parent_project:
             return False, _("New parent main project '{name}' not found.").format(name=new_parent_main_project_name)
 
-        # Check for name conflict in the destination
-        if any(sp["sub_project_name"] == main_project_to_demote_name for sp in new_parent_project["sub_projects"]):
-            return False, _("A sub-project named '{sub_name}' already exists in '{main_name}'.").format(sub_name=main_project_to_demote_name, main_name=new_parent_main_project_name)
+        # Check for name conflict in the destination tasks
+        if any(t["task_name"] == main_project_to_demote_name for t in new_parent_project["tasks"]):
+            return False, _("A task named '{task_name}' already exists in '{main_name}'.").format(task_name=main_project_to_demote_name, main_name=new_parent_main_project_name)
 
         # 2. Consolidate all time entries
         all_time_entries = []
         
-        # Iterate through all sub-projects of the project to be demoted
-        if "sub_projects" in project_to_demote:
-            for sub_project in project_to_demote["sub_projects"]:
-                # Extend the list with the time entries of each sub-project
-                if "time_entries" in sub_project:
-                    all_time_entries.extend(sub_project["time_entries"])
+        # Iterate through all tasks of the project to be demoted
+        if "tasks" in project_to_demote:
+            for task in project_to_demote["tasks"]:
+                # Extend the list with the time entries of each task
+                if "time_entries" in task:
+                    all_time_entries.extend(task["time_entries"])
 
         # Sort entries by start time to maintain chronological order
         all_time_entries.sort(key=lambda x: x['start_time'])
 
-        # 3. Create the new sub-project
-        new_sub_project = {
-            "sub_project_name": main_project_to_demote_name,
+        # 3. Create the new task
+        new_task = {
+            "task_name": main_project_to_demote_name,
             "time_entries": all_time_entries
         }
-        new_parent_project["sub_projects"].append(new_sub_project)
+        new_parent_project["tasks"].append(new_task)
 
         # 4. Remove the old main project and save
         self.data["projects"].pop(project_to_demote_index)
         self._save_data()
         return True, _("Main project '{demoted_name}' was demoted to a sub-project under '{parent_name}'.").format(demoted_name=main_project_to_demote_name, parent_name=new_parent_main_project_name)
 
-    def start_work(self, main_project_name, sub_project_name):
+    def start_work(self, main_project_name, task_name):
         """
-        Starts a new time tracking session for a sub-project by saving the start time.
+        Starts a new time tracking session for a task by saving the start time.
         Any currently active session is stopped before starting the new one.
-        The affected sub-project and main project are moved to the top of their respective lists.
+        The affected task and main project are moved to the top of their respective lists.
 
         :param main_project_name: The parent main project name.
         :type main_project_name: str
-        :param sub_project_name: The sub-project for which work is being started.
-        :type sub_project_name: str
+        :param task_name: The task for which work is being started.
+        :type task_name: str
         :return: True if work was started successfully, otherwise False.
         :rtype: bool
         """
@@ -867,32 +867,32 @@ class TimeTracker:
         
         main_project = None
         main_project_index = -1
-        sub_project = None
-        sub_project_index = -1
+        task = None
+        task_index = -1
 
-        # Find the main project and sub-project along with their indices
+        # Find the main project and task along with their indices
         for i, p in enumerate(self.data["projects"]):
             if p["main_project_name"] == main_project_name:
                 main_project_index = i
                 main_project = p
-                for j, sp in enumerate(p["sub_projects"]):
-                    if sp["sub_project_name"] == sub_project_name:
-                        sub_project_index = j
-                        sub_project = sp
+                for j, t in enumerate(p["tasks"]):
+                    if t["task_name"] == task_name:
+                        task_index = j
+                        task = t
                         break
                 break
 
-        if sub_project and main_project:
+        if task and main_project:
             # Add the new time entry
             new_entry = {
                 "start_time": datetime.now().isoformat()
             }
-            sub_project["time_entries"].append(new_entry)
+            task["time_entries"].append(new_entry)
 
-            # Move the sub-project to the top of the list
-            if sub_project_index > 0:
-                moved_sub_project = main_project["sub_projects"].pop(sub_project_index)
-                main_project["sub_projects"].insert(0, moved_sub_project)
+            # Move the task to the top of the list
+            if task_index > 0:
+                moved_task = main_project["tasks"].pop(task_index)
+                main_project["tasks"].insert(0, moved_task)
 
             # Move the main project to the top of the list
             if main_project_index > 0:
@@ -913,9 +913,9 @@ class TimeTracker:
         :rtype: bool
         """
         for project in reversed(self.data["projects"]):
-            for sub_project in reversed(project["sub_projects"]):
-                if sub_project["time_entries"] and "end_time" not in sub_project["time_entries"][-1]:
-                    sub_project["time_entries"][-1]["end_time"] = datetime.now().isoformat()
+            for task in reversed(project["tasks"]):
+                if task["time_entries"] and "end_time" not in task["time_entries"][-1]:
+                    task["time_entries"][-1]["end_time"] = datetime.now().isoformat()
                     self._save_data()
                     return True
         return False
@@ -1111,16 +1111,16 @@ class TimeTracker:
                             # Check if the entry is for the specified date
                             if start_time.date() == today:
                                 duration = end_time - start_time
-                                sub_project_total_time += duration
+                                task_total_time += duration
                     except (ValueError, KeyError):
                         continue
 
-                # Add to report only if time was tracked for this sub-project on the specified date
-                if sub_project_total_time.total_seconds() > 0:
-                    hours = sub_project_total_time.total_seconds() / 3600
+                # Add to report only if time was tracked for this task on the specified date
+                if task_total_time.total_seconds() > 0:
+                    hours = task_total_time.total_seconds() / 3600
                     hours_str = f"{hours:.3f}".replace('.', ',')
-                    sub_project_details.append(_("- {name}: {hours} hours").format(name=sub_project['sub_project_name'], hours=hours_str))
-                    main_project_total_time += sub_project_total_time
+                    task_details.append(_("- {name}: {hours} hours").format(name=task['task_name'], hours=hours_str))
+                    main_project_total_time += task_total_time
 
             # Add main project and its sub-projects to report if it has entries for the specified date
             if main_project_total_time.total_seconds() > 0:
@@ -1128,7 +1128,7 @@ class TimeTracker:
                 hours = main_project_total_time.total_seconds() / 3600
                 hours_str = f"{hours:.3f}".replace('.', ',')
                 report.append(_("## {name} ({hours} hours)\n").format(name=project['main_project_name'], hours=hours_str))
-                report.extend(sub_project_details)
+                report.extend(task_details)
                 report.append("\n")
         
         # Add total daily time to the report
@@ -1147,14 +1147,14 @@ class TimeTracker:
         self._copy_to_clipboard(report_text)
         return report_text
 
-    def generate_sub_project_report(self, main_project_name, sub_project_name):
+    def generate_task_report(self, main_project_name, task_name):
         """
-        Generates a detailed report for a single sub-project.
+        Generates a detailed report for a single task.
 
         :param main_project_name: The name of the main project.
         :type main_project_name: str
-        :param sub_project_name: The name of the sub-project.
-        :type sub_project_name: str
+        :param task_name: The name of the task.
+        :type task_name: str
         :return: The formatted report as a Markdown string, or an error message.
         :rtype: str
         """
@@ -1162,13 +1162,13 @@ class TimeTracker:
         if not project:
             return _("Main project '{name}' not found.").format(name=main_project_name)
 
-        sub_project = self._get_sub_project(main_project_name, sub_project_name)
-        if not sub_project:
-            return _("Sub-project '{sub_name}' not found in '{main_name}'.").format(sub_name=sub_project_name, main_name=main_project_name)
+        task = self._get_task(main_project_name, task_name)
+        if not task:
+            return _("Task '{task_name}' not found in '{main_name}'.").format(task_name=task_name, main_name=main_project_name)
 
-        entries = sub_project.get("time_entries", [])
+        entries = task.get("time_entries", [])
         if not entries:
-            return _("No time entries found for sub-project '{sub_name}'.").format(sub_name=sub_project_name)
+            return _("No time entries found for task '{task_name}'.").format(task_name=task_name)
 
         total_duration = timedelta()
         first_start_time = None

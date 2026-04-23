@@ -99,24 +99,24 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertEqual(result.message, "Demoted successfully")
 
-    def test_list_sub_projects(self):
-        self.mock_tracker.list_sub_projects.return_value = [
-            {'main_project_name': 'Main', 'sub_project_name': 'Sub 1', 'status': 'open'}
+    def test_list_tasks(self):
+        self.mock_tracker.list_tasks.return_value = [
+            {'main_project_name': 'Main', 'task_name': 'Sub 1', 'status': 'open'}
         ]
         
-        results = self.soap_server.TimeControlService.list_sub_projects(self.ctx, 'Main', 'open')
+        results = self.soap_server.TimeControlService.list_tasks(self.ctx, 'Main', 'open')
         
-        self.mock_tracker.list_sub_projects.assert_called_with('Main', 'open')
+        self.mock_tracker.list_tasks.assert_called_with('Main', 'open')
         self.assertEqual(len(results), 1)
-        self.assertEqual(results[0].sub_project_name, 'Sub 1')
-        self.assertIsInstance(results[0], self.soap_server.SubProjectModel)
+        self.assertEqual(results[0].task_name, 'Sub 1')
+        self.assertIsInstance(results[0], self.soap_server.TaskModel)
 
-    def test_update_sub_project(self):
-        self.mock_tracker.update_sub_project.return_value = True
-        result = self.soap_server.TimeControlService.update_sub_project(
+    def test_update_task(self):
+        self.mock_tracker.update_task.return_value = True
+        result = self.soap_server.TimeControlService.update_task(
             self.ctx, "Main", "Old", "New", "2025-01-01", True, "Note", "done"
         )
-        self.mock_tracker.update_sub_project.assert_called_with(
+        self.mock_tracker.update_task.assert_called_with(
             "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None
         )
         self.assertTrue(result)
@@ -134,7 +134,7 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
     def test_get_current_work_active(self):
         self.mock_tracker.get_current_work.return_value = {
             'main_project_name': 'M',
-            'sub_project_name': 'S',
+            'task_name': 'S',
             'start_time': '2023-01-01'
         }
         
@@ -142,7 +142,7 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         
         self.assertIsInstance(result, self.soap_server.CurrentWorkModel)
         self.assertEqual(result.main_project_name, 'M')
-        self.assertEqual(result.sub_project_name, 'S')
+        self.assertEqual(result.task_name, 'S')
 
     def test_get_current_work_none(self):
         self.mock_tracker.get_current_work.return_value = None
