@@ -44,21 +44,21 @@ class TestTimeTracker(unittest.TestCase):
         # Test finding non-existent project
         self.assertIsNone(self.tracker._get_project("Non Existent"))
 
-    def test_get_sub_project_helper(self):
-        """Tests the _get_sub_project helper method."""
+    def test_get_task_helper(self):
+        """Tests the _get_task helper method."""
         self.tracker.add_main_project("Helper Main")
-        self.tracker.add_sub_project("Helper Main", "Helper Sub")
+        self.tracker.add_task("Helper Main", "Helper Sub")
         
         # Test finding existing sub-project
-        sub_project = self.tracker._get_sub_project("Helper Main", "Helper Sub")
-        self.assertIsNotNone(sub_project)
-        self.assertEqual(sub_project["sub_project_name"], "Helper Sub")
+        task = self.tracker._get_task("Helper Main", "Helper Sub")
+        self.assertIsNotNone(task)
+        self.assertEqual(task["task_name"], "Helper Sub")
         
         # Test finding non-existent sub-project in existing main
-        self.assertIsNone(self.tracker._get_sub_project("Helper Main", "Non Existent"))
+        self.assertIsNone(self.tracker._get_task("Helper Main", "Non Existent"))
         
         # Test finding sub-project in non-existent main
-        self.assertIsNone(self.tracker._get_sub_project("Non Existent Main", "Helper Sub"))
+        self.assertIsNone(self.tracker._get_task("Non Existent Main", "Helper Sub"))
 
     def test_load_data_initial_empty(self):
         """Tests if _load_data returns an empty dictionary when no file exists."""
@@ -82,7 +82,7 @@ class TestTimeTracker(unittest.TestCase):
             "projects": [{
                 "main_project_name": "Old Project",
                 "sub_projects": [{
-                    "sub_project_name": "Sub without new fields",
+                    "task_name": "Sub without new fields",
                     "time_entries": []
                 }]
             }]
@@ -97,11 +97,11 @@ class TestTimeTracker(unittest.TestCase):
         main_project = tracker.data["projects"][0]
         self.assertIn("status", main_project)
 
-        sub_project = tracker.data["projects"][0]["sub_projects"][0]
-        self.assertEqual(sub_project.get("status"), "open")
-        self.assertIn("due_date", sub_project)
-        self.assertEqual(sub_project.get("today"), False)
-        self.assertEqual(sub_project.get("note"), "")
+        task = tracker.data["projects"][0]["tasks"][0]
+        self.assertEqual(task.get("status"), "open")
+        self.assertIn("due_date", task)
+        self.assertEqual(task.get("today"), False)
+        self.assertEqual(task.get("note"), "")
 
     def test_format_duration(self):
         """Tests the _format_duration helper method."""
@@ -574,10 +574,10 @@ class TestTimeTracker(unittest.TestCase):
         """Tests demoting a main project to a sub-project successfully."""
         # Setup: Main project to be demoted with two sub-projects
         self.tracker.add_main_project("Old Main")
-        self.tracker.add_sub_project("Old Main", "Sub 1")
+        self.tracker.add_task("Old Main", "Sub 1")
         self.tracker.start_work("Old Main", "Sub 1") # Entry 1
         self.tracker.stop_work()
-        self.tracker.add_sub_project("Old Main", "Sub 2")
+        self.tracker.add_task("Old Main", "Sub 2")
         self.tracker.start_work("Old Main", "Sub 2") # Entry 2
         self.tracker.stop_work()
 
@@ -592,20 +592,20 @@ class TestTimeTracker(unittest.TestCase):
         main_projects = [p['main_project_name'] for p in self.tracker.list_main_projects()]
         self.assertNotIn("Old Main", main_projects)
 
-        # 2. Check if new sub-project exists under the new parent
-        new_parent_subs = [s['sub_project_name'] for s in self.tracker.list_sub_projects("New Parent")]
-        self.assertIn("Old Main", new_parent_subs)
+        # 2. Check if new task exists under the new parent
+        new_parent_tasks = [t['task_name'] for t in self.tracker.list_tasks("New Parent")]
+        self.assertIn("Old Main", new_parent_tasks)
 
         # 3. Check if all time entries were consolidated
         new_parent_project_data = next(p for p in self.tracker.data["projects"] if p["main_project_name"] == "New Parent")
-        newly_demoted_sub = next(sp for sp in new_parent_project_data["sub_projects"] if sp["sub_project_name"] == "Old Main")
+        newly_demoted_task = next(t for t in new_parent_project_data["tasks"] if t["task_name"] == "Old Main")
         self.assertEqual(len(newly_demoted_sub["time_entries"]), 2)
 
     def test_demote_main_project_name_conflict(self):
-        """Tests that demoting fails if a sub-project with the same name already exists in the parent."""
+        """Tests that demoting fails if a task with the same name already exists in the parent."""
         self.tracker.add_main_project("To Demote")
         self.tracker.add_main_project("Parent")
-        self.tracker.add_sub_project("Parent", "To Demote") # Name conflict
+        self.tracker.add_task("Parent", "To Demote") # Name conflict
         success, msg = self.tracker.demote_main_project("To Demote", "Parent")
         self.assertFalse(success)
         self.assertIn("already exists", msg)
@@ -639,18 +639,18 @@ class TestTimeTracker(unittest.TestCase):
 
     # --- Time Tracking Method Tests ---
     
-    def _create_mock_project_with_sub(self, main_name, sub_name):
+    def _create_mock_project_with_task(self, main_name, task_name):
         """Helper function to set up a project for time tracking tests."""
         self.tracker.add_main_project(main_name)
-        self.tracker.add_sub_project(main_name, sub_name)
+        self.tracker.add_task(main_name, task_name)
 
     def test_start_work_success(self):
         """Tests the successful start of a work session."""
-        self._create_mock_project_with_sub("Work Test", "Task X")
+        self._create_mock_project_with_task("Work Test", "Task X")
         success = self.tracker.start_work("Work Test", "Task X")
         self.assertTrue(success)
         
-        entries = self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"]
+        entries = self.tracker.data["projects"][0]["tasks"][0]["time_entries"]
         self.assertEqual(len(entries), 1)
         self.assertIn("start_time", entries[0])
         self.assertNotIn("end_time", entries[0])
@@ -661,8 +661,8 @@ class TestTimeTracker(unittest.TestCase):
         
     def test_start_work_stops_previous(self):
         """Tests if a running session is stopped when a new one is started."""
-        self._create_mock_project_with_sub("P1", "T1") # Initially at index 0
-        self._create_mock_project_with_sub("P2", "T2") # Initially at index 1
+        self._create_mock_project_with_task("P1", "T1") # Initially at index 0
+        self._create_mock_project_with_task("P2", "T2") # Initially at index 1
         
         # Start T1
         self.tracker.start_work("P1", "T1")
@@ -836,23 +836,23 @@ class TestTimeTracker(unittest.TestCase):
         today_date = now.date()
         
         # P1: 1.5 hours today
-        self._create_mock_project_with_sub("Report P1", "R_Sub1")
-        self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"].append({
+        self._create_mock_project_with_task("Report P1", "R_Sub1")
+        self.tracker.data["projects"][0]["tasks"][0]["time_entries"].append({
             "start_time": now.replace(hour=8, minute=0, second=0, microsecond=0).isoformat(),
             "end_time": now.replace(hour=9, minute=30, second=0, microsecond=0).isoformat()
         })
         
         # P2: 2.0 hours today
-        self._create_mock_project_with_sub("Report P2", "R_Sub2")
-        self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"].append({
+        self._create_mock_project_with_task("Report P2", "R_Sub2")
+        self.tracker.data["projects"][1]["tasks"][0]["time_entries"].append({
             "start_time": now.replace(hour=10, minute=0, second=0, microsecond=0).isoformat(),
             "end_time": now.replace(hour=12, minute=0, second=0, microsecond=0).isoformat()
         })
         
         # P3: Entry for yesterday (should be ignored)
         yesterday = now - timedelta(days=1)
-        self._create_mock_project_with_sub("Report P3", "R_Sub3_Old")
-        self.tracker.data["projects"][2]["sub_projects"][0]["time_entries"].append({
+        self._create_mock_project_with_task("Report P3", "R_Sub3_Old")
+        self.tracker.data["projects"][2]["tasks"][0]["time_entries"].append({
             "start_time": yesterday.replace(hour=8, minute=0, second=0, microsecond=0).isoformat(),
             "end_time": yesterday.replace(hour=9, minute=0, second=0, microsecond=0).isoformat()
         })
@@ -883,22 +883,22 @@ class TestTimeTracker(unittest.TestCase):
         day_outside = datetime(2025, 10, 25)
 
         # P1: 1 hour on day 1
-        self._create_mock_project_with_sub("Range P1", "R_Sub1")
-        self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"].append({
+        self._create_mock_project_with_task("Range P1", "R_Sub1")
+        self.tracker.data["projects"][0]["tasks"][0]["time_entries"].append({
             "start_time": day1.replace(hour=9).isoformat(),
             "end_time": day1.replace(hour=10).isoformat()
         })
         
         # P2: 2 hours on day 2
-        self._create_mock_project_with_sub("Range P2", "R_Sub2")
-        self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"].append({
+        self._create_mock_project_with_task("Range P2", "R_Sub2")
+        self.tracker.data["projects"][1]["tasks"][0]["time_entries"].append({
             "start_time": day2.replace(hour=11).isoformat(),
             "end_time": day2.replace(hour=13).isoformat()
         })
         
         # P3: Entry outside the range (should be ignored)
-        self._create_mock_project_with_sub("Range P3", "R_Sub3_Outside")
-        self.tracker.data["projects"][2]["sub_projects"][0]["time_entries"].append({
+        self._create_mock_project_with_task("Range P3", "R_Sub3_Outside")
+        self.tracker.data["projects"][2]["tasks"][0]["time_entries"].append({
             "start_time": day_outside.replace(hour=9).isoformat(),
             "end_time": day_outside.replace(hour=10).isoformat()
         })
@@ -922,11 +922,11 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn(_("\n**Total Time in Period: {total_time}**").format(total_time=dur_3h), report)
         self.assertTrue(report.startswith(_("# Time Report: {start_date} to {end_date}\n").format(start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')).strip()))
 
-    def test_generate_sub_project_report(self):
-        """Tests the detailed report generation for a single sub-project."""
+    def test_generate_task_report(self):
+        """Tests the detailed report generation for a single task."""
         main_proj = "Detailed Report Main"
-        sub_proj = "Detailed Report Sub"
-        self._create_mock_project_with_sub(main_proj, sub_proj)
+        task_name = "Detailed Report Sub"
+        self._create_mock_project_with_task(main_proj, task_name)
 
         # Entry 1: Yesterday
         # Use fixed dates to make weekday predictable. 2025-11-03 is a Monday.
@@ -940,21 +940,21 @@ class TestTimeTracker(unittest.TestCase):
         entry2_end = day2 + timedelta(hours=1) # 1 hour
 
         # Manually add entries to control times precisely
-        sub_project_data = self.tracker.data["projects"][0]["sub_projects"][0]
-        sub_project_data["time_entries"].append({
+        task_data = self.tracker.data["projects"][0]["tasks"][0]
+        task_data["time_entries"].append({
             "start_time": entry1_start.isoformat(),
             "end_time": entry1_end.isoformat()
         })
-        sub_project_data["time_entries"].append({
+        task_data["time_entries"].append({
             "start_time": entry2_start.isoformat(),
             "end_time": entry2_end.isoformat()
         })
         self.tracker._save_data()
 
-        report = self.tracker.generate_sub_project_report(main_proj, sub_proj)
+        report = self.tracker.generate_task_report(main_proj, task_name)
 
         # Check for key information
-        self.assertIn(f"# {_('Detailed Report for Sub-Project')}: {sub_proj}", report)
+        self.assertIn(f"# {_('Detailed Report for Task')}: {task_name}", report)
         self.assertIn(f"{_('Part of Main Project')}: {main_proj}", report)
         self.assertIn(f"**{_('Total recorded time')}:** 2:30:00", report)
         self.assertIn(f"**{_('Total work sessions')}:** 2", report)
@@ -1001,13 +1001,13 @@ class TestTimeTracker(unittest.TestCase):
         # Check for key information
         self.assertIn(f"# {_('Detailed Report for Main Project')}: {main_proj}", report)
         self.assertIn(f"**{_('Total recorded time')}:** 3:30:00", report)
-        self.assertIn(f"**{_('Number of sub-projects')}:** 2", report)
+        self.assertIn(f"**{_('Number of tasks')}:** 2", report)
         self.assertIn(f"**{_('Total work sessions')}:** 3", report)
         self.assertIn(f"**{_('Average session duration')}:** 1:10:00", report)
         self.assertIn(f"## {_('Weekday Distribution')}", report)
         self.assertIn(f"- **{_('Monday')}**: 3:00:00 (85.7%)", report) # 1h + 2h = 3h of 3.5h total
         self.assertIn(f"- **{_('Tuesday')}**: 0:30:00 (14.3%)", report) # 0.5h of 3.5h total
-        self.assertIn(f"## {_('Sub-Project Breakdown')}", report)
+        self.assertIn(f"## {_('Task Breakdown')}", report)
         
         sessions_str_1 = _('{num_sessions} sessions').format(num_sessions=1)
         sessions_str_2 = _('{num_sessions} sessions').format(num_sessions=2)

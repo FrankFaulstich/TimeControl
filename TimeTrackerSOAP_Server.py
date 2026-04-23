@@ -32,9 +32,9 @@ class MainProjectModel(ComplexModel):
     main_project_name = Unicode
     status = Unicode
 
-class SubProjectModel(ComplexModel):
+class TaskModel(ComplexModel):
     main_project_name = Unicode
-    sub_project_name = Unicode
+    task_name = Unicode
     status = Unicode
     due_date = Unicode(min_occurs=0, nillable=True)
     today = Boolean
@@ -45,12 +45,12 @@ class SubProjectModel(ComplexModel):
 
 class InactiveProjectModel(ComplexModel):
     main_project = Unicode
-    sub_project = Unicode(min_occurs=0, nillable=True)
+    task_name = Unicode(min_occurs=0, nillable=True)
     last_activity = Unicode
 
 class CurrentWorkModel(ComplexModel):
     main_project_name = Unicode
-    sub_project_name = Unicode
+    task_name = Unicode
     start_time = Unicode
 
 class OperationResultModel(ComplexModel):
@@ -106,54 +106,54 @@ class TimeControlService(ServiceBase):
     def list_completed_main_projects(ctx):
         return ctx.service.tracker.list_completed_main_projects()
 
-    # --- Sub Project Management ---
+    # --- Task Management ---
 
     @rpc(Unicode, Unicode, Unicode, Boolean, Unicode, Boolean, Unicode, Integer, _returns=Boolean)
-    def add_sub_project(ctx, main_project_name, sub_project_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1):
-        return ctx.service.tracker.add_sub_project(main_project_name, sub_project_name, due_date, today, note, recurring, frequency, userdefined_days)
+    def add_task(ctx, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1):
+        return ctx.service.tracker.add_task(main_project_name, task_name, due_date, today, note, recurring, frequency, userdefined_days)
 
-    @rpc(Unicode, Unicode, _returns=Array(SubProjectModel))
-    def list_sub_projects(ctx, main_project_name=None, status_filter='all'):
-        projects = ctx.service.tracker.list_sub_projects(main_project_name, status_filter)
-        return [SubProjectModel(**p) for p in projects]
-
-    @rpc(Unicode, Unicode, _returns=Boolean)
-    def delete_sub_project(ctx, main_project_name, sub_project_name):
-        return ctx.service.tracker.delete_sub_project(main_project_name, sub_project_name)
+    @rpc(Unicode, Unicode, _returns=Array(TaskModel))
+    def list_tasks(ctx, main_project_name=None, status_filter='all'):
+        tasks = ctx.service.tracker.list_tasks(main_project_name, status_filter)
+        return [TaskModel(**t) for t in tasks]
 
     @rpc(Unicode, Unicode, _returns=Boolean)
-    def close_sub_project(ctx, main_project_name, sub_project_name):
-        return ctx.service.tracker.close_sub_project(main_project_name, sub_project_name)
+    def delete_task(ctx, main_project_name, task_name):
+        return ctx.service.tracker.delete_task(main_project_name, task_name)
 
     @rpc(Unicode, Unicode, _returns=Boolean)
-    def reopen_sub_project(ctx, main_project_name, sub_project_name):
-        return ctx.service.tracker.reopen_sub_project(main_project_name, sub_project_name)
+    def close_task(ctx, main_project_name, task_name):
+        return ctx.service.tracker.close_task(main_project_name, task_name)
+
+    @rpc(Unicode, Unicode, _returns=Boolean)
+    def reopen_task(ctx, main_project_name, task_name):
+        return ctx.service.tracker.reopen_task(main_project_name, task_name)
 
     @rpc(Unicode, Unicode, Unicode, _returns=Boolean)
-    def rename_sub_project(ctx, main_project_name, old_name, new_name):
-        return ctx.service.tracker.rename_sub_project(main_project_name, old_name, new_name)
+    def rename_task(ctx, main_project_name, old_name, new_name):
+        return ctx.service.tracker.rename_task(main_project_name, old_name, new_name)
 
     @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, Unicode, Boolean, Unicode, Integer, _returns=Boolean)
-    def update_sub_project(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None):
-        return ctx.service.tracker.update_sub_project(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days)
+    def update_task(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None):
+        return ctx.service.tracker.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days)
 
     @rpc(Unicode, Unicode, Unicode, _returns=OperationResultModel)
-    def move_sub_project(ctx, old_main, sub_name, new_main):
-        success, msg = ctx.service.tracker.move_sub_project(old_main, sub_name, new_main)
+    def move_task(ctx, old_main, task_name, new_main):
+        success, msg = ctx.service.tracker.move_task(old_main, task_name, new_main)
         return OperationResultModel(success=success, message=msg)
 
     @rpc(Unicode, Unicode, _returns=OperationResultModel)
-    def promote_sub_project(ctx, main_project_name, sub_project_name):
-        success, msg = ctx.service.tracker.promote_sub_project(main_project_name, sub_project_name)
+    def promote_task_to_project(ctx, main_project_name, task_name):
+        success, msg = ctx.service.tracker.promote_task_to_project(main_project_name, task_name)
         return OperationResultModel(success=success, message=msg)
 
     @rpc(_returns=Integer)
-    def delete_all_closed_sub_projects(ctx):
-        return ctx.service.tracker.delete_all_closed_sub_projects()
+    def delete_all_closed_tasks(ctx):
+        return ctx.service.tracker.delete_all_closed_tasks()
 
     @rpc(Integer, _returns=Array(InactiveProjectModel))
-    def list_inactive_sub_projects(ctx, inactive_weeks):
-        res = ctx.service.tracker.list_inactive_sub_projects(inactive_weeks)
+    def list_inactive_tasks(ctx, inactive_weeks):
+        res = ctx.service.tracker.list_inactive_tasks(inactive_weeks)
         return [InactiveProjectModel(**p) for p in res]
 
     @rpc(Integer, _returns=Array(InactiveProjectModel))
@@ -165,8 +165,8 @@ class TimeControlService(ServiceBase):
     # --- Work / Time Tracking ---
 
     @rpc(Unicode, Unicode, _returns=Boolean)
-    def start_work(ctx, main_project_name, sub_project_name):
-        return ctx.service.tracker.start_work(main_project_name, sub_project_name)
+    def start_work(ctx, main_project_name, task_name):
+        return ctx.service.tracker.start_work(main_project_name, task_name)
 
     @rpc(_returns=Boolean)
     def stop_work(ctx):

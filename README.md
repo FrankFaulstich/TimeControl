@@ -23,20 +23,20 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 ## Features 🚀
 
-**Project Management:** Create, list, rename, delete, close, re-open, move, promote, and demote main and sub-projects.
+**Project Management:** Create, list, rename, delete, close, re-open, move, promote, and demote main projects and tasks.
 
 **Time Tracking:** Start, stop, and view the current work session. Automatically stops the previous session when a new one begins.
 
 **Reporting & Analysis:**
 
 - **Daily & Date Range Reports:** Generate detailed reports for specific days or periods.
-- **Detailed Project Reports:** Create in-depth reports for individual main or sub-projects, including:
+- **Detailed Project Reports:** Create in-depth reports for individual main projects or tasks, including:
   - Total time, session count, and average session duration.
   - A timeline of first and last activity.
   - A breakdown of time spent per weekday (e.g., Monday: 2.5 hours, 30%).
-  - For main projects, a summary of time distribution across its sub-projects.
-  - For sub-projects, a day-by-day list of all time entries.
-- **Inactivity Tracking:** Identify main and sub-projects that have been inactive for a configurable duration.
+  - For main projects, a summary of time distribution across its tasks.
+  - For tasks, a day-by-day list of all time entries.
+- **Inactivity Tracking:** Identify main projects and tasks that have been inactive for a configurable duration.
 
 **Local Data Storage:** All project data and time entries are saved in a `data.json` file in the application's directory.
 
@@ -45,7 +45,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 **Interface:**
 
 - **Experimental GUI:** A graphical user interface based on Streamlit for a more visual experience.
-- **Interactive CLI:** A user-friendly command-line interface (`TimeTrackerCLI.py`) for manual operations.
+**Interactive CLI:** A user-friendly command-line interface (`TimeTrackerCLI.py`) for task and project management.
 
 **SOAP API:** A full-featured SOAP web service (`TimeTrackerSOAP_Server.py`) to integrate TimeControl with other tools or dashboards.
 
@@ -142,10 +142,10 @@ The interactive CLI provides a structured menu for all operations.
 ```text
 === Time Control [version] ===
 --- Main Menu ---
-1. Start work on sub-project
+1. Start work on task
 2. Show current work
 3. Stop current work
-4. Handle projects and sub-projects
+4. Handle projects and tasks
 5. Reporting
 6. Settings
 --------------------------------
@@ -157,7 +157,7 @@ The interactive CLI provides a structured menu for all operations.
 ```text
 --- Project Management ---
 1. Main Project Management
-2. Sub-Project Management
+2. Task Management
 --------------------------------
 0.  Back to Main Menu
 ```
@@ -179,21 +179,21 @@ The interactive CLI provides a structured menu for all operations.
 0.  Back
 ```
 
-**Sub-Project Management Submenu:**
+**Task Management Submenu:**
 
 ```text
---- Sub-Project Management ---
-1.  Add Sub-Project
-2.  List Sub-Projects
-3.  Rename Sub-Project
-4.  Close Sub-Project
-5.  Re-open Sub-Project
-6.  Delete Sub-Project
-7.  Move Sub-Project
-8.  List Inactive Sub-Projects
-9.  List All Closed Sub-Projects
-10. Delete All Closed Sub-Projects
-11. Promote Sub-Project to Main-Project
+--- Task Management ---
+1.  Add Task
+2.  List Tasks
+3.  Rename Task
+4.  Close Task
+5.  Re-open Task
+6.  Delete Task
+7.  Move Task
+8.  List Inactive Tasks
+9.  List All Closed Tasks
+10. Delete All Closed Tasks
+11. Promote Task to Main-Project
 --------------------------------
 0.  Back
 ```
@@ -205,7 +205,7 @@ The interactive CLI provides a structured menu for all operations.
 1. Daily Report (Today)
 2. Daily Report (Specific Day)
 3. Date Range Report
-4. Detailed Sub-Project Report
+4. Detailed Task Report
 5. Detailed Main-Project Report
 6. Detailed Daily Report
 --------------------------
@@ -248,7 +248,7 @@ This project uses Sphinx to generate documentation from the docstrings in the so
 
 ## Data Storage 🗄️
 
-All your project data, including main projects, sub-projects, and time entries, is automatically saved in a local file named **`data.json`** in the same directory as the script. This file is created upon the first run if it doesn't exist.
+All your project data, including main projects, tasks, and time entries, is automatically saved in a local file named **`data.json`** in the same directory as the script. This file is created upon the first run if it doesn't exist.
 
 The `data.json` file has the following structure:
 
@@ -257,9 +257,9 @@ The `data.json` file has the following structure:
   "projects": [
     {
       "main_project_name": "Example Main Project",
-      "sub_projects": [
+      "tasks": [
         {
-          "sub_project_name": "Example Sub-Project 1",
+          "task_name": "Example Task 1",
           "status": "open",
           "time_entries": [
             {
@@ -272,7 +272,7 @@ The `data.json` file has the following structure:
             }
           ]
         },
-        // ... other sub-projects
+        // ... other tasks
       ]
     },
     // ... other main projects
@@ -280,7 +280,7 @@ The `data.json` file has the following structure:
 }
 ```
 
-Time entries are stored in **ISO 8601 format** (e.g., `"2025-09-12T09:30:00.123456"`). If an `end_time` is missing for a `time_entry`, it means that time tracking is currently active for that sub-project.
+Time entries are stored in **ISO 8601 format** (e.g., `"2025-09-12T09:30:00.123456"`). If an `end_time` is missing for a `time_entry`, it means that time tracking is currently active for that task.
 
 ---
 

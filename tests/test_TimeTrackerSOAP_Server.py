@@ -60,12 +60,12 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         self.mock_tracker.add_main_project.assert_called_with("Test Project")
         self.assertTrue(result)
 
-    def test_add_sub_project(self):
-        self.mock_tracker.add_sub_project.return_value = True
-        result = self.soap_server.TimeControlService.add_sub_project(
+    def test_add_task(self):
+        self.mock_tracker.add_task.return_value = True
+        result = self.soap_server.TimeControlService.add_task(
             self.ctx, "Main", "Sub", "2025-12-24", True, "Note"
         )
-        self.mock_tracker.add_sub_project.assert_called_with(
+        self.mock_tracker.add_task.assert_called_with(
             "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1
         )
         self.assertTrue(result)

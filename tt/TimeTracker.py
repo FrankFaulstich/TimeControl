@@ -146,27 +146,32 @@ class TimeTracker:
                 project["status"] = self.STATUS_OPEN
                 data_changed = True
 
-            for sub_project in project.get("sub_projects", []):
-                if "status" not in sub_project:
-                    sub_project["status"] = self.STATUS_OPEN
+            # Migration: Rename sub_projects to tasks
+            if "sub_projects" in project:
+                project["tasks"] = project.pop("sub_projects")
+                data_changed = True
+
+            for task in project.get("tasks", []):
+                if "status" not in task:
+                    task["status"] = self.STATUS_OPEN
                     data_changed = True
-                if "due_date" not in sub_project:
-                    sub_project["due_date"] = None
+                if "due_date" not in task:
+                    task["due_date"] = None
                     data_changed = True
-                if "today" not in sub_project:
-                    sub_project["today"] = False
+                if "today" not in task:
+                    task["today"] = False
                     data_changed = True
-                if "note" not in sub_project:
-                    sub_project["note"] = ""
+                if "note" not in task:
+                    task["note"] = ""
                     data_changed = True
-                if "recurring" not in sub_project:
-                    sub_project["recurring"] = False
+                if "recurring" not in task:
+                    task["recurring"] = False
                     data_changed = True
-                if "frequency" not in sub_project:
-                    sub_project["frequency"] = "daily"
+                if "frequency" not in task:
+                    task["frequency"] = "daily"
                     data_changed = True
-                if "userdefined_days" not in sub_project:
-                    sub_project["userdefined_days"] = 1
+                if "userdefined_days" not in task:
+                    task["userdefined_days"] = 1
                     data_changed = True
         return data_changed
 
@@ -235,19 +240,19 @@ class TimeTracker:
                 return project
         return None
 
-    def _get_sub_project(self, main_project_name, sub_project_name):
+    def _get_task(self, main_project_name, task_name):
         """
-        Helper method to find a sub-project by name within a main project.
+        Helper method to find a task by name within a main project.
         
         :param main_project_name: The name of the main project.
-        :param sub_project_name: The name of the sub-project.
-        :return: The sub-project dictionary or None if not found.
+        :param task_name: The name of the task.
+        :return: The task dictionary or None if not found.
         """
         project = self._get_project(main_project_name)
         if project:
-            for sub_project in project["sub_projects"]:
-                if sub_project["sub_project_name"] == sub_project_name:
-                    return sub_project
+            for task in project["tasks"]:
+                if task["task_name"] == task_name:
+                    return task
         return None
 
     def add_main_project(self, main_project_name):
@@ -259,7 +264,7 @@ class TimeTracker:
         """
         new_project = {
             "main_project_name": main_project_name,
-            "sub_projects": [],
+            "tasks": [],
             "status": self.STATUS_OPEN
         }
         self.data["projects"].append(new_project)
@@ -285,7 +290,7 @@ class TimeTracker:
 
     def delete_main_project(self, main_project_name):
         """
-        Deletes a main project along with all associated sub-projects and time entries.
+        Deletes a main project along with all associated tasks and time entries.
 
         :param main_project_name: The name of the main project to delete.
         :type main_project_name: str
@@ -356,14 +361,14 @@ class TimeTracker:
             return True
         return False
 
-    def add_sub_project(self, main_project_name, sub_project_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1):
+    def add_task(self, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1):
         """
-        Adds a new sub-project to a specified main project.
+        Adds a new task to a specified main project.
 
-        :param main_project_name: The name of the main project to add the sub-project to.
+        :param main_project_name: The name of the main project to add the task to.
         :type main_project_name: str
-        :param sub_project_name: The name of the sub-project to add.
-        :type sub_project_name: str
+        :param task_name: The name of the task to add.
+        :type task_name: str
         :param due_date: Optional due date for the task (ISO string YYYY-MM-DD).
         :type due_date: str or None
         :param today: Whether the task is for today.
@@ -373,13 +378,13 @@ class TimeTracker:
         :param recurring: Whether the task is recurring.
         :param frequency: Freq (daily, on all business days, weekly, monthly, userdefined).
         :param userdefined_days: Number of days for userdefined frequency.
-        :return: True if the sub-project was added successfully, otherwise False (if main project not found).
+        :return: True if the task was added successfully, otherwise False (if main project not found).
         :rtype: bool
         """
         project = self._get_project(main_project_name)
         if project:
-            new_sub_project = {
-                "sub_project_name": sub_project_name,
+            new_task = {
+                "task_name": task_name,
                 "time_entries": [],
                 "status": self.STATUS_OPEN,
                 "due_date": due_date,
@@ -389,17 +394,16 @@ class TimeTracker:
                 "frequency": frequency,
                 "userdefined_days": userdefined_days
             }
-            project["sub_projects"].append(new_sub_project)
+            project["tasks"].append(new_task)
             self._save_data()
             return True
         return False
     
-    def list_sub_projects(self, main_project_name=None, status_filter='all', planning_filter=None):
+    def list_tasks(self, main_project_name=None, status_filter='all', planning_filter=None):
         """
-        Lists sub-projects based on specified filters.
+        Lists tasks based on specified filters.
 
-        This method serves as a unified way to retrieve sub-projects, replacing
-        previous methods like list_open_sub_projects, list_closed_sub_projects, etc.
+        This method serves as a unified way to retrieve tasks.
 
         :param main_project_name: Optional. The name of the main project to search in.
                                   If None, all main projects are considered.
@@ -408,7 +412,7 @@ class TimeTracker:
                               Defaults to 'all'.
         :type status_filter: str
         :return: A list of dictionaries, where each dictionary contains details
-                 of a sub-project, including 'main_project_name', 'sub_project_name',
+                 of a task, including 'main_project_name', 'task_name',
                  and 'status'.
         :rtype: list[dict]
         """
@@ -425,8 +429,8 @@ class TimeTracker:
         next_week_str = (today_dt + timedelta(days=7)).isoformat()
 
         for project in projects_to_search:
-            for sub_project in project.get("sub_projects", []):
-                status = sub_project.get("status", self.STATUS_OPEN)
+            for task in project.get("tasks", []):
+                status = task.get("status", self.STATUS_OPEN)
                 
                 # Default status filter logic
                 if not (status_filter == 'all' or status == status_filter or (status_filter == self.STATUS_OPEN and status == self.STATUS_DONE)):
@@ -438,8 +442,8 @@ class TimeTracker:
                     if status in [self.STATUS_DONE, self.STATUS_CLOSED]:
                         continue
                         
-                    due_date = sub_project.get("due_date")
-                    is_today = sub_project.get("today", False)
+                    due_date = task.get("due_date")
+                    is_today = task.get("today", False)
                     
                     if planning_filter == 'today':
                         if not (is_today or due_date == today_str):
@@ -459,14 +463,14 @@ class TimeTracker:
 
                 results.append({
                     "main_project_name": project["main_project_name"],
-                    "sub_project_name": sub_project["sub_project_name"],
+                    "task_name": task["task_name"],
                     "status": status,
-                    "due_date": sub_project.get("due_date"),
-                    "today": sub_project.get("today", False),
-                    "note": sub_project.get("note", ""),
-                    "recurring": sub_project.get("recurring", False),
-                    "frequency": sub_project.get("frequency", "daily"),
-                    "userdefined_days": sub_project.get("userdefined_days", 1)
+                    "due_date": task.get("due_date"),
+                    "today": task.get("today", False),
+                    "note": task.get("note", ""),
+                    "recurring": task.get("recurring", False),
+                    "frequency": task.get("frequency", "daily"),
+                    "userdefined_days": task.get("userdefined_days", 1)
                 })
         return results
 
@@ -480,49 +484,49 @@ class TimeTracker:
         today_str = date.today().isoformat()
         changed = False
         for project in self.data.get("projects", []):
-            for sub_project in project.get("sub_projects", []):
-                if sub_project.get('today') and sub_project.get('due_date') and sub_project.get('due_date') < today_str:
-                    sub_project['today'] = False
+            for task in project.get("tasks", []):
+                if task.get('today') and task.get('due_date') and task.get('due_date') < today_str:
+                    task['today'] = False
                     changed = True
         if changed:
             self._save_data()
         return changed
 
-    def delete_sub_project(self, main_project_name, sub_project_name):
+    def delete_task(self, main_project_name, task_name):
         """
-        Deletes a sub-project from a main project.
+        Deletes a task from a main project.
 
         :param main_project_name: The name of the main project.
         :type main_project_name: str
-        :param sub_project_name: The name of the sub-project to delete.
-        :type sub_project_name: str
-        :return: True if the sub-project was deleted, otherwise False.
+        :param task_name: The name of the task to delete.
+        :type task_name: str
+        :return: True if the task was deleted, otherwise False.
         :rtype: bool
         """
         project = self._get_project(main_project_name)
         if project:
-            initial_count = len(project["sub_projects"])
-            project["sub_projects"] = [
-                sp for sp in project["sub_projects"] if sp["sub_project_name"] != sub_project_name
+            initial_count = len(project["tasks"])
+            project["tasks"] = [
+                t for t in project["tasks"] if t["task_name"] != task_name
             ]
-            if len(project["sub_projects"]) < initial_count:
+            if len(project["tasks"]) < initial_count:
                 self._save_data()
                 return True
         return False
 
-    def delete_all_closed_sub_projects(self):
+    def delete_all_closed_tasks(self):
         """
-        Permanently deletes all sub-projects that have the status 'closed'.
+        Permanently deletes all tasks that have the status 'closed'.
 
-        :return: The number of deleted sub-projects.
+        :return: The number of deleted tasks.
         :rtype: int
         """
         deleted_count = 0
         for project in self.data["projects"]:
-            sub_projects = project.get("sub_projects", [])
-            for i in range(len(sub_projects) - 1, -1, -1):
-                if sub_projects[i].get("status") == self.STATUS_CLOSED:
-                    del sub_projects[i]
+            tasks = project.get("tasks", [])
+            for i in range(len(tasks) - 1, -1, -1):
+                if tasks[i].get("status") == self.STATUS_CLOSED:
+                    del tasks[i]
                     deleted_count += 1
 
         if deleted_count > 0:
@@ -530,52 +534,52 @@ class TimeTracker:
         
         return deleted_count
 
-    def close_sub_project(self, main_project_name, sub_project_name):
+    def close_task(self, main_project_name, task_name):
         """
-        Sets the status of a sub-project to 'closed'.
+        Sets the status of a task to 'closed'.
 
         :param main_project_name: The name of the main project.
         :type main_project_name: str
-        :param sub_project_name: The name of the sub-project to close.
-        :type sub_project_name: str
-        :return: True if the sub-project was closed, otherwise False.
+        :param task_name: The name of the task to close.
+        :type task_name: str
+        :return: True if the task was closed, otherwise False.
         :rtype: bool
         """
-        sub_project = self._get_sub_project(main_project_name, sub_project_name)
-        if sub_project:
-            sub_project["status"] = self.STATUS_CLOSED
+        task = self._get_task(main_project_name, task_name)
+        if task:
+            task["status"] = self.STATUS_CLOSED
             self._save_data()
             return True
         return False
 
-    def reopen_sub_project(self, main_project_name, sub_project_name):
+    def reopen_task(self, main_project_name, task_name):
         """
-        Sets the status of a sub-project to 'open'.
+        Sets the status of a task to 'open'.
 
         :param main_project_name: The name of the main project.
         :type main_project_name: str
-        :param sub_project_name: The name of the sub-project to reopen.
-        :type sub_project_name: str
-        :return: True if the sub-project was reopened, otherwise False.
+        :param task_name: The name of the task to reopen.
+        :type task_name: str
+        :return: True if the task was reopened, otherwise False.
         :rtype: bool
         """
-        sub_project = self._get_sub_project(main_project_name, sub_project_name)
-        if sub_project:
-            sub_project["status"] = self.STATUS_OPEN
+        task = self._get_task(main_project_name, task_name)
+        if task:
+            task["status"] = self.STATUS_OPEN
             self._save_data()
             return True
         return False
 
-    def rename_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name):
+    def rename_task(self, main_project_name, old_task_name, new_task_name):
         """
-        Renames a sub-project within a given main project.
+        Renames a task within a given main project.
 
-        :param main_project_name: The name of the main project containing the sub-project.
+        :param main_project_name: The name of the main project containing the task.
         :type main_project_name: str
-        :param old_sub_project_name: The current name of the sub-project to rename.
-        :type old_sub_project_name: str
-        :param new_sub_project_name: The new name for the sub-project.
-        :type new_sub_project_name: str
+        :param old_task_name: The current name of the task to rename.
+        :type old_task_name: str
+        :param new_task_name: The new name for the task.
+        :type new_task_name: str
         :return: True if renaming was successful, False otherwise (e.g., project not found,
                  or new name already exists).
         :rtype: bool
@@ -583,24 +587,24 @@ class TimeTracker:
         project = self._get_project(main_project_name)
         if project:
             # Check if the new name already exists
-            if any(sp["sub_project_name"] == new_sub_project_name for sp in project["sub_projects"]):
+            if any(t["task_name"] == new_task_name for t in project["tasks"]):
                 return False # New name is already in use
 
-            # Find the sub-project to rename
-            for sub_project in project["sub_projects"]:
-                if sub_project["sub_project_name"] == old_sub_project_name:
-                    sub_project["sub_project_name"] = new_sub_project_name
+            # Find the task to rename
+            for task in project["tasks"]:
+                if task["task_name"] == old_task_name:
+                    task["task_name"] = new_task_name
                     self._save_data()
                     return True
         return False
 
-    def update_sub_project(self, main_project_name, old_sub_project_name, new_sub_project_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None):
+    def update_task(self, main_project_name, old_task_name, new_task_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None):
         """
-        Updates a sub-project's properties.
+        Updates a task's properties.
 
         :param main_project_name: Name of the main project.
-        :param old_sub_project_name: Current name of the sub-project.
-        :param new_sub_project_name: New name (optional).
+        :param old_task_name: Current name of the task.
+        :param new_task_name: New name (optional).
         :param due_date: New due date (optional, ISO string or None).
         :param today: New today status (optional, bool).
         :param note: New note (optional, str).
@@ -612,67 +616,67 @@ class TimeTracker:
         """
         project = self._get_project(main_project_name)
         if project:
-            if new_sub_project_name and new_sub_project_name != old_sub_project_name:
-                if any(sp["sub_project_name"] == new_sub_project_name for sp in project["sub_projects"]):
+            if new_task_name and new_task_name != old_task_name:
+                if any(t["task_name"] == new_task_name for t in project["tasks"]):
                     return False
 
-            sub_project = self._get_sub_project(main_project_name, old_sub_project_name)
-            if sub_project:
+            task = self._get_task(main_project_name, old_task_name)
+            if task:
                 # Handle recurring task generation
-                is_completing = (status == self.STATUS_DONE and sub_project.get("status") != self.STATUS_DONE)
-                is_recurring = recurring if recurring is not None else sub_project.get("recurring", False)
+                is_completing = (status == self.STATUS_DONE and task.get("status") != self.STATUS_DONE)
+                is_recurring = recurring if recurring is not None else task.get("recurring", False)
                 
                 if is_completing and is_recurring:
-                    self._create_next_recurring_instance(project, sub_project, due_date, recurring, frequency, userdefined_days)
+                    self._create_next_recurring_instance(project, task, due_date, recurring, frequency, userdefined_days)
 
-                if new_sub_project_name:
-                    sub_project["sub_project_name"] = new_sub_project_name
+                if new_task_name:
+                    task["task_name"] = new_task_name
                 
                 # Update due_date (always update to what's provided)
-                sub_project["due_date"] = due_date
+                task["due_date"] = due_date
                 
                 # Update today status if provided
                 if today is not None:
-                    sub_project["today"] = today
+                    task["today"] = today
                 
                 # Update note if provided
                 if note is not None:
-                    sub_project["note"] = note
+                    task["note"] = note
                 
                 # Update status if provided
                 if status is not None:
-                    sub_project["status"] = status
+                    task["status"] = status
                 
                 if recurring is not None:
-                    sub_project["recurring"] = recurring
+                    task["recurring"] = recurring
                 if frequency is not None:
-                    sub_project["frequency"] = frequency
+                    task["frequency"] = frequency
                 if userdefined_days is not None:
-                    sub_project["userdefined_days"] = userdefined_days
+                    task["userdefined_days"] = userdefined_days
                 
                 self._save_data()
                 return True
         return False
 
-    def _create_next_recurring_instance(self, project, sub_project, due_date_param, recurring_param, freq_param, ud_days_param):
-        freq = freq_param if freq_param is not None else sub_project.get("frequency", "daily")
-        ud_days = ud_days_param if ud_days_param is not None else sub_project.get("userdefined_days", 1)
-        base_due = due_date_param if due_date_param is not None else sub_project.get("due_date")
+    def _create_next_recurring_instance(self, project, task, due_date_param, recurring_param, freq_param, ud_days_param):
+        freq = freq_param if freq_param is not None else task.get("frequency", "daily")
+        ud_days = ud_days_param if ud_days_param is not None else task.get("userdefined_days", 1)
+        base_due = due_date_param if due_date_param is not None else task.get("due_date")
         
         next_due = self._calculate_next_due_date(base_due, freq, ud_days)
         
         new_task = {
-            "sub_project_name": sub_project["sub_project_name"],
+            "task_name": task["task_name"],
             "time_entries": [], # Start with a fresh, empty list for the new instance
             "status": self.STATUS_OPEN,
             "due_date": next_due,
-            "today": sub_project.get("today", False),
-            "note": sub_project.get("note", ""),
+            "today": task.get("today", False),
+            "note": task.get("note", ""),
             "recurring": True,
             "frequency": freq,
             "userdefined_days": ud_days
         }
-        project["sub_projects"].append(new_task)
+        project["tasks"].append(new_task)
 
     def _calculate_next_due_date(self, base_due_str, frequency, ud_days):
         if base_due_str:
@@ -703,14 +707,14 @@ class TimeTracker:
             
         return next_date.isoformat()
 
-    def move_sub_project(self, old_main_project_name, sub_project_name, new_main_project_name):
+    def move_task(self, old_main_project_name, task_name, new_main_project_name):
         """
-        Moves a sub-project from one main project to another.
+        Moves a task from one main project to another.
 
         :param old_main_project_name: The name of the source main project.
         :type old_main_project_name: str
-        :param sub_project_name: The name of the sub-project to move.
-        :type sub_project_name: str
+        :param task_name: The name of the task to move.
+        :type task_name: str
         :param new_main_project_name: The name of the destination main project.
         :type new_main_project_name: str
         :return: A tuple (bool, str) indicating success and a message.
@@ -724,26 +728,26 @@ class TimeTracker:
         if not dest_project:
             return False, _("Destination main project '{name}' not found.").format(name=new_main_project_name)
 
-        # Check if sub-project with same name exists in destination
-        if any(sp["sub_project_name"] == sub_project_name for sp in dest_project["sub_projects"]):
-            return False, _("A sub-project named '{sub_name}' already exists in '{main_name}'.").format(sub_name=sub_project_name, main_name=new_main_project_name)
+        # Check if task with same name exists in destination
+        if any(t["task_name"] == task_name for t in dest_project["tasks"]):
+            return False, _("A task named '{task_name}' already exists in '{main_name}'.").format(task_name=task_name, main_name=new_main_project_name)
 
-        # Find and remove sub-project from source
-        sub_project_to_move = None
-        for i, sp in enumerate(source_project["sub_projects"]):
-            if sp["sub_project_name"] == sub_project_name:
-                sub_project_to_move = source_project["sub_projects"].pop(i)
+        # Find and remove task from source
+        task_to_move = None
+        for i, t in enumerate(source_project["tasks"]):
+            if t["task_name"] == task_name:
+                task_to_move = source_project["tasks"].pop(i)
                 break
 
-        if sub_project_to_move:
-            dest_project["sub_projects"].append(sub_project_to_move)
+        if task_to_move:
+            dest_project["tasks"].append(task_to_move)
             self._save_data()
-            return True, _("Sub-project '{sub_name}' moved successfully.").format(sub_name=sub_project_name)
-        return False, _("Sub-project '{sub_name}' not found in '{main_name}'.").format(sub_name=sub_project_name, main_name=old_main_project_name)
+            return True, _("Task '{task_name}' moved successfully.").format(task_name=task_name)
+        return False, _("Task '{task_name}' not found in '{main_name}'.").format(task_name=task_name, main_name=old_main_project_name)
 
-    def promote_sub_project(self, main_project_name, sub_project_name_to_promote):
+    def promote_task_to_project(self, main_project_name, task_name_to_promote):
         """
-        Promotes a sub-project to a new main project.
+        Promotes a task to a new main project.
 
         The time entries of the sub-project are preserved and moved to a new sub-project
         named 'General' within the new main project.
@@ -755,9 +759,9 @@ class TimeTracker:
         :return: A tuple (bool, str) indicating success and a message.
         :rtype: tuple(bool, str)
         """
-        # Check if a main project with the new name already exists
-        if any(p["main_project_name"] == sub_project_name_to_promote for p in self.data["projects"]):
-            return False, _("A main project named '{name}' already exists.").format(name=sub_project_name_to_promote)
+        # Check if a main project with the task's name already exists
+        if any(p["main_project_name"] == task_name_to_promote for p in self.data["projects"]):
+            return False, _("A main project named '{name}' already exists.").format(name=task_name_to_promote)
 
         # Find the source project
         source_project = self._get_project(main_project_name)
@@ -765,28 +769,28 @@ class TimeTracker:
         if not source_project:
             return False, _("Source main project '{name}' not found.").format(name=main_project_name)
 
-        # Find the index of the sub-project to promote
-        sub_project_index = None
-        for i, sp in enumerate(source_project["sub_projects"]):
-            if sp["sub_project_name"] == sub_project_name_to_promote:
-                sub_project_index = i
+        # Find the index of the task to promote
+        task_index = None
+        for i, t in enumerate(source_project["tasks"]):
+            if t["task_name"] == task_name_to_promote:
+                task_index = i
                 break
 
-        if sub_project_index is None:
-            return False, _("Sub-project '{sub_name}' not found in '{main_name}'.").format(sub_name=sub_project_name_to_promote, main_name=main_project_name)
+        if task_index is None:
+            return False, _("Task '{task_name}' not found in '{main_name}'.").format(task_name=task_name_to_promote, main_name=main_project_name)
 
-        # Remove sub-project from old main project and get its data
-        sub_project_data = source_project["sub_projects"].pop(sub_project_index)
-        time_entries = sub_project_data.get("time_entries", [])
+        # Remove task from old main project and get its data
+        task_data = source_project["tasks"].pop(task_index)
+        time_entries = task_data.get("time_entries", [])
 
         # Create the new main project
         new_main_project = {
-            "main_project_name": sub_project_name_to_promote,
-            "sub_projects": [{"sub_project_name": _("General"), "time_entries": time_entries}]
+            "main_project_name": task_name_to_promote,
+            "tasks": [{"task_name": _("General"), "time_entries": time_entries}]
         }
         self.data["projects"].append(new_main_project)
         self._save_data()
-        return True, _("Sub-project '{sub_name}' was promoted to a new main project.").format(sub_name=sub_project_name_to_promote)
+        return True, _("Task '{task_name}' was promoted to a new main project.").format(task_name=task_name_to_promote)
 
     def demote_main_project(self, main_project_to_demote_name, new_parent_main_project_name):
         """
@@ -927,16 +931,16 @@ class TimeTracker:
         :rtype: dict or None
         """
         for project in reversed(self.data["projects"]):
-            for sub_project in reversed(project["sub_projects"]):
-                if sub_project["time_entries"] and "end_time" not in sub_project["time_entries"][-1]:
+            for task in reversed(project["tasks"]):
+                if task["time_entries"] and "end_time" not in task["time_entries"][-1]:
                     return {
                         "main_project_name": project["main_project_name"],
-                        "sub_project_name": sub_project["sub_project_name"],
-                        "start_time": sub_project["time_entries"][-1]["start_time"]
+                        "task_name": task["task_name"],
+                        "start_time": task["time_entries"][-1]["start_time"]
                     }
         return None
 
-    def list_inactive_sub_projects(self, inactive_weeks):
+    def list_inactive_tasks(self, inactive_weeks):
         """
         Lists sub-projects that have not had any activity (completed time entry) 
         within the specified number of weeks.
@@ -946,7 +950,7 @@ class TimeTracker:
 
         :param inactive_weeks: The number of weeks defining the inactivity threshold.
         :type inactive_weeks: int
-        :return: A list of dictionaries, each containing 'main_project', 'sub_project', 
+        :return: A list of dictionaries, each containing 'main_project', 'task_name', 
                  and the 'last_activity' timestamp (formatted).
         :rtype: list[dict]
         """
@@ -954,25 +958,25 @@ class TimeTracker:
         inactive_projects = []
 
         for project in self.data["projects"]:
-            for sub_project in project["sub_projects"]:
-                if not sub_project.get("time_entries"):
+            for task in project["tasks"]:
+                if not task.get("time_entries"):
                     # Ignore sub-projects with no entries
                     continue
                 
-                # Check if the project is currently running (active)
-                last_entry = sub_project["time_entries"][-1]
+                # Check if the task is currently running (active)
+                last_entry = task["time_entries"][-1]
                 if "end_time" not in last_entry:
                     continue # Skip if currently running
 
                 # Only consider sub-projects that are currently 'open'
                 # This check is now after the 'running' check to correctly ignore running projects regardless of status.
-                if sub_project.get("status", self.STATUS_OPEN) != self.STATUS_OPEN:
+                if task.get("status", self.STATUS_OPEN) != self.STATUS_OPEN:
                     continue
 
                 latest_timestamp = None
                 
                 # Find the latest timestamp from all completed entries
-                for entry in sub_project["time_entries"]:
+                for entry in task["time_entries"]:
                     time_to_check = None
                     if "end_time" in entry:
                         time_to_check = datetime.fromisoformat(entry["end_time"])
@@ -988,7 +992,7 @@ class TimeTracker:
                 if latest_timestamp and latest_timestamp < cutoff_date:
                     inactive_projects.append({
                         "main_project": project["main_project_name"],
-                        "sub_project": sub_project["sub_project_name"],
+                        "task_name": task["task_name"],
                         "last_activity": latest_timestamp.strftime("%Y-%m-%d %H:%M:%S")
                     })
 
@@ -1013,15 +1017,15 @@ class TimeTracker:
             # Skip closed main projects or those where all sub-projects are closed
             if project.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED:
                 continue
-            sub_projects = project.get("sub_projects", [])
-            if sub_projects and all(sp.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED for sp in sub_projects):
+            tasks = project.get("tasks", [])
+            if tasks and all(t.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED for t in tasks):
                 continue
 
             latest_activity = None
             is_active = False
 
-            for sub_project in project["sub_projects"]:
-                for entry in sub_project.get("time_entries", []):
+            for task in project["tasks"]:
+                for entry in task.get("time_entries", []):
                     # 1. Check for running session (activity right now)
                     if "start_time" in entry and "end_time" not in entry:
                         is_active = True
@@ -1062,15 +1066,15 @@ class TimeTracker:
         """
         completed_projects = []
         for project in self.data["projects"]:
-            sub_projects = project.get("sub_projects", [])
+            tasks = project.get("tasks", [])
             
             # If no sub-projects, it is considered completed/inactive in this context
-            if not sub_projects:
+            if not tasks:
                 completed_projects.append(project["main_project_name"])
                 continue
             
             # Check if all sub-projects are closed
-            if all(sp.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED for sp in sub_projects):
+            if all(t.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED for t in tasks):
                 completed_projects.append(project["main_project_name"])
         
         return completed_projects
@@ -1094,12 +1098,12 @@ class TimeTracker:
 
         for project in self.data["projects"]:
             main_project_total_time = timedelta()
-            sub_project_details = []
+            task_details = []
 
-            for sub_project in project["sub_projects"]:
-                sub_project_total_time = timedelta()
+            for task in project["tasks"]:
+                task_total_time = timedelta()
                 
-                for entry in sub_project["time_entries"]:
+                for entry in task["time_entries"]:
                     try:
                         start_time = datetime.fromisoformat(entry["start_time"])
                         if "end_time" in entry:
@@ -1202,7 +1206,7 @@ class TimeTracker:
 
         # Build the report string
         report = []
-        report.append(_("# Detailed Report for Sub-Project: {name}").format(name=sub_project_name))
+        report.append(_("# Detailed Report for Task: {name}").format(name=task_name))
         report.append(_("Part of Main Project: {name}").format(name=main_project_name))
         report.append("-" * 30)
 
@@ -1255,7 +1259,7 @@ class TimeTracker:
         if not project:
             return _("Main project '{name}' not found.").format(name=main_project_name)
 
-        sub_projects = project.get("sub_projects", [])
+        tasks = project.get("tasks", [])
 
         # --- Overall Stats ---
         total_duration = timedelta()
@@ -1263,15 +1267,15 @@ class TimeTracker:
         first_start_time = None
         last_activity_time = None
         is_active = False
-        active_sub_project_name = None
+        active_task_name = None
 
-        # --- Sub-Project Specific Stats ---
-        sub_project_stats = []
+        # --- Task Specific Stats ---
+        task_stats = []
         weekday_durations = [timedelta() for _ in range(7)] # Mon-Sun
 
-        for sp in sub_projects:
-            sp_duration = timedelta()
-            entries = sp.get("time_entries", [])
+        for t in tasks:
+            t_duration = timedelta()
+            entries = t.get("time_entries", [])
             total_sessions += len(entries)
 
             for i, entry in enumerate(entries):
@@ -1284,19 +1288,19 @@ class TimeTracker:
                 if "end_time" in entry:
                     end_time = datetime.fromisoformat(entry["end_time"])
                     duration = end_time - start_time
-                    sp_duration += duration
+                    t_duration += duration
                     weekday_durations[start_time.weekday()] += duration
                     if last_activity_time is None or end_time > last_activity_time:
                         last_activity_time = end_time
                 elif i == len(entries) - 1:  # Last entry is open
                     is_active = True
-                    active_sub_project_name = sp["sub_project_name"]
+                    active_task_name = t["task_name"]
             
-            total_duration += sp_duration
+            total_duration += t_duration
             if len(entries) > 0:
-                sub_project_stats.append({
-                    "name": sp["sub_project_name"],
-                    "duration": sp_duration,
+                task_stats.append({
+                    "name": t["task_name"],
+                    "duration": t_duration,
                     "sessions": len(entries)
                 })
 
@@ -1305,7 +1309,7 @@ class TimeTracker:
         report.append(_("# Detailed Report for Main Project: {name}").format(name=main_project_name))
         report.append("-" * 30)
 
-        status = _("Active (working on '{sub_name}')").format(sub_name=active_sub_project_name) if is_active else _("Inactive")
+        status = _("Active (working on '{task_name}')").format(task_name=active_task_name) if is_active else _("Inactive")
         report.append(f"**{_('Status')}:** {status}")
         if first_start_time:
             report.append(f"**{_('First entry')}:** {first_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -1313,7 +1317,7 @@ class TimeTracker:
             report.append(f"**{_('Last activity')}:** {last_activity_time.strftime('%Y-%m-%d %H:%M:%S')}")
         
         report.append(f"**{_('Total recorded time')}:** {str(total_duration).split('.')[0]}")
-        report.append(f"**{_('Number of sub-projects')}:** {len(sub_projects)}")
+        report.append(f"**{_('Number of tasks')}:** {len(tasks)}")
         report.append(f"**{_('Total work sessions')}:** {total_sessions}")
 
         if total_sessions > 0:
@@ -1331,13 +1335,13 @@ class TimeTracker:
                     duration_str = str(day_duration).split('.')[0]
                     report.append(f"- **{day_name}**: {duration_str} ({percentage:.1f}%)")
 
-        if sub_project_stats:
-            report.append(f"\n## {_('Sub-Project Breakdown')}")
+        if task_stats:
+            report.append(f"\n## {_('Task Breakdown')}")
             # Sort by duration, descending
-            sub_project_stats.sort(key=lambda x: x["duration"], reverse=True)
+            task_stats.sort(key=lambda x: x["duration"], reverse=True)
             
             total_seconds = total_duration.total_seconds()
-            for stat in sub_project_stats:
+            for stat in task_stats:
                 percentage = (stat["duration"].total_seconds() / total_seconds * 100) if total_seconds > 0 else 0
                 duration_str = str(stat['duration']).split('.')[0]
                 report.append(
@@ -1364,12 +1368,12 @@ class TimeTracker:
 
         for project in self.data["projects"]:
             main_project_total_time = timedelta()
-            sub_project_details = []
+            task_details = []
 
-            for sub_project in project["sub_projects"]:
-                sub_project_total_time = timedelta()
+            for task in project["tasks"]:
+                task_total_time = timedelta()
                 
-                for entry in sub_project["time_entries"]:
+                for entry in task["time_entries"]:
                     try:
                         start_time = datetime.fromisoformat(entry["start_time"])
                         if "end_time" in entry:
@@ -1377,20 +1381,20 @@ class TimeTracker:
                             # Check if the entry is within the specified date range
                             if start_date <= start_time.date() <= end_date:
                                 duration = end_time - start_time
-                                sub_project_total_time += duration
+                                task_total_time += duration
                     except (ValueError, KeyError):
                         continue
 
-                if sub_project_total_time.total_seconds() > 0:
-                    formatted_time = self._format_duration(sub_project_total_time)
-                    sub_project_details.append(f"- {sub_project['sub_project_name']}: {formatted_time}") # _format_duration is already translated
-                    main_project_total_time += sub_project_total_time
+                if task_total_time.total_seconds() > 0:
+                    formatted_time = self._format_duration(task_total_time)
+                    task_details.append(f"- {task['task_name']}: {formatted_time}") # _format_duration is already translated
+                    main_project_total_time += task_total_time
 
             if main_project_total_time.total_seconds() > 0:
                 total_period_time += main_project_total_time
                 formatted_time = self._format_duration(main_project_total_time)
                 report.append(f"## {project['main_project_name']} ({formatted_time})\n") # _format_duration is already translated
-                report.extend(sub_project_details)
+                report.extend(task_details)
                 report.append("\n")
         
         if total_period_time.total_seconds() > 0:
@@ -1426,10 +1430,10 @@ class TimeTracker:
 
         for project in self.data["projects"]:
             main_project_name = project['main_project_name']
-            for sub_project in project["sub_projects"]:
-                sub_project_name = sub_project['sub_project_name']
+            for task in project["tasks"]:
+                task_name = task['task_name']
                 
-                for entry in sub_project["time_entries"]:
+                for entry in task["time_entries"]:
                     try:
                         start_time = datetime.fromisoformat(entry["start_time"])
                         if start_time.date() == today:
@@ -1446,7 +1450,7 @@ class TimeTracker:
                             start_time_str = start_time.strftime('%H:%M:%S')
                             
                             # Format as a list item for proper Markdown rendering
-                            line = f"- {start_time_str}, {end_time_str}, {duration_str}, {main_project_name}, {sub_project_name}"
+                            line = f"- {start_time_str}, {end_time_str}, {duration_str}, {main_project_name}, {task_name}"
                             daily_entries.append((start_time, line))
                     except (ValueError, KeyError):
                         continue

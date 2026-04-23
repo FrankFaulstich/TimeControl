@@ -180,8 +180,8 @@ def view_main():
     with col_edit:
         if st.button("✎", help=_("Aktuellen Task bearbeiten"), disabled=not current_work):
             st.session_state.context['selected_main'] = current_work['main_project_name']
-            st.session_state.context['selected_sub'] = current_work['sub_project_name']
-            navigate_to('edit_sub_project_form')
+            st.session_state.context['selected_task'] = current_work['task_name']
+            navigate_to('edit_task_form')
 
     if st.button(t_label("1. Start work on task"), use_container_width=True):
         navigate_to('start_work')
@@ -242,7 +242,7 @@ def view_task_planning():
     if planning_filter == 'today':
         st.session_state.tracker.cleanup_overdue_today_tasks()
 
-    tasks = st.session_state.tracker.list_sub_projects(planning_filter=planning_filter)
+    tasks = st.session_state.tracker.list_tasks(planning_filter=planning_filter)
 
     if tasks:
         if planning_filter == 'weekly':
@@ -261,7 +261,7 @@ def view_task_planning():
                 if i in tasks_by_day:
                     st.subheader(weekday_names[i])
                     for task in tasks_by_day[i]:
-                        name = task['sub_project_name']
+                        name = task['task_name']
                         display_name = f"~~{name}~~" if task.get('status') == 'done' else name
                         today_info = " ⭐" if task.get('today') else ""
                         st.markdown(f"- **{task['main_project_name']}**: {display_name}{today_info}")
@@ -272,7 +272,7 @@ def view_task_planning():
                     current_main = task['main_project_name']
                     st.subheader(current_main)
                 
-                name = task['sub_project_name']
+                name = task['task_name']
                 status = task.get('status')
                 display_name = f"~~{name}~~" if status == 'done' else name
                 due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
@@ -293,7 +293,7 @@ def view_today_tasks():
     st.session_state.tracker.cleanup_overdue_today_tasks()
     
     # Here we show tasks that are explicitly marked as 'today' (⭐)
-    all_open = st.session_state.tracker.list_sub_projects(status_filter='open')
+    all_open = st.session_state.tracker.list_tasks(status_filter='open')
     today_tasks = [t for t in all_open if t.get('today')]
 
     if today_tasks:
@@ -308,7 +308,7 @@ def view_today_tasks():
         for main_proj_name, sub_tasks in today_tasks_grouped.items():
             st.subheader(main_proj_name)
             for task in sub_tasks:
-                name = task['sub_project_name']
+                name = task['task_name']
                 status = task.get('status')
                 display_name = f"~~{name}~~" if status == 'done' else name
                 due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
@@ -795,7 +795,7 @@ def view_rename_main_project():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
-def view_list_sub_projects():
+def view_list_tasks():
     """
     Renders the list of tasks for a selected main project.
     """
@@ -805,28 +805,28 @@ def view_list_sub_projects():
     if not main_projects:
         st.info(_("No projects found."))
         if st.button(_("Back"), use_container_width=True):
-            navigate_to('sub_project_mgmt')
+            navigate_to('task_mgmt')
         return
 
     options = [p['main_project_name'] for p in main_projects]
     selected_main = st.selectbox(_("Select Project"), options)
     
-    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='all')
+    tasks = st.session_state.tracker.list_tasks(main_project_name=selected_main, status_filter='all')
     
-    if sub_projects:
+    if tasks:
         st.markdown(_("Tasks for '{name}':").format(name=selected_main))
-        for sp in sub_projects:
-            name = sp['sub_project_name']
-            status_text = f"({_('closed')})" if sp['status'] == 'closed' else ""
-            display_name = f"~~{name}~~" if sp['status'] == 'done' else name
+        for t in tasks:
+            name = t['task_name']
+            status_text = f"({_('closed')})" if t['status'] == 'closed' else ""
+            display_name = f"~~{name}~~" if t['status'] == 'done' else name
             st.markdown(f"- {display_name} {status_text}")
     else:
         st.info(_("No tasks found for '{name}'.").format(name=selected_main))
         
     if st.button(_("Back"), use_container_width=True):
-        navigate_to('sub_project_mgmt')
+        navigate_to('task_mgmt')
 
-def view_rename_sub_project():
+def view_rename_task():
     """
     Renders the form to rename a task.
     """
@@ -836,41 +836,41 @@ def view_rename_sub_project():
     if not main_projects:
         st.info(_("No open projects found."))
         if st.button(_("Back"), use_container_width=True):
-            navigate_to('sub_project_mgmt')
+            navigate_to('task_mgmt')
         return
 
     main_options = [p['main_project_name'] for p in main_projects]
     selected_main = st.selectbox(_("Select Project"), main_options)
     
-    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
+    tasks = st.session_state.tracker.list_tasks(main_project_name=selected_main, status_filter='open')
     
-    if not sub_projects:
+    if not tasks:
         st.info(_("No open tasks to rename in '{name}'.").format(name=selected_main))
         if st.button(_("Back"), use_container_width=True):
-            navigate_to('sub_project_mgmt')
+            navigate_to('task_mgmt')
         return
 
-    sub_options = [sp['sub_project_name'] for sp in sub_projects]
-    selected_sub = st.selectbox(_("Select Task"), sub_options)
+    task_options = [t['task_name'] for t in tasks]
+    selected_task = st.selectbox(_("Select Task"), task_options)
 
-    with st.form("rename_sub_form"):
-        new_name = st.text_input(_("New Name"), value=selected_sub)
+    with st.form("rename_task_form"):
+        new_name = st.text_input(_("New Name"), value=selected_task)
         submitted = st.form_submit_button(_("Rename"), use_container_width=True)
         
         if submitted:
             if not new_name:
                 st.error(_("Please enter a new name."))
-            elif new_name == selected_sub:
+            elif new_name == selected_task:
                 st.warning(_("New name is the same as the old name."))
-            elif st.session_state.tracker.rename_sub_project(selected_main, selected_sub, new_name):
-                set_feedback(_("Task '{old_name}' renamed to '{new_name}'.").format(old_name=selected_sub, new_name=new_name))
-                navigate_to('sub_project_mgmt')
+            elif st.session_state.tracker.rename_task(selected_main, selected_task, new_name):
+                set_feedback(_("Task '{old_name}' renamed to '{new_name}'.").format(old_name=selected_task, new_name=new_name))
+                navigate_to('task_mgmt')
                 st.rerun()
             else:
                 st.error(_("Error: Could not rename. The new name might already exist."))
 
     if st.button(_("Cancel"), use_container_width=True):
-        navigate_to('sub_project_mgmt')
+        navigate_to('task_mgmt')
         
 def view_close_main_project():
     """
@@ -1043,7 +1043,7 @@ def view_list_completed_main():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('main_project_mgmt')
 
-def view_add_sub_project_select_main():
+def view_add_task_select_main():
     """
     Renders the first step of adding a task: selecting the project.
     """
@@ -1051,7 +1051,7 @@ def view_add_sub_project_select_main():
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not projects:
         st.warning(_("No open projects found. Please add one first."))
-        if st.button(_("Back"), use_container_width=True): navigate_to('sub_project_mgmt')
+        if st.button(_("Back"), use_container_width=True): navigate_to('task_mgmt')
         return
 
     options = [p['main_project_name'] for p in projects]
@@ -1059,18 +1059,18 @@ def view_add_sub_project_select_main():
     
     if st.button(_("Next"), use_container_width=True):
         st.session_state.context['selected_main'] = selected
-        navigate_to('add_sub_project_form')
+        navigate_to('add_task_form')
         st.rerun()
-    if st.button(_("Cancel"), use_container_width=True): navigate_to('sub_project_mgmt')
+    if st.button(_("Cancel"), use_container_width=True): navigate_to('task_mgmt')
 
-def view_add_sub_project_form():
+def view_add_task_form():
     """
     Renders the second step of adding a task: entering the name.
     """
     main_project = st.session_state.context.get('selected_main')
     if not main_project:
         set_feedback(_("No project selected. Please start again."), "error")
-        navigate_to('add_sub_project')
+        navigate_to('add_task')
         st.rerun()
         return
 
@@ -1095,7 +1095,7 @@ def view_add_sub_project_form():
         </style>
         """, unsafe_allow_html=True)
 
-    existing_subs = [s['sub_project_name'].lower() for s in st.session_state.tracker.list_sub_projects(main_project_name=main_project)]
+    existing_tasks = [t['task_name'].lower() for t in st.session_state.tracker.list_tasks(main_project_name=main_project)]
 
     name = st.text_input(_("Name of the new task"))
     if "new_task_note" not in st.session_state:
@@ -1139,9 +1139,9 @@ def view_add_sub_project_form():
         if st.button(_("Add Task"), type="primary", use_container_width=True):
             if not name:
                 st.error(_("Please enter a name."))
-            elif name.lower() in existing_subs:
+            elif name.lower() in existing_tasks:
                 set_feedback(_("A task with this name already exists in this project."), 'error')
-            elif st.session_state.tracker.add_sub_project(
+            elif st.session_state.tracker.add_task(
                 main_project, 
                 name, 
                 due_date.isoformat() if due_date else None, 
@@ -1154,54 +1154,54 @@ def view_add_sub_project_form():
                 set_feedback(_("Task '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
                 if "new_task_note" in st.session_state: del st.session_state.new_task_note
                 st.session_state.context = {}
-                navigate_to('sub_project_mgmt')
+                navigate_to('task_mgmt')
     with col_btn2:
         if st.button(_("Cancel"), use_container_width=True): 
             if "new_task_note" in st.session_state: del st.session_state.new_task_note
             st.session_state.context = {}
-            navigate_to('sub_project_mgmt')
+            navigate_to('task_mgmt')
 
-def view_edit_sub_project_select_main():
+def view_edit_task_select_main():
     """Step 1 of editing a task: Select the main project."""
     render_header(_("Edit Task"), _("Step 1: Select Project"))
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not projects:
         st.warning(_("No open projects found."))
-        if st.button(_("Back"), use_container_width=True): navigate_to('sub_project_mgmt')
+        if st.button(_("Back"), use_container_width=True): navigate_to('task_mgmt')
         return
     selected = st.selectbox(_("Project"), [p['main_project_name'] for p in projects])
     if st.button(_("Next"), use_container_width=True):
         st.session_state.context['selected_main'] = selected
-        navigate_to('edit_sub_project_select_sub')
+        navigate_to('edit_task_select_task')
         st.rerun()
-    if st.button(_("Cancel"), use_container_width=True): navigate_to('sub_project_mgmt')
+    if st.button(_("Cancel"), use_container_width=True): navigate_to('task_mgmt')
 
-def view_edit_sub_project_select_sub():
+def view_edit_task_select_task():
     """Step 2 of editing a task: Select the task from the chosen project."""
     main_project = st.session_state.context.get('selected_main')
     render_header(_("Edit Task"), f"{_('Step 2: Select Task from')} {main_project}")
-    subs = st.session_state.tracker.list_sub_projects(main_project_name=main_project, status_filter='open')
-    if not subs:
+    tasks = st.session_state.tracker.list_tasks(main_project_name=main_project, status_filter='open')
+    if not tasks:
         st.info(_("No open tasks found."))
-        if st.button(_("Back"), use_container_width=True): navigate_to('edit_sub_project')
+        if st.button(_("Back"), use_container_width=True): navigate_to('edit_task')
         return
-    selected_sub = st.selectbox(_("Select Task"), [s['sub_project_name'] for s in subs])
+    selected_task = st.selectbox(_("Select Task"), [t['task_name'] for t in tasks])
     if st.button(_("Next"), use_container_width=True):
-        st.session_state.context['selected_sub'] = selected_sub
-        navigate_to('edit_sub_project_form')
+        st.session_state.context['selected_task'] = selected_task
+        navigate_to('edit_task_form')
         st.rerun()
-    if st.button(_("Back"), use_container_width=True): navigate_to('edit_sub_project')
+    if st.button(_("Back"), use_container_width=True): navigate_to('edit_task')
 
-def view_edit_sub_project_form():
+def view_edit_task_form():
     """Step 3 of editing a task: Change name and due date."""
     main_project = st.session_state.context.get('selected_main')
-    sub_name = st.session_state.context.get('selected_sub')
+    task_name = st.session_state.context.get('selected_task')
     
     # Find current details to pre-fill the form
-    all_subs = st.session_state.tracker.list_sub_projects(main_project_name=main_project)
-    task_details = next((s for s in all_subs if s['sub_project_name'] == sub_name), {})
+    all_tasks = st.session_state.tracker.list_tasks(main_project_name=main_project)
+    task_details = next((t for t in all_tasks if t['task_name'] == task_name), {})
     
-    render_header(_("Edit Task"), f"{main_project} / {sub_name}")
+    render_header(_("Edit Task"), f"{main_project} / {task_name}")
     
     # Inject CSS for full-height responsive layout and styled preview
     st.markdown("""
@@ -1230,7 +1230,7 @@ def view_edit_sub_project_form():
     if 'edit_task_note' not in st.session_state:
         st.session_state.edit_task_note = task_details.get('note', '')
 
-    new_name = st.text_input(_("Task Name"), value=sub_name)
+    new_name = st.text_input(_("Task Name"), value=task_name)
 
     col_date, col_clear = st.columns([5, 1])
     with col_date:
@@ -1280,9 +1280,9 @@ def view_edit_sub_project_form():
             final_due = st.session_state.edit_due_date.isoformat() if st.session_state.edit_due_date else None
             new_status = 'done' if is_done else 'open'
             
-            if st.session_state.tracker.update_sub_project(
+            if st.session_state.tracker.update_task(
                 main_project, 
-                sub_name, 
+                task_name, 
                 new_name, 
                 final_due, 
                 is_today, 
@@ -1296,7 +1296,7 @@ def view_edit_sub_project_form():
                 if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
                 if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
                 st.session_state.context = {}
-                navigate_to('sub_project_mgmt')
+                navigate_to('task_mgmt')
             else:
                 st.error(_("Error: Could not update task."))
 
@@ -1305,7 +1305,7 @@ def view_edit_sub_project_form():
             if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
             if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
             st.session_state.context = {}
-            navigate_to('sub_project_mgmt')
+            navigate_to('task_mgmt')
 
 def view_start_work():
     """
@@ -1323,22 +1323,22 @@ def view_start_work():
     options = [p['main_project_name'] for p in projects]
     selected_main = st.selectbox(_("Select Project"), options)
     
-    subs = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
-    if not subs:
+    tasks = st.session_state.tracker.list_tasks(main_project_name=selected_main, status_filter='open')
+    if not tasks:
         st.info(_("No open tasks to start work on in '{name}'.").format(name=selected_main))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('main')
         return
 
-    sub_options = [s['sub_project_name'] for s in subs]
+    task_options = [t['task_name'] for t in tasks]
 
     with st.form("start_work_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options)
+        selected_task = st.selectbox(_("Select Task"), task_options)
         submitted = st.form_submit_button(_("Start Work"), use_container_width=True)
         
         if submitted:
-            if st.session_state.tracker.start_work(selected_main, selected_sub):
-                set_feedback(_("Work started on '{sub_name}' in project '{main_name}'.").format(sub_name=selected_sub, main_name=selected_main))
+            if st.session_state.tracker.start_work(selected_main, selected_task):
+                set_feedback(_("Work started on '{task_name}' in project '{main_name}'.").format(task_name=selected_task, main_name=selected_main))
                 navigate_to('main')
                 st.rerun()
             else:
@@ -1360,7 +1360,7 @@ def view_show_current_work():
         minutes, seconds = divmod(remainder, 60)
         
         st.markdown(f"**{_('Project')}:** {current['main_project_name']}")
-        st.markdown(f"**{_('Task')}:** {current['sub_project_name']}")
+        st.markdown(f"**{_('Task')}:** {current['task_name']}")
         st.markdown(f"**{_('Started at')}:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
         st.markdown(f"**{_('Duration')}:** {int(hours):02}:{int(minutes):02}:{int(seconds):02}")
     else:
@@ -1674,18 +1674,18 @@ def view_report_detailed_sub_select_sub():
 
     render_header(_("Detailed Task Report"), f"{_('Step 2: Select Task from')} {main_project}")
     
-    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=main_project, status_filter='all')
-    if not sub_projects:
+    tasks = st.session_state.tracker.list_tasks(main_project_name=main_project, status_filter='all')
+    if not tasks:
         st.info(_("No tasks found for '{name}'.").format(name=main_project))
         if st.button(_("Back"), use_container_width=True):
             navigate_to('report_detailed_sub')
         return
 
-    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+    task_options = [t['task_name'] for t in tasks]
     
-    selected_sub = st.selectbox(_("Select Task"), sub_options)
+    selected_task = st.selectbox(_("Select Task"), task_options)
     if st.button(_("Generate Report"), use_container_width=True):
-        report = st.session_state.tracker.generate_sub_project_report(main_project, selected_sub)
+        report = st.session_state.tracker.generate_task_report(main_project, selected_task)
         st.session_state.context = {'report': report} # Clear context and set report
         navigate_to('view_report')
         st.rerun()
@@ -1764,8 +1764,8 @@ def view_generic_placeholder(title):
     render_header(title)
     st.info("This feature is available in the CLI. GUI implementation coming soon.")
     if st.button(_("Back"), use_container_width=True): 
-        # Simple logic to go back up one level
-        if 'sub_project' in st.session_state.menu: navigate_to('sub_project_mgmt')
+        # Logic to go back
+        if 'task' in st.session_state.menu: navigate_to('task_mgmt')
         elif 'main_project' in st.session_state.menu: navigate_to('main_project_mgmt')
         elif 'report' in st.session_state.menu: navigate_to('reporting')
         elif 'settings' in st.session_state.menu: navigate_to('settings')
@@ -1779,7 +1779,7 @@ menu_map = {
     'today_view': view_today_tasks, # New view for today's tasks
     'project_management': view_project_management,
     'main_project_mgmt': view_main_project_mgmt,
-    'sub_project_mgmt': view_sub_project_mgmt,
+    'task_mgmt': view_task_mgmt,
     'reporting': view_reporting,
     'settings': view_settings,
     
@@ -1799,21 +1799,21 @@ menu_map = {
     'demote_main_project': view_demote_main_project,
     'list_completed_main': view_list_completed_main,
     
-    'add_sub_project': view_add_sub_project_select_main,
-    'add_sub_project_form': view_add_sub_project_form,
-    'list_sub_projects': view_list_sub_projects,
-    'edit_sub_project': view_edit_sub_project_select_main,
-    'edit_sub_project_select_sub': view_edit_sub_project_select_sub,
-    'edit_sub_project_form': view_edit_sub_project_form,
-    'rename_sub_project': view_rename_sub_project,
-    'close_sub_project': view_close_sub_project,
-    'reopen_sub_project': view_reopen_sub_project,
-    'delete_sub_project': view_delete_sub_project,
-    'move_sub_project': view_move_sub_project,
-    'list_inactive_sub': view_list_inactive_sub_projects,
-    'list_closed_sub': view_list_closed_sub_projects,
-    'delete_all_closed_sub': view_delete_all_closed_sub_projects,
-    'promote_sub_project': view_promote_sub_project,
+    'add_task': view_add_task_select_main,
+    'add_task_form': view_add_task_form,
+    'list_tasks': view_list_tasks,
+    'edit_task': view_edit_task_select_main,
+    'edit_task_select_task': view_edit_task_select_task,
+    'edit_task_form': view_edit_task_form,
+    'rename_task': view_rename_task,
+    'close_task': view_close_task,
+    'reopen_task': view_reopen_task,
+    'delete_task': view_delete_task,
+    'move_task': view_move_task,
+    'list_inactive_tasks': view_list_inactive_tasks,
+    'list_closed_tasks': view_list_closed_tasks,
+    'delete_all_closed_tasks': view_delete_all_closed_tasks,
+    'promote_task_to_project': view_promote_task_to_project,
     
     'report_specific_day': view_report_specific_day,
     'report_date_range': view_report_date_range,
