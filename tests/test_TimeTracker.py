@@ -534,7 +534,7 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.start_work("Source Main", "Promotable Sub")
         self.tracker.stop_work()
 
-        success, msg = self.tracker.promote_sub_project("Source Main", "Promotable Sub")
+        success, msg = self.tracker.promote_task_to_project("Source Main", "Promotable Sub")
         
         self.assertTrue(success)
         self.assertIn("was promoted", msg)

@@ -1117,7 +1117,7 @@ class TimeTracker:
 
                 # Add to report only if time was tracked for this sub-project on the specified date
                 if task_total_time.total_seconds() > 0:
-                    hours = sub_project_total_time.total_seconds() / 3600
+                    hours = task_total_time.total_seconds() / 3600
                     hours_str = f"{hours:.3f}".replace('.', ',')
                     task_details.append(_("- {name}: {hours} hours").format(name=task['task_name'], hours=hours_str))
                     main_project_total_time += task_total_time
