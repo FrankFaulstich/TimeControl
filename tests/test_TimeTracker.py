@@ -547,8 +547,8 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("Promotable Sub", main_projects)
 
         # 3. Check if new main project has a "General" sub-project with the time entries
-        new_main_subs = [s['task_name'] for s in self.tracker.list_tasks("Promotable Sub")]
-        self.assertEqual(new_main_subs, [_("General")])
+        new_main_tasks = [s['task_name'] for s in self.tracker.list_tasks("Promotable Sub")]
+        self.assertEqual(new_main_tasks, [_("General")])
         
         new_main_project_data = next(p for p in self.tracker.data["projects"] if p["main_project_name"] == "Promotable Sub")
         general_task = new_main_project_data["tasks"][0]
@@ -794,16 +794,16 @@ class TestTimeTracker(unittest.TestCase):
 
         # P2: Inactive main project (last activity 5 weeks ago) -> should be listed (at 4 weeks threshold)
         self.tracker.add_main_project("P2_Inactive")
-        self.tracker.add_sub_project("P2_Inactive", "T2_Old")
-        self.tracker.data["projects"][1]["sub_projects"][0]["time_entries"].append({
+        self.tracker.add_task("P2_Inactive", "T2_Old")
+        self.tracker.data["projects"][1]["tasks"][0]["time_entries"].append({
             "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
             "end_time": (now - timedelta(weeks=5)).isoformat()
         })
 
         # P3: Running main project (contains an open sub-entry) -> should be ignored
         self.tracker.add_main_project("P3_Running")
-        self.tracker.add_sub_project("P3_Running", "T3_Open")
-        self.tracker.data["projects"][2]["sub_projects"][0]["time_entries"].append({
+        self.tracker.add_task("P3_Running", "T3_Open")
+        self.tracker.data["projects"][2]["tasks"][0]["time_entries"].append({
             "start_time": (now - timedelta(days=1)).isoformat()
         })
         
@@ -969,24 +969,24 @@ class TestTimeTracker(unittest.TestCase):
         sub_proj_1 = "Sub 1"
         sub_proj_2 = "Sub 2"
         self.tracker.add_main_project(main_proj)
-        self.tracker.add_sub_project(main_proj, sub_proj_1)
-        self.tracker.add_sub_project(main_proj, sub_proj_2)
+        self.tracker.add_task(main_proj, sub_proj_1)
+        self.tracker.add_task(main_proj, sub_proj_2)
 
         # Use fixed dates for predictable weekdays
         # Entry 1 for Sub 1: 1 hour on a Monday
         day1 = datetime(2025, 11, 3, 10, 0, 0)
-        self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"].append({
+        self.tracker.data["projects"][0]["tasks"][0]["time_entries"].append({
             "start_time": day1.isoformat(),
             "end_time": (day1 + timedelta(hours=1)).isoformat()
         })
         # Entry 2 for Sub 1: 30 minutes on a Tuesday
         day2 = datetime(2025, 11, 4, 14, 0, 0)
-        self.tracker.data["projects"][0]["sub_projects"][0]["time_entries"].append({
+        self.tracker.data["projects"][0]["tasks"][0]["time_entries"].append({
             "start_time": day2.isoformat(),
             "end_time": (day2 + timedelta(minutes=30)).isoformat()
         })
         # Entry 1 for Sub 2: 2 hours, also on a Monday
-        self.tracker.data["projects"][0]["sub_projects"][1]["time_entries"].append({
+        self.tracker.data["projects"][0]["tasks"][1]["time_entries"].append({
             "start_time": day1.replace(hour=12).isoformat(),
             "end_time": (day1.replace(hour=12) + timedelta(hours=2)).isoformat()
         })

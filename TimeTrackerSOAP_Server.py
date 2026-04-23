@@ -214,8 +214,8 @@ class TimeControlService(ServiceBase):
             return "Fehler: Datum muss im Format YYYY-MM-DD sein."
 
     @rpc(Unicode, Unicode, _returns=Unicode)
-    def generate_sub_project_report(ctx, main_project_name, sub_project_name):
-        return ctx.service.tracker.generate_sub_project_report(main_project_name, sub_project_name)
+    def generate_task_report(ctx, main_project_name, task_name):
+        return ctx.service.tracker.generate_task_report(main_project_name, task_name)
 
     @rpc(Unicode, _returns=Unicode)
     def generate_main_project_report(ctx, main_project_name):
