@@ -245,22 +245,39 @@ def view_task_planning():
     tasks = st.session_state.tracker.list_sub_projects(planning_filter=planning_filter)
 
     if tasks:
-        current_main = None
-        for task in tasks:
-            if task['main_project_name'] != current_main:
-                current_main = task['main_project_name']
-                st.subheader(current_main)
+        if planning_filter == 'weekly':
+            weekday_names = [_("Monday"), _("Tuesday"), _("Wednesday"), _("Thursday"), _("Friday"), _("Saturday"), _("Sunday")]
+            tasks_by_day = {}
+            for task in tasks:
+                due = task.get('due_date')
+                if due:
+                    try:
+                        day_idx = datetime.fromisoformat(due).weekday()
+                        tasks_by_day.setdefault(day_idx, []).append(task)
+                    except (ValueError, TypeError):
+                        continue
             
-            name = task['sub_project_name']
-            status = task.get('status')
-            
-            # Display name with strikethrough if done
-            display_name = f"~~{name}~~" if status == 'done' else name
-            
-            due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
-            today_info = " ⭐" if task.get('today') else ""
-            
-            st.markdown(f"- {display_name}{due_info}{today_info}")
+            for i in range(7):
+                if i in tasks_by_day:
+                    st.subheader(weekday_names[i])
+                    for task in tasks_by_day[i]:
+                        name = task['sub_project_name']
+                        display_name = f"~~{name}~~" if task.get('status') == 'done' else name
+                        today_info = " ⭐" if task.get('today') else ""
+                        st.markdown(f"- **{task['main_project_name']}**: {display_name}{today_info}")
+        else:
+            current_main = None
+            for task in tasks:
+                if task['main_project_name'] != current_main:
+                    current_main = task['main_project_name']
+                    st.subheader(current_main)
+                
+                name = task['sub_project_name']
+                status = task.get('status')
+                display_name = f"~~{name}~~" if status == 'done' else name
+                due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
+                today_info = " ⭐" if task.get('today') else ""
+                st.markdown(f"- {display_name}{due_info}{today_info}")
     else:
         st.info(_("No tasks found."))
         
