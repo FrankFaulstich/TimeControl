@@ -181,6 +181,7 @@ def view_main():
         if st.button("✎", help=_("Aktuellen Task bearbeiten"), disabled=not current_work):
             st.session_state.context['selected_main'] = current_work['main_project_name']
             st.session_state.context['selected_task'] = current_work['task_name']
+            st.session_state.context['return_to'] = 'main'
             navigate_to('edit_task_form')
 
     if st.button(t_label("1. Start work on task"), use_container_width=True):
@@ -1196,6 +1197,7 @@ def view_edit_task_form():
     """Step 3 of editing a task: Change name and due date."""
     main_project = st.session_state.context.get('selected_main')
     task_name = st.session_state.context.get('selected_task')
+    return_to = st.session_state.context.get('return_to', 'task_mgmt')
     
     # Find current details to pre-fill the form
     all_tasks = st.session_state.tracker.list_tasks(main_project_name=main_project)
@@ -1296,7 +1298,7 @@ def view_edit_task_form():
                 if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
                 if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
                 st.session_state.context = {}
-                navigate_to('task_mgmt')
+                navigate_to(return_to)
             else:
                 st.error(_("Error: Could not update task."))
 
@@ -1305,7 +1307,7 @@ def view_edit_task_form():
             if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
             if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
             st.session_state.context = {}
-            navigate_to('task_mgmt')
+            navigate_to(return_to)
 
 def view_start_work():
     """
