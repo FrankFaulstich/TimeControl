@@ -139,6 +139,12 @@ def view_main():
     render_header(_("Time Control"), f"Version {st.session_state.tracker.get_version()}")
     
     current_work = st.session_state.tracker.get_current_work()
+    task_details = {}
+    is_done = False
+    if current_work:
+        all_tasks = st.session_state.tracker.list_tasks(main_project_name=current_work['main_project_name'], status_filter='all')
+        task_details = next((t for t in all_tasks if t['task_name'] == current_work['task_name']), {})
+        is_done = task_details.get('status') == 'done'
 
     # Custom CSS to keep the info box and edit button side-by-side and the button square
     st.markdown("""
@@ -156,13 +162,15 @@ def view_main():
             flex: 1 1 auto !important;
             min-width: 0 !important;
         }
-        /* Fixed width for the button column and make button square */
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2) {
+        /* Fixed width for the button columns and make buttons square */
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2),
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(3) {
             flex: 0 0 50px !important;
             width: 50px !important;
             min-width: 50px !important;
         }
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2) button {
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2) button,
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(3) button {
             width: 50px !important;
             height: 48px !important;
             padding: 0 !important;
@@ -171,12 +179,26 @@ def view_main():
         </style>
     """, unsafe_allow_html=True)
 
-    col_info, col_edit = st.columns([5, 1])
+    col_info, col_done, col_edit = st.columns([10, 1, 1])
     with col_info:
         if current_work:
-            st.info(f"**{_('Current Active Work')}:** {current_work['task_name']} ({current_work['main_project_name']})")
+            display_name = f"~~{current_work['task_name']}~~" if is_done else current_work['task_name']
+            st.info(f"**{_('Current Active Work')}:** {display_name} ({current_work['main_project_name']})")
         else:
             st.info(_("No active work session."))
+            
+    with col_done:
+        if st.button("✅", help=_("Done"), disabled=not current_work or is_done):
+            st.session_state.tracker.update_task(
+                current_work['main_project_name'],
+                current_work['task_name'],
+                status='done',
+                recurring=task_details.get('recurring'),
+                frequency=task_details.get('frequency'),
+                userdefined_days=task_details.get('userdefined_days')
+            )
+            st.rerun()
+
     with col_edit:
         if st.button("✎", help=_("Aktuellen Task bearbeiten"), disabled=not current_work):
             st.session_state.context['selected_main'] = current_work['main_project_name']
@@ -1781,7 +1803,8 @@ menu_map = {
     'today_view': view_today_tasks, # New view for today's tasks
     'project_management': view_project_management,
     'main_project_mgmt': view_main_project_mgmt,
-    'task_mgmt': view_task_mgmt,
+    'task_mgmt': view_sub_project_mgmt,
+    'sub_project_mgmt': view_sub_project_mgmt,
     'reporting': view_reporting,
     'settings': view_settings,
     
@@ -1808,14 +1831,26 @@ menu_map = {
     'edit_task_select_task': view_edit_task_select_task,
     'edit_task_form': view_edit_task_form,
     'rename_task': view_rename_task,
-    'close_task': view_close_task,
-    'reopen_task': view_reopen_task,
-    'delete_task': view_delete_task,
-    'move_task': view_move_task,
-    'list_inactive_tasks': view_list_inactive_tasks,
-    'list_closed_tasks': view_list_closed_tasks,
-    'delete_all_closed_tasks': view_delete_all_closed_tasks,
-    'promote_task_to_project': view_promote_task_to_project,
+    'close_task': view_close_sub_project,
+    'reopen_task': view_reopen_sub_project,
+    'delete_task': view_delete_sub_project,
+    'move_task': view_move_sub_project,
+    'list_inactive_tasks': view_list_inactive_sub_projects,
+    'list_closed_tasks': view_list_closed_sub_projects,
+    'delete_all_closed_tasks': view_delete_all_closed_sub_projects,
+    'promote_task_to_project': view_promote_sub_project,
+    'add_sub_project': view_add_task_select_main,
+    'list_sub_projects': view_list_tasks,
+    'rename_sub_project': view_rename_task,
+    'close_sub_project': view_close_sub_project,
+    'reopen_sub_project': view_reopen_sub_project,
+    'delete_sub_project': view_delete_sub_project,
+    'move_sub_project': view_move_sub_project,
+    'list_inactive_sub': view_list_inactive_sub_projects,
+    'list_closed_sub': view_list_closed_sub_projects,
+    'delete_all_closed_sub': view_delete_all_closed_sub_projects,
+    'promote_sub_project': view_promote_sub_project,
+    'edit_sub_project': view_edit_task_select_main,
     
     'report_specific_day': view_report_specific_day,
     'report_date_range': view_report_date_range,

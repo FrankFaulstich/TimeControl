@@ -2,9 +2,9 @@
   "projects": [
     {
       "main_project_name": "Test 2",
-      "sub_projects": [
+      "status": "open",
+      "tasks": [
         {
-          "sub_project_name": "Sub Test 1",
           "time_entries": [
             {
               "start_time": "2025-09-23T14:59:56.164582",
@@ -32,16 +32,16 @@
           "note": "",
           "recurring": false,
           "frequency": "daily",
-          "userdefined_days": 1
+          "userdefined_days": 1,
+          "task_name": "Sub Test 1"
         }
-      ],
-      "status": "open"
+      ]
     },
     {
       "main_project_name": "Test 3",
-      "sub_projects": [
+      "status": "open",
+      "tasks": [
         {
-          "sub_project_name": "Sub Test 2",
           "time_entries": [
             {
               "start_time": "2025-09-23T15:03:57.623331",
@@ -54,15 +54,15 @@
           "note": "",
           "recurring": false,
           "frequency": "daily",
-          "userdefined_days": 1
+          "userdefined_days": 1,
+          "task_name": "Sub Test 2"
         }
-      ],
-      "status": "open"
+      ]
     },
     {
       "main_project_name": "Test 4",
-      "sub_projects": [],
-      "status": "open"
+      "status": "open",
+      "tasks": []
     }
   ]
 }
