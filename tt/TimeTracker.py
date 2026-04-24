@@ -152,6 +152,9 @@ class TimeTracker:
                 data_changed = True
 
             for task in project.get("tasks", []):
+                if "sub_project_name" in task:
+                    task["task_name"] = task.pop("sub_project_name")
+                    data_changed = True
                 if "status" not in task:
                     task["status"] = self.STATUS_OPEN
                     data_changed = True
@@ -935,7 +938,7 @@ class TimeTracker:
                 if task["time_entries"] and "end_time" not in task["time_entries"][-1]:
                     return {
                         "main_project_name": project["main_project_name"],
-                        "task_name": task["task_name"],
+                        "task_name": task.get("task_name", task.get("sub_project_name", _("Unknown Task"))),
                         "start_time": task["time_entries"][-1]["start_time"]
                     }
         return None
