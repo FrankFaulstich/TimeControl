@@ -478,7 +478,7 @@ def view_close_sub_project():
     main_options = [p['main_project_name'] for p in main_projects]
     selected_main = st.selectbox(_("Select Project"), main_options)
     
-    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
+    sub_projects = st.session_state.tracker.list_tasks(main_project_name=selected_main, status_filter='open')
     
     if not sub_projects:
         st.info(_("No open tasks to close in '{name}'.").format(name=selected_main))
@@ -486,14 +486,14 @@ def view_close_sub_project():
             navigate_to('sub_project_mgmt')
         return
 
-    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+    sub_options = [sp['task_name'] for sp in sub_projects]
 
     with st.form("close_sub_form"):
         selected_sub = st.selectbox(_("Select Task"), sub_options)
         submitted = st.form_submit_button(_("Close Task"), use_container_width=True)
         
         if submitted:
-            if st.session_state.tracker.close_sub_project(selected_main, selected_sub):
+            if st.session_state.tracker.close_task(selected_main, selected_sub):
                 set_feedback(_("Task '{sub_name}' in '{main_name}' has been closed.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('sub_project_mgmt')
                 st.rerun()
@@ -519,7 +519,7 @@ def view_reopen_sub_project():
     main_options = [p['main_project_name'] for p in main_projects]
     selected_main = st.selectbox(_("Select Project"), main_options)
     
-    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='closed')
+    sub_projects = st.session_state.tracker.list_tasks(main_project_name=selected_main, status_filter='closed')
     
     if not sub_projects:
         st.info(_("No closed tasks to reopen in '{name}'.").format(name=selected_main))
@@ -527,14 +527,14 @@ def view_reopen_sub_project():
             navigate_to('sub_project_mgmt')
         return
 
-    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+    sub_options = [sp['task_name'] for sp in sub_projects]
 
     with st.form("reopen_sub_form"):
         selected_sub = st.selectbox(_("Select Task"), sub_options)
         submitted = st.form_submit_button(_("Re-open Task"), use_container_width=True)
         
         if submitted:
-            if st.session_state.tracker.reopen_sub_project(selected_main, selected_sub):
+            if st.session_state.tracker.reopen_task(selected_main, selected_sub):
                 set_feedback(_("Task '{sub_name}' in '{main_name}' has been reopened.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('sub_project_mgmt')
                 st.rerun()
@@ -560,7 +560,7 @@ def view_delete_sub_project():
     main_options = [p['main_project_name'] for p in main_projects]
     selected_main = st.selectbox(_("Select Project"), main_options)
     
-    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
+    sub_projects = st.session_state.tracker.list_tasks(main_project_name=selected_main, status_filter='open')
     
     if not sub_projects:
         st.info(_("No open tasks to delete in '{name}'.").format(name=selected_main))
@@ -568,7 +568,7 @@ def view_delete_sub_project():
             navigate_to('sub_project_mgmt')
         return
 
-    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+    sub_options = [sp['task_name'] for sp in sub_projects]
 
     with st.form("delete_sub_form"):
         selected_sub = st.selectbox(_("Select Task"), sub_options)
@@ -576,7 +576,7 @@ def view_delete_sub_project():
         submitted = st.form_submit_button(_("Delete Task"), use_container_width=True)
         
         if submitted:
-            if st.session_state.tracker.delete_sub_project(selected_main, selected_sub):
+            if st.session_state.tracker.delete_task(selected_main, selected_sub):
                 set_feedback(_("Task '{sub_name}' deleted from '{main_name}'.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('sub_project_mgmt')
                 st.rerun()
@@ -602,7 +602,7 @@ def view_move_sub_project():
     main_options = [p['main_project_name'] for p in main_projects]
     source_main = st.selectbox(_("Select Source Project"), main_options)
     
-    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=source_main, status_filter='all')
+    sub_projects = st.session_state.tracker.list_tasks(main_project_name=source_main, status_filter='all')
     
     if not sub_projects:
         st.info(_("No tasks found in '{name}'.").format(name=source_main))
@@ -610,7 +610,7 @@ def view_move_sub_project():
             navigate_to('sub_project_mgmt')
         return
 
-    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+    sub_options = [sp['task_name'] for sp in sub_projects]
     target_options = [p for p in main_options if p != source_main]
     
     if not target_options:
@@ -626,7 +626,7 @@ def view_move_sub_project():
         submitted = st.form_submit_button(_("Move Task"), use_container_width=True)
         
         if submitted:
-            if st.session_state.tracker.move_sub_project(source_main, selected_sub, target_main):
+            if st.session_state.tracker.move_task(source_main, selected_sub, target_main):
                 set_feedback(_("Task '{sub}' moved from '{src}' to '{dst}'.").format(sub=selected_sub, src=source_main, dst=target_main))
                 navigate_to('sub_project_mgmt')
                 st.rerun()
@@ -644,12 +644,12 @@ def view_list_inactive_sub_projects():
     
     weeks = st.number_input(_("Weeks of inactivity"), min_value=1, value=4, step=1)
     
-    inactive_list = st.session_state.tracker.list_inactive_sub_projects(weeks)
+    inactive_list = st.session_state.tracker.list_inactive_tasks(weeks)
     
     if inactive_list:
         st.markdown(_("Inactive Tasks (> {weeks} weeks):").format(weeks=weeks))
         for item in inactive_list:
-            st.markdown(f"- **{item['main_project']}** / {item['sub_project']}")
+            st.markdown(f"- **{item['main_project']}** / {item['task_name']}")
             st.caption(f"{_('Last Activity')}: {item['last_activity']}")
     else:
         st.info(_("No tasks found inactive for more than {weeks} weeks.").format(weeks=weeks))
@@ -669,12 +669,12 @@ def view_list_closed_sub_projects():
     if main_projects:
         for mp in main_projects:
             mp_name = mp['main_project_name']
-            closed_subs = st.session_state.tracker.list_sub_projects(main_project_name=mp_name, status_filter='closed')
+            closed_subs = st.session_state.tracker.list_tasks(main_project_name=mp_name, status_filter='closed')
             if closed_subs:
                 found_any = True
                 st.markdown(f"**{mp_name}**")
                 for sp in closed_subs:
-                    st.markdown(f"- {sp['sub_project_name']}")
+                    st.markdown(f"- {sp['task_name']}")
     
     if not found_any:
         st.info(_("No closed tasks found."))
@@ -694,10 +694,10 @@ def view_delete_all_closed_sub_projects():
     if main_projects:
         for mp in main_projects:
             mp_name = mp['main_project_name']
-            closed_subs = st.session_state.tracker.list_sub_projects(main_project_name=mp_name, status_filter='closed')
+            closed_subs = st.session_state.tracker.list_tasks(main_project_name=mp_name, status_filter='closed')
             if closed_subs:
                 for sp in closed_subs:
-                    to_delete.append((mp_name, sp['sub_project_name']))
+                    to_delete.append((mp_name, sp['task_name']))
     
     if not to_delete:
         st.info(_("No closed tasks found."))
@@ -714,7 +714,7 @@ def view_delete_all_closed_sub_projects():
     if st.button(_("Delete All"), type="primary", use_container_width=True):
         deleted_count = 0
         for mp, sp in to_delete:
-            if st.session_state.tracker.delete_sub_project(mp, sp):
+            if st.session_state.tracker.delete_task(mp, sp):
                 deleted_count += 1
         
         set_feedback(_("Successfully deleted {count} tasks.").format(count=deleted_count))
@@ -740,7 +740,7 @@ def view_promote_sub_project():
     main_options = [p['main_project_name'] for p in main_projects]
     selected_main = st.selectbox(_("Select Project"), main_options)
     
-    sub_projects = st.session_state.tracker.list_sub_projects(main_project_name=selected_main, status_filter='open')
+    sub_projects = st.session_state.tracker.list_tasks(main_project_name=selected_main, status_filter='open')
     
     if not sub_projects:
         st.info(_("No open tasks to promote in '{name}'.").format(name=selected_main))
@@ -748,7 +748,7 @@ def view_promote_sub_project():
             navigate_to('sub_project_mgmt')
         return
 
-    sub_options = [sp['sub_project_name'] for sp in sub_projects]
+    sub_options = [sp['task_name'] for sp in sub_projects]
 
     with st.form("promote_sub_form"):
         selected_sub = st.selectbox(_("Select Task"), sub_options)
@@ -757,7 +757,7 @@ def view_promote_sub_project():
         submitted = st.form_submit_button(_("Promote to Project"), use_container_width=True)
         
         if submitted:
-            success, message = st.session_state.tracker.promote_sub_project(selected_main, selected_sub)
+            success, message = st.session_state.tracker.promote_task_to_project(selected_main, selected_sub)
             if success:
                 set_feedback(message)
                 navigate_to('sub_project_mgmt')
