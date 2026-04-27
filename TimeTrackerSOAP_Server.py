@@ -112,10 +112,19 @@ class TimeControlService(ServiceBase):
     def add_task(ctx, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1):
         return ctx.service.tracker.add_task(main_project_name, task_name, due_date, today, note, recurring, frequency, userdefined_days)
 
-    @rpc(Unicode, Unicode, _returns=Array(TaskModel))
-    def list_tasks(ctx, main_project_name=None, status_filter='all'):
-        tasks = ctx.service.tracker.list_tasks(main_project_name, status_filter)
+    @rpc(Unicode, Unicode, Unicode, _returns=Array(TaskModel))
+    def list_tasks(ctx, main_project_name=None, status_filter='all', planning_filter=None):
+        # To avoid breaking existing unit tests that expect only 2 parameters,
+        # we only pass planning_filter if it is actually set.
+        if planning_filter:
+            tasks = ctx.service.tracker.list_tasks(main_project_name, status_filter, planning_filter)
+        else:
+            tasks = ctx.service.tracker.list_tasks(main_project_name, status_filter)
         return [TaskModel(**t) for t in tasks]
+
+    @rpc(_returns=Boolean)
+    def cleanup_overdue_today_tasks(ctx):
+        return ctx.service.tracker.cleanup_overdue_today_tasks()
 
     @rpc(Unicode, Unicode, _returns=Boolean)
     def delete_task(ctx, main_project_name, task_name):
