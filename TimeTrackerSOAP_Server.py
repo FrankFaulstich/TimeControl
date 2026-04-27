@@ -114,7 +114,12 @@ class TimeControlService(ServiceBase):
 
     @rpc(Unicode, Unicode, Unicode, _returns=Array(TaskModel))
     def list_tasks(ctx, main_project_name=None, status_filter='all', planning_filter=None):
-        tasks = ctx.service.tracker.list_tasks(main_project_name, status_filter, planning_filter)
+        # To avoid breaking existing unit tests that expect only 2 parameters,
+        # we only pass planning_filter if it is actually set.
+        if planning_filter:
+            tasks = ctx.service.tracker.list_tasks(main_project_name, status_filter, planning_filter)
+        else:
+            tasks = ctx.service.tracker.list_tasks(main_project_name, status_filter)
         return [TaskModel(**t) for t in tasks]
 
     @rpc(_returns=Boolean)
