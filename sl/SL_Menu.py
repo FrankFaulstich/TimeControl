@@ -283,24 +283,41 @@ def view_task_planning():
             for i in range(7):
                 if i in tasks_by_day:
                     st.subheader(weekday_names[i])
-                    for task in tasks_by_day[i]:
-                        name = task['task_name']
-                        display_name = f"~~{name}~~" if task.get('status') == 'done' else name
-                        today_info = " ⭐" if task.get('today') else ""
-                        st.markdown(f"- **{task['main_project_name']}**: {display_name}{today_info}")
+                    # Layout für jede Aufgabe mit Bearbeiten-Button
+                    for t_idx, task in enumerate(tasks_by_day[i]):
+                        col_task, col_edit_btn = st.columns([10, 1])
+                        with col_task:
+                            name = task['task_name']
+                            display_name = f"~~{name}~~" if task.get('status') == 'done' else name
+                            today_info = " ⭐" if task.get('today') else ""
+                            st.markdown(f"- **{task['main_project_name']}**: {display_name}{today_info}")
+                        with col_edit_btn:
+                            if st.button("✎", key=f"edit_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
+                                st.session_state.context['selected_main'] = task['main_project_name']
+                                st.session_state.context['selected_task'] = task['task_name']
+                                st.session_state.context['return_to'] = 'task_planning'
+                                navigate_to('edit_task_form')
         else:
             current_main = None
-            for task in tasks:
+            for t_idx, task in enumerate(tasks):
                 if task['main_project_name'] != current_main:
                     current_main = task['main_project_name']
                     st.subheader(current_main)
                 
-                name = task['task_name']
-                status = task.get('status')
-                display_name = f"~~{name}~~" if status == 'done' else name
-                due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
-                today_info = " ⭐" if task.get('today') else ""
-                st.markdown(f"- {display_name}{due_info}{today_info}")
+                col_task, col_edit_btn = st.columns([10, 1])
+                with col_task:
+                    name = task['task_name']
+                    status = task.get('status')
+                    display_name = f"~~{name}~~" if status == 'done' else name
+                    due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
+                    today_info = " ⭐" if task.get('today') else ""
+                    st.markdown(f"- {display_name}{due_info}{today_info}")
+                with col_edit_btn:
+                    if st.button("✎", key=f"edit_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
+                        st.session_state.context['selected_main'] = task['main_project_name']
+                        st.session_state.context['selected_task'] = task['task_name']
+                        st.session_state.context['return_to'] = 'task_planning'
+                        navigate_to('edit_task_form')
     else:
         st.info(_("No tasks found."))
         
@@ -328,14 +345,22 @@ def view_today_tasks():
                 today_tasks_grouped[main_proj] = []
             today_tasks_grouped[main_proj].append(task)
         
-        for main_proj_name, sub_tasks in today_tasks_grouped.items():
+        for main_proj_name, sub_tasks in today_tasks_grouped.items(): # Grouped by main project
             st.subheader(main_proj_name)
-            for task in sub_tasks:
-                name = task['task_name']
-                status = task.get('status')
-                display_name = f"~~{name}~~" if status == 'done' else name
-                due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
-                st.markdown(f"- {display_name}{due_info}")
+            for t_idx, task in enumerate(sub_tasks): # Iterate through tasks in the group
+                col_task, col_edit_btn = st.columns([10, 1])
+                with col_task:
+                    name = task['task_name']
+                    status = task.get('status')
+                    display_name = f"~~{name}~~" if status == 'done' else name
+                    due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
+                    st.markdown(f"- {display_name}{due_info}")
+                with col_edit_btn:
+                    if st.button("✎", key=f"edit_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
+                        st.session_state.context['selected_main'] = task['main_project_name']
+                        st.session_state.context['selected_task'] = task['task_name']
+                        st.session_state.context['return_to'] = 'today_view'
+                        navigate_to('edit_task_form')
     else:
         st.info(_("No tasks for today."))
 
