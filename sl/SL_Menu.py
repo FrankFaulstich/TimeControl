@@ -265,6 +265,7 @@ def view_task_planning():
     if planning_filter == 'today':
         st.session_state.tracker.cleanup_overdue_today_tasks()
 
+    current_work = st.session_state.tracker.get_current_work()
     tasks = st.session_state.tracker.list_tasks(planning_filter=planning_filter)
 
     if tasks:
@@ -285,12 +286,18 @@ def view_task_planning():
                     st.subheader(weekday_names[i])
                     # Layout für jede Aufgabe mit Bearbeiten-Button
                     for t_idx, task in enumerate(tasks_by_day[i]):
-                        col_task, col_edit_btn = st.columns([10, 1])
+                        col_task, col_start_btn, col_edit_btn = st.columns([10, 1, 1])
                         with col_task:
                             name = task['task_name']
+                            is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
                             display_name = f"~~{name}~~" if task.get('status') == 'done' else name
+                            if is_active: display_name = f"**{display_name}**"
                             today_info = " ⭐" if task.get('today') else ""
                             st.markdown(f"- **{task['main_project_name']}**: {display_name}{today_info}")
+                        with col_start_btn:
+                            if st.button("▶️", key=f"start_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or task.get('status') == 'done'):
+                                st.session_state.tracker.start_work(task['main_project_name'], task['task_name'])
+                                navigate_to('main')
                         with col_edit_btn:
                             if st.button("✎", key=f"edit_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
                                 st.session_state.context['selected_main'] = task['main_project_name']
@@ -304,14 +311,20 @@ def view_task_planning():
                     current_main = task['main_project_name']
                     st.subheader(current_main)
                 
-                col_task, col_edit_btn = st.columns([10, 1])
+                col_task, col_start_btn, col_edit_btn = st.columns([10, 1, 1])
                 with col_task:
                     name = task['task_name']
                     status = task.get('status')
+                    is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
                     display_name = f"~~{name}~~" if status == 'done' else name
+                    if is_active: display_name = f"**{display_name}**"
                     due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
                     today_info = " ⭐" if task.get('today') else ""
                     st.markdown(f"- {display_name}{due_info}{today_info}")
+                with col_start_btn:
+                    if st.button("▶️", key=f"start_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
+                        st.session_state.tracker.start_work(task['main_project_name'], task['task_name'])
+                        navigate_to('main')
                 with col_edit_btn:
                     if st.button("✎", key=f"edit_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
                         st.session_state.context['selected_main'] = task['main_project_name']
@@ -331,6 +344,7 @@ def view_today_tasks():
     render_header(_("Today's Tasks"))
 
     st.session_state.tracker.cleanup_overdue_today_tasks()
+    current_work = st.session_state.tracker.get_current_work()
     
     # Here we show tasks that are explicitly marked as 'today' (⭐)
     all_open = st.session_state.tracker.list_tasks(status_filter='open')
@@ -348,13 +362,19 @@ def view_today_tasks():
         for main_proj_name, sub_tasks in today_tasks_grouped.items(): # Grouped by main project
             st.subheader(main_proj_name)
             for t_idx, task in enumerate(sub_tasks): # Iterate through tasks in the group
-                col_task, col_edit_btn = st.columns([10, 1])
+                col_task, col_start_btn, col_edit_btn = st.columns([10, 1, 1])
                 with col_task:
                     name = task['task_name']
                     status = task.get('status')
+                    is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
                     display_name = f"~~{name}~~" if status == 'done' else name
+                    if is_active: display_name = f"**{display_name}**"
                     due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
                     st.markdown(f"- {display_name}{due_info}")
+                with col_start_btn:
+                    if st.button("▶️", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
+                        st.session_state.tracker.start_work(task['main_project_name'], task['task_name'])
+                        navigate_to('main')
                 with col_edit_btn:
                     if st.button("✎", key=f"edit_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
                         st.session_state.context['selected_main'] = task['main_project_name']
