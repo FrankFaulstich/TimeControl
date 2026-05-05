@@ -29,7 +29,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.7.5"
+    VERSION = "3.7.6"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -483,7 +483,9 @@ class TimeTracker:
                     is_today = task.get("today", False)
                     
                     if planning_filter == 'today':
-                        if not (is_today or due_date == today_str):
+                        # Zeige Aufgaben nur, wenn das Fälligkeitsdatum exakt heute ist.
+                        # Das 'today'-Flag wird hierbei ignoriert.
+                        if not (due_date == today_str):
                             continue
                     elif planning_filter == 'tomorrow':
                         if due_date != tomorrow_str:
@@ -495,7 +497,9 @@ class TimeTracker:
                         if not (due_date and due_date < today_str):
                             continue
                     elif planning_filter == 'unplanned':
-                        if due_date or is_today:
+                        # Ein Task ist ungeplant, wenn er kein Fälligkeitsdatum hat.
+                        # Das 'today'-Flag (Stern) spielt hierbei keine Rolle mehr.
+                        if due_date:
                             continue
 
                 results.append({
