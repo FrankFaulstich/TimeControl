@@ -701,9 +701,15 @@ def view_list_inactive_tasks():
     
     if inactive_list:
         st.markdown(_("Inactive Tasks (> {weeks} weeks):").format(weeks=weeks))
-        for item in inactive_list:
-            st.markdown(f"- **{item['main_project']}** / {item['task_name']}")
-            st.caption(f"{_('Last Activity')}: {item['last_activity']}")
+        for i, item in enumerate(inactive_list):
+            col_info, col_btn = st.columns([10, 1])
+            with col_info:
+                st.markdown(f"**{item['main_project']}** / {item['task_name']}")
+                st.caption(f"{_('Last Activity')}: {item['last_activity']}")
+            with col_btn:
+                if st.button("🔒", key=f"close_inactive_{i}", help=_("Close Task")):
+                    st.session_state.tracker.close_task(item['main_project'], item['task_name'], task_id=item.get('id'))
+                    st.rerun()
     else:
         st.info(_("No tasks found inactive for more than {weeks} weeks.").format(weeks=weeks))
         

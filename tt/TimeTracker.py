@@ -29,7 +29,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.7.6"
+    VERSION = "3.7.7"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -1055,6 +1055,7 @@ class TimeTracker:
                 # Check for inactivity
                 if latest_timestamp and latest_timestamp < cutoff_date:
                     inactive_projects.append({
+                        "id": task.get("id"),
                         "main_project": project["main_project_name"],
                         "task_name": task["task_name"],
                         "last_activity": latest_timestamp.strftime("%Y-%m-%d %H:%M:%S")
