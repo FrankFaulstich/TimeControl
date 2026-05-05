@@ -1418,7 +1418,7 @@ def view_start_work():
             selected_task_name = tasks[selected_idx]['task_name']
             selected_task_id = tasks[selected_idx].get('id')
             if st.session_state.tracker.start_work(selected_main, task_name=selected_task_name, task_id=selected_task_id):
-                set_feedback(_("Work started on '{task_name}' in project '{main_name}'.").format(task_name=selected_task, main_name=selected_main))
+                set_feedback(_("Work started on '{task_name}' in project '{main_name}'.").format(task_name=selected_task_name, main_name=selected_main))
                 navigate_to('main')
                 st.rerun()
             else:
