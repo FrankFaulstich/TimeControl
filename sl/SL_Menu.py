@@ -188,7 +188,7 @@ def view_main():
             st.info(_("No active work session."))
             
     with col_done:
-        if st.button("✅", help=_("Done"), disabled=not current_work or is_done):
+        if st.button("✔", help=_("Done"), disabled=not current_work or is_done):
             st.session_state.tracker.update_task(
                 current_work['main_project_name'],
                 current_work['task_name'],
@@ -295,7 +295,7 @@ def view_task_planning():
                             today_info = " ⭐" if task.get('today') else ""
                             st.markdown(f"- **{task['main_project_name']}**: {display_name}{today_info}")
                         with col_start_btn:
-                            if st.button("▶️", key=f"start_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or task.get('status') == 'done'):
+                            if st.button("▶", key=f"start_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or task.get('status') == 'done'):
                                 st.session_state.tracker.start_work(task['main_project_name'], task['task_name'])
                                 navigate_to('main')
                         with col_edit_btn:
@@ -322,7 +322,7 @@ def view_task_planning():
                     today_info = " ⭐" if task.get('today') else ""
                     st.markdown(f"- {display_name}{due_info}{today_info}")
                 with col_start_btn:
-                    if st.button("▶️", key=f"start_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
+                    if st.button("▶", key=f"start_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                         st.session_state.tracker.start_work(task['main_project_name'], task['task_name'])
                         navigate_to('main')
                 with col_edit_btn:
@@ -372,7 +372,7 @@ def view_today_tasks():
                     due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
                     st.markdown(f"- {display_name}{due_info}")
                 with col_start_btn:
-                    if st.button("▶️", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
+                    if st.button("▶", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                         st.session_state.tracker.start_work(task['main_project_name'], task['task_name'])
                         navigate_to('main')
                 with col_edit_btn:
@@ -925,7 +925,11 @@ def view_rename_task():
 
     task_options = [t['task_name'] for t in tasks]
     task_status = {t['task_name']: t['status'] for t in tasks}
+<<<<<<< FrankFaulstich/issue364
+    selected_task = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
+=======
     selected_task = st.selectbox(_("Select Task"), task_options)
+>>>>>>> main
 
     with st.form("rename_task_form"):
         new_name = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
