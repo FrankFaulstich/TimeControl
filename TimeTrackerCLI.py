@@ -333,21 +333,22 @@ def _handle_task_management(tt):
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]['main_project_name']
 
-                tasks = [t['task_name'] for t in tt.list_tasks(main_project_name=main_project_name, status_filter='open')]
+                tasks = tt.list_tasks(main_project_name=main_project_name, status_filter='open')
                 if not tasks:
                     print(_("No tasks to rename for '{name}'.").format(name=main_project_name))
                     continue
 
                 print(_("Select a task from '{name}' to rename:").format(name=main_project_name))
-                for i, task_name in enumerate(tasks, 1):
-                    print(f"{i}. {task_name}")
+                for i, t in enumerate(tasks, 1):
+                    print(f"{i}. {t['task_name']}")
 
                 task_choice = int(input(_("Enter the number of the task: ")))
-                old_task_name = tasks[task_choice - 1]
+                old_task_name = tasks[task_choice - 1]['task_name']
+                task_id = tasks[task_choice - 1].get('id')
 
                 new_task_name = input(_("Enter the new name for '{name}': ").format(name=old_task_name))
 
-                if tt.rename_task(main_project_name, old_task_name, new_task_name):
+                if tt.rename_task(main_project_name, old_task_name, new_task_name, task_id=task_id):
                     print(_("Task '{old_name}' renamed to '{new_name}'.").format(old_name=old_task_name, new_name=new_task_name))
                 else:
                     print(_("Error: Could not rename. The new name might already exist or the project was not found."))
@@ -369,19 +370,20 @@ def _handle_task_management(tt):
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]['main_project_name']
 
-                tasks = [t['task_name'] for t in tt.list_tasks(main_project_name=main_project_name, status_filter='open')]
+                tasks = tt.list_tasks(main_project_name=main_project_name, status_filter='open')
                 if not tasks:
                     print(_("No open tasks to close for '{name}'.").format(name=main_project_name))
                     continue
 
                 print(_("Select a task from '{name}' to close:").format(name=main_project_name))
-                for i, task_name in enumerate(tasks, 1):
-                    print(f"{i}. {task_name}")
+                for i, t in enumerate(tasks, 1):
+                    print(f"{i}. {t['task_name']}")
 
                 task_choice = int(input(_("Enter the number of the task: ")))
-                task_name = tasks[task_choice - 1]
+                task_name = tasks[task_choice - 1]['task_name']
+                task_id = tasks[task_choice - 1].get('id')
 
-                if tt.close_task(main_project_name, task_name):
+                if tt.close_task(main_project_name, task_name, task_id=task_id):
                     print(_("Task '{task_name}' in '{main_name}' has been closed.").format(task_name=task_name, main_name=main_project_name))
                 else:
                     print(_("Error: Main project or task not found."))
@@ -403,19 +405,20 @@ def _handle_task_management(tt):
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]['main_project_name']
 
-                tasks = [t['task_name'] for t in tt.list_tasks(main_project_name=main_project_name, status_filter='closed')]
+                tasks = tt.list_tasks(main_project_name=main_project_name, status_filter='closed')
                 if not tasks:
                     print(_("No closed tasks to reopen for '{name}'.").format(name=main_project_name))
                     continue
 
                 print(_("Select a task from '{name}' to reopen:").format(name=main_project_name))
-                for i, task_name in enumerate(tasks, 1):
-                    print(f"{i}. {task_name}")
+                for i, t in enumerate(tasks, 1):
+                    print(f"{i}. {t['task_name']}")
 
                 task_choice = int(input(_("Enter the number of the task: ")))
-                task_name = tasks[task_choice - 1]
+                task_name = tasks[task_choice - 1]['task_name']
+                task_id = tasks[task_choice - 1].get('id')
 
-                if tt.reopen_task(main_project_name, task_name):
+                if tt.reopen_task(main_project_name, task_name, task_id=task_id):
                     print(_("Task '{task_name}' in '{main_name}' has been reopened.").format(task_name=task_name, main_name=main_project_name))
                 else:
                     print(_("Error: Main project or task not found."))
@@ -438,19 +441,20 @@ def _handle_task_management(tt):
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]['main_project_name']
 
-                tasks = [t['task_name'] for t in tt.list_tasks(main_project_name=main_project_name, status_filter='open')]
+                tasks = tt.list_tasks(main_project_name=main_project_name, status_filter='open')
                 if not tasks:
                     print(_("No tasks to delete for '{name}'.").format(name=main_project_name))
                     continue
 
                 print(_("Select a task from '{name}' to delete:").format(name=main_project_name))
-                for i, task_name in enumerate(tasks, 1):
-                    print(f"{i}. {task_name}")
+                for i, t in enumerate(tasks, 1):
+                    print(f"{i}. {t['task_name']}")
 
                 task_choice = int(input(_("Enter the number of the task: ")))
-                task_name = tasks[task_choice - 1]
+                task_name = tasks[task_choice - 1]['task_name']
+                task_id = tasks[task_choice - 1].get('id')
 
-                if tt.delete_task(main_project_name, task_name):
+                if tt.delete_task(main_project_name, task_name, task_id=task_id):
                     print(_("Task '{task_name}' deleted from '{main_name}'.").format(task_name=task_name, main_name=main_project_name))
                 else:
                     print(_("Error: Main project or task not found."))
@@ -474,16 +478,17 @@ def _handle_task_management(tt):
                 source_main_project = main_projects[source_choice - 1]['main_project_name']
 
                 # Select task to move
-                tasks = [t['task_name'] for t in tt.list_tasks(main_project_name=source_main_project, status_filter='open')]
+                tasks = tt.list_tasks(main_project_name=source_main_project, status_filter='open')
                 if not tasks:
                     print(_("No tasks to move from '{name}'.").format(name=source_main_project))
                     continue
 
                 print(_("\nSelect a task from '{name}' to move:").format(name=source_main_project))
-                for i, task_name in enumerate(tasks, 1):
-                    print(f"{i}. {task_name}")
+                for i, t in enumerate(tasks, 1):
+                    print(f"{i}. {t['task_name']}")
                 task_choice = int(input(_("Enter the number of the task: ")))
-                task_to_move = tasks[task_choice - 1]
+                task_to_move = tasks[task_choice - 1]['task_name']
+                task_id = tasks[task_choice - 1].get('id')
 
                 # Select destination main project
                 print(_("\nSelect the destination main project:"))
@@ -495,7 +500,7 @@ def _handle_task_management(tt):
                 dest_main_project = dest_options[dest_choice - 1]['main_project_name']
 
                 # Perform the move
-                success, message = tt.move_task(source_main_project, task_to_move, dest_main_project)
+                success, message = tt.move_task(source_main_project, task_to_move, dest_main_project, task_id=task_id)
                 if success:
                     print(_("Successfully moved '{task_name}' from '{source_main_project}' to '{dest_main_project}'.").format(task_name=task_to_move, source_main_project=source_main_project, dest_main_project=dest_main_project))
                 else:
@@ -564,19 +569,20 @@ def _handle_task_management(tt):
                 source_main_project = main_projects[source_choice - 1]['main_project_name']
 
                 # Select task to promote
-                tasks = [t['task_name'] for t in tt.list_tasks(main_project_name=source_main_project, status_filter='open')]
+                tasks = tt.list_tasks(main_project_name=source_main_project, status_filter='open')
                 if not tasks:
                     print(_("No tasks to promote in '{name}'.").format(name=source_main_project))
                     continue
 
                 print(_("\nSelect a task from '{name}' to promote:").format(name=source_main_project))
-                for i, task_name in enumerate(tasks, 1):
-                    print(f"{i}. {task_name}")
+                for i, t in enumerate(tasks, 1):
+                    print(f"{i}. {t['task_name']}")
                 task_choice = int(input(_("Enter the number of the task: ")))
-                task_to_promote = tasks[task_choice - 1]
+                task_to_promote = tasks[task_choice - 1]['task_name']
+                task_id = tasks[task_choice - 1].get('id')
 
                 # Perform the promotion
-                success, message = tt.promote_task_to_project(source_main_project, task_to_promote)
+                success, message = tt.promote_task_to_project(source_main_project, task_to_promote, task_id=task_id)
                 print(message)
 
             except (ValueError, IndexError):
@@ -609,6 +615,7 @@ def _handle_task_management(tt):
 
                 task_choice = int(input(_("Enter the number: ")))
                 old_task_name = tasks[task_choice - 1]['task_name']
+                task_id = tasks[task_choice - 1].get('id')
                 old_due = tasks[task_choice - 1].get('due_date', '')
                 old_today = tasks[task_choice - 1].get('today', False)
                 old_note = tasks[task_choice - 1].get('note', '')
@@ -628,7 +635,7 @@ def _handle_task_management(tt):
                 done_input = input(_("Is this task done? (current: {current}, y/n, press Enter to keep): ").format(current=old_status)).strip().lower()
                 final_status = old_status if done_input == '' else ('done' if done_input == 'y' else 'open')
 
-                if tt.update_task(main_project_name, old_task_name, new_name, final_due, final_today, final_note, final_status):
+                if tt.update_task(main_project_name, old_task_name, new_name, final_due, final_today, final_note, final_status, task_id=task_id):
                     print(_("Task updated successfully."))
                 else:
                     print(_("Error updating task."))
@@ -962,20 +969,21 @@ def run_menu():
                 main_project_choice = int(input(_("Enter the number of the main project: ")))
                 main_project_name = main_projects[main_project_choice - 1]['main_project_name']
 
-                tasks = [t['task_name'] for t in tt.list_tasks(main_project_name=main_project_name, status_filter='open')]
+                tasks = tt.list_tasks(main_project_name=main_project_name, status_filter='open')
                 if not tasks:
                     print(_("No open tasks found for '{name}' to start work on.").format(name=main_project_name))
                     continue
 
                 print(_("Select a task from '{name}':").format(name=main_project_name))
 
-                for i, task_name in enumerate(tasks, 1):
-                    print(f"{i}. {task_name}")
+                for i, t in enumerate(tasks, 1):
+                    print(f"{i}. {t['task_name']}")
 
                 task_choice = int(input(_("Enter the number of the task: ")))
-                task_name = tasks[task_choice - 1]
+                task_name = tasks[task_choice - 1]['task_name']
+                task_id = tasks[task_choice - 1].get('id')
 
-                if tt.start_work(main_project_name, task_name):
+                if tt.start_work(main_project_name, task_name, task_id=task_id):
                     print(_("Work started on '{task_name}' in project '{main_name}'.").format(task_name=task_name, main_name=main_project_name))
                 else:
                     print(_("Error starting work."))

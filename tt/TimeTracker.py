@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 from i18n import _
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta, date
@@ -29,7 +30,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.7.1"
+    VERSION = "3.7.2"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -176,6 +177,9 @@ class TimeTracker:
                 if "userdefined_days" not in task:
                     task["userdefined_days"] = 1
                     data_changed = True
+                if "id" not in task:
+                    task["id"] = str(uuid.uuid4())
+                    data_changed = True
         return data_changed
 
     def _save_data(self):
@@ -243,19 +247,28 @@ class TimeTracker:
                 return project
         return None
 
-    def _get_task(self, main_project_name, task_name):
+    def _get_task(self, main_project_name, task_name=None, task_id=None):
         """
-        Helper method to find a task by name within a main project.
+        Helper method to find a task by ID or name within a main project.
+        If searching by name and duplicates exist, it prioritizes 'open' tasks.
         
         :param main_project_name: The name of the main project.
-        :param task_name: The name of the task.
+        :param task_name: The name of the task (optional).
+        :param task_id: The unique ID of the task (optional, preferred).
         :return: The task dictionary or None if not found.
         """
         project = self._get_project(main_project_name)
         if project:
+            fallback_task = None
             for task in project["tasks"]:
-                if task["task_name"] == task_name:
+                if task_id and task.get("id") == task_id:
                     return task
+                if task_name and task["task_name"] == task_name:
+                    if task.get("status") == self.STATUS_OPEN:
+                        return task
+                    if fallback_task is None:
+                        fallback_task = task
+            return fallback_task
         return None
 
     def add_main_project(self, main_project_name):
@@ -387,6 +400,7 @@ class TimeTracker:
         project = self._get_project(main_project_name)
         if project:
             new_task = {
+                "id": str(uuid.uuid4()),
                 "task_name": task_name,
                 "time_entries": [],
                 "status": self.STATUS_OPEN,
@@ -465,6 +479,7 @@ class TimeTracker:
                             continue
 
                 results.append({
+                    "id": task.get("id"),
                     "main_project_name": project["main_project_name"],
                     "task_name": task["task_name"],
                     "status": status,
@@ -495,7 +510,7 @@ class TimeTracker:
             self._save_data()
         return changed
 
-    def delete_task(self, main_project_name, task_name):
+    def delete_task(self, main_project_name, task_name, task_id=None):
         """
         Deletes a task from a main project.
 
@@ -503,15 +518,18 @@ class TimeTracker:
         :type main_project_name: str
         :param task_name: The name of the task to delete.
         :type task_name: str
+        :param task_id: Unique ID of the task (optional, preferred).
         :return: True if the task was deleted, otherwise False.
         :rtype: bool
         """
         project = self._get_project(main_project_name)
         if project:
             initial_count = len(project["tasks"])
-            project["tasks"] = [
-                t for t in project["tasks"] if t["task_name"] != task_name
-            ]
+            if task_id:
+                project["tasks"] = [t for t in project["tasks"] if t.get("id") != task_id]
+            else:
+                project["tasks"] = [t for t in project["tasks"] if t["task_name"] != task_name]
+            
             if len(project["tasks"]) < initial_count:
                 self._save_data()
                 return True
@@ -537,7 +555,7 @@ class TimeTracker:
         
         return deleted_count
 
-    def close_task(self, main_project_name, task_name):
+    def close_task(self, main_project_name, task_name, task_id=None):
         """
         Sets the status of a task to 'closed'.
 
@@ -545,17 +563,18 @@ class TimeTracker:
         :type main_project_name: str
         :param task_name: The name of the task to close.
         :type task_name: str
+        :param task_id: Unique ID of the task (optional).
         :return: True if the task was closed, otherwise False.
         :rtype: bool
         """
-        task = self._get_task(main_project_name, task_name)
+        task = self._get_task(main_project_name, task_name, task_id)
         if task:
             task["status"] = self.STATUS_CLOSED
             self._save_data()
             return True
         return False
 
-    def reopen_task(self, main_project_name, task_name):
+    def reopen_task(self, main_project_name, task_name, task_id=None):
         """
         Sets the status of a task to 'open'.
 
@@ -563,17 +582,18 @@ class TimeTracker:
         :type main_project_name: str
         :param task_name: The name of the task to reopen.
         :type task_name: str
+        :param task_id: Unique ID of the task (optional).
         :return: True if the task was reopened, otherwise False.
         :rtype: bool
         """
-        task = self._get_task(main_project_name, task_name)
+        task = self._get_task(main_project_name, task_name, task_id)
         if task:
             task["status"] = self.STATUS_OPEN
             self._save_data()
             return True
         return False
 
-    def rename_task(self, main_project_name, old_task_name, new_task_name):
+    def rename_task(self, main_project_name, old_task_name, new_task_name, task_id=None):
         """
         Renames a task within a given main project.
 
@@ -583,6 +603,7 @@ class TimeTracker:
         :type old_task_name: str
         :param new_task_name: The new name for the task.
         :type new_task_name: str
+        :param task_id: Unique ID of the task (optional).
         :return: True if renaming was successful, False otherwise (e.g., project not found,
                  or new name already exists).
         :rtype: bool
@@ -593,15 +614,14 @@ class TimeTracker:
             if any(t["task_name"] == new_task_name for t in project["tasks"]):
                 return False # New name is already in use
 
-            # Find the task to rename
-            for task in project["tasks"]:
-                if task["task_name"] == old_task_name:
-                    task["task_name"] = new_task_name
-                    self._save_data()
-                    return True
+            task = self._get_task(main_project_name, old_task_name, task_id)
+            if task:
+                task["task_name"] = new_task_name
+                self._save_data()
+                return True
         return False
 
-    def update_task(self, main_project_name, old_task_name, new_task_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None):
+    def update_task(self, main_project_name, old_task_name, new_task_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, task_id=None):
         """
         Updates a task's properties.
 
@@ -615,6 +635,7 @@ class TimeTracker:
         :param recurring: Recurring status (optional, bool).
         :param frequency: Frequency (optional, str).
         :param userdefined_days: Days for userdefined frequency (optional, int).
+        :param task_id: Unique ID of the task (optional).
         :return: True if successful.
         """
         project = self._get_project(main_project_name)
@@ -623,7 +644,7 @@ class TimeTracker:
                 if any(t["task_name"] == new_task_name for t in project["tasks"]):
                     return False
 
-            task = self._get_task(main_project_name, old_task_name)
+            task = self._get_task(main_project_name, old_task_name, task_id)
             if task:
                 # Handle recurring task generation
                 is_completing = (status == self.STATUS_DONE and task.get("status") != self.STATUS_DONE)
@@ -710,7 +731,7 @@ class TimeTracker:
             
         return next_date.isoformat()
 
-    def move_task(self, old_main_project_name, task_name, new_main_project_name):
+    def move_task(self, old_main_project_name, task_name, new_main_project_name, task_id=None):
         """
         Moves a task from one main project to another.
 
@@ -720,6 +741,7 @@ class TimeTracker:
         :type task_name: str
         :param new_main_project_name: The name of the destination main project.
         :type new_main_project_name: str
+        :param task_id: Unique ID of the task (optional).
         :return: A tuple (bool, str) indicating success and a message.
         :rtype: tuple(bool, str)
         """
@@ -738,7 +760,7 @@ class TimeTracker:
         # Find and remove task from source
         task_to_move = None
         for i, t in enumerate(source_project["tasks"]):
-            if t["task_name"] == task_name:
+            if (task_id and t.get("id") == task_id) or (not task_id and t["task_name"] == task_name):
                 task_to_move = source_project["tasks"].pop(i)
                 break
 
@@ -748,7 +770,7 @@ class TimeTracker:
             return True, _("Task '{task_name}' moved successfully.").format(task_name=task_name)
         return False, _("Task '{task_name}' not found in '{main_name}'.").format(task_name=task_name, main_name=old_main_project_name)
 
-    def promote_task_to_project(self, main_project_name, task_name_to_promote):
+    def promote_task_to_project(self, main_project_name, task_name_to_promote, task_id=None):
         """
         Promotes a task to a new main project.
 
@@ -757,8 +779,9 @@ class TimeTracker:
 
         :param main_project_name: The name of the current main project.
         :type main_project_name: str
-        :param sub_project_name_to_promote: The name of the sub-project to promote.
-        :type sub_project_name_to_promote: str
+        :param task_name_to_promote: The name of the task to promote.
+        :type task_name_to_promote: str
+        :param task_id: Unique ID of the task (optional).
         :return: A tuple (bool, str) indicating success and a message.
         :rtype: tuple(bool, str)
         """
@@ -775,7 +798,7 @@ class TimeTracker:
         # Find the index of the task to promote
         task_index = None
         for i, t in enumerate(source_project["tasks"]):
-            if t["task_name"] == task_name_to_promote:
+            if (task_id and t.get("id") == task_id) or (not task_id and t["task_name"] == task_name_to_promote):
                 task_index = i
                 break
 
@@ -853,7 +876,7 @@ class TimeTracker:
         self._save_data()
         return True, _("Main project '{demoted_name}' was demoted to a sub-project under '{parent_name}'.").format(demoted_name=main_project_to_demote_name, parent_name=new_parent_main_project_name)
 
-    def start_work(self, main_project_name, task_name):
+    def start_work(self, main_project_name, task_name=None, task_id=None):
         """
         Starts a new time tracking session for a task by saving the start time.
         Any currently active session is stopped before starting the new one.
@@ -861,8 +884,8 @@ class TimeTracker:
 
         :param main_project_name: The parent main project name.
         :type main_project_name: str
-        :param task_name: The task for which work is being started.
-        :type task_name: str
+        :param task_name: The name of the task (optional).
+        :param task_id: The unique ID of the task (optional, preferred).
         :return: True if work was started successfully, otherwise False.
         :rtype: bool
         """
@@ -872,6 +895,9 @@ class TimeTracker:
         main_project_index = -1
         task = None
         task_index = -1
+        
+        fallback_task = None
+        fallback_index = -1
 
         # Find the main project and task along with their indices
         for i, p in enumerate(self.data["projects"]):
@@ -879,11 +905,19 @@ class TimeTracker:
                 main_project_index = i
                 main_project = p
                 for j, t in enumerate(p["tasks"]):
-                    if t["task_name"] == task_name:
-                        task_index = j
-                        task = t
+                    if task_id and t.get("id") == task_id:
+                        task, task_index = t, j
                         break
+                    if task_name and t["task_name"] == task_name:
+                        if t.get("status") == self.STATUS_OPEN:
+                            task, task_index = t, j
+                            break
+                        if fallback_task is None:
+                            fallback_task, fallback_index = t, j
                 break
+
+        if not task and fallback_task:
+            task, task_index = fallback_task, fallback_index
 
         if task and main_project:
             # Add the new time entry

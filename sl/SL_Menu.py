@@ -195,7 +195,8 @@ def view_main():
                 status='done',
                 recurring=task_details.get('recurring'),
                 frequency=task_details.get('frequency'),
-                userdefined_days=task_details.get('userdefined_days')
+                userdefined_days=task_details.get('userdefined_days'),
+                task_id=task_details.get('id')
             )
             st.rerun()
 
@@ -296,12 +297,13 @@ def view_task_planning():
                             st.markdown(f"- **{task['main_project_name']}**: {display_name}{today_info}")
                         with col_start_btn:
                             if st.button("▶", key=f"start_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or task.get('status') == 'done'):
-                                st.session_state.tracker.start_work(task['main_project_name'], task['task_name'])
+                                st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
                                 navigate_to('main')
                         with col_edit_btn:
                             if st.button("✎", key=f"edit_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
                                 st.session_state.context['selected_main'] = task['main_project_name']
                                 st.session_state.context['selected_task'] = task['task_name']
+                                st.session_state.context['selected_task_id'] = task.get('id')
                                 st.session_state.context['return_to'] = 'task_planning'
                                 navigate_to('edit_task_form')
         else:
@@ -323,12 +325,13 @@ def view_task_planning():
                     st.markdown(f"- {display_name}{due_info}{today_info}")
                 with col_start_btn:
                     if st.button("▶", key=f"start_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
-                        st.session_state.tracker.start_work(task['main_project_name'], task['task_name'])
+                        st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
                         navigate_to('main')
                 with col_edit_btn:
                     if st.button("✎", key=f"edit_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
                         st.session_state.context['selected_main'] = task['main_project_name']
                         st.session_state.context['selected_task'] = task['task_name']
+                        st.session_state.context['selected_task_id'] = task.get('id')
                         st.session_state.context['return_to'] = 'task_planning'
                         navigate_to('edit_task_form')
     else:
@@ -373,12 +376,13 @@ def view_today_tasks():
                     st.markdown(f"- {display_name}{due_info}")
                 with col_start_btn:
                     if st.button("▶", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
-                        st.session_state.tracker.start_work(task['main_project_name'], task['task_name'])
+                        st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
                         navigate_to('main')
                 with col_edit_btn:
                     if st.button("✎", key=f"edit_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
                         st.session_state.context['selected_main'] = task['main_project_name']
                         st.session_state.context['selected_task'] = task['task_name']
+                        st.session_state.context['selected_task_id'] = task.get('id')
                         st.session_state.context['return_to'] = 'today_view'
                         navigate_to('edit_task_form')
     else:
@@ -537,7 +541,8 @@ def view_close_task():
         
         if submitted:
             selected_sub = sub_projects[selected_idx]['task_name']
-            if st.session_state.tracker.close_task(selected_main, selected_sub):
+            selected_id = sub_projects[selected_idx].get('id')
+            if st.session_state.tracker.close_task(selected_main, selected_sub, task_id=selected_id):
                 set_feedback(_("Task '{sub_name}' in '{main_name}' has been closed.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('task_mgmt')
                 st.rerun()
@@ -577,7 +582,8 @@ def view_reopen_task():
         
         if submitted:
             selected_sub = sub_projects[selected_idx]['task_name']
-            if st.session_state.tracker.reopen_task(selected_main, selected_sub):
+            selected_id = sub_projects[selected_idx].get('id')
+            if st.session_state.tracker.reopen_task(selected_main, selected_sub, task_id=selected_id):
                 set_feedback(_("Task '{sub_name}' in '{main_name}' has been reopened.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('task_mgmt')
                 st.rerun()
@@ -618,7 +624,8 @@ def view_delete_task():
         
         if submitted:
             selected_sub = sub_projects[selected_idx]['task_name']
-            if st.session_state.tracker.delete_task(selected_main, selected_sub):
+            selected_id = sub_projects[selected_idx].get('id')
+            if st.session_state.tracker.delete_task(selected_main, selected_sub, task_id=selected_id):
                 set_feedback(_("Task '{sub_name}' deleted from '{main_name}'.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('task_mgmt')
                 st.rerun()
@@ -668,7 +675,8 @@ def view_move_task():
         
         if submitted:
             selected_sub = sub_projects[selected_idx]['task_name']
-            if st.session_state.tracker.move_task(source_main, selected_sub, target_main):
+            selected_id = sub_projects[selected_idx].get('id')
+            if st.session_state.tracker.move_task(source_main, selected_sub, target_main, task_id=selected_id):
                 set_feedback(_("Task '{sub}' moved from '{src}' to '{dst}'.").format(sub=selected_sub, src=source_main, dst=target_main))
                 navigate_to('task_mgmt')
                 st.rerun()
@@ -798,7 +806,8 @@ def view_promote_task():
         
         if submitted:
             selected_sub = sub_projects[selected_idx]['task_name']
-            success, message = st.session_state.tracker.promote_task_to_project(selected_main, selected_sub)
+            selected_id = sub_projects[selected_idx].get('id')
+            success, message = st.session_state.tracker.promote_task_to_project(selected_main, selected_sub, task_id=selected_id)
             if success:
                 set_feedback(message)
                 navigate_to('task_mgmt')
@@ -1253,6 +1262,7 @@ def view_edit_task_select_task():
     selected_task = tasks[selected_idx]['task_name']
     if st.button(_("Next"), use_container_width=True):
         st.session_state.context['selected_task'] = selected_task
+        st.session_state.context['selected_task_id'] = tasks[selected_idx].get('id')
         navigate_to('edit_task_form')
         st.rerun()
     if st.button(_("Back"), use_container_width=True): navigate_to('edit_task')
@@ -1261,11 +1271,15 @@ def view_edit_task_form():
     """Step 3 of editing a task: Change name and due date."""
     main_project = st.session_state.context.get('selected_main')
     task_name = st.session_state.context.get('selected_task')
+    task_id = st.session_state.context.get('selected_task_id')
     return_to = st.session_state.context.get('return_to', 'task_mgmt')
     
     # Find current details to pre-fill the form
-    all_tasks = st.session_state.tracker.list_tasks(main_project_name=main_project)
-    task_details = next((t for t in all_tasks if t['task_name'] == task_name), {})
+    task_details = st.session_state.tracker._get_task(main_project, task_name, task_id)
+    if not task_details:
+        st.error(_("Task not found."))
+        if st.button(_("Back"), use_container_width=True): navigate_to(return_to)
+        return
     
     render_header(_("Edit Task"), f"{main_project} / {task_name}")
     
@@ -1401,8 +1415,9 @@ def view_start_work():
         submitted = st.form_submit_button(_("Start Work"), use_container_width=True)
         
         if submitted:
-            selected_task = tasks[selected_idx]['task_name']
-            if st.session_state.tracker.start_work(selected_main, selected_task):
+            selected_task_name = tasks[selected_idx]['task_name']
+            selected_task_id = tasks[selected_idx].get('id')
+            if st.session_state.tracker.start_work(selected_main, task_name=selected_task_name, task_id=selected_task_id):
                 set_feedback(_("Work started on '{task_name}' in project '{main_name}'.").format(task_name=selected_task, main_name=selected_main))
                 navigate_to('main')
                 st.rerun()
