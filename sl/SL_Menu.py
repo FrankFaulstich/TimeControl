@@ -925,10 +925,14 @@ def view_rename_task():
 
     task_options = [t['task_name'] for t in tasks]
     task_status = {t['task_name']: t['status'] for t in tasks}
+<<<<<<< FrankFaulstich/issue364
     selected_task = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
+=======
+    selected_task = st.selectbox(_("Select Task"), task_options)
+>>>>>>> main
 
     with st.form("rename_task_form"):
-        new_name = st.text_input(_("New Name"), value=selected_task)
+        new_name = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
         submitted = st.form_submit_button(_("Rename"), use_container_width=True)
         
         if submitted:
