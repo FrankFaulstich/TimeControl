@@ -282,11 +282,14 @@ def view_task_planning():
                     except (ValueError, TypeError):
                         continue
             
+            # Start the overview at the current weekday
+            current_weekday = datetime.now().weekday()
             for i in range(7):
-                if i in tasks_by_day:
-                    st.subheader(weekday_names[i])
+                day_idx = (current_weekday + i) % 7
+                if day_idx in tasks_by_day:
+                    st.subheader(weekday_names[day_idx])
                     # Layout für jede Aufgabe mit Bearbeiten-Button
-                    for t_idx, task in enumerate(tasks_by_day[i]):
+                    for t_idx, task in enumerate(tasks_by_day[day_idx]):
                         col_task, col_start_btn, col_edit_btn = st.columns([10, 1, 1])
                         with col_task:
                             name = task['task_name']

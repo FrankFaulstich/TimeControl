@@ -5,7 +5,7 @@ import logging
 from wsgiref.simple_server import make_server
 from datetime import datetime
 
-# Versuch, Spyne zu importieren. Dies ist die Standard-Bibliothek für SOAP in Python.
+# Attempt to import Spyne. This is the standard library for SOAP in Python.
 try:
     from spyne import Application, rpc, ServiceBase, Integer, Unicode, Boolean, Array, ComplexModel
     from spyne.protocol.soap import Soap11
@@ -15,8 +15,8 @@ except ImportError:
     print("Bitte führen Sie folgenden Befehl aus: pip install spyne lxml")
     sys.exit(1)
 
-# Import der TimeTracker Logik
-# Wir fügen das aktuelle Verzeichnis zum Pfad hinzu, damit tt.TimeTracker gefunden wird
+# Import of TimeTracker logic
+# We add the current directory to the path so that tt.TimeTracker can be found
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
     from tt.TimeTracker import TimeTracker
@@ -26,7 +26,7 @@ except ImportError as e:
 
 CONFIG_FILE = 'config.json'
 
-# --- Datenmodelle für SOAP Antworten ---
+# --- Data models for SOAP responses ---
 
 class MainProjectModel(ComplexModel):
     main_project_name = Unicode
@@ -58,10 +58,10 @@ class OperationResultModel(ComplexModel):
     success = Boolean
     message = Unicode
 
-# --- Der SOAP Service ---
+# --- The SOAP Service ---
 
 class TimeControlService(ServiceBase):
-    # Wir initialisieren den Tracker in der Instanz.
+    # We initialize the tracker in the instance.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tracker = TimeTracker()
@@ -211,7 +211,7 @@ class TimeControlService(ServiceBase):
 
     @rpc(Unicode, _returns=Unicode)
     def generate_daily_report(ctx, report_date_str=None):
-        """Generiert den Tagesbericht. Datum Format: YYYY-MM-DD oder leer für Heute."""
+        """Generates the daily report. Date format: YYYY-MM-DD or empty for today."""
         date_obj = None
         if report_date_str:
             try:
@@ -222,7 +222,7 @@ class TimeControlService(ServiceBase):
 
     @rpc(Unicode, _returns=Unicode)
     def generate_detailed_daily_report(ctx, report_date_str=None):
-        """Generiert den detaillierten Tagesbericht. Datum Format: YYYY-MM-DD oder leer für Heute."""
+        """Generates the detailed daily report. Date format: YYYY-MM-DD or empty for today."""
         date_obj = None
         if report_date_str:
             try:
@@ -233,7 +233,7 @@ class TimeControlService(ServiceBase):
 
     @rpc(Unicode, Unicode, _returns=Unicode)
     def generate_date_range_report(ctx, start_date_str, end_date_str):
-        """Generiert Bericht für Zeitraum. Datum Format: YYYY-MM-DD."""
+        """Generates a report for a date range. Date format: YYYY-MM-DD."""
         try:
             start = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             end = datetime.strptime(end_date_str, "%Y-%m-%d").date()
@@ -250,22 +250,22 @@ class TimeControlService(ServiceBase):
         return ctx.service.tracker.generate_main_project_report(main_project_name)
 
 def load_config():
-    """Lädt die Konfiguration aus der config.json Datei."""
+    """Loads the configuration from the config.json file."""
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'r') as f:
             return json.load(f)
     return {}
 
 def main():
-    # Konfiguration laden
+    # Load configuration
     config = load_config()
     port = config.get('soap_port', 8600)
 
-    # Logging für Debugging-Zwecke aktivieren
+    # Enable logging for debugging purposes
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('spyne.protocol.xml').setLevel(logging.INFO)
 
-    # Definition der SOAP-Anwendung
+    # Definition of the SOAP application
     application = Application(
         [TimeControlService],
         tns='spyne.examples.timecontrol',
