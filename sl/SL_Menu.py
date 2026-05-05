@@ -531,14 +531,12 @@ def view_close_task():
             navigate_to('task_mgmt')
         return
 
-    sub_options = [sp['task_name'] for sp in sub_projects]
-    sub_status = {sp['task_name']: sp['status'] for sp in sub_projects}
-
     with st.form("close_sub_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options, format_func=lambda x: f"{x} (done)" if sub_status.get(x) == 'done' else x)
+        selected_idx = st.selectbox(_("Select Task"), range(len(sub_projects)), format_func=lambda i: f"{sub_projects[i]['task_name']} (done)" if sub_projects[i].get('status') == 'done' else sub_projects[i]['task_name'])
         submitted = st.form_submit_button(_("Close Task"), use_container_width=True)
         
         if submitted:
+            selected_sub = sub_projects[selected_idx]['task_name']
             if st.session_state.tracker.close_task(selected_main, selected_sub):
                 set_feedback(_("Task '{sub_name}' in '{main_name}' has been closed.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('task_mgmt')
@@ -573,14 +571,12 @@ def view_reopen_task():
             navigate_to('task_mgmt')
         return
 
-    sub_options = [sp['task_name'] for sp in sub_projects]
-    sub_status = {sp['task_name']: sp['status'] for sp in sub_projects}
-
     with st.form("reopen_sub_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options, format_func=lambda x: f"{x} (done)" if sub_status.get(x) == 'done' else x)
+        selected_idx = st.selectbox(_("Select Task"), range(len(sub_projects)), format_func=lambda i: f"{sub_projects[i]['task_name']} (done)" if sub_projects[i].get('status') == 'done' else sub_projects[i]['task_name'])
         submitted = st.form_submit_button(_("Re-open Task"), use_container_width=True)
         
         if submitted:
+            selected_sub = sub_projects[selected_idx]['task_name']
             if st.session_state.tracker.reopen_task(selected_main, selected_sub):
                 set_feedback(_("Task '{sub_name}' in '{main_name}' has been reopened.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('task_mgmt')
@@ -615,15 +611,13 @@ def view_delete_task():
             navigate_to('task_mgmt')
         return
 
-    sub_options = [sp['task_name'] for sp in sub_projects]
-    sub_status = {sp['task_name']: sp['status'] for sp in sub_projects}
-
     with st.form("delete_sub_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options, format_func=lambda x: f"{x} (done)" if sub_status.get(x) == 'done' else x)
+        selected_idx = st.selectbox(_("Select Task"), range(len(sub_projects)), format_func=lambda i: f"{sub_projects[i]['task_name']} (done)" if sub_projects[i].get('status') == 'done' else sub_projects[i]['task_name'])
         st.warning(_("This action cannot be undone."))
         submitted = st.form_submit_button(_("Delete Task"), use_container_width=True)
         
         if submitted:
+            selected_sub = sub_projects[selected_idx]['task_name']
             if st.session_state.tracker.delete_task(selected_main, selected_sub):
                 set_feedback(_("Task '{sub_name}' deleted from '{main_name}'.").format(sub_name=selected_sub, main_name=selected_main))
                 navigate_to('task_mgmt')
@@ -658,8 +652,6 @@ def view_move_task():
             navigate_to('task_mgmt')
         return
 
-    sub_options = [sp['task_name'] for sp in sub_projects]
-    sub_status = {sp['task_name']: sp['status'] for sp in sub_projects}
     target_options = [p for p in main_options if p != source_main]
     
     if not target_options:
@@ -669,12 +661,13 @@ def view_move_task():
         return
 
     with st.form("move_sub_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options, format_func=lambda x: f"{x} (done)" if sub_status.get(x) == 'done' else x)
+        selected_idx = st.selectbox(_("Select Task"), range(len(sub_projects)), format_func=lambda i: f"{sub_projects[i]['task_name']} (done)" if sub_projects[i].get('status') == 'done' else sub_projects[i]['task_name'])
         target_main = st.selectbox(_("Select Target Project"), target_options)
         
         submitted = st.form_submit_button(_("Move Task"), use_container_width=True)
         
         if submitted:
+            selected_sub = sub_projects[selected_idx]['task_name']
             if st.session_state.tracker.move_task(source_main, selected_sub, target_main):
                 set_feedback(_("Task '{sub}' moved from '{src}' to '{dst}'.").format(sub=selected_sub, src=source_main, dst=target_main))
                 navigate_to('task_mgmt')
@@ -797,16 +790,14 @@ def view_promote_task():
             navigate_to('task_mgmt')
         return
 
-    sub_options = [sp['task_name'] for sp in sub_projects]
-    sub_status = {sp['task_name']: sp['status'] for sp in sub_projects}
-
     with st.form("promote_sub_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options, format_func=lambda x: f"{x} (done)" if sub_status.get(x) == 'done' else x)
+        selected_idx = st.selectbox(_("Select Task"), range(len(sub_projects)), format_func=lambda i: f"{sub_projects[i]['task_name']} (done)" if sub_projects[i].get('status') == 'done' else sub_projects[i]['task_name'])
         st.info(_("This will create a new Project with the task's name and move all time entries to a 'General' task within it."))
         
         submitted = st.form_submit_button(_("Promote to Project"), use_container_width=True)
         
         if submitted:
+            selected_sub = sub_projects[selected_idx]['task_name']
             success, message = st.session_state.tracker.promote_task_to_project(selected_main, selected_sub)
             if success:
                 set_feedback(message)
@@ -923,12 +914,11 @@ def view_rename_task():
             navigate_to('task_mgmt')
         return
 
-    task_options = [t['task_name'] for t in tasks]
-    task_status = {t['task_name']: t['status'] for t in tasks}
-    selected_task = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
+    selected_idx = st.selectbox(_("Select Task"), range(len(tasks)), format_func=lambda i: f"{tasks[i]['task_name']} (done)" if tasks[i].get('status') == 'done' else tasks[i]['task_name'])
+    selected_task = tasks[selected_idx]['task_name']
 
     with st.form("rename_task_form"):
-        new_name = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
+        new_name = st.text_input(_("New Name"), value=selected_task)
         submitted = st.form_submit_button(_("Rename"), use_container_width=True)
         
         if submitted:
@@ -1259,9 +1249,8 @@ def view_edit_task_select_task():
         st.info(_("No open tasks found."))
         if st.button(_("Back"), use_container_width=True): navigate_to('edit_task')
         return
-    task_names = [t['task_name'] for t in tasks]
-    task_status = {t['task_name']: t['status'] for t in tasks}
-    selected_task = st.selectbox(_("Select Task"), task_names, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
+    selected_idx = st.selectbox(_("Select Task"), range(len(tasks)), format_func=lambda i: f"{tasks[i]['task_name']} (done)" if tasks[i].get('status') == 'done' else tasks[i]['task_name'])
+    selected_task = tasks[selected_idx]['task_name']
     if st.button(_("Next"), use_container_width=True):
         st.session_state.context['selected_task'] = selected_task
         navigate_to('edit_task_form')
@@ -1407,14 +1396,12 @@ def view_start_work():
             navigate_to('main')
         return
 
-    task_options = [t['task_name'] for t in tasks]
-    task_status = {t['task_name']: t['status'] for t in tasks}
-
     with st.form("start_work_form"):
-        selected_task = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
+        selected_idx = st.selectbox(_("Select Task"), range(len(tasks)), format_func=lambda i: f"{tasks[i]['task_name']} (done)" if tasks[i].get('status') == 'done' else tasks[i]['task_name'])
         submitted = st.form_submit_button(_("Start Work"), use_container_width=True)
         
         if submitted:
+            selected_task = tasks[selected_idx]['task_name']
             if st.session_state.tracker.start_work(selected_main, selected_task):
                 set_feedback(_("Work started on '{task_name}' in project '{main_name}'.").format(task_name=selected_task, main_name=selected_main))
                 navigate_to('main')
@@ -1759,10 +1746,8 @@ def view_report_detailed_task_select_task():
             navigate_to('report_detailed_task')
         return
 
-    task_options = [t['task_name'] for t in tasks]
-    task_status = {t['task_name']: t['status'] for t in tasks}
-    
-    selected_task = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
+    selected_idx = st.selectbox(_("Select Task"), range(len(tasks)), format_func=lambda i: f"{tasks[i]['task_name']} (done)" if tasks[i].get('status') == 'done' else tasks[i]['task_name'])
+    selected_task = tasks[selected_idx]['task_name']
     if st.button(_("Generate Report"), use_container_width=True):
         report = st.session_state.tracker.generate_task_report(main_project, selected_task)
         st.session_state.context = {'report': report} # Clear context and set report
