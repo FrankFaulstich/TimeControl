@@ -129,32 +129,48 @@ class TimeControlService(ServiceBase):
 
     @rpc(Unicode, Unicode, Unicode, _returns=Boolean)
     def delete_task(ctx, main_project_name, task_name, task_id=None):
-        return ctx.service.tracker.delete_task(main_project_name, task_name, task_id)
+        if task_id:
+            return ctx.service.tracker.delete_task(main_project_name, task_name, task_id=task_id)
+        return ctx.service.tracker.delete_task(main_project_name, task_name)
 
     @rpc(Unicode, Unicode, Unicode, _returns=Boolean)
     def close_task(ctx, main_project_name, task_name, task_id=None):
-        return ctx.service.tracker.close_task(main_project_name, task_name, task_id)
+        if task_id:
+            return ctx.service.tracker.close_task(main_project_name, task_name, task_id=task_id)
+        return ctx.service.tracker.close_task(main_project_name, task_name)
 
     @rpc(Unicode, Unicode, Unicode, _returns=Boolean)
     def reopen_task(ctx, main_project_name, task_name, task_id=None):
-        return ctx.service.tracker.reopen_task(main_project_name, task_name, task_id)
+        if task_id:
+            return ctx.service.tracker.reopen_task(main_project_name, task_name, task_id=task_id)
+        return ctx.service.tracker.reopen_task(main_project_name, task_name)
 
     @rpc(Unicode, Unicode, Unicode, Unicode, _returns=Boolean)
     def rename_task(ctx, main_project_name, old_name, new_name, task_id=None):
-        return ctx.service.tracker.rename_task(main_project_name, old_name, new_name, task_id)
+        if task_id:
+            return ctx.service.tracker.rename_task(main_project_name, old_name, new_name, task_id=task_id)
+        return ctx.service.tracker.rename_task(main_project_name, old_name, new_name)
 
     @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, Unicode, Boolean, Unicode, Integer, Unicode, _returns=Boolean)
     def update_task(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, task_id=None):
-        return ctx.service.tracker.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, task_id)
+        if task_id:
+            return ctx.service.tracker.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, task_id=task_id)
+        return ctx.service.tracker.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days)
 
     @rpc(Unicode, Unicode, Unicode, Unicode, _returns=OperationResultModel)
     def move_task(ctx, old_main, task_name, new_main, task_id=None):
-        success, msg = ctx.service.tracker.move_task(old_main, task_name, new_main, task_id)
+        if task_id:
+            success, msg = ctx.service.tracker.move_task(old_main, task_name, new_main, task_id=task_id)
+        else:
+            success, msg = ctx.service.tracker.move_task(old_main, task_name, new_main)
         return OperationResultModel(success=success, message=msg)
 
     @rpc(Unicode, Unicode, Unicode, _returns=OperationResultModel)
     def promote_task_to_project(ctx, main_project_name, task_name, task_id=None):
-        success, msg = ctx.service.tracker.promote_task_to_project(main_project_name, task_name, task_id)
+        if task_id:
+            success, msg = ctx.service.tracker.promote_task_to_project(main_project_name, task_name, task_id=task_id)
+        else:
+            success, msg = ctx.service.tracker.promote_task_to_project(main_project_name, task_name)
         return OperationResultModel(success=success, message=msg)
 
     @rpc(_returns=Integer)
@@ -176,7 +192,9 @@ class TimeControlService(ServiceBase):
 
     @rpc(Unicode, Unicode, Unicode, _returns=Boolean)
     def start_work(ctx, main_project_name, task_name=None, task_id=None):
-        return ctx.service.tracker.start_work(main_project_name, task_name, task_id)
+        if task_id:
+            return ctx.service.tracker.start_work(main_project_name, task_id=task_id)
+        return ctx.service.tracker.start_work(main_project_name, task_name)
 
     @rpc(_returns=Boolean)
     def stop_work(ctx):
