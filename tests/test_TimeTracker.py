@@ -69,7 +69,7 @@ class TestTimeTracker(unittest.TestCase):
 
     def test_load_data_initial_empty(self):
         """Tests if _load_data returns an empty dictionary when no file exists."""
-        self.assertEqual(self.tracker.data, {"projects": []})
+        self.assertEqual(self.tracker.data, {"projects": [], "next_id": 1})
 
     def test_save_and_load_data(self):
         """Tests the interaction of _save_data and _load_data."""
