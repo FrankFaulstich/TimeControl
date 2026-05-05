@@ -1,6 +1,5 @@
 import json
 import os
-import uuid
 from i18n import _
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta, date
@@ -30,7 +29,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.7.2"
+    VERSION = "3.7.3"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -141,6 +140,20 @@ class TimeTracker:
             self.data["projects"] = []
             data_changed = True # The data object itself was changed
 
+        # Initialize or update next_id
+        if "next_id" not in self.data:
+            max_id = 0
+            for project in self.data.get("projects", []):
+                for task in project.get("tasks", []):
+                    try:
+                        # Try to read existing integer IDs
+                        tid = int(task.get("id"))
+                        if tid > max_id: max_id = tid
+                    except (ValueError, TypeError, KeyError):
+                        pass
+            self.data["next_id"] = max_id + 1
+            data_changed = True
+
         for project in self.data.get("projects", []):
             # Migration: Add status to main projects
             if "status" not in project:
@@ -177,8 +190,12 @@ class TimeTracker:
                 if "userdefined_days" not in task:
                     task["userdefined_days"] = 1
                     data_changed = True
-                if "id" not in task:
-                    task["id"] = str(uuid.uuid4())
+                
+                # Assign an integer ID if missing or not an integer (e.g. legacy GUID)
+                task_id = task.get("id")
+                if task_id is None or not isinstance(task_id, int):
+                    task["id"] = self.data["next_id"]
+                    self.data["next_id"] += 1
                     data_changed = True
         return data_changed
 
@@ -261,8 +278,10 @@ class TimeTracker:
         if project:
             fallback_task = None
             for task in project["tasks"]:
-                if task_id and task.get("id") == task_id:
-                    return task
+                if task_id is not None:
+                    # Robust comparison handling integer and string IDs
+                    if str(task.get("id")) == str(task_id):
+                        return task
                 if task_name and task["task_name"] == task_name:
                     if task.get("status") == self.STATUS_OPEN:
                         return task
@@ -400,7 +419,7 @@ class TimeTracker:
         project = self._get_project(main_project_name)
         if project:
             new_task = {
-                "id": str(uuid.uuid4()),
+                "id": self.data["next_id"],
                 "task_name": task_name,
                 "time_entries": [],
                 "status": self.STATUS_OPEN,
@@ -411,6 +430,7 @@ class TimeTracker:
                 "frequency": frequency,
                 "userdefined_days": userdefined_days
             }
+            self.data["next_id"] += 1
             project["tasks"].append(new_task)
             self._save_data()
             return True
@@ -525,8 +545,8 @@ class TimeTracker:
         project = self._get_project(main_project_name)
         if project:
             initial_count = len(project["tasks"])
-            if task_id:
-                project["tasks"] = [t for t in project["tasks"] if t.get("id") != task_id]
+            if task_id is not None:
+                project["tasks"] = [t for t in project["tasks"] if str(t.get("id")) != str(task_id)]
             else:
                 project["tasks"] = [t for t in project["tasks"] if t["task_name"] != task_name]
             
@@ -690,6 +710,7 @@ class TimeTracker:
         next_due = self._calculate_next_due_date(base_due, freq, ud_days)
         
         new_task = {
+            "id": self.data["next_id"],
             "task_name": task["task_name"],
             "time_entries": [], # Start with a fresh, empty list for the new instance
             "status": self.STATUS_OPEN,
@@ -700,6 +721,7 @@ class TimeTracker:
             "frequency": freq,
             "userdefined_days": ud_days
         }
+        self.data["next_id"] += 1
         project["tasks"].append(new_task)
 
     def _calculate_next_due_date(self, base_due_str, frequency, ud_days):
@@ -760,7 +782,7 @@ class TimeTracker:
         # Find and remove task from source
         task_to_move = None
         for i, t in enumerate(source_project["tasks"]):
-            if (task_id and t.get("id") == task_id) or (not task_id and t["task_name"] == task_name):
+            if (task_id is not None and str(t.get("id")) == str(task_id)) or (task_id is None and t["task_name"] == task_name):
                 task_to_move = source_project["tasks"].pop(i)
                 break
 
@@ -798,7 +820,7 @@ class TimeTracker:
         # Find the index of the task to promote
         task_index = None
         for i, t in enumerate(source_project["tasks"]):
-            if (task_id and t.get("id") == task_id) or (not task_id and t["task_name"] == task_name_to_promote):
+            if (task_id is not None and str(t.get("id")) == str(task_id)) or (task_id is None and t["task_name"] == task_name_to_promote):
                 task_index = i
                 break
 
@@ -905,7 +927,7 @@ class TimeTracker:
                 main_project_index = i
                 main_project = p
                 for j, t in enumerate(p["tasks"]):
-                    if task_id and t.get("id") == task_id:
+                    if task_id is not None and str(t.get("id")) == str(task_id):
                         task, task_index = t, j
                         break
                     if task_name and t["task_name"] == task_name:
