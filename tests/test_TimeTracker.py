@@ -321,14 +321,14 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_task("Planning", "Unplanned", today=False, due_date=None)
         self.tracker.add_task("Planning", "FutureTask", due_date="2099-01-01")
         
-        # Test 'today' filter (should show due today OR starred)
+        # Test 'today' filter (should show ONLY due today)
         today_tasks = self.tracker.list_tasks(planning_filter='today')
         names = [t['task_name'] for t in today_tasks]
         self.assertIn("DueToday", names)
-        self.assertIn("StarredOnly", names)
+        self.assertNotIn("StarredOnly", names)
         self.assertNotIn("DueTomorrow", names)
         self.assertNotIn("FutureTask", names)
-        self.assertEqual(len(names), 2)
+        self.assertEqual(len(names), 1)
 
         # Test 'tomorrow' filter
         tomorrow_tasks = self.tracker.list_tasks(planning_filter='tomorrow')
@@ -336,9 +336,12 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(tomorrow_tasks[0]['task_name'], "DueTomorrow")
 
         # Test 'unplanned' filter
+        # Tasks without a due date are unplanned, regardless of the 'today' flag.
         unplanned_tasks = self.tracker.list_tasks(planning_filter='unplanned')
-        self.assertEqual(len(unplanned_tasks), 1)
-        self.assertEqual(unplanned_tasks[0]['task_name'], "Unplanned")
+        names = [t['task_name'] for t in unplanned_tasks]
+        self.assertEqual(len(names), 2)
+        self.assertIn("Unplanned", names)
+        self.assertIn("StarredOnly", names)
 
     def test_cleanup_overdue_today_tasks(self):
         """Tests the auto-cleanup logic for starred tasks."""
