@@ -2,7 +2,7 @@ import sys
 import subprocess
 import os
 
-# Versuch, importlib.metadata zu importieren, um installierte Pakete zu prüfen (Python 3.8+)
+# Attempt to import importlib.metadata to check installed packages (Python 3.8+)
 try:
     from importlib.metadata import distributions
 except ImportError:
@@ -13,7 +13,7 @@ except ImportError:
 
 def check_and_install_requirements():
     """
-    Liest requirements.txt, prüft auf fehlende Pakete und installiert diese nach.
+    Reads requirements.txt, checks for missing packages and installs them.
     """
     requirements_file = 'requirements.txt'
     
@@ -25,7 +25,7 @@ def check_and_install_requirements():
 
     requirements_to_install = []
     
-    # Datei einlesen
+    # Read file
     try:
         with open(requirements_file, 'r', encoding='utf-8') as f:
             lines = []
@@ -38,7 +38,7 @@ def check_and_install_requirements():
         sys.exit(1)
 
     if distributions:
-        # Installierte Pakete ermitteln (Namen normalisiert auf Kleinschreibung)
+        # Determine installed packages (names normalized to lowercase)
         installed_packages = {
             dist.metadata['Name'].lower() 
             for dist in distributions() 
@@ -46,13 +46,13 @@ def check_and_install_requirements():
         }
         
         for req in lines:
-            # Paketnamen extrahieren (z.B. aus 'requests==2.28.1' -> 'requests')
+            # Extract package names (e.g. from 'requests==2.28.1' -> 'requests')
             pkg_name = req.split('==')[0].split('>=')[0].split('<=')[0].split('<')[0].split('>')[0].strip()
             
             if pkg_name.lower() not in installed_packages:
                 requirements_to_install.append(req)
     else:
-        # Fallback: Wenn wir installierte Pakete nicht prüfen können, überlassen wir pip die Prüfung
+        # Fallback: If we cannot check installed packages, we let pip handle the check
         requirements_to_install = lines
 
     if requirements_to_install:

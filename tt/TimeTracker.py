@@ -483,22 +483,23 @@ class TimeTracker:
                     is_today = task.get("today", False)
                     
                     if planning_filter == 'today':
-                        # Zeige Aufgaben nur, wenn das Fälligkeitsdatum exakt heute ist.
-                        # Das 'today'-Flag wird hierbei ignoriert.
+                        # Show tasks only if the due date is exactly today.
+                        # The 'today' flag is ignored here.
                         if not (due_date == today_str):
                             continue
                     elif planning_filter == 'tomorrow':
                         if due_date != tomorrow_str:
                             continue
                     elif planning_filter == 'weekly':
-                        if not (due_date and today_str <= due_date <= next_week_str):
+                        # Zeige exakt 7 Tage ab heute (heute inklusive, heute + 7 exklusive)
+                        if not (due_date and today_str <= due_date < next_week_str):
                             continue
                     elif planning_filter == 'overdue':
                         if not (due_date and due_date < today_str):
                             continue
                     elif planning_filter == 'unplanned':
-                        # Ein Task ist ungeplant, wenn er kein Fälligkeitsdatum hat.
-                        # Das 'today'-Flag (Stern) spielt hierbei keine Rolle mehr.
+                        # A task is unplanned if it has no due date.
+                        # The 'today' flag (star) no longer plays a role here.
                         if due_date:
                             continue
 
