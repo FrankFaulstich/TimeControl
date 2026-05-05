@@ -182,7 +182,7 @@ def view_main():
     col_info, col_done, col_edit = st.columns([10, 1, 1])
     with col_info:
         if current_work:
-            display_name = f"~~{current_work['task_name']}~~" if is_done else current_work['task_name']
+            display_name = f"{current_work['task_name']} (done)" if is_done else current_work['task_name']
             st.info(f"**{_('Current Active Work')}:** {display_name} ({current_work['main_project_name']})")
         else:
             st.info(_("No active work session."))
@@ -290,7 +290,7 @@ def view_task_planning():
                         with col_task:
                             name = task['task_name']
                             is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
-                            display_name = f"~~{name}~~" if task.get('status') == 'done' else name
+                            display_name = f"{name} (done)" if task.get('status') == 'done' else name
                             if is_active: display_name = f"**{display_name}**"
                             today_info = " ⭐" if task.get('today') else ""
                             st.markdown(f"- **{task['main_project_name']}**: {display_name}{today_info}")
@@ -316,7 +316,7 @@ def view_task_planning():
                     name = task['task_name']
                     status = task.get('status')
                     is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
-                    display_name = f"~~{name}~~" if status == 'done' else name
+                    display_name = f"{name} (done)" if status == 'done' else name
                     if is_active: display_name = f"**{display_name}**"
                     due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
                     today_info = " ⭐" if task.get('today') else ""
@@ -367,7 +367,7 @@ def view_today_tasks():
                     name = task['task_name']
                     status = task.get('status')
                     is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
-                    display_name = f"~~{name}~~" if status == 'done' else name
+                    display_name = f"{name} (done)" if status == 'done' else name
                     if is_active: display_name = f"**{display_name}**"
                     due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
                     st.markdown(f"- {display_name}{due_info}")
@@ -532,9 +532,10 @@ def view_close_task():
         return
 
     sub_options = [sp['task_name'] for sp in sub_projects]
+    sub_status = {sp['task_name']: sp['status'] for sp in sub_projects}
 
     with st.form("close_sub_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options)
+        selected_sub = st.selectbox(_("Select Task"), sub_options, format_func=lambda x: f"{x} (done)" if sub_status.get(x) == 'done' else x)
         submitted = st.form_submit_button(_("Close Task"), use_container_width=True)
         
         if submitted:
@@ -573,9 +574,10 @@ def view_reopen_task():
         return
 
     sub_options = [sp['task_name'] for sp in sub_projects]
+    sub_status = {sp['task_name']: sp['status'] for sp in sub_projects}
 
     with st.form("reopen_sub_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options)
+        selected_sub = st.selectbox(_("Select Task"), sub_options, format_func=lambda x: f"{x} (done)" if sub_status.get(x) == 'done' else x)
         submitted = st.form_submit_button(_("Re-open Task"), use_container_width=True)
         
         if submitted:
@@ -614,9 +616,10 @@ def view_delete_task():
         return
 
     sub_options = [sp['task_name'] for sp in sub_projects]
+    sub_status = {sp['task_name']: sp['status'] for sp in sub_projects}
 
     with st.form("delete_sub_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options)
+        selected_sub = st.selectbox(_("Select Task"), sub_options, format_func=lambda x: f"{x} (done)" if sub_status.get(x) == 'done' else x)
         st.warning(_("This action cannot be undone."))
         submitted = st.form_submit_button(_("Delete Task"), use_container_width=True)
         
@@ -656,6 +659,7 @@ def view_move_task():
         return
 
     sub_options = [sp['task_name'] for sp in sub_projects]
+    sub_status = {sp['task_name']: sp['status'] for sp in sub_projects}
     target_options = [p for p in main_options if p != source_main]
     
     if not target_options:
@@ -665,7 +669,7 @@ def view_move_task():
         return
 
     with st.form("move_sub_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options)
+        selected_sub = st.selectbox(_("Select Task"), sub_options, format_func=lambda x: f"{x} (done)" if sub_status.get(x) == 'done' else x)
         target_main = st.selectbox(_("Select Target Project"), target_options)
         
         submitted = st.form_submit_button(_("Move Task"), use_container_width=True)
@@ -794,9 +798,10 @@ def view_promote_task():
         return
 
     sub_options = [sp['task_name'] for sp in sub_projects]
+    sub_status = {sp['task_name']: sp['status'] for sp in sub_projects}
 
     with st.form("promote_sub_form"):
-        selected_sub = st.selectbox(_("Select Task"), sub_options)
+        selected_sub = st.selectbox(_("Select Task"), sub_options, format_func=lambda x: f"{x} (done)" if sub_status.get(x) == 'done' else x)
         st.info(_("This will create a new Project with the task's name and move all time entries to a 'General' task within it."))
         
         submitted = st.form_submit_button(_("Promote to Project"), use_container_width=True)
@@ -886,7 +891,7 @@ def view_list_tasks():
         for t in tasks:
             name = t['task_name']
             status_text = f"({_('closed')})" if t['status'] == 'closed' else ""
-            display_name = f"~~{name}~~" if t['status'] == 'done' else name
+            display_name = f"{name} (done)" if t['status'] == 'done' else name
             st.markdown(f"- {display_name} {status_text}")
     else:
         st.info(_("No tasks found for '{name}'.").format(name=selected_main))
@@ -919,10 +924,11 @@ def view_rename_task():
         return
 
     task_options = [t['task_name'] for t in tasks]
+    task_status = {t['task_name']: t['status'] for t in tasks}
     selected_task = st.selectbox(_("Select Task"), task_options)
 
     with st.form("rename_task_form"):
-        new_name = st.text_input(_("New Name"), value=selected_task)
+        new_name = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
         submitted = st.form_submit_button(_("Rename"), use_container_width=True)
         
         if submitted:
@@ -1253,7 +1259,9 @@ def view_edit_task_select_task():
         st.info(_("No open tasks found."))
         if st.button(_("Back"), use_container_width=True): navigate_to('edit_task')
         return
-    selected_task = st.selectbox(_("Select Task"), [t['task_name'] for t in tasks])
+    task_names = [t['task_name'] for t in tasks]
+    task_status = {t['task_name']: t['status'] for t in tasks}
+    selected_task = st.selectbox(_("Select Task"), task_names, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
     if st.button(_("Next"), use_container_width=True):
         st.session_state.context['selected_task'] = selected_task
         navigate_to('edit_task_form')
@@ -1400,9 +1408,10 @@ def view_start_work():
         return
 
     task_options = [t['task_name'] for t in tasks]
+    task_status = {t['task_name']: t['status'] for t in tasks}
 
     with st.form("start_work_form"):
-        selected_task = st.selectbox(_("Select Task"), task_options)
+        selected_task = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
         submitted = st.form_submit_button(_("Start Work"), use_container_width=True)
         
         if submitted:
@@ -1751,8 +1760,9 @@ def view_report_detailed_task_select_task():
         return
 
     task_options = [t['task_name'] for t in tasks]
+    task_status = {t['task_name']: t['status'] for t in tasks}
     
-    selected_task = st.selectbox(_("Select Task"), task_options)
+    selected_task = st.selectbox(_("Select Task"), task_options, format_func=lambda x: f"{x} (done)" if task_status.get(x) == 'done' else x)
     if st.button(_("Generate Report"), use_container_width=True):
         report = st.session_state.tracker.generate_task_report(main_project, selected_task)
         st.session_state.context = {'report': report} # Clear context and set report
