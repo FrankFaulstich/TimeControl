@@ -110,7 +110,7 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(task.get("today"), False)
         self.assertEqual(task.get("note"), "")
         self.assertIn("id", task)
-        self.assertTrue(len(task["id"]) > 0)
+        self.assertIsInstance(task["id"], int)
 
     def test_format_duration(self):
         """Tests the _format_duration helper method."""
@@ -263,7 +263,7 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0]["task_name"], "Sub Task 1")
         self.assertIn("id", tasks[0])
-        self.assertTrue(len(tasks[0]["id"]) > 0)
+        self.assertIsInstance(tasks[0]["id"], int)
 
     def test_add_task_with_new_fields(self):
         """Tests adding a task with due_date, today, and note."""
