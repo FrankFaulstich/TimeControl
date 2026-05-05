@@ -48,11 +48,18 @@ class TestTimeTracker(unittest.TestCase):
         """Tests the _get_task helper method."""
         self.tracker.add_main_project("Helper Main")
         self.tracker.add_task("Helper Main", "Helper Sub")
+        task_id = self.tracker.list_tasks("Helper Main")[0]["id"]
         
         # Test finding existing sub-project
         task = self.tracker._get_task("Helper Main", "Helper Sub")
         self.assertIsNotNone(task)
         self.assertEqual(task["task_name"], "Helper Sub")
+        self.assertEqual(task["id"], task_id)
+
+        # Test finding by ID
+        task_by_id = self.tracker._get_task("Helper Main", task_id=task_id)
+        self.assertIsNotNone(task_by_id)
+        self.assertEqual(task_by_id["task_name"], "Helper Sub")
         
         # Test finding non-existent sub-project in existing main
         self.assertIsNone(self.tracker._get_task("Helper Main", "Non Existent"))
@@ -102,6 +109,8 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("due_date", task)
         self.assertEqual(task.get("today"), False)
         self.assertEqual(task.get("note"), "")
+        self.assertIn("id", task)
+        self.assertTrue(len(task["id"]) > 0)
 
     def test_format_duration(self):
         """Tests the _format_duration helper method."""
@@ -253,6 +262,8 @@ class TestTimeTracker(unittest.TestCase):
         tasks = self.tracker.data["projects"][0]["tasks"]
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0]["task_name"], "Sub Task 1")
+        self.assertIn("id", tasks[0])
+        self.assertTrue(len(tasks[0]["id"]) > 0)
 
     def test_add_task_with_new_fields(self):
         """Tests adding a task with due_date, today, and note."""
@@ -427,6 +438,46 @@ class TestTimeTracker(unittest.TestCase):
         success = self.tracker.delete_task("Main Test", "Sub To Delete")
         self.assertTrue(success)
         self.assertEqual([s['task_name'] for s in self.tracker.list_tasks("Main Test")], ["Sub To Keep"])
+
+    def test_delete_task_by_id(self):
+        """Tests deleting a specific task by ID when names are identical."""
+        self.tracker.add_main_project("ID Test")
+        self.tracker.add_task("ID Test", "Same Name")
+        self.tracker.add_task("ID Test", "Same Name")
+        
+        tasks = self.tracker.list_tasks("ID Test")
+        id_to_delete = tasks[1]["id"]
+        id_to_keep = tasks[0]["id"]
+
+        success = self.tracker.delete_task("ID Test", "Same Name", task_id=id_to_delete)
+        self.assertTrue(success)
+        
+        remaining_tasks = self.tracker.list_tasks("ID Test")
+        self.assertEqual(len(remaining_tasks), 1)
+        self.assertEqual(remaining_tasks[0]["id"], id_to_keep)
+
+    def test_start_work_with_duplicate_names_prioritizes_open(self):
+        """Tests that starting work by name picks the open task over a done one (the original bug)."""
+        self.tracker.add_main_project("Bug Test")
+        # Task 1: Done (today)
+        self.tracker.add_task("Bug Test", "Recurring", today=True)
+        self.tracker.update_task("Bug Test", "Recurring", status="done")
+        
+        # Task 2: Open (tomorrow)
+        tomorrow_str = (date.today() + timedelta(days=1)).isoformat()
+        self.tracker.add_task("Bug Test", "Recurring", due_date=tomorrow_str)
+        
+        # Action: Start work by name
+        success = self.tracker.start_work("Bug Test", "Recurring")
+        self.assertTrue(success)
+        
+        # Verification: The open task should have a running time entry
+        tasks = self.tracker.data["projects"][0]["tasks"]
+        open_task = next(t for t in tasks if t["status"] == "open")
+        done_task = next(t for t in tasks if t["status"] == "done")
+        
+        self.assertEqual(len(open_task["time_entries"]), 1)
+        self.assertEqual(len(done_task["time_entries"]), 0)
 
     def test_delete_task_not_found(self):
         """Tests deleting a non-existent task."""
