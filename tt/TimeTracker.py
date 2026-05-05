@@ -497,7 +497,9 @@ class TimeTracker:
                         if not (due_date and due_date < today_str):
                             continue
                     elif planning_filter == 'unplanned':
-                        if due_date or is_today:
+                        # Ein Task ist ungeplant, wenn er kein Fälligkeitsdatum hat.
+                        # Das 'today'-Flag (Stern) spielt hierbei keine Rolle mehr.
+                        if due_date:
                             continue
 
                 results.append({
