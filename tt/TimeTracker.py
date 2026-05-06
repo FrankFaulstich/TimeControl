@@ -720,7 +720,7 @@ class TimeTracker:
             "time_entries": [], # Start with a fresh, empty list for the new instance
             "status": self.STATUS_OPEN,
             "due_date": next_due,
-            "today": task.get("today", False),
+            "today": False,
             "note": task.get("note", ""),
             "recurring": True,
             "frequency": freq,

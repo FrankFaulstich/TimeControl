@@ -297,6 +297,26 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(sub["note"], "Updated Note")
         self.assertEqual(sub["status"], "done")
 
+    def test_recurring_task_new_instance_today_flag(self):
+        """Tests that a new instance of a recurring task is created with today=False."""
+        self.tracker.add_main_project("Recurring Test")
+        self.tracker.add_task("Recurring Test", "Daily Task", today=True, recurring=True, frequency="daily")
+        
+        # Mark as done to trigger new instance creation
+        self.tracker.update_task("Recurring Test", "Daily Task", status="done")
+        
+        # Get all tasks for this project
+        tasks = self.tracker.list_tasks("Recurring Test", status_filter='all')
+        
+        # There should be two tasks: the one marked 'done' and the new 'open' one
+        self.assertEqual(len(tasks), 2)
+        
+        done_task = next(t for t in tasks if t["status"] == "done")
+        open_task = next(t for t in tasks if t["status"] == "open")
+        
+        # The NEW task MUST be today=False, even if the completed one was today=True
+        self.assertFalse(open_task["today"], "The new recurring instance should not have the 'today' flag set.")
+
     def test_list_tasks_done_status(self):
         """Tests that 'done' tasks are included when filtering for 'open'."""
         self.tracker.add_main_project("Main")
