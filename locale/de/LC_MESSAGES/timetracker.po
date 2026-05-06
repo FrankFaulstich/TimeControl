@@ -3,7 +3,7 @@
 # This file is distributed under the same license as the TimeTracker package.
 #
 msgid ""
-msgstr ""
+msgstr "Project-Id-Version: TimeControl\n"
 "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: https://github.com/FrankFaulstich/TimeControl/issues\n"
 "POT-Creation-Date: 2025-10-30 10:00+0200\n"
@@ -16,7 +16,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: TimeTracker.py:63
+msgid "Edit current task"
+msgstr "Aktuellen Task bearbeiten"
+
+#: tt/TimeTracker.py:63
 msgid "Warning: Could not read {file}. Error: {error}"
 msgstr "Warnung: Konnte {file} nicht lesen. Fehler: {error}"
 
@@ -79,7 +82,7 @@ msgstr[1] "{hours} Stunden ({dlp} DLP)"
 msgid "closed"
 msgstr "geschlossen"
 
-#: TimeTracker.py:350
+#: tt/TimeTracker.py:350
 msgid "Source project '{name}' not found."
 msgstr "Quell-Projekt '{name}' nicht gefunden."
 
@@ -94,34 +97,34 @@ msgstr "Eine Aufgabe mit dem Namen '{sub_name}' existiert bereits in '{main_name
 msgid "Task '{name}' moved successfully."
 msgstr "Aufgabe '{name}' erfolgreich verschoben."
 
-#: TimeTracker.py:378
+#: tt/TimeTracker.py:378
 msgid "A project named '{name}' already exists."
 msgstr "Ein Projekt mit dem Namen '{name}' existiert bereits."
 
 msgid "Project '{old_name}' renamed to '{new_name}'."
 msgstr "Projekt '{old_name}' wurde in '{new_name}' umbenannt."
 
-#: TimeTracker.py:398
+#: tt/TimeTracker.py:398
 msgid "Task '{sub_name}' not found in '{main_name}'."
 msgstr "Aufgabe '{sub_name}' in '{main_name}' nicht gefunden."
 
-#: TimeTracker.py:406
+#: tt/TimeTracker.py:406
 msgid "General"
 msgstr "Allgemein"
 
-#: TimeTracker.py:410
+#: tt/TimeTracker.py:410
 msgid "Task '{name}' was promoted to a new project."
 msgstr "Aufgabe '{name}' wurde zu einem neuen Projekt befördert."
 
-#: TimeTracker.py:439
+#: tt/TimeTracker.py:439
 msgid "Project to demote '{name}' not found."
 msgstr "Projekt '{name}' zum Herabstufen nicht gefunden."
 
-#: TimeTracker.py:441
+#: tt/TimeTracker.py:441
 msgid "New parent project '{name}' not found."
 msgstr "Neues übergeordnetes Projekt '{name}' nicht gefunden."
 
-#: TimeTracker.py:455
+#: tt/TimeTracker.py:455
 msgid "Task '{old_name}' has been renamed to '{new_name}'."
 msgstr "Aufgabe '{old_name}' wurde in '{new_name}' umbenannt."
 
@@ -132,6 +135,84 @@ msgid ""
 msgstr ""
 "Projekt '{demoted_name}' wurde zu einer Aufgabe unter "
 "'{parent_name}' herabgestuft."
+
+msgid "Task Planning"
+msgstr "Aufgabenplanung"
+
+msgid "Today View"
+msgstr "Heute-Ansicht"
+
+msgid "E-Mail Task Assignment"
+msgstr "Zuordnung von E-Mail-Tasks"
+
+msgid "Fetching emails..."
+msgstr "E-Mails werden abgerufen..."
+
+msgid "Error fetching emails: {error}"
+msgstr "Fehler beim E-Mail-Abruf: {error}"
+
+msgid "{count} new tasks created from emails."
+msgstr "{count} neue Aufgaben aus E-Mails erstellt."
+
+msgid "No new emails found."
+msgstr "Keine neuen E-Mails gefunden."
+
+msgid "No unassigned email tasks available."
+msgstr "Keine nicht zugeordneten E-Mail-Tasks vorhanden."
+
+msgid "Assign Project"
+msgstr "Projekt zuordnen"
+
+msgid "Edit Details"
+msgstr "Details bearbeiten"
+
+msgid "Due Date"
+msgstr "Fälligkeitsdatum"
+
+msgid "Clear"
+msgstr "Löschen"
+
+msgid "Task Name"
+msgstr "Aufgabenname"
+
+msgid "Task details updated successfully."
+msgstr "Aufgabendetails erfolgreich aktualisiert."
+
+msgid "Error updating task details."
+msgstr "Fehler beim Aktualisieren der Aufgabendetails."
+
+msgid "Email Settings"
+msgstr "E-Mail-Einstellungen"
+
+msgid "Enable email import"
+msgstr "E-Mail-Import aktivieren"
+
+msgid "Username"
+msgstr "Benutzername"
+
+msgid "Password"
+msgstr "Passwort"
+
+msgid "Use SSL"
+msgstr "SSL verwenden"
+
+msgid "Email settings saved."
+msgstr "E-Mail-Einstellungen gespeichert."
+
+msgid "4. Change Streamlit Port"
+msgstr "4. Streamlit-Port ändern"
+
+msgid "Current Streamlit Port: {port}"
+msgstr "Aktueller Streamlit-Port: {port}"
+
+msgid "Enter new port (or press Enter to keep current): "
+msgstr "Neuen Port eingeben (oder Enter drücken, um aktuellen beizubehalten): "
+
+msgid "Port updated to {port}. Please restart Streamlit for changes to take effect."
+msgstr "Port auf {port} aktualisiert. Bitte Streamlit neu starten, damit die Änderungen wirksam werden."
+
+msgid "Work started on '{task_name}' in project '{main_name}'."
+msgstr "Arbeit an '{task_name}' im Projekt '{main_name}' begonnen."
 
 #: TimeTracker.py:651
 msgid "- {name}: {hours} hour"

@@ -201,7 +201,7 @@ def view_main():
             st.rerun()
 
     with col_edit:
-        if st.button("✎", help=_("Aktuellen Task bearbeiten"), disabled=not current_work):
+        if st.button("✎", help=_("Edit current task"), disabled=not current_work):
             st.session_state.context['selected_main'] = current_work['main_project_name']
             st.session_state.context['selected_task'] = current_work['task_name']
             st.session_state.context['return_to'] = 'main'
@@ -218,13 +218,13 @@ def view_main():
             set_feedback(_("No active work session to stop."), 'info')
         st.rerun()
 
-    if st.button(_("Aufgabenplanung"), use_container_width=True):
+    if st.button(_("Task Planning"), use_container_width=True):
         navigate_to('task_planning')
 
     if st.button(_("Today View"), use_container_width=True):
         navigate_to('today_view')
 
-    if st.button(_("Zuordnung von E-Mail-Tasks"), use_container_width=True):
+    if st.button(_("E-Mail Task Assignment"), use_container_width=True):
         navigate_to('email_assignment')
 
     st.divider()
@@ -245,7 +245,7 @@ def view_task_planning():
     """
     Renders the task planning view, showing all tasks that are not closed.
     """
-    render_header(_("Aufgabenplanung"))
+    render_header(_("Task Planning"))
 
     filter_options = [
         _("Today"), 
@@ -401,27 +401,27 @@ def view_email_assignment():
     """
     Renders the view to assign tasks fetched from emails to active projects.
     """
-    render_header(_("Zuordnung von E-Mail-Tasks"))
+    render_header(_("E-Mail Task Assignment"))
     
     if 'confirm_delete_email_task_id' not in st.session_state:
         st.session_state.confirm_delete_email_task_id = None
 
     if 'email_fetched' not in st.session_state:
-        with st.spinner(_("Rufe E-Mails ab...")):
+        with st.spinner(_("Fetching emails...")):
             count, error = st.session_state.tracker.fetch_emails_to_tasks()
             if error:
-                st.error(_("Fehler beim E-Mail-Abruf: {error}").format(error=error))
+                st.error(_("Error fetching emails: {error}").format(error=error))
             else:
                 if count > 0:
-                    st.success(_("{count} neue Tasks aus E-Mails erstellt.").format(count=count))
+                    st.success(_("{count} new tasks created from emails.").format(count=count))
                 else:
-                    st.info(_("Keine neuen E-Mails gefunden."))
+                    st.info(_("No new emails found."))
         st.session_state.email_fetched = True
 
     hidden_tasks = st.session_state.tracker.list_tasks(main_project_name="hide", status_filter='open')
     
     if not hidden_tasks:
-        st.info(_("Keine nicht zugeordneten E-Mail-Tasks vorhanden."))
+        st.info(_("No unassigned email tasks available."))
     else:
         active_projects = st.session_state.tracker.list_main_projects(status_filter='open')
         project_names = [""] + [p['main_project_name'] for p in active_projects]
@@ -433,7 +433,7 @@ def view_email_assignment():
             with col_name:
                 st.write(f"**{task['task_name']}**")
             with col_move:
-                selected_proj = st.selectbox(_("Projekt zuordnen"), options=project_names, key=f"move_email_{task['id']}", label_visibility="collapsed")
+                selected_proj = st.selectbox(_("Assign Project"), options=project_names, key=f"move_email_{task['id']}", label_visibility="collapsed")
                 if selected_proj:
                     success, msg = st.session_state.tracker.move_task("hide", task['task_name'], selected_proj, task_id=task['id'])
                     if success:
@@ -463,7 +463,7 @@ def view_email_assignment():
                         st.session_state.confirm_delete_email_task_id = task['id']
                         st.rerun()
 
-            with st.expander(_("Details bearbeiten")):
+            with st.expander(_("Edit Details")):
                 # Current values for pre-filling
                 current_due_date_str = task.get('due_date')
                 current_due_date_obj = datetime.fromisoformat(current_due_date_str).date() if current_due_date_str else None
@@ -516,7 +516,7 @@ def view_email_assignment():
                     else:
                         st.error(_("Error updating task details."))
     
-    if st.button(_("Zurück"), use_container_width=True):
+    if st.button(_("Back"), use_container_width=True):
         if 'email_fetched' in st.session_state: del st.session_state.email_fetched
         navigate_to('main')
 
@@ -614,7 +614,7 @@ def view_settings():
     if st.button(t_label("2. Restore Previous Version"), use_container_width=True): navigate_to('settings_restore')
     if st.button(t_label("3. Change Data Storage Location"), use_container_width=True): navigate_to('settings_storage')
     if st.button(t_label("4. Change Streamlit Port"), use_container_width=True): navigate_to('settings_port')
-    if st.button(_("E-Mail-Einstellungen"), use_container_width=True): navigate_to('settings_email')
+    if st.button(_("Email Settings"), use_container_width=True): navigate_to('settings_email')
     if st.button(_("Change CSS Style"), use_container_width=True): navigate_to('settings_css')
     if st.button(_("Change View Mode"), use_container_width=True): navigate_to('settings_view_mode')
     
@@ -1811,21 +1811,21 @@ def view_settings_email():
     """
     Renders the form to configure email account settings.
     """
-    render_header(_("E-Mail-Einstellungen"))
+    render_header(_("Email Settings"))
     config = get_config()
     email_cfg = config.get('email', {
         "imap_server": "", "imap_port": 993, "user": "", "password": "", "use_ssl": True, "enabled": False
     })
 
     with st.form("email_settings_form"):
-        enabled = st.checkbox(_("E-Mail-Import aktivieren"), value=email_cfg.get('enabled', False))
+        enabled = st.checkbox(_("Enable email import"), value=email_cfg.get('enabled', False))
         server = st.text_input(_("IMAP Server"), value=email_cfg.get('imap_server', ''))
         port = st.number_input(_("Port"), value=email_cfg.get('imap_port', 993))
-        user = st.text_input(_("Benutzer"), value=email_cfg.get('user', ''))
-        password = st.text_input(_("Passwort"), value=email_cfg.get('password', ''), type="password")
-        use_ssl = st.checkbox(_("SSL verwenden"), value=email_cfg.get('use_ssl', True))
+        user = st.text_input(_("Username"), value=email_cfg.get('user', ''))
+        password = st.text_input(_("Password"), value=email_cfg.get('password', ''), type="password")
+        use_ssl = st.checkbox(_("Use SSL"), value=email_cfg.get('use_ssl', True))
         
-        submitted = st.form_submit_button(_("Speichern"), use_container_width=True)
+        submitted = st.form_submit_button(_("Save"), use_container_width=True)
         if submitted:
             config['email'] = {
                 "imap_server": server,
@@ -1836,11 +1836,11 @@ def view_settings_email():
                 "enabled": enabled
             }
             save_config(config)
-            set_feedback(_("E-Mail-Einstellungen gespeichert."))
+            set_feedback(_("Email settings saved."))
             navigate_to('settings')
             st.rerun()
             
-    if st.button(_("Abbrechen"), use_container_width=True):
+    if st.button(_("Cancel"), use_container_width=True):
         navigate_to('settings')
 
 def view_report_specific_day():

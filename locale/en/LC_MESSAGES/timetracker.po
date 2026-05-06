@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: https://github.com/FrankFaulstich/TimeControl/issues\n"
-"POT-Creation-Date: 2025-10-30 10:00+0200\n"
-"PO-Revision-Date: 2026-01-01 12:05+0200\n"
+"POT-Creation-Date: 2026-01-01 14:00+0200\n"
+"PO-Revision-Date: 2026-01-01 14:10+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -15,6 +15,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Edit current task"
+msgstr "Edit current task"
 
 #: TimeTracker.py:63
 msgid "Warning: Could not read {file}. Error: {error}"
@@ -87,12 +90,12 @@ msgstr "Source main project '{name}' not found."
 msgid "Destination main project '{name}' not found."
 msgstr "Destination main project '{name}' not found."
 
-#: TimeTracker.py:356
-msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
-msgstr "A sub-project named '{sub_name}' already exists in '{main_name}'."
+#: tt/TimeTracker.py:356
+msgid "A task named '{task_name}' already exists in '{main_name}'."
+msgstr "A task named '{task_name}' already exists in '{main_name}'."
 
-msgid "Sub-project '{name}' moved successfully."
-msgstr "Sub-project '{name}' moved successfully."
+msgid "Task '{task_name}' moved successfully."
+msgstr "Task '{task_name}' moved successfully."
 
 #: TimeTracker.py:378
 msgid "A main project named '{name}' already exists."
@@ -102,16 +105,16 @@ msgid "Main project '{old_name}' renamed to '{new_name}'."
 msgstr "Main project '{old_name}' renamed to '{new_name}'."
 
 #: TimeTracker.py:398
-msgid "Sub-project '{sub_name}' not found in '{main_name}'."
-msgstr "Sub-project '{sub_name}' not found in '{main_name}'."
+msgid "Task '{sub_name}' not found in '{main_name}'."
+msgstr "Task '{sub_name}' not found in '{main_name}'."
 
 #: TimeTracker.py:406
 msgid "General"
 msgstr "General"
 
 #: TimeTracker.py:410
-msgid "Sub-project '{name}' was promoted to a new main project."
-msgstr "Sub-project '{name}' was promoted to a new main project."
+msgid "Task '{name}' was promoted to a new main project."
+msgstr "Task '{name}' was promoted to a new main project."
 
 #: TimeTracker.py:439
 msgid "Main project to demote '{name}' not found."
@@ -122,15 +125,58 @@ msgid "New parent main project '{name}' not found."
 msgstr "New parent main project '{name}' not found."
 
 #: TimeTracker.py:455
-msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
-msgstr "Sub-project '{old_name}' has been renamed to '{new_name}'."
+msgid "Task '{old_name}' has been renamed to '{new_name}'."
+msgstr "Task '{old_name}' has been renamed to '{new_name}'."
+
 #: TimeTracker.py:463
 msgid ""
-"Main project '{demoted_name}' was demoted to a sub-project under "
+"Main project '{demoted_name}' was demoted to a task under "
 "'{parent_name}'."
 msgstr ""
-"Main project '{demoted_name}' was demoted to a sub-project under "
+"Main project '{demoted_name}' was demoted to a task under "
 "'{parent_name}'."
+
+msgid "Task Planning"
+msgstr "Task Planning"
+
+msgid "Today View"
+msgstr "Today View"
+
+msgid "E-Mail Task Assignment"
+msgstr "E-Mail Task Assignment"
+
+msgid "Fetching emails..."
+msgstr "Fetching emails..."
+
+msgid "Error fetching emails: {error}"
+msgstr "Error fetching emails: {error}"
+
+msgid "{count} new tasks created from emails."
+msgstr "{count} new tasks created from emails."
+
+msgid "No unassigned email tasks available."
+msgstr "No unassigned email tasks available."
+
+msgid "Assign Project"
+msgstr "Assign Project"
+
+msgid "Edit Details"
+msgstr "Edit Details"
+
+msgid "Due Date"
+msgstr "Due Date"
+
+msgid "Task Name"
+msgstr "Task Name"
+
+msgid "Task details updated successfully."
+msgstr "Task details updated successfully."
+
+msgid "Error updating task details."
+msgstr "Error updating task details."
+
+msgid "Email Settings"
+msgstr "Email Settings"
 
 #: TimeTracker.py:651
 msgid "- {name}: {hours} hour"
@@ -148,11 +194,9 @@ msgstr[1] "## {name} ({hours} hours)\n"
 msgid "# Daily Time Report: {date}\n"
 msgstr "# Daily Time Report: {date}\n"
 
-#: TimeTracker.py:666
+#: tt/TimeTracker.py:917
 msgid "\n**Total Daily Time: {hours} hours**"
-msgid_plural "\n**Total Daily Time: {hours} hours**"
-msgstr[0] "\n**Total Daily Time: {hours} hours**"
-msgstr[1] "\n**Total Daily Time: {hours} hours**"
+msgstr "\n**Total Daily Time: {hours} hours**"
 
 #: TimeTracker.py:670
 msgid "No time tracked for {date}."
@@ -221,16 +265,16 @@ msgid "11. Re-open Sub-Project"
 msgstr "11. Re-open Sub-Project"
 
 msgid "12. Delete Sub-Project"
-msgstr "12. Delete Sub-Project"
+msgstr "12. Delete Task"
 
 msgid "13. Move Sub-Project"
-msgstr "13. Move Sub-Project"
+msgstr "13. Move Task"
 
 msgid "14. List Inactive Sub-Projects"
-msgstr "14. List Inactive Sub-Projects"
+msgstr "14. List Inactive Tasks"
 
 msgid "15. List All Closed Sub-Projects"
-msgstr "15. List All Closed Sub-Projects"
+msgstr "15. List All Closed Tasks"
 
 msgid "16. Delete All Closed Sub-Projects"
 msgstr "16. Delete All Closed Sub-Projects"
