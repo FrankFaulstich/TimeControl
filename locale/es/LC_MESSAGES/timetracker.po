@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: https://github.com/FrankFaulstich/TimeControl/issues\n"
-"POT-Creation-Date: 2025-10-30 10:00+0200\n"
-"PO-Revision-Date: 2026-01-01 12:10+0200\n"
+"POT-Creation-Date: 2026-01-01 14:30+0200\n"
+"PO-Revision-Date: 2026-01-01 14:40+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: Spanish\n"
 "Language: es\n"
@@ -15,6 +15,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Edit current task"
+msgstr "Editar tarea actual"
 
 #: TimeTracker.py:63
 msgid "Warning: Could not read {file}. Error: {error}"
@@ -93,12 +96,12 @@ msgstr "Proyecto principal de origen '{name}' no encontrado."
 msgid "Destination main project '{name}' not found."
 msgstr "Proyecto principal de destino '{name}' no encontrado."
 
-#: TimeTracker.py:356
-msgid "A sub-project named '{sub_name}' already exists in '{main_name}'."
-msgstr "Ya existe un subproyecto llamado '{sub_name}' en '{main_name}'."
+#: tt/TimeTracker.py:356
+msgid "A task named '{task_name}' already exists in '{main_name}'."
+msgstr "Ya existe una tarea llamada '{task_name}' en '{main_name}'."
 
-msgid "Sub-project '{name}' moved successfully."
-msgstr "Subproyecto '{name}' movido con éxito."
+msgid "Task '{task_name}' moved successfully."
+msgstr "Tarea '{task_name}' movida con éxito."
 
 #: TimeTracker.py:378
 msgid "A main project named '{name}' already exists."
@@ -108,16 +111,16 @@ msgid "Main project '{old_name}' renamed to '{new_name}'."
 msgstr "Proyecto principal '{old_name}' renombrado a '{new_name}'."
 
 #: TimeTracker.py:398
-msgid "Sub-project '{sub_name}' not found in '{main_name}'."
-msgstr "No se encontró el subproyecto '{sub_name}' en '{main_name}'."
+msgid "Task '{sub_name}' not found in '{main_name}'."
+msgstr "No se encontró la tarea '{sub_name}' en '{main_name}'."
 
 #: TimeTracker.py:406
 msgid "General"
 msgstr "General"
 
 #: TimeTracker.py:410
-msgid "Sub-project '{name}' was promoted to a new main project."
-msgstr "El subproyecto '{name}' fue promovido a un nuevo proyecto principal."
+msgid "Task '{name}' was promoted to a new main project."
+msgstr "La tarea '{name}' fue promovida a un nuevo proyecto principal."
 
 #: TimeTracker.py:439
 msgid "Main project to demote '{name}' not found."
@@ -128,16 +131,94 @@ msgid "New parent main project '{name}' not found."
 msgstr "No se encontró el nuevo proyecto principal padre '{name}'."
 
 #: TimeTracker.py:455
-msgid "Sub-project '{old_name}' has been renamed to '{new_name}'."
-msgstr "El subproyecto '{old_name}' ha sido renombrado a '{new_name}'."
+msgid "Task '{old_name}' has been renamed to '{new_name}'."
+msgstr "La tarea '{old_name}' ha sido renombrada a '{new_name}'."
 
 #: TimeTracker.py:463
 msgid ""
-"Main project '{demoted_name}' was demoted to a sub-project under "
+"Main project '{demoted_name}' was demoted to a task under "
 "'{parent_name}'."
 msgstr ""
 "El proyecto principal '{demoted_name}' fue degradado a un subproyecto bajo "
 "'{parent_name}'."
+
+msgid "Task Planning"
+msgstr "Planificación de tareas"
+
+msgid "Today View"
+msgstr "Vista de hoy"
+
+msgid "E-Mail Task Assignment"
+msgstr "Asignación de tareas por correo"
+
+msgid "Fetching emails..."
+msgstr "Recuperando correos electrónicos..."
+
+msgid "Error fetching emails: {error}"
+msgstr "Error al recuperar correos: {error}"
+
+msgid "{count} new tasks created from emails."
+msgstr "{count} nuevas tareas creadas desde correos."
+
+msgid "No new emails found."
+msgstr "No se encontraron correos nuevos."
+
+msgid "No unassigned email tasks available."
+msgstr "No hay tareas de correo sin asignar disponibles."
+
+msgid "Assign Project"
+msgstr "Asignar proyecto"
+
+msgid "Edit Details"
+msgstr "Editar detalles"
+
+msgid "Due Date"
+msgstr "Fecha de vencimiento"
+
+msgid "Clear"
+msgstr "Limpiar"
+
+msgid "Task Name"
+msgstr "Nombre de la tarea"
+
+msgid "Task details updated successfully."
+msgstr "Detalles de la tarea actualizados con éxito."
+
+msgid "Error updating task details."
+msgstr "Error al actualizar los detalles de la tarea."
+
+msgid "Email Settings"
+msgstr "Configuración de correo"
+
+msgid "Enable email import"
+msgstr "Activar importación de correo"
+
+msgid "Username"
+msgstr "Usuario"
+
+msgid "Password"
+msgstr "Contraseña"
+
+msgid "Use SSL"
+msgstr "Usar SSL"
+
+msgid "Email settings saved."
+msgstr "Configuración de correo guardada."
+
+msgid "4. Change Streamlit Port"
+msgstr "4. Cambiar puerto de Streamlit"
+
+msgid "Current Streamlit Port: {port}"
+msgstr "Puerto actual de Streamlit: {port}"
+
+msgid "Enter new port (or press Enter to keep current): "
+msgstr "Ingrese el nuevo puerto (o presione Enter para mantener el actual): "
+
+msgid "Port updated to {port}. Please restart Streamlit for changes to take effect."
+msgstr "Puerto actualizado a {port}. Reinicie Streamlit para que los cambios surtan efecto."
+
+msgid "Work started on '{task_name}' in project '{main_name}'."
+msgstr "Trabajo iniciado en '{task_name}' en el proyecto '{main_name}'."
 
 #: TimeTracker.py:651
 msgid "- {name}: {hours} hour"

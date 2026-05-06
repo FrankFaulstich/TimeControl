@@ -3,11 +3,10 @@
 # This file is distributed under the same license as the TimeTracker package.
 #
 msgid ""
-msgstr ""
-"Project-Id-Version: TimeControl\n"
+msgstr "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: https://github.com/FrankFaulstich/TimeControl/issues\n"
-"POT-Creation-Date: 2025-10-30 10:00+0200\n"
-"PO-Revision-Date: 2025-10-30 12:00+0200\n"
+"POT-Creation-Date: 2024-05-15 10:00+0200\n"
+"PO-Revision-Date: 2024-05-15 12:00+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: Czech\n"
 "Language: cs\n"
@@ -15,6 +14,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+
+msgid "Edit current task"
+msgstr ""
 
 msgid "Warning: Could not read {file}. Error: {error}"
 msgstr "Varování: Nelze přečíst soubor {file}. Chyba: {error}"
@@ -77,6 +79,9 @@ msgstr "Úkol s názvem '{sub_name}' již v projektu '{main_name}' existuje."
 msgid "Task '{name}' moved successfully."
 msgstr "Úkol '{name}' byl úspěšně přesunut."
 
+msgid "No project selected. Please start again."
+msgstr ""
+
 msgid "A project named '{name}' already exists."
 msgstr "Projekt s názvem '{name}' již existuje."
 
@@ -107,6 +112,9 @@ msgid ""
 msgstr ""
 "Projekt '{demoted_name}' byl degradován na úkol pod '"
 "{parent_name}'."
+
+msgid "No open projects found."
+msgstr ""
 
 msgid "# Daily Time Report: {date}\n"
 msgstr "# Denní zpráva o čase: {date}\n"
