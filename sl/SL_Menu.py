@@ -442,7 +442,7 @@ def view_email_assignment():
                     else:
                         st.error(msg)
             
-            # Confirmation logic for deletion
+            # Confirmation logic for deletion (outside expander for clarity)
             if st.session_state.confirm_delete_email_task_id == task['id']:
                 st.warning(_("Are you sure you want to delete this task?"))
                 col_yes, col_no = st.columns(2)
@@ -456,16 +456,63 @@ def view_email_assignment():
                         st.session_state.confirm_delete_email_task_id = None
                         st.rerun()
             else:
+                # Placeholder for delete button if no confirmation is pending
                 with col_del_btn_placeholder:
+                    # Added a unique key for the delete button to prevent Streamlit warnings
                     if st.button("🗑️", key=f"del_email_{task['id']}", help=_("Delete")):
                         st.session_state.confirm_delete_email_task_id = task['id']
                         st.rerun()
 
-            with st.expander(_("Notiz bearbeiten")):
-                edited_note = st.text_area(_("Notes (Markdown)"), value=task['note'], key=f"note_edit_{task['id']}", height=150, label_visibility="collapsed")
-                if st.button(_("Save Changes"), key=f"save_note_{task['id']}", use_container_width=True):
-                    if st.session_state.tracker.update_task("hide", task['task_name'], note=edited_note, task_id=task['id']):
+            with st.expander(_("Details bearbeiten")):
+                # Current values for pre-filling
+                current_due_date_str = task.get('due_date')
+                current_due_date_obj = datetime.fromisoformat(current_due_date_str).date() if current_due_date_str else None
+                current_today_flag = task.get('today', False)
+                current_task_name = task.get('task_name', '')
+                current_note = task.get('note', '')
+
+                # Use session state for date input to allow clearing
+                if f'edit_email_due_date_{task["id"]}' not in st.session_state:
+                    st.session_state[f'edit_email_due_date_{task["id"]}'] = current_due_date_obj
+                
+                col_date, col_clear_date = st.columns([5, 1])
+                
+                new_task_name = st.text_input(_("Task Name"), value=current_task_name, key=f"email_task_name_{task['id']}")
+                with col_date:
+                    new_due_date = st.date_input(
+                        _("Due Date"), 
+                        value=st.session_state[f'edit_email_due_date_{task["id"]}'], 
+                        format="YYYY-MM-DD",
+                        key=f"email_task_due_date_{task['id']}"
+                    )
+                    st.session_state[f'edit_email_due_date_{task["id"]}'] = new_due_date
+                with col_clear_date:
+                    st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
+                    if st.button("✖️", key=f"clear_email_due_date_{task['id']}", use_container_width=True, help=_("Clear")):
+                        st.session_state[f'edit_email_due_date_{task["id"]}'] = None
                         st.rerun()
+
+                new_today_flag = st.checkbox(_("Today"), value=current_today_flag, key=f"email_task_today_{task['id']}")
+                new_note = st.text_area(_("Notes (Markdown)"), value=current_note, key=f"email_task_note_{task['id']}", height=150)
+                
+                if st.button(_("Save Changes"), key=f"save_email_details_{task['id']}", use_container_width=True):
+                    final_due_date = new_due_date.isoformat() if new_due_date else None
+                    if st.session_state.tracker.update_task(
+                        "hide", 
+                        task['task_name'], 
+                        new_task_name=new_task_name, # New: Pass the updated task name
+                        due_date=final_due_date, 
+                        today=new_today_flag, 
+                        note=new_note, 
+                        task_id=task['id']
+                    ):
+                        set_feedback(_("Task details updated successfully."))
+                        # Clear session state for this task's date input to ensure fresh load next time
+                        if f'edit_email_due_date_{task["id"]}' in st.session_state:
+                            del st.session_state[f'edit_email_due_date_{task["id"]}']
+                        st.rerun()
+                    else:
+                        st.error(_("Error updating task details."))
     
     if st.button(_("Zurück"), use_container_width=True):
         if 'email_fetched' in st.session_state: del st.session_state.email_fetched
