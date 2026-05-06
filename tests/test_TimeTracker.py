@@ -317,6 +317,22 @@ class TestTimeTracker(unittest.TestCase):
         # The NEW task MUST be today=False, even if the completed one was today=True
         self.assertFalse(open_task["today"], "The new recurring instance should not have the 'today' flag set.")
 
+    def test_recurring_task_new_instance_copies_note(self):
+        """Tests that a new instance of a recurring task copies the note from the previous instance."""
+        self.tracker.add_main_project("Recurring Note Test")
+        self.tracker.add_task("Recurring Note Test", "Daily Task", note="Old Note Content", recurring=True)
+        
+        # Mark as done and update note at the same time
+        self.tracker.update_task("Recurring Note Test", "Daily Task", status="done", note="Updated note content")
+        
+        # Get all tasks for this project
+        tasks = self.tracker.list_tasks("Recurring Note Test", status_filter='all')
+        
+        open_task = next(t for t in tasks if t["status"] == "open")
+        
+        # The NEW task MUST have the updated note
+        self.assertEqual(open_task["note"], "Updated note content")
+
     def test_list_tasks_done_status(self):
         """Tests that 'done' tasks are included when filtering for 'open'."""
         self.tracker.add_main_project("Main")

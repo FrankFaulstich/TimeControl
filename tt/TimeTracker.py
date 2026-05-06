@@ -29,7 +29,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.7.7"
+    VERSION = "3.7.8"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -676,7 +676,7 @@ class TimeTracker:
                 is_recurring = recurring if recurring is not None else task.get("recurring", False)
                 
                 if is_completing and is_recurring:
-                    self._create_next_recurring_instance(project, task, due_date, recurring, frequency, userdefined_days)
+                    self._create_next_recurring_instance(project, task, due_date, recurring, frequency, userdefined_days, note)
 
                 if new_task_name:
                     task["task_name"] = new_task_name
@@ -707,10 +707,11 @@ class TimeTracker:
                 return True
         return False
 
-    def _create_next_recurring_instance(self, project, task, due_date_param, recurring_param, freq_param, ud_days_param):
+    def _create_next_recurring_instance(self, project, task, due_date_param, recurring_param, freq_param, ud_days_param, note_param=None):
         freq = freq_param if freq_param is not None else task.get("frequency", "daily")
         ud_days = ud_days_param if ud_days_param is not None else task.get("userdefined_days", 1)
         base_due = due_date_param if due_date_param is not None else task.get("due_date")
+        note = note_param if note_param is not None else task.get("note", "")
         
         next_due = self._calculate_next_due_date(base_due, freq, ud_days)
         
@@ -721,7 +722,7 @@ class TimeTracker:
             "status": self.STATUS_OPEN,
             "due_date": next_due,
             "today": False,
-            "note": task.get("note", ""),
+            "note": note,
             "recurring": True,
             "frequency": freq,
             "userdefined_days": ud_days
