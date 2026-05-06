@@ -1,5 +1,8 @@
 import json
 import os
+import imaplib
+import email
+from email.header import decode_header
 from i18n import _
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta, date
@@ -33,6 +36,7 @@ class TimeTracker:
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
+    HIDDEN_PROJECT = "hide"
 
     def __init__(self, file_path=None):
         """
@@ -315,6 +319,8 @@ class TimeTracker:
         """
         projects = []
         for project in self.data["projects"]:
+            if project["main_project_name"] == self.HIDDEN_PROJECT:
+                continue
             status = project.get("status", self.STATUS_OPEN)
             if status_filter == 'all' or status == status_filter:
                 projects.append({
@@ -459,6 +465,9 @@ class TimeTracker:
         # If a specific main project is given, filter the list of projects to search
         if main_project_name:
             projects_to_search = [p for p in projects_to_search if p.get("main_project_name") == main_project_name]
+        else:
+            # Exclude hidden project when listing all
+            projects_to_search = [p for p in projects_to_search if p.get("main_project_name") != self.HIDDEN_PROJECT]
 
         today_dt = date.today()
         today_str = today_dt.isoformat()
@@ -969,6 +978,84 @@ class TimeTracker:
             
         return False
 
+    def fetch_emails_to_tasks(self):
+        """
+        Fetches emails from the configured IMAP account and creates tasks in the 'hide' project.
+        """
+        config_data = {}
+        if os.path.exists('config.json'):
+            try:
+                with open('config.json', 'r', encoding='utf-8') as f:
+                    config_data = json.load(f).get('email', {})
+            except: pass
+            
+        if not config_data.get('enabled'):
+            return 0, _("Email import is not enabled.")
+            
+        server = config_data.get('imap_server')
+        port = config_data.get('imap_port', 993)
+        user = config_data.get('user')
+        password = config_data.get('password')
+        use_ssl = config_data.get('use_ssl', True)
+        
+        if not all([server, user, password]):
+            return 0, _("Email settings are incomplete.")
+
+        try:
+            if use_ssl:
+                mail = imaplib.IMAP4_SSL(server, port)
+            else:
+                mail = imaplib.IMAP4(server, port)
+                
+            mail.login(user, password)
+            mail.select("inbox")
+            
+            status, messages = mail.search(None, "ALL")
+            if status != "OK":
+                return 0, _("Error searching emails.")
+                
+            mail_ids = messages[0].split()
+            count = 0
+            
+            if not self._get_project(self.HIDDEN_PROJECT):
+                self.add_main_project(self.HIDDEN_PROJECT)
+
+            for m_id in mail_ids:
+                status, data = mail.fetch(m_id, "(RFC822)")
+                if status != "OK": continue
+                
+                msg = email.message_from_bytes(data[0][1])
+                
+                # Decode Subject
+                subject_header = msg.get("Subject", _("No Subject"))
+                decoded_parts = decode_header(subject_header)
+                subject = ""
+                for part, encoding in decoded_parts:
+                    if isinstance(part, bytes):
+                        subject += part.decode(encoding or "utf-8", errors="replace")
+                    else: subject += part
+                
+                # Extract Body
+                body = ""
+                if msg.is_multipart():
+                    for part in msg.walk():
+                        if part.get_content_type() == "text/plain":
+                            body = part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='replace')
+                            break
+                else:
+                    body = msg.get_payload(decode=True).decode(msg.get_content_charset() or 'utf-8', errors='replace')
+                
+                self.add_task(self.HIDDEN_PROJECT, subject, note=body)
+                count += 1
+                mail.store(m_id, '+FLAGS', '\\Deleted')
+            
+            mail.expunge()
+            mail.logout()
+            return count, None
+            
+        except Exception as e:
+            return 0, str(e)
+
     def stop_work(self):
         """
         Stops the currently active time tracking session by adding the end time 
@@ -1023,6 +1110,8 @@ class TimeTracker:
         inactive_projects = []
 
         for project in self.data["projects"]:
+            if project["main_project_name"] == self.HIDDEN_PROJECT:
+                continue
             for task in project["tasks"]:
                 if not task.get("time_entries"):
                     # Ignore sub-projects with no entries
@@ -1080,6 +1169,8 @@ class TimeTracker:
         inactive_main_projects = []
 
         for project in self.data["projects"]:
+            if project["main_project_name"] == self.HIDDEN_PROJECT:
+                continue
             # Skip closed main projects or those where all sub-projects are closed
             if project.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED:
                 continue
@@ -1132,6 +1223,8 @@ class TimeTracker:
         """
         completed_projects = []
         for project in self.data["projects"]:
+            if project["main_project_name"] == self.HIDDEN_PROJECT:
+                continue
             tasks = project.get("tasks", [])
             
             # If no sub-projects, it is considered completed/inactive in this context

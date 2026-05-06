@@ -11,5 +11,13 @@
     "window_y": -662,
     "css_file": "style.css",
     "view_mode": "webview",
-    "soap_port": 8600
+    "soap_port": 8600,
+    "email": {
+        "imap_server": "",
+        "imap_port": 993,
+        "user": "",
+        "password": "",
+        "use_ssl": true,
+        "enabled": false
+    }
 }

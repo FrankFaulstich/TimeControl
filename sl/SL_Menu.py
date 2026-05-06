@@ -224,6 +224,9 @@ def view_main():
     if st.button(_("Today View"), use_container_width=True):
         navigate_to('today_view')
 
+    if st.button(_("Zuordnung von E-Mail-Tasks"), use_container_width=True):
+        navigate_to('email_assignment')
+
     st.divider()
 
     if st.button(t_label("4. Handle projects and tasks"), use_container_width=True):
@@ -394,6 +397,80 @@ def view_today_tasks():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('main')
 
+def view_email_assignment():
+    """
+    Renders the view to assign tasks fetched from emails to active projects.
+    """
+    render_header(_("Zuordnung von E-Mail-Tasks"))
+    
+    if 'confirm_delete_email_task_id' not in st.session_state:
+        st.session_state.confirm_delete_email_task_id = None
+
+    if 'email_fetched' not in st.session_state:
+        with st.spinner(_("Rufe E-Mails ab...")):
+            count, error = st.session_state.tracker.fetch_emails_to_tasks()
+            if error:
+                st.error(_("Fehler beim E-Mail-Abruf: {error}").format(error=error))
+            else:
+                if count > 0:
+                    st.success(_("{count} neue Tasks aus E-Mails erstellt.").format(count=count))
+                else:
+                    st.info(_("Keine neuen E-Mails gefunden."))
+        st.session_state.email_fetched = True
+
+    hidden_tasks = st.session_state.tracker.list_tasks(main_project_name="hide", status_filter='open')
+    
+    if not hidden_tasks:
+        st.info(_("Keine nicht zugeordneten E-Mail-Tasks vorhanden."))
+    else:
+        active_projects = st.session_state.tracker.list_main_projects(status_filter='open')
+        project_names = [""] + [p['main_project_name'] for p in active_projects]
+        
+        for i, task in enumerate(hidden_tasks):
+            if i > 0:
+                st.divider()
+            col_name, col_move, col_del_btn_placeholder = st.columns([10, 5, 1])
+            with col_name:
+                st.write(f"**{task['task_name']}**")
+            with col_move:
+                selected_proj = st.selectbox(_("Projekt zuordnen"), options=project_names, key=f"move_email_{task['id']}", label_visibility="collapsed")
+                if selected_proj:
+                    success, msg = st.session_state.tracker.move_task("hide", task['task_name'], selected_proj, task_id=task['id'])
+                    if success:
+                        st.session_state.confirm_delete_email_task_id = None # Clear any pending delete
+                        st.rerun()
+                    else:
+                        st.error(msg)
+            
+            # Confirmation logic for deletion
+            if st.session_state.confirm_delete_email_task_id == task['id']:
+                st.warning(_("Are you sure you want to delete this task?"))
+                col_yes, col_no = st.columns(2)
+                with col_yes:
+                    if st.button(_("Yes, delete"), key=f"confirm_del_yes_{task['id']}", use_container_width=True):
+                        if st.session_state.tracker.delete_task("hide", task['task_name'], task_id=task['id']):
+                            st.session_state.confirm_delete_email_task_id = None
+                            st.rerun()
+                with col_no:
+                    if st.button(_("No, cancel"), key=f"confirm_del_no_{task['id']}", use_container_width=True):
+                        st.session_state.confirm_delete_email_task_id = None
+                        st.rerun()
+            else:
+                with col_del_btn_placeholder:
+                    if st.button("🗑️", key=f"del_email_{task['id']}", help=_("Delete")):
+                        st.session_state.confirm_delete_email_task_id = task['id']
+                        st.rerun()
+
+            with st.expander(_("Notiz bearbeiten")):
+                edited_note = st.text_area(_("Notes (Markdown)"), value=task['note'], key=f"note_edit_{task['id']}", height=150, label_visibility="collapsed")
+                if st.button(_("Save Changes"), key=f"save_note_{task['id']}", use_container_width=True):
+                    if st.session_state.tracker.update_task("hide", task['task_name'], note=edited_note, task_id=task['id']):
+                        st.rerun()
+    
+    if st.button(_("Zurück"), use_container_width=True):
+        if 'email_fetched' in st.session_state: del st.session_state.email_fetched
+        navigate_to('main')
+
 def view_project_management():
     """
     Renders the project management submenu view.
@@ -488,6 +565,7 @@ def view_settings():
     if st.button(t_label("2. Restore Previous Version"), use_container_width=True): navigate_to('settings_restore')
     if st.button(t_label("3. Change Data Storage Location"), use_container_width=True): navigate_to('settings_storage')
     if st.button(t_label("4. Change Streamlit Port"), use_container_width=True): navigate_to('settings_port')
+    if st.button(_("E-Mail-Einstellungen"), use_container_width=True): navigate_to('settings_email')
     if st.button(_("Change CSS Style"), use_container_width=True): navigate_to('settings_css')
     if st.button(_("Change View Mode"), use_container_width=True): navigate_to('settings_view_mode')
     
@@ -1680,6 +1758,42 @@ def view_settings_language():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('settings')
 
+def view_settings_email():
+    """
+    Renders the form to configure email account settings.
+    """
+    render_header(_("E-Mail-Einstellungen"))
+    config = get_config()
+    email_cfg = config.get('email', {
+        "imap_server": "", "imap_port": 993, "user": "", "password": "", "use_ssl": True, "enabled": False
+    })
+
+    with st.form("email_settings_form"):
+        enabled = st.checkbox(_("E-Mail-Import aktivieren"), value=email_cfg.get('enabled', False))
+        server = st.text_input(_("IMAP Server"), value=email_cfg.get('imap_server', ''))
+        port = st.number_input(_("Port"), value=email_cfg.get('imap_port', 993))
+        user = st.text_input(_("Benutzer"), value=email_cfg.get('user', ''))
+        password = st.text_input(_("Passwort"), value=email_cfg.get('password', ''), type="password")
+        use_ssl = st.checkbox(_("SSL verwenden"), value=email_cfg.get('use_ssl', True))
+        
+        submitted = st.form_submit_button(_("Speichern"), use_container_width=True)
+        if submitted:
+            config['email'] = {
+                "imap_server": server,
+                "imap_port": port,
+                "user": user,
+                "password": password,
+                "use_ssl": use_ssl,
+                "enabled": enabled
+            }
+            save_config(config)
+            set_feedback(_("E-Mail-Einstellungen gespeichert."))
+            navigate_to('settings')
+            st.rerun()
+            
+    if st.button(_("Abbrechen"), use_container_width=True):
+        navigate_to('settings')
+
 def view_report_specific_day():
     """
     Renders the form to generate a daily report for a specific date.
@@ -1865,6 +1979,7 @@ menu_map = {
     'main': view_main,
     'task_planning': view_task_planning,
     'today_view': view_today_tasks, # New view for today's tasks
+    'email_assignment': view_email_assignment,
     'project_management': view_project_management,
     'main_project_mgmt': view_main_project_mgmt,
     'task_mgmt': view_task_mgmt,
@@ -1913,6 +2028,7 @@ menu_map = {
     'settings_language': view_settings_language,
     'settings_restore': view_settings_restore,
     'settings_storage': view_settings_storage,
+    'settings_email': view_settings_email,
     'settings_css': view_settings_css,
     'settings_view_mode': view_settings_view_mode,
 }
