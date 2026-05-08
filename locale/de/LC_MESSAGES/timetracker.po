@@ -1112,9 +1112,6 @@ msgstr "Aufschlüsselung nach Aufgaben"
 msgid "{num_sessions} sessions"
 msgstr "{num_sessions} Sitzungen"
 
-msgid "6. Detailed Daily Report"
-msgstr "6. Detaillierter Tagesbericht"
-
 msgid "\n--- Detailed Daily Report ---"
 msgstr "\n--- Detaillierter Tagesbericht ---"
 
@@ -1162,6 +1159,15 @@ msgstr "Detaillierter Projekt-Bericht"
 
 msgid "Detailed Daily Report"
 msgstr "Detaillierter Tagesbericht"
+
+msgid "Exit"
+msgstr "Beenden"
+
+msgid "Current Active Work"
+msgstr "Aktuell laufende Arbeit"
+
+msgid "Demote Project to Task"
+msgstr "Projekt zu Aufgabe herabstufen"
 
 msgid "Change Language"
 msgstr "Sprache ändern"

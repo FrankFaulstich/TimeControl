@@ -16,7 +16,7 @@ msgstr "Project-Id-Version: TimeControl\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
 msgid "Edit current task"
-msgstr ""
+msgstr "Upravit aktuální úkol"
 
 msgid "Warning: Could not read {file}. Error: {error}"
 msgstr "Varování: Nelze přečíst soubor {file}. Chyba: {error}"
@@ -80,7 +80,7 @@ msgid "Task '{name}' moved successfully."
 msgstr "Úkol '{name}' byl úspěšně přesunut."
 
 msgid "No project selected. Please start again."
-msgstr ""
+msgstr "Nebyl vybrán žádný projekt. Začněte prosím znovu."
 
 msgid "A project named '{name}' already exists."
 msgstr "Projekt s názvem '{name}' již existuje."
@@ -114,7 +114,7 @@ msgstr ""
 "{parent_name}'."
 
 msgid "No open projects found."
-msgstr ""
+msgstr "Nebyly nalezeny žádné otevřené projekty."
 
 msgid "# Daily Time Report: {date}\n"
 msgstr "# Denní zpráva o čase: {date}\n"
@@ -776,9 +776,6 @@ msgstr "Rozpis úkolů"
 msgid "{num_sessions} sessions"
 msgstr "{num_sessions} relací"
 
-msgid "6. Detailed Daily Report"
-msgstr "6. Podrobná denní zpráva"
-
 msgid "\n--- Detailed Daily Report ---"
 msgstr "\n--- Podrobná denní zpráva ---"
 
@@ -862,6 +859,21 @@ msgstr "Podrobná zpráva o úkolu"
 
 msgid "Detailed Project Report"
 msgstr "Podrobná zpráva o projektu"
+
+msgid "Detailed Daily Report"
+msgstr "Podrobná denní zpráva"
+
+msgid "Main Project Management"
+msgstr "Hlavní správa projektů"
+
+msgid "Start work on task"
+msgstr "Začít práci na úkolu"
+
+msgid "Show current work"
+msgstr "Zobrazit aktuální práci"
+
+msgid "Stop current work"
+msgstr "Zastavit aktuální práci"
 
 msgid "Select Project"
 msgstr "Vybrat projekt"

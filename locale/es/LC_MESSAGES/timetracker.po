@@ -1428,14 +1428,14 @@ msgstr "Informe Detallado de Proyecto"
 msgid "Detailed Daily Report"
 msgstr "Informe Diario Detallado"
 
-msgid "Change Language"
-msgstr "Cambiar Idioma"
+msgid "Main Project Management"
+msgstr "Gestión de Proyectos Principales"
 
-msgid "Restore Previous Version"
-msgstr "Restaurar Versión Anterior"
+msgid "Start work on task"
+msgstr "Iniciar trabajo en tarea"
 
-msgid "Change Data Storage Location"
-msgstr "Cambiar Ubicación de Almacenamiento de Datos"
+msgid "Handle projects and tasks"
+msgstr "Gestionar proyectos y tareas"
 
 msgid "Select Action"
 msgstr "Seleccionar Acción"
