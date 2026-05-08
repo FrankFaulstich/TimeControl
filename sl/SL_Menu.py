@@ -297,10 +297,17 @@ def view_task_planning():
                         with col_task:
                             name = task['task_name']
                             is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
-                            display_name = f"{name} (done)" if task.get('status') == 'done' else name
+                            is_done = task.get('status') == 'done'
+                            display_name = f"{name} (done)" if is_done else name
                             if is_active: display_name = f"**{display_name}**"
                             today_info = " ⭐" if task.get('today') else ""
-                            st.markdown(f"- **{task['main_project_name']}**: {display_name}{today_info}")
+                            if is_active:
+                                bullet = "🔨"
+                            elif is_done:
+                                bullet = "✔"
+                            else:
+                                bullet = "-"
+                            st.markdown(f"{bullet} **{task['main_project_name']}**: {display_name}{today_info}")
                         with col_start_btn:
                             if st.button("▶", key=f"start_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or task.get('status') == 'done'):
                                 st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -323,12 +330,19 @@ def view_task_planning():
                 with col_task:
                     name = task['task_name']
                     status = task.get('status')
+                    is_done = status == 'done'
                     is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
-                    display_name = f"{name} (done)" if status == 'done' else name
+                    display_name = f"{name} (done)" if is_done else name
                     if is_active: display_name = f"**{display_name}**"
                     due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
                     today_info = " ⭐" if task.get('today') else ""
-                    st.markdown(f"- {display_name}{due_info}{today_info}")
+                    if is_active:
+                        bullet = "🔨"
+                    elif is_done:
+                        bullet = "✔"
+                    else:
+                        bullet = "-"
+                    st.markdown(f"{bullet} {display_name}{due_info}{today_info}")
                 with col_start_btn:
                     if st.button("▶", key=f"start_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                         st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -375,11 +389,18 @@ def view_today_tasks():
                 with col_task:
                     name = task['task_name']
                     status = task.get('status')
+                    is_done = status == 'done'
                     is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
-                    display_name = f"{name} (done)" if status == 'done' else name
+                    display_name = f"{name} (done)" if is_done else name
                     if is_active: display_name = f"**{display_name}**"
                     due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
-                    st.markdown(f"- {display_name}{due_info}")
+                    if is_active:
+                        bullet = "🔨"
+                    elif is_done:
+                        bullet = "✔"
+                    else:
+                        bullet = "-"
+                    st.markdown(f"{bullet} {display_name}{due_info}")
                 with col_start_btn:
                     if st.button("▶", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                         st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
