@@ -122,14 +122,6 @@ def render_header(title, subtitle=None):
         elif f['type'] == 'error': st.error(f['message'])
         st.session_state.feedback = None # Clear after showing
 
-def t_label(key):
-    """Translates the key and removes leading numbering."""
-    match = re.match(r'^(\d+\.?\s*)(.*)', key)
-    if match:
-        _numbering, text = match.groups()
-        return _(text)
-    return _(key)
-
 # --- Views ---
 
 def view_main():
@@ -188,7 +180,7 @@ def view_main():
             st.info(_("No active work session."))
             
     with col_done:
-        if st.button("✔", help=_("Done"), disabled=not current_work or is_done):
+        if st.button("✔", help=_("Done"), disabled=not current_work or is_done, key="main_done_button"):
             st.session_state.tracker.update_task(
                 current_work['main_project_name'],
                 current_work['task_name'],
@@ -196,7 +188,7 @@ def view_main():
                 recurring=task_details.get('recurring'),
                 frequency=task_details.get('frequency'),
                 userdefined_days=task_details.get('userdefined_days'),
-                task_id=task_details.get('id')
+                task_id=task_details.get('id'),
             )
             st.rerun()
 
@@ -207,38 +199,38 @@ def view_main():
             st.session_state.context['return_to'] = 'main'
             navigate_to('edit_task_form')
 
-    if st.button(t_label("1. Start work on task"), use_container_width=True):
+    if st.button(_("Start work on task"), use_container_width=True):
         navigate_to('start_work')
-    if st.button(t_label("2. Show current work"), use_container_width=True):
+    if st.button(_("Show current work"), use_container_width=True):
         navigate_to('show_current_work')
-    if st.button(t_label("3. Stop current work"), use_container_width=True):
+    if st.button(_("Stop current work"), use_container_width=True):
         if st.session_state.tracker.stop_work():
             set_feedback(_("Work session stopped successfully."))
         else:
             set_feedback(_("No active work session to stop."), 'info')
         st.rerun()
 
-    if st.button(_("Task Planning"), use_container_width=True):
+    if st.button(_("Task Planning"), use_container_width=True, key="main_task_planning"):
         navigate_to('task_planning')
 
-    if st.button(_("Today View"), use_container_width=True):
+    if st.button(_("Today View"), use_container_width=True, key="main_today_view"):
         navigate_to('today_view')
 
-    if st.button(_("E-Mail Task Assignment"), use_container_width=True):
+    if st.button(_("E-Mail Task Assignment"), use_container_width=True, key="main_email_assignment"):
         navigate_to('email_assignment')
 
     st.divider()
 
-    if st.button(t_label("4. Handle projects and tasks"), use_container_width=True):
+    if st.button(_("Handle projects and tasks"), use_container_width=True):
         navigate_to('project_management')
-    if st.button(t_label("5. Reporting"), use_container_width=True):
+    if st.button(_("Reporting"), use_container_width=True):
         navigate_to('reporting')
-    if st.button(t_label("6. Settings"), use_container_width=True):
+    if st.button(_("Settings"), use_container_width=True):
         navigate_to('settings')
 
     st.divider()
     
-    if st.button(t_label("0. Exit"), use_container_width=True):
+    if st.button(_("Exit"), use_container_width=True):
         os._exit(0)
 
 def view_task_planning():
@@ -547,14 +539,14 @@ def view_project_management():
     """
     render_header(_("Project Management"))
     
-    if st.button(t_label("1. Project Management"), use_container_width=True):
+    if st.button(_("Main Project Management"), use_container_width=True):
         navigate_to('main_project_mgmt')
-    if st.button(t_label("2. Task Management"), use_container_width=True):
+    if st.button(_("Task Management"), use_container_width=True):
         navigate_to('task_mgmt')
     
     st.divider()
     
-    if st.button(t_label("0.  Back to Main Menu"), use_container_width=True):
+    if st.button(_("Back to Main Menu"), use_container_width=True):
         navigate_to('main')
 
 def view_main_project_mgmt():
@@ -563,19 +555,19 @@ def view_main_project_mgmt():
     """
     render_header(_("Project Management"))
     
-    if st.button(t_label("1.  Add Project"), use_container_width=True): navigate_to('add_main_project')
-    if st.button(t_label("2.  List Projects"), use_container_width=True): navigate_to('list_main_projects')
-    if st.button(t_label("3.  Rename Project"), use_container_width=True): navigate_to('rename_main_project')
-    if st.button(t_label("4.  Close Project"), use_container_width=True): navigate_to('close_main_project')
-    if st.button(t_label("5.  Re-open Project"), use_container_width=True): navigate_to('reopen_main_project')
-    if st.button(t_label("6.  Delete Project"), use_container_width=True): navigate_to('delete_main_project')
-    if st.button(t_label("7.  List Inactive Projects"), use_container_width=True): navigate_to('list_inactive_main')
-    if st.button(t_label("8.  Demote Project to Task"), use_container_width=True): navigate_to('demote_main_project')
-    if st.button(t_label("9.  List Completed Projects"), use_container_width=True): navigate_to('list_completed_main')
+    if st.button(_("Add Project"), use_container_width=True): navigate_to('add_main_project')
+    if st.button(_("List Projects"), use_container_width=True): navigate_to('list_main_projects')
+    if st.button(_("Rename Project"), use_container_width=True): navigate_to('rename_main_project')
+    if st.button(_("Close Project"), use_container_width=True): navigate_to('close_main_project')
+    if st.button(_("Re-open Project"), use_container_width=True): navigate_to('reopen_main_project')
+    if st.button(_("Delete Project"), use_container_width=True): navigate_to('delete_main_project')
+    if st.button(_("List Inactive Projects"), use_container_width=True): navigate_to('list_inactive_main')
+    if st.button(_("Demote Project to Task"), use_container_width=True): navigate_to('demote_main_project')
+    if st.button(_("List Completed Projects"), use_container_width=True): navigate_to('list_completed_main')
     
     st.divider()
     
-    if st.button(t_label("0.  Back"), use_container_width=True):
+    if st.button(_("Back"), use_container_width=True):
         navigate_to('project_management')
 
 def view_task_mgmt():
@@ -584,22 +576,22 @@ def view_task_mgmt():
     """
     render_header(_("Task Management"))
     
-    if st.button(t_label("1.  Add Task"), use_container_width=True): navigate_to('add_task')
-    if st.button(t_label("2.  List Tasks"), use_container_width=True): navigate_to('list_tasks')
-    if st.button(t_label("3.  Rename Task"), use_container_width=True): navigate_to('rename_task')
-    if st.button(t_label("4.  Close Task"), use_container_width=True): navigate_to('close_task')
-    if st.button(t_label("5.  Re-open Task"), use_container_width=True): navigate_to('reopen_task')
-    if st.button(t_label("6.  Delete Task"), use_container_width=True): navigate_to('delete_task')
-    if st.button(t_label("7.  Move Task"), use_container_width=True): navigate_to('move_task')
-    if st.button(t_label("8.  List Inactive Tasks"), use_container_width=True): navigate_to('list_inactive_tasks')
-    if st.button(t_label("9.  List All Closed Tasks"), use_container_width=True): navigate_to('list_closed_tasks')
-    if st.button(_("Edit Task"), use_container_width=True): navigate_to('edit_task')
-    if st.button(t_label("10. Delete All Closed Tasks"), use_container_width=True): navigate_to('delete_all_closed_tasks')
-    if st.button(t_label("11. Promote Task to Project"), use_container_width=True): navigate_to('promote_task_to_project')
+    if st.button(_("Add Task"), use_container_width=True): navigate_to('add_task')
+    if st.button(_("List Tasks"), use_container_width=True): navigate_to('list_tasks')
+    if st.button(_("Rename Task"), use_container_width=True): navigate_to('rename_task')
+    if st.button(_("Close Task"), use_container_width=True): navigate_to('close_task')
+    if st.button(_("Re-open Task"), use_container_width=True): navigate_to('reopen_task')
+    if st.button(_("Delete Task"), use_container_width=True): navigate_to('delete_task')
+    if st.button(_("Move Task"), use_container_width=True): navigate_to('move_task')
+    if st.button(_("List Inactive Tasks"), use_container_width=True): navigate_to('list_inactive_tasks')
+    if st.button(_("List All Closed Tasks"), use_container_width=True): navigate_to('list_closed_tasks')
+    if st.button(_("Edit Task"), use_container_width=True, key="task_mgmt_edit_task"): navigate_to('edit_task')
+    if st.button(_("Delete All Closed Tasks"), use_container_width=True): navigate_to('delete_all_closed_tasks')
+    if st.button(_("Promote Task to Project"), use_container_width=True): navigate_to('promote_task_to_project')
     
     st.divider()
     
-    if st.button(t_label("0.  Back"), use_container_width=True):
+    if st.button(_("Back"), use_container_width=True):
         navigate_to('project_management')
 
 def view_reporting():
@@ -609,20 +601,20 @@ def view_reporting():
     render_header(_("Reporting"))
     tt = st.session_state.tracker
     
-    if st.button(t_label("1. Daily Report (Today)"), use_container_width=True):
+    if st.button(_("Daily Report (Today)"), use_container_width=True):
         report = tt.generate_daily_report()
         st.session_state.context['report'] = report
         navigate_to('view_report')
         st.rerun()
-    if st.button(t_label("2. Daily Report (Specific Day)"), use_container_width=True): navigate_to('report_specific_day')
-    if st.button(t_label("3. Date Range Report"), use_container_width=True): navigate_to('report_date_range')
-    if st.button(t_label("4. Detailed Task Report"), use_container_width=True): navigate_to('report_detailed_task')
-    if st.button(t_label("5. Detailed Project Report"), use_container_width=True): navigate_to('report_detailed_main')
-    if st.button(t_label("6. Detailed Daily Report"), use_container_width=True): navigate_to('report_detailed_daily')
+    if st.button(_("Daily Report (Specific Day)"), use_container_width=True): navigate_to('report_specific_day')
+    if st.button(_("Date Range Report"), use_container_width=True): navigate_to('report_date_range')
+    if st.button(_("Detailed Task Report"), use_container_width=True): navigate_to('report_detailed_task')
+    if st.button(_("Detailed Project Report"), use_container_width=True): navigate_to('report_detailed_main')
+    if st.button(_("Detailed Daily Report"), use_container_width=True): navigate_to('report_detailed_daily')
     
     st.divider()
     
-    if st.button(t_label("0. Back to Main Menu"), use_container_width=True):
+    if st.button(_("Back to Main Menu"), use_container_width=True):
         navigate_to('main')
 
 def view_settings():
@@ -631,17 +623,17 @@ def view_settings():
     """
     render_header(_("Settings"))
     
-    if st.button(t_label("1. Change Language"), use_container_width=True): navigate_to('settings_language')
-    if st.button(t_label("2. Restore Previous Version"), use_container_width=True): navigate_to('settings_restore')
-    if st.button(t_label("3. Change Data Storage Location"), use_container_width=True): navigate_to('settings_storage')
-    if st.button(t_label("4. Change Streamlit Port"), use_container_width=True): navigate_to('settings_port')
-    if st.button(_("Email Settings"), use_container_width=True): navigate_to('settings_email')
-    if st.button(_("Change CSS Style"), use_container_width=True): navigate_to('settings_css')
-    if st.button(_("Change View Mode"), use_container_width=True): navigate_to('settings_view_mode')
+    if st.button(_("Change Language"), use_container_width=True): navigate_to('settings_language')
+    if st.button(_("Restore Previous Version"), use_container_width=True): navigate_to('settings_restore')
+    if st.button(_("Change Data Storage Location"), use_container_width=True): navigate_to('settings_storage')
+    if st.button(_("Change Streamlit Port"), use_container_width=True): navigate_to('settings_port')
+    if st.button(_("Email Settings"), use_container_width=True, key="settings_email"): navigate_to('settings_email')
+    if st.button(_("Change CSS Style"), use_container_width=True, key="settings_css"): navigate_to('settings_css')
+    if st.button(_("Change View Mode"), use_container_width=True, key="settings_view_mode"): navigate_to('settings_view_mode')
     
     st.divider()
     
-    if st.button(t_label("0. Back to Main Menu"), use_container_width=True):
+    if st.button(_("Back to Main Menu"), use_container_width=True):
         navigate_to('main')
 
 # --- Action Views (Forms) ---
