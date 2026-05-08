@@ -311,7 +311,7 @@ def view_task_planning():
                         with col_start_btn:
                             if st.button("▶", key=f"start_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or task.get('status') == 'done'):
                                 st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
-                                navigate_to('main')
+                                st.rerun()
                         with col_edit_btn:
                             if st.button("✎", key=f"edit_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
                                 st.session_state.context['selected_main'] = task['main_project_name']
@@ -346,7 +346,7 @@ def view_task_planning():
                 with col_start_btn:
                     if st.button("▶", key=f"start_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                         st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
-                        navigate_to('main')
+                        st.rerun()
                 with col_edit_btn:
                     if st.button("✎", key=f"edit_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
                         st.session_state.context['selected_main'] = task['main_project_name']
@@ -404,7 +404,7 @@ def view_today_tasks():
                 with col_start_btn:
                     if st.button("▶", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                         st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
-                        navigate_to('main')
+                        st.rerun()
                 with col_edit_btn:
                     if st.button("✎", key=f"edit_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
                         st.session_state.context['selected_main'] = task['main_project_name']
