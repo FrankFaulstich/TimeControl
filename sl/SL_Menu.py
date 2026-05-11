@@ -293,13 +293,14 @@ def view_task_planning():
                             display_name = f"{name} (done)" if is_done else name
                             if is_active: display_name = f"**{display_name}**"
                             today_info = " ⭐" if task.get('today') else ""
+                            recurring_info = " ↻" if task.get('recurring') else ""
                             if is_active:
                                 bullet = "🔨"
                             elif is_done:
                                 bullet = "✔"
                             else:
                                 bullet = "-"
-                            st.markdown(f"{bullet} **{task['main_project_name']}**: {display_name}{today_info}")
+                            st.markdown(f"{bullet} **{task['main_project_name']}**: {display_name}{today_info}{recurring_info}")
                         with col_start_btn:
                             if st.button("▶", key=f"start_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or task.get('status') == 'done'):
                                 st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -328,13 +329,14 @@ def view_task_planning():
                     if is_active: display_name = f"**{display_name}**"
                     due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
                     today_info = " ⭐" if task.get('today') else ""
+                    recurring_info = " ↻" if task.get('recurring') else ""
                     if is_active:
                         bullet = "🔨"
                     elif is_done:
                         bullet = "✔"
                     else:
                         bullet = "-"
-                    st.markdown(f"{bullet} {display_name}{due_info}{today_info}")
+                    st.markdown(f"{bullet} {display_name}{due_info}{today_info}{recurring_info}")
                 with col_start_btn:
                     if st.button("▶", key=f"start_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                         st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -386,13 +388,14 @@ def view_today_tasks():
                     display_name = f"{name} (done)" if is_done else name
                     if is_active: display_name = f"**{display_name}**"
                     due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
+                    recurring_info = " ↻" if task.get('recurring') else ""
                     if is_active:
                         bullet = "🔨"
                     elif is_done:
                         bullet = "✔"
                     else:
                         bullet = "-"
-                    st.markdown(f"{bullet} {display_name}{due_info}")
+                    st.markdown(f"{bullet} {display_name}{due_info}{recurring_info}")
                 with col_start_btn:
                     if st.button("▶", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                         st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -679,7 +682,11 @@ def view_close_task():
         return
 
     with st.form("close_sub_form"):
-        selected_idx = st.selectbox(_("Select Task"), range(len(sub_projects)), format_func=lambda i: f"{sub_projects[i]['task_name']} (done)" if sub_projects[i].get('status') == 'done' else sub_projects[i]['task_name'])
+        selected_idx = st.selectbox(
+            _("Select Task"), 
+            range(len(sub_projects)), 
+            format_func=lambda i: f"{sub_projects[i]['task_name']}{' (done)' if sub_projects[i].get('status') == 'done' else ''}{' ↻' if sub_projects[i].get('recurring') else ''}"
+        )
         submitted = st.form_submit_button(_("Close Task"), use_container_width=True)
         
         if submitted:
@@ -720,7 +727,11 @@ def view_reopen_task():
         return
 
     with st.form("reopen_sub_form"):
-        selected_idx = st.selectbox(_("Select Task"), range(len(sub_projects)), format_func=lambda i: f"{sub_projects[i]['task_name']} (done)" if sub_projects[i].get('status') == 'done' else sub_projects[i]['task_name'])
+        selected_idx = st.selectbox(
+            _("Select Task"), 
+            range(len(sub_projects)), 
+            format_func=lambda i: f"{sub_projects[i]['task_name']}{' (done)' if sub_projects[i].get('status') == 'done' else ''}{' ↻' if sub_projects[i].get('recurring') else ''}"
+        )
         submitted = st.form_submit_button(_("Re-open Task"), use_container_width=True)
         
         if submitted:
@@ -761,7 +772,11 @@ def view_delete_task():
         return
 
     with st.form("delete_sub_form"):
-        selected_idx = st.selectbox(_("Select Task"), range(len(sub_projects)), format_func=lambda i: f"{sub_projects[i]['task_name']} (done)" if sub_projects[i].get('status') == 'done' else sub_projects[i]['task_name'])
+        selected_idx = st.selectbox(
+            _("Select Task"), 
+            range(len(sub_projects)), 
+            format_func=lambda i: f"{sub_projects[i]['task_name']}{' (done)' if sub_projects[i].get('status') == 'done' else ''}{' ↻' if sub_projects[i].get('recurring') else ''}"
+        )
         st.warning(_("This action cannot be undone."))
         submitted = st.form_submit_button(_("Delete Task"), use_container_width=True)
         
@@ -811,7 +826,11 @@ def view_move_task():
         return
 
     with st.form("move_sub_form"):
-        selected_idx = st.selectbox(_("Select Task"), range(len(sub_projects)), format_func=lambda i: f"{sub_projects[i]['task_name']} (done)" if sub_projects[i].get('status') == 'done' else sub_projects[i]['task_name'])
+        selected_idx = st.selectbox(
+            _("Select Task"), 
+            range(len(sub_projects)), 
+            format_func=lambda i: f"{sub_projects[i]['task_name']}{' (done)' if sub_projects[i].get('status') == 'done' else ''}{' ↻' if sub_projects[i].get('recurring') else ''}"
+        )
         target_main = st.selectbox(_("Select Target Project"), target_options)
         
         submitted = st.form_submit_button(_("Move Task"), use_container_width=True)
@@ -948,7 +967,11 @@ def view_promote_task():
         return
 
     with st.form("promote_sub_form"):
-        selected_idx = st.selectbox(_("Select Task"), range(len(sub_projects)), format_func=lambda i: f"{sub_projects[i]['task_name']} (done)" if sub_projects[i].get('status') == 'done' else sub_projects[i]['task_name'])
+        selected_idx = st.selectbox(
+            _("Select Task"), 
+            range(len(sub_projects)), 
+            format_func=lambda i: f"{sub_projects[i]['task_name']}{' (done)' if sub_projects[i].get('status') == 'done' else ''}{' ↻' if sub_projects[i].get('recurring') else ''}"
+        )
         st.info(_("This will create a new Project with the task's name and move all time entries to a 'General' task within it."))
         
         submitted = st.form_submit_button(_("Promote to Project"), use_container_width=True)
@@ -1041,7 +1064,8 @@ def view_list_tasks():
             name = t['task_name']
             status_text = f"({_('closed')})" if t['status'] == 'closed' else ""
             display_name = f"{name} (done)" if t['status'] == 'done' else name
-            st.markdown(f"- {display_name} {status_text}")
+            recurring_info = " ↻" if t.get('recurring') else ""
+            st.markdown(f"- {display_name} {status_text}{recurring_info}")
     else:
         st.info(_("No tasks found for '{name}'.").format(name=selected_main))
         
@@ -1407,7 +1431,11 @@ def view_edit_task_select_task():
         st.info(_("No open tasks found."))
         if st.button(_("Back"), use_container_width=True): navigate_to('edit_task')
         return
-    selected_idx = st.selectbox(_("Select Task"), range(len(tasks)), format_func=lambda i: f"{tasks[i]['task_name']} (done)" if tasks[i].get('status') == 'done' else tasks[i]['task_name'])
+    selected_idx = st.selectbox(
+        _("Select Task"), 
+        range(len(tasks)), 
+        format_func=lambda i: f"{tasks[i]['task_name']}{' (done)' if tasks[i].get('status') == 'done' else ''}{' ↻' if tasks[i].get('recurring') else ''}"
+    )
     selected_task = tasks[selected_idx]['task_name']
     if st.button(_("Next"), use_container_width=True):
         st.session_state.context['selected_task'] = selected_task
@@ -1560,7 +1588,11 @@ def view_start_work():
         return
 
     with st.form("start_work_form"):
-        selected_idx = st.selectbox(_("Select Task"), range(len(tasks)), format_func=lambda i: f"{tasks[i]['task_name']} (done)" if tasks[i].get('status') == 'done' else tasks[i]['task_name'])
+        selected_idx = st.selectbox(
+            _("Select Task"), 
+            range(len(tasks)), 
+            format_func=lambda i: f"{tasks[i]['task_name']}{' (done)' if tasks[i].get('status') == 'done' else ''}{' ↻' if tasks[i].get('recurring') else ''}"
+        )
         submitted = st.form_submit_button(_("Start Work"), use_container_width=True)
         
         if submitted:
@@ -1946,7 +1978,11 @@ def view_report_detailed_task_select_task():
             navigate_to('report_detailed_task')
         return
 
-    selected_idx = st.selectbox(_("Select Task"), range(len(tasks)), format_func=lambda i: f"{tasks[i]['task_name']} (done)" if tasks[i].get('status') == 'done' else tasks[i]['task_name'])
+    selected_idx = st.selectbox(
+        _("Select Task"), 
+        range(len(tasks)), 
+        format_func=lambda i: f"{tasks[i]['task_name']}{' (done)' if tasks[i].get('status') == 'done' else ''}{' ↻' if tasks[i].get('recurring') else ''}"
+    )
     selected_task = tasks[selected_idx]['task_name']
     if st.button(_("Generate Report"), use_container_width=True):
         report = st.session_state.tracker.generate_task_report(main_project, selected_task)
