@@ -1457,6 +1457,16 @@ def view_add_task_form():
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
         is_recurring = st.checkbox(_("Recurring"))
 
+    validation_error = is_recurring and not due_date
+    if validation_error:
+        st.markdown("""
+            <style>
+            div[data-testid="stDateInput"] > div {
+                border: 2px solid red !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
     # Frequency options for recurring tasks
     freq_options = ["daily", "on all business days", "weekly", "monthly", "userdefined"]
     freq_labels = [_("daily"), _("on all business days"), _("weekly"), _("monthly"), _("userdefined")]
@@ -1480,10 +1490,15 @@ def view_add_task_form():
         st.markdown('</div>', unsafe_allow_html=True)
     
     st.divider()
+    if validation_error:
+        st.error(_("A due date is required for recurring tasks."))
+
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
         if st.button(_("Add Task"), type="primary", use_container_width=True):
-            if not name:
+            if validation_error:
+                pass
+            elif not name:
                 st.error(_("Please enter a name."))
             elif name.lower() in existing_tasks:
                 set_feedback(_("A task with this name already exists in this project."), 'error')
@@ -1607,6 +1622,16 @@ def view_edit_task_form():
     with col_rec:
         is_recurring = st.checkbox(_("Recurring"), value=task_details.get('recurring', False))
 
+    validation_error = is_recurring and not st.session_state.edit_due_date
+    if validation_error:
+        st.markdown("""
+            <style>
+            div[data-testid="stDateInput"] > div {
+                border: 2px solid red !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
     freq_options = ["daily", "on all business days", "weekly", "monthly", "userdefined"]
     freq_labels = [_("daily"), _("on all business days"), _("weekly"), _("monthly"), _("userdefined")]
     curr_freq = task_details.get('frequency', 'daily')
@@ -1631,13 +1656,19 @@ def view_edit_task_form():
         st.markdown('</div>', unsafe_allow_html=True)
     
     st.divider()
+    if validation_error:
+        st.error(_("A due date is required for recurring tasks."))
+
     col_save, col_cancel = st.columns(2)
     with col_save:
         if st.button(_("Save Changes"), type="primary", use_container_width=True):
-            final_due = st.session_state.edit_due_date.isoformat() if st.session_state.edit_due_date else None
-            new_status = 'done' if is_done else 'open'
-            
-            if st.session_state.tracker.update_task(
+            if validation_error:
+                pass
+            else:
+                final_due = st.session_state.edit_due_date.isoformat() if st.session_state.edit_due_date else None
+                new_status = 'done' if is_done else 'open'
+                
+                if st.session_state.tracker.update_task(
                 main_project, 
                 task_name, 
                 new_name, 
