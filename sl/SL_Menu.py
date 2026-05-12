@@ -91,7 +91,6 @@ def navigate_to(menu_name):
     :param menu_name: The key of the menu to navigate to (must exist in menu_map).
     """
     st.session_state.menu = menu_name
-    st.session_state.feedback = None
     st.rerun()
     
 def set_feedback(message, type='success'):
@@ -1662,31 +1661,30 @@ def view_edit_task_form():
     col_save, col_cancel = st.columns(2)
     with col_save:
         if st.button(_("Save Changes"), type="primary", use_container_width=True):
-            if validation_error:
-                pass
-            else:
+            if not validation_error: # Proceed only if no validation error
                 final_due = st.session_state.edit_due_date.isoformat() if st.session_state.edit_due_date else None
                 new_status = 'done' if is_done else 'open'
                 
                 if st.session_state.tracker.update_task(
-                main_project, 
-                task_name, 
-                new_name, 
-                final_due, 
-                is_today, 
-                st.session_state.edit_task_note, 
-                new_status,
-                recurring=is_recurring,
-                frequency=final_freq,
-                userdefined_days=ud_days
-            ):
-                set_feedback(_("Task updated successfully."))
-                if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
-                if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
-                st.session_state.context = {}
-                navigate_to(return_to)
-            else:
-                st.error(_("Error: Could not update task."))
+                    main_project, 
+                    task_name, 
+                    new_name, 
+                    final_due, 
+                    is_today, 
+                    st.session_state.edit_task_note, 
+                    new_status,
+                    recurring=is_recurring,
+                    frequency=final_freq,
+                    userdefined_days=ud_days,
+                    task_id=task_id
+                ):
+                    set_feedback(_("Task updated successfully."))
+                    if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
+                    if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
+                    st.session_state.context = {}
+                    navigate_to(return_to)
+                else:
+                    st.error(_("Error: Could not update task."))
 
     with col_cancel:
         if st.button(_("Cancel"), use_container_width=True):
