@@ -239,6 +239,38 @@ def view_task_planning():
     """
     render_header(_("Task Planning"))
 
+    # Custom CSS for square action buttons in the task list
+    st.markdown("""
+        <style>
+        /* Target horizontal blocks that contain the task rows */
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: flex-start !important;
+            gap: 0.5rem !important;
+        }
+        /* Ensure the info column takes remaining space */
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(1) {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+        }
+        /* Fixed width for the three button columns (Play, Edit, Done) */
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(2),
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(3),
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(4) {
+            flex: 0 0 50px !important;
+            width: 50px !important;
+            min-width: 50px !important;
+        }
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button {
+            width: 50px !important;
+            height: 48px !important;
+            padding: 0 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     filter_options = [
         _("Today"), 
         _("Tomorrow"), 
@@ -285,7 +317,7 @@ def view_task_planning():
                     st.subheader(weekday_names[day_idx])
                     # Layout für jede Aufgabe mit Bearbeiten-Button
                     for t_idx, task in enumerate(tasks_by_day[day_idx]):
-                        col_task, col_start_btn, col_edit_btn = st.columns([10, 1, 1])
+                        col_task, col_start_btn, col_edit_btn, col_done_btn = st.columns([10, 1, 1, 1])
                         with col_task:
                             name = task['task_name']
                             is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
@@ -312,6 +344,18 @@ def view_task_planning():
                                 st.session_state.context['selected_task_id'] = task.get('id')
                                 st.session_state.context['return_to'] = 'task_planning'
                                 navigate_to('edit_task_form')
+                        with col_done_btn:
+                            if st.button("✔", key=f"done_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
+                                st.session_state.tracker.update_task(
+                                    task['main_project_name'],
+                                    task['task_name'],
+                                    status='done',
+                                    recurring=task.get('recurring'),
+                                    frequency=task.get('frequency'),
+                                    userdefined_days=task.get('userdefined_days'),
+                                    task_id=task.get('id'),
+                                )
+                                st.rerun()
         else:
             current_main = None
             for t_idx, task in enumerate(tasks):
@@ -319,7 +363,7 @@ def view_task_planning():
                     current_main = task['main_project_name']
                     st.subheader(current_main)
                 
-                col_task, col_start_btn, col_edit_btn = st.columns([10, 1, 1])
+                col_task, col_start_btn, col_edit_btn, col_done_btn = st.columns([10, 1, 1, 1])
                 with col_task:
                     name = task['task_name']
                     status = task.get('status')
@@ -348,6 +392,18 @@ def view_task_planning():
                         st.session_state.context['selected_task_id'] = task.get('id')
                         st.session_state.context['return_to'] = 'task_planning'
                         navigate_to('edit_task_form')
+                with col_done_btn:
+                    if st.button("✔", key=f"done_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
+                        st.session_state.tracker.update_task(
+                            task['main_project_name'],
+                            task['task_name'],
+                            status='done',
+                            recurring=task.get('recurring'),
+                            frequency=task.get('frequency'),
+                            userdefined_days=task.get('userdefined_days'),
+                            task_id=task.get('id'),
+                        )
+                        st.rerun()
     else:
         st.info(_("No tasks found."))
         
@@ -359,6 +415,38 @@ def view_today_tasks():
     Renders the view showing all tasks marked as 'today' and not closed.
     """
     render_header(_("Today's Tasks"))
+
+    # Custom CSS for square action buttons in the task list
+    st.markdown("""
+        <style>
+        /* Target horizontal blocks that contain the task rows */
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: flex-start !important;
+            gap: 0.5rem !important;
+        }
+        /* Ensure the info column takes remaining space */
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(1) {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+        }
+        /* Fixed width for the three button columns (Play, Edit, Done) */
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(2),
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(3),
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(4) {
+            flex: 0 0 50px !important;
+            width: 50px !important;
+            min-width: 50px !important;
+        }
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button {
+            width: 50px !important;
+            height: 48px !important;
+            padding: 0 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
     st.session_state.tracker.cleanup_overdue_today_tasks()
     current_work = st.session_state.tracker.get_current_work()
@@ -379,7 +467,7 @@ def view_today_tasks():
         for main_proj_name, sub_tasks in today_tasks_grouped.items(): # Grouped by main project
             st.subheader(main_proj_name)
             for t_idx, task in enumerate(sub_tasks): # Iterate through tasks in the group
-                col_task, col_start_btn, col_edit_btn = st.columns([10, 1, 1])
+                col_task, col_start_btn, col_edit_btn, col_done_btn = st.columns([10, 1, 1, 1])
                 with col_task:
                     name = task['task_name']
                     status = task.get('status')
@@ -407,6 +495,18 @@ def view_today_tasks():
                         st.session_state.context['selected_task_id'] = task.get('id')
                         st.session_state.context['return_to'] = 'today_view'
                         navigate_to('edit_task_form')
+                with col_done_btn:
+                    if st.button("✔", key=f"done_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
+                        st.session_state.tracker.update_task(
+                            task['main_project_name'],
+                            task['task_name'],
+                            status='done',
+                            recurring=task.get('recurring'),
+                            frequency=task.get('frequency'),
+                            userdefined_days=task.get('userdefined_days'),
+                            task_id=task.get('id'),
+                        )
+                        st.rerun()
     else:
         st.info(_("No tasks for today."))
 
