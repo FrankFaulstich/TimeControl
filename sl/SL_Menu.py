@@ -127,7 +127,7 @@ def view_main():
     """
     Renders the main menu view.
     """
-    render_header(_("Time Control"), f"Version {st.session_state.tracker.get_version()}")
+    render_header("Time Control", f"Version {st.session_state.tracker.get_version()}")
     
     current_work = st.session_state.tracker.get_current_work()
     task_details = {}
