@@ -331,7 +331,7 @@ def view_task_planning():
                                 bullet = "✔"
                             else:
                                 bullet = "-"
-                            st.markdown(f"{bullet} **{task['main_project_name']}**: {display_name}{today_info}{recurring_info}")
+                            st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> **{task['main_project_name']}**: {display_name}{today_info}{recurring_info}", unsafe_allow_html=True)
                         with col_start_btn:
                             if st.button("▶", key=f"start_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or task.get('status') == 'done'):
                                 st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -379,7 +379,7 @@ def view_task_planning():
                         bullet = "✔"
                     else:
                         bullet = "-"
-                    st.markdown(f"{bullet} {display_name}{due_info}{today_info}{recurring_info}")
+                    st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{today_info}{recurring_info}", unsafe_allow_html=True)
                 with col_start_btn:
                     if st.button("▶", key=f"start_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                         st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -482,7 +482,7 @@ def view_today_tasks():
                         bullet = "✔"
                     else:
                         bullet = "-"
-                    st.markdown(f"{bullet} {display_name}{due_info}{recurring_info}")
+                    st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{recurring_info}", unsafe_allow_html=True)
                 with col_start_btn:
                     if st.button("▶", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                         st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -518,6 +518,16 @@ def view_email_assignment():
     """
     render_header(_("E-Mail Task Assignment"))
     
+    # Custom CSS to resize the trash icon and ensure centering
+    st.markdown("""
+        <style>
+        /* Target the button text in the third column to reduce the icon size for better alignment */
+        [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(3) button p {
+            font-size: 14px !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     if 'confirm_delete_email_task_id' not in st.session_state:
         st.session_state.confirm_delete_email_task_id = None
 
@@ -574,7 +584,7 @@ def view_email_assignment():
                 # Placeholder for delete button if no confirmation is pending
                 with col_del_btn_placeholder:
                     # 'use_container_width' ensures the button fills the column, centering the icon
-                    if st.button("🗑️", key=f"del_email_{task['id']}", help=_("Delete"), use_container_width=True):
+                    if st.button("🗑", key=f"del_email_{task['id']}", help=_("Delete"), use_container_width=True):
                         st.session_state.confirm_delete_email_task_id = task['id']
                         st.rerun()
 
