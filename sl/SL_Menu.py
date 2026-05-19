@@ -156,19 +156,36 @@ def view_main():
         /* Fixed width for the button columns and make buttons square */
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2),
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(3) {
-            flex: 0 0 50px !important;
-            width: 50px !important;
-            min-width: 50px !important;
+            flex: 0 0 40px !important;
+            width: 40px !important;
+            min-width: 40px !important;
         }
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2) button,
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(3) button {
-            width: 50px !important;
-            height: 48px !important;
+            width: 40px !important;
+            height: 38px !important;
+            padding: 0 !important;
+            margin-top: 4px !important;
+        }
+        /* New button styling for the 'New' popover button */
+        /* Target the button inside the popover container */
+        [data-testid="stPopover"] button {
+            width: 40px !important;
+            height: 38px !important;
             padding: 0 !important;
             margin-top: 4px !important;
         }
         </style>
     """, unsafe_allow_html=True)
+
+    # --- Toolbar ---
+    t_col_new, _col = st.columns([1, 11])
+    with t_col_new:
+        with st.popover("✨", help=_("New")):
+            if st.button(_("New Project"), use_container_width=True):
+                navigate_to('add_main_project')
+            if st.button(_("New Task"), use_container_width=True):
+                navigate_to('add_task')
 
     col_info, col_done, col_edit = st.columns([10, 1, 1])
     with col_info:
@@ -258,13 +275,13 @@ def view_task_planning():
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(2),
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(3),
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(4) {
-            flex: 0 0 50px !important;
-            width: 50px !important;
-            min-width: 50px !important;
+            flex: 0 0 40px !important;
+            width: 40px !important;
+            min-width: 40px !important;
         }
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button {
-            width: 50px !important;
-            height: 48px !important;
+            width: 40px !important;
+            height: 38px !important;
             padding: 0 !important;
         }
         </style>
@@ -435,13 +452,13 @@ def view_today_tasks():
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(2),
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(3),
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(4) {
-            flex: 0 0 50px !important;
-            width: 50px !important;
-            min-width: 50px !important;
+            flex: 0 0 40px !important;
+            width: 40px !important;
+            min-width: 40px !important;
         }
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button {
-            width: 50px !important;
-            height: 48px !important;
+            width: 40px !important;
+            height: 38px !important;
             padding: 0 !important;
         }
         </style>
