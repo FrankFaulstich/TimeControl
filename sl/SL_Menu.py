@@ -150,21 +150,40 @@ def view_main():
             gap: 0.5rem !important;
         }
         /* Fixed width for the toolbar button columns */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(1), /* t_col_new */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2), /* t_col_today */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(3) { /* t_col_planning */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(-n+5) {
             flex: 0 0 40px !important;
             width: 40px !important;
             min-width: 40px !important;
         }
         /* Style for the actual buttons in the toolbar columns */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(1) button, /* New button (popover trigger) */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2) button, /* Today button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(3) button { /* Planning button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) button {
             width: 40px !important;
-            height: 38px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+            max-width: 40px !important;
+            max-height: 40px !important;
+            aspect-ratio: 1 / 1 !important;
             padding: 0 !important;
-            margin-top: 4px !important; /* To align with the info box below */
+            margin: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            line-height: 1 !important; /* Ensure vertical centering of text/emoji */
+            font-size: 18px !important;
+        }
+        /* Ensure the content inside the toolbar buttons is also centered */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) button span,
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) button p {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            line-height: 1 !important;
+        }
+        /* Hide the chevron icon in the New-Popover button to ensure it stays square */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="stPopover"] button svg {
+            display: none !important;
         }
         /* Buttons *inside* the popover should not be square, restore default styling */
         div[data-testid="stPopover"] button {
@@ -198,15 +217,34 @@ def view_main():
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(2) button,
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(3) button {
             width: 40px !important;
-            height: 38px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+            max-width: 40px !important;
+            max-height: 40px !important;
+            aspect-ratio: 1 / 1 !important;
             padding: 0 !important;
-            margin-top: 4px !important;
+            margin: 0 !important;
+            display: flex !important; /* Add flex properties for centering */
+            align-items: center !important;
+            justify-content: center !important;
+            line-height: 1 !important; /* Ensure vertical centering of text/emoji */
+            font-size: 18px !important;
+        }
+        /* Ensure the content inside these buttons is also centered */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) button span,
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) button p {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            line-height: 1 !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
     # --- Toolbar ---
-    t_col_new, t_col_today, t_col_planning, _col = st.columns([1, 1, 1, 9])
+    t_col_new, t_col_today, t_col_planning, t_col_start, t_col_stop, _col = st.columns([1, 1, 1, 1, 1, 7])
     with t_col_new:
         with st.popover("✨", help=_("New")):
             if st.button(_("New Project"), use_container_width=True):
@@ -221,6 +259,18 @@ def view_main():
     with t_col_planning:
         if st.button("📋", help=_("Task Planning"), key="toolbar_planning_btn"):
             navigate_to('task_planning')
+
+    with t_col_start:
+        if st.button("▶", help=_("Start work on task"), key="toolbar_start_btn"):
+            navigate_to('start_work')
+
+    with t_col_stop:
+        if st.button("⏹", help=_("Stop current work"), key="toolbar_stop_btn"):
+            if st.session_state.tracker.stop_work():
+                set_feedback(_("Work session stopped successfully."))
+            else:
+                set_feedback(_("No active work session to stop."), 'info')
+            st.rerun()
 
     col_info, col_done, col_edit = st.columns([10, 1, 1])
     with col_info:
@@ -251,17 +301,16 @@ def view_main():
             st.session_state.context['return_to'] = 'main'
             navigate_to('edit_task_form')
 
-    if st.button(_("Start work on task"), use_container_width=True):
+    if st.button(_("Start work on task"), use_container_width=True, key="main_start_work_btn"):
         navigate_to('start_work')
     if st.button(_("Show current work"), use_container_width=True):
         navigate_to('show_current_work')
-    if st.button(_("Stop current work"), use_container_width=True):
+    if st.button(_("Stop current work"), use_container_width=True, key="main_stop_work_btn"):
         if st.session_state.tracker.stop_work():
             set_feedback(_("Work session stopped successfully."))
         else:
             set_feedback(_("No active work session to stop."), 'info')
         st.rerun()
-
     if st.button(_("E-Mail Task Assignment"), use_container_width=True, key="main_email_assignment_btn"):
         navigate_to('email_assignment')
 
@@ -311,8 +360,26 @@ def view_task_planning():
         }
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button {
             width: 40px !important;
-            height: 38px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+            max-width: 40px !important;
+            max-height: 40px !important;
+            aspect-ratio: 1 / 1 !important;
+            display: flex !important; /* Add flex properties for centering */
+            align-items: center !important;
+            justify-content: center !important;
+            line-height: 1 !important; /* Ensure vertical centering of text/emoji */
             padding: 0 !important;
+            font-size: 18px !important;
+        }
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button span,
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button p {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            line-height: 1 !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -490,8 +557,26 @@ def view_today_tasks():
         }
         [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button {
             width: 40px !important;
-            height: 38px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+            max-width: 40px !important;
+            max-height: 40px !important;
+            aspect-ratio: 1 / 1 !important;
+            display: flex !important; /* Add flex properties for centering */
+            align-items: center !important;
+            justify-content: center !important;
+            line-height: 1 !important; /* Ensure vertical centering of text/emoji */
             padding: 0 !important;
+            font-size: 18px !important;
+        }
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button span,
+        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button p {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            line-height: 1 !important;
         }
         </style>
     """, unsafe_allow_html=True)
