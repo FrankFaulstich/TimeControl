@@ -151,14 +151,16 @@ def view_main():
         }
         /* Fixed width for the toolbar button columns */
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(1), /* t_col_new */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2) { /* t_col_today */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2), /* t_col_today */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(3) { /* t_col_planning */
             flex: 0 0 40px !important;
             width: 40px !important;
             min-width: 40px !important;
         }
         /* Style for the actual buttons in the toolbar columns */
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(1) button, /* New button (popover trigger) */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2) button { /* Today button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2) button, /* Today button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(3) button { /* Planning button */
             width: 40px !important;
             height: 38px !important;
             padding: 0 !important;
@@ -204,7 +206,7 @@ def view_main():
     """, unsafe_allow_html=True)
 
     # --- Toolbar ---
-    t_col_new, t_col_today, _col = st.columns([1, 1, 10])
+    t_col_new, t_col_today, t_col_planning, _col = st.columns([1, 1, 1, 9])
     with t_col_new:
         with st.popover("✨", help=_("New")):
             if st.button(_("New Project"), use_container_width=True):
@@ -215,6 +217,10 @@ def view_main():
     with t_col_today:
         if st.button("⭐", help=_("Today View"), key="toolbar_today_btn"):
             navigate_to('today_view')
+
+    with t_col_planning:
+        if st.button("📋", help=_("Task Planning"), key="toolbar_planning_btn"):
+            navigate_to('task_planning')
 
     col_info, col_done, col_edit = st.columns([10, 1, 1])
     with col_info:
@@ -255,9 +261,6 @@ def view_main():
         else:
             set_feedback(_("No active work session to stop."), 'info')
         st.rerun()
-
-    if st.button(_("Task Planning"), use_container_width=True, key="main_task_planning_btn"):
-        navigate_to('task_planning')
 
     if st.button(_("E-Mail Task Assignment"), use_container_width=True, key="main_email_assignment_btn"):
         navigate_to('email_assignment')
