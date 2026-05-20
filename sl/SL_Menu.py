@@ -138,10 +138,42 @@ def view_main():
         is_done = task_details.get('status') == 'done'
 
     # Custom CSS to keep the info box and edit button side-by-side and the button square
+    # This CSS is now more specific to target the toolbar and the current work display separately.
     st.markdown("""
         <style>
-        /* Target the first horizontal block (columns) in the main view */
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type {
+        /* --- Toolbar (first stHorizontalBlock in stMainView) --- */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: flex-start !important;
+            gap: 0.5rem !important;
+        }
+        /* Fixed width for the toolbar button columns */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(1), /* t_col_new */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2) { /* t_col_today */
+            flex: 0 0 40px !important;
+            width: 40px !important;
+            min-width: 40px !important;
+        }
+        /* Style for the actual buttons in the toolbar columns */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(1) button, /* New button (popover trigger) */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2) button { /* Today button */
+            width: 40px !important;
+            height: 38px !important;
+            padding: 0 !important;
+            margin-top: 4px !important; /* To align with the info box below */
+        }
+        /* Buttons *inside* the popover should not be square, restore default styling */
+        div[data-testid="stPopover"] button {
+            width: 100% !important;
+            height: auto !important;
+            padding: 0.5rem 1rem !important;
+            margin-top: 0 !important;
+        }
+
+        /* --- Current Active Work display (second stHorizontalBlock in stMainView) --- */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) {
             display: flex !important;
             flex-direction: row !important;
             flex-wrap: nowrap !important;
@@ -149,27 +181,20 @@ def view_main():
             gap: 0.5rem !important;
         }
         /* Ensure the info column takes remaining space */
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(1) {
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(1) {
             flex: 1 1 auto !important;
             min-width: 0 !important;
         }
-        /* Fixed width for the button columns and make buttons square */
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2),
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(3) {
+        /* Fixed width for the Done and Edit button columns */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(2), /* col_done */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(3) { /* col_edit */
             flex: 0 0 40px !important;
             width: 40px !important;
             min-width: 40px !important;
         }
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2) button,
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(3) button {
-            width: 40px !important;
-            height: 38px !important;
-            padding: 0 !important;
-            margin-top: 4px !important;
-        }
-        /* New button styling for the 'New' popover button */
-        /* Target the button inside the popover container */
-        [data-testid="stPopover"] button {
+        /* Style for the actual Done and Edit buttons */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(2) button,
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(3) button {
             width: 40px !important;
             height: 38px !important;
             padding: 0 !important;
@@ -179,13 +204,17 @@ def view_main():
     """, unsafe_allow_html=True)
 
     # --- Toolbar ---
-    t_col_new, _col = st.columns([1, 11])
+    t_col_new, t_col_today, _col = st.columns([1, 1, 10])
     with t_col_new:
         with st.popover("✨", help=_("New")):
             if st.button(_("New Project"), use_container_width=True):
                 navigate_to('add_main_project')
             if st.button(_("New Task"), use_container_width=True):
                 navigate_to('add_task')
+
+    with t_col_today:
+        if st.button("⭐", help=_("Today View"), key="toolbar_today_btn"):
+            navigate_to('today_view')
 
     col_info, col_done, col_edit = st.columns([10, 1, 1])
     with col_info:
@@ -228,9 +257,6 @@ def view_main():
 
     if st.button(_("Task Planning"), use_container_width=True, key="main_task_planning_btn"):
         navigate_to('task_planning')
-
-    if st.button(_("Today View"), use_container_width=True, key="main_today_view_btn"):
-        navigate_to('today_view')
 
     if st.button(_("E-Mail Task Assignment"), use_container_width=True, key="main_email_assignment_btn"):
         navigate_to('email_assignment')
