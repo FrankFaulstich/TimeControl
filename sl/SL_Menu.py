@@ -156,7 +156,8 @@ def view_main():
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(4), /* t_col_start */
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(5), /* t_col_stop */
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(6), /* t_col_email */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(7) { /* t_col_report */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(7), /* t_col_report */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(8) { /* t_col_settings */
             flex: 0 0 40px !important;
             width: 40px !important;
             min-width: 40px !important;
@@ -168,7 +169,8 @@ def view_main():
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(4) button, /* Start button */
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(5) button, /* Stop button */
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(6) button, /* Email button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(7) button { /* Report button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(7) button, /* Report button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(8) button { /* Settings button */
             width: 40px !important;
             height: 40px !important;
             min-width: 40px !important;
@@ -256,7 +258,7 @@ def view_main():
     """, unsafe_allow_html=True)
 
     # --- Toolbar ---
-    t_col_new, t_col_today, t_col_planning, t_col_email, t_col_start, t_col_stop, t_col_report, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 5])
+    t_col_new, t_col_today, t_col_planning, t_col_email, t_col_start, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 4])
     with t_col_new:
         with st.popover("✨", help=_("New")):
             if st.button(_("New Project"), use_container_width=True):
@@ -291,6 +293,10 @@ def view_main():
     with t_col_report:
         if st.button("📝", help=_("Reporting"), key="toolbar_report_btn"):
             navigate_to('reporting')
+
+    with t_col_settings:
+        if st.button("⚙️", help=_("Settings"), key="toolbar_settings_btn"):
+            navigate_to('settings')
 
     col_info, col_done, col_edit = st.columns([10, 1, 1])
     with col_info:
@@ -328,8 +334,6 @@ def view_main():
 
     if st.button(_("Handle projects and tasks"), use_container_width=True):
         navigate_to('project_management')
-    if st.button(_("Settings"), use_container_width=True):
-        navigate_to('settings')
 
     st.divider()
     
