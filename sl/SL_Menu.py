@@ -1354,6 +1354,7 @@ def view_rename_task():
 
     selected_idx = st.selectbox(_("Select Task"), range(len(tasks)), format_func=lambda i: f"{tasks[i]['task_name']} (done)" if tasks[i].get('status') == 'done' else tasks[i]['task_name'])
     selected_task = tasks[selected_idx]['task_name']
+    selected_id = tasks[selected_idx].get('id')
 
     with st.form("rename_task_form"):
         new_name = st.text_input(_("New Name"), value=selected_task)
@@ -1364,7 +1365,7 @@ def view_rename_task():
                 st.error(_("Please enter a new name."))
             elif new_name == selected_task:
                 st.warning(_("New name is the same as the old name."))
-            elif st.session_state.tracker.rename_task(selected_main, selected_task, new_name):
+            elif st.session_state.tracker.rename_task(selected_main, selected_task, new_name, task_id=selected_id):
                 set_feedback(_("Task '{old_name}' renamed to '{new_name}'.").format(old_name=selected_task, new_name=new_name))
                 navigate_to('task_mgmt')
                 st.rerun()
@@ -1597,8 +1598,6 @@ def view_add_task_form():
         </style>
         """, unsafe_allow_html=True)
 
-    existing_tasks = [t['task_name'].lower() for t in st.session_state.tracker.list_tasks(main_project_name=main_project)]
-
     name = st.text_input(_("Name of the new task"))
     if "new_task_note" not in st.session_state:
         st.session_state.new_task_note = ""
@@ -1656,8 +1655,6 @@ def view_add_task_form():
                 pass
             elif not name:
                 st.error(_("Please enter a name."))
-            elif name.lower() in existing_tasks:
-                set_feedback(_("A task with this name already exists in this project."), 'error')
             elif st.session_state.tracker.add_task(
                 main_project, 
                 name, 

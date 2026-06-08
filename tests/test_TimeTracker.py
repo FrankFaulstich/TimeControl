@@ -571,14 +571,14 @@ class TestTimeTracker(unittest.TestCase):
         self.assertFalse(self.tracker.rename_task("Main", "Non-Existent", "New"))
 
     def test_rename_task_new_name_exists(self):
-        """Tests that renaming fails if the new name already exists."""
+        """Tests that renaming succeeds even if the new name already exists."""
         self.tracker.add_main_project("Main")
         self.tracker.add_task("Main", "Sub A")
         self.tracker.add_task("Main", "Sub B")
         # Attempt to rename "Sub A" to "Sub B"
         success = self.tracker.rename_task("Main", "Sub A", "Sub B")
-        self.assertFalse(success)
-        self.assertEqual([s['task_name'] for s in self.tracker.list_tasks("Main")], ["Sub A", "Sub B"])
+        self.assertTrue(success)
+        self.assertEqual([s['task_name'] for s in self.tracker.list_tasks("Main")], ["Sub B", "Sub B"])
 
     def test_move_task_success(self):
         """Tests moving a task successfully."""
@@ -613,8 +613,8 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_main_project("Destination")
         self.tracker.add_task("Destination", "Task 1")
         success, msg = self.tracker.move_task("Source", "Task 1", "Destination")
-        self.assertFalse(success)
-        self.assertEqual(msg, _("A task named '{task_name}' already exists in '{main_name}'.").format(task_name="Task 1", main_name="Destination"))
+        self.assertTrue(success)
+        self.assertIn("moved successfully", msg)
         
     def test_promote_task_to_project_success(self):
         """Tests promoting a task to a main project successfully."""
@@ -688,13 +688,13 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(len(newly_demoted_task["time_entries"]), 2)
 
     def test_demote_main_project_name_conflict(self):
-        """Tests that demoting fails if a task with the same name already exists in the parent."""
+        """Tests that demoting succeeds even if a task with the same name already exists in the parent."""
         self.tracker.add_main_project("To Demote")
         self.tracker.add_main_project("Parent")
         self.tracker.add_task("Parent", "To Demote") # Name conflict
         success, msg = self.tracker.demote_main_project("To Demote", "Parent")
-        self.assertFalse(success)
-        self.assertIn("already exists", msg)
+        self.assertTrue(success)
+        self.assertIn("was demoted", msg)
 
     def test_list_completed_main_projects(self):
         """Tests listing main projects with only closed or no sub-projects."""
