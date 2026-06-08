@@ -735,7 +735,7 @@ def view_email_assignment():
                         st.session_state.confirm_delete_email_task_id = task['id']
                         st.rerun()
 
-            with st.expander(_("Edit Details")):
+            with st.expander(_("Edit Details"), expanded=True):
                 # Current values for pre-filling
                 current_due_date_str = task.get('due_date')
                 current_due_date_obj = datetime.fromisoformat(current_due_date_str).date() if current_due_date_str else None
