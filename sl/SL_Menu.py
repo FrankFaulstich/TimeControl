@@ -738,7 +738,7 @@ def view_email_assignment():
             with st.expander(_("Edit Details"), expanded=True):
                 # Current values for pre-filling
                 current_due_date_str = task.get('due_date')
-                current_due_date_obj = datetime.fromisoformat(current_due_date_str).date() if current_due_date_str else None
+                current_due_date_obj = datetime.fromisoformat(current_due_date_str).date() if current_due_date_str else datetime.now().date()
                 current_today_flag = task.get('today', False)
                 current_task_name = task.get('task_name', '')
                 current_note = task.get('note', '')
