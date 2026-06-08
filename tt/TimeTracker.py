@@ -32,7 +32,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.11"
+    VERSION = "3.12"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -644,10 +644,6 @@ class TimeTracker:
         """
         project = self._get_project(main_project_name)
         if project:
-            # Check if the new name already exists
-            if any(t["task_name"] == new_task_name for t in project["tasks"]):
-                return False # New name is already in use
-
             task = self._get_task(main_project_name, old_task_name, task_id)
             if task:
                 task["task_name"] = new_task_name
@@ -674,10 +670,6 @@ class TimeTracker:
         """
         project = self._get_project(main_project_name)
         if project:
-            if new_task_name and new_task_name != old_task_name:
-                if any(t["task_name"] == new_task_name for t in project["tasks"]):
-                    return False
-
             task = self._get_task(main_project_name, old_task_name, task_id)
             if task:
                 # Handle recurring task generation
@@ -790,10 +782,6 @@ class TimeTracker:
         if not dest_project:
             return False, _("Destination main project '{name}' not found.").format(name=new_main_project_name)
 
-        # Check if task with same name exists in destination
-        if any(t["task_name"] == task_name for t in dest_project["tasks"]):
-            return False, _("A task named '{task_name}' already exists in '{main_name}'.").format(task_name=task_name, main_name=new_main_project_name)
-
         # Find and remove task from source
         task_to_move = None
         for i, t in enumerate(source_project["tasks"]):
@@ -883,10 +871,6 @@ class TimeTracker:
             return False, _("Main project to demote '{name}' not found.").format(name=main_project_to_demote_name)
         if not new_parent_project:
             return False, _("New parent main project '{name}' not found.").format(name=new_parent_main_project_name)
-
-        # Check for name conflict in the destination tasks
-        if any(t["task_name"] == main_project_to_demote_name for t in new_parent_project["tasks"]):
-            return False, _("A task named '{task_name}' already exists in '{main_name}'.").format(task_name=main_project_to_demote_name, main_name=new_parent_main_project_name)
 
         # 2. Consolidate all time entries
         all_time_entries = []
