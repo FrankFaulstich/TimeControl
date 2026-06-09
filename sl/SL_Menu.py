@@ -1604,7 +1604,7 @@ def view_add_task_form():
     
     col_date, col_today, col_rec = st.columns([2, 1, 1])
     with col_date:
-        due_date = st.date_input(_("Due date"), value=None, format="YYYY-MM-DD")
+        due_date = st.date_input(_("Due date"), value=datetime.now().date(), format="YYYY-MM-DD")
     with col_today:
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
         today = st.checkbox(_("Today"))
