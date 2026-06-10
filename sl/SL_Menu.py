@@ -489,7 +489,7 @@ def view_task_planning():
                                 st.session_state.context['return_to'] = 'task_planning'
                                 navigate_to('edit_task_form')
                         with col_today_btn:
-                            if st.button("⭐", key=f"today_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Today")):
+                            if st.button("⭐", key=f"today_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Today"), disabled=task.get('today', False)):
                                 st.session_state.tracker.update_task(
                                     task['main_project_name'],
                                     task['task_name'],
@@ -551,7 +551,7 @@ def view_task_planning():
                         st.session_state.context['return_to'] = 'task_planning'
                         navigate_to('edit_task_form')
                 with col_today_btn:
-                    if st.button("⭐", key=f"today_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Today")):
+                    if st.button("⭐", key=f"today_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Today"), disabled=task.get('today', False)):
                         st.session_state.tracker.update_task(
                             task['main_project_name'],
                             task['task_name'],
