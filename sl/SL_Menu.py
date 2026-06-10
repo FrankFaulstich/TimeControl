@@ -291,8 +291,21 @@ def view_main():
             st.rerun()
 
     with t_col_report:
-        if st.button("📝", help=_("Reporting"), key="toolbar_report_btn"):
-            navigate_to('reporting')
+        with st.popover("📝", help=_("Reporting")):
+            if st.button(_("Daily Report (Today)"), use_container_width=True, key="pop_report_today"):
+                report = st.session_state.tracker.generate_daily_report()
+                st.session_state.context['report'] = report
+                navigate_to('view_report')
+            if st.button(_("Daily Report (Specific Day)"), use_container_width=True, key="pop_report_spec"):
+                navigate_to('report_specific_day')
+            if st.button(_("Date Range Report"), use_container_width=True, key="pop_report_range"):
+                navigate_to('report_date_range')
+            if st.button(_("Detailed Task Report"), use_container_width=True, key="pop_report_det_task"):
+                navigate_to('report_detailed_task')
+            if st.button(_("Detailed Project Report"), use_container_width=True, key="pop_report_det_proj"):
+                navigate_to('report_detailed_main')
+            if st.button(_("Detailed Daily Report"), use_container_width=True, key="pop_report_det_daily"):
+                navigate_to('report_detailed_daily')
 
     with t_col_settings:
         if st.button("⚙️", help=_("Settings"), key="toolbar_settings_btn"):
