@@ -153,11 +153,12 @@ def view_main():
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(1), /* t_col_new */
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2), /* t_col_today */
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(3), /* t_col_planning */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(4), /* t_col_start */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(5), /* t_col_stop */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(6), /* t_col_email */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(7), /* t_col_report */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(8) { /* t_col_settings */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(4), /* t_col_email */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(5), /* t_col_start */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(6), /* t_col_info */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(7), /* t_col_stop */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(8), /* t_col_report */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(9) { /* t_col_settings */
             flex: 0 0 40px !important;
             width: 40px !important;
             min-width: 40px !important;
@@ -166,11 +167,12 @@ def view_main():
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(1) button, /* New button (popover trigger) */
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2) button, /* Today button */
         [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(3) button, /* Planning button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(4) button, /* Start button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(5) button, /* Stop button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(6) button, /* Email button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(7) button, /* Report button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(8) button { /* Settings button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(4) button, /* Email button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(5) button, /* Start button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(6) button, /* Info button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(7) button, /* Stop button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(8) button, /* Report button */
+        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(9) button { /* Settings button */
             width: 40px !important;
             height: 40px !important;
             min-width: 40px !important;
@@ -258,7 +260,7 @@ def view_main():
     """, unsafe_allow_html=True)
 
     # --- Toolbar ---
-    t_col_new, t_col_today, t_col_planning, t_col_email, t_col_start, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 4])
+    t_col_new, t_col_today, t_col_planning, t_col_email, t_col_start, t_col_info, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 1, 3])
     with t_col_new:
         with st.popover("✨", help=_("New")):
             if st.button(_("New Project"), use_container_width=True):
@@ -281,6 +283,10 @@ def view_main():
     with t_col_start:
         if st.button("▶", help=_("Start work on task"), key="toolbar_start_btn"):
             navigate_to('start_work')
+
+    with t_col_info:
+        if st.button("ⓘ", help=_("Show current work"), key="toolbar_info_btn"):
+            navigate_to('show_current_work')
 
     with t_col_stop:
         if st.button("⏹", help=_("Stop current work"), key="toolbar_stop_btn", disabled=not current_work):
@@ -339,9 +345,6 @@ def view_main():
             st.session_state.context['selected_task'] = current_work['task_name']
             st.session_state.context['return_to'] = 'main'
             navigate_to('edit_task_form')
-
-    if st.button(_("Show current work"), use_container_width=True):
-        navigate_to('show_current_work')
 
     st.divider()
 
