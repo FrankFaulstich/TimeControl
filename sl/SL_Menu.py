@@ -63,8 +63,139 @@ def local_css(file_name):
         with open(file_path, 'r', encoding='utf-8') as f:
             st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
+def render_icon_button_css():
+    """
+    Keeps icon-only action buttons visually consistent across all Streamlit views.
+    """
+    button_selectors = [
+        '[class*="st-key-toolbar_new_popover"] [data-testid="stPopoverButton"]',
+        '[class*="st-key-toolbar_report_popover"] [data-testid="stPopoverButton"]',
+        '[class*="st-key-toolbar_today_btn"] button',
+        '[class*="st-key-toolbar_planning_btn"] button',
+        '[class*="st-key-toolbar_email_btn"] button',
+        '[class*="st-key-toolbar_start_btn"] button',
+        '[class*="st-key-toolbar_info_btn"] button',
+        '[class*="st-key-toolbar_stop_btn"] button',
+        '[class*="st-key-toolbar_settings_btn"] button',
+        '[class*="st-key-main_done_button"] button',
+        '[class*="st-key-main_edit_button"] button',
+        '[class*="st-key-start_task_planning"] button',
+        '[class*="st-key-edit_task_planning"] button',
+        '[class*="st-key-today_task_planning"] button',
+        '[class*="st-key-done_task_planning"] button',
+        '[class*="st-key-start_today_task"] button',
+        '[class*="st-key-edit_today_task"] button',
+        '[class*="st-key-done_today_task"] button',
+        '[class*="st-key-del_email_"] button',
+        '[class*="st-key-clear_email_due_date_"] button',
+        '[class*="st-key-edit_clear_due_date_btn"] button',
+        '[class*="st-key-close_inactive_"] button',
+    ]
+    icon_buttons = ",\n        ".join(button_selectors)
+
+    st.markdown(f"""
+        <style>
+        {icon_buttons} {{
+            width: 40px !important;
+            min-width: 40px !important;
+            max-width: 40px !important;
+            height: 40px !important;
+            min-height: 40px !important;
+            max-height: 40px !important;
+            aspect-ratio: 1 / 1 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0 !important;
+            color: #3f3f3f !important;
+            font-family: Arial, Helvetica, sans-serif !important;
+            font-size: 20px !important;
+            font-weight: 700 !important;
+            line-height: 1 !important;
+            border-radius: 4px !important;
+            box-sizing: border-box !important;
+            background-color: transparent !important;
+            overflow: hidden !important;
+            vertical-align: top !important;
+        }}
+
+        {icon_buttons} [data-testid="stMarkdownContainer"] {{
+            align-items: center !important;
+            display: flex !important;
+            height: 40px !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 40px !important;
+        }}
+
+        [data-testid="stHorizontalBlock"]:has([class*="st-key-toolbar_new_popover"]) {{
+            align-items: flex-start !important;
+            column-gap: 0.35rem !important;
+            row-gap: 0 !important;
+        }}
+
+        [data-testid="column"]:has([class*="st-key-toolbar_"]),
+        [data-testid="column"]:has([class*="st-key-main_done_button"]),
+        [data-testid="column"]:has([class*="st-key-main_edit_button"]),
+        [data-testid="column"]:has([class*="st-key-start_task_planning"]),
+        [data-testid="column"]:has([class*="st-key-edit_task_planning"]),
+        [data-testid="column"]:has([class*="st-key-today_task_planning"]),
+        [data-testid="column"]:has([class*="st-key-done_task_planning"]),
+        [data-testid="column"]:has([class*="st-key-start_today_task"]),
+        [data-testid="column"]:has([class*="st-key-edit_today_task"]),
+        [data-testid="column"]:has([class*="st-key-done_today_task"]),
+        [data-testid="column"]:has([class*="st-key-del_email_"]),
+        [data-testid="column"]:has([class*="st-key-clear_email_due_date_"]),
+        [data-testid="column"]:has([class*="st-key-edit_clear_due_date_btn"]),
+        [data-testid="column"]:has([class*="st-key-close_inactive_"]) {{
+            flex: 0 0 44px !important;
+            width: 44px !important;
+            min-width: 44px !important;
+            max-width: 44px !important;
+        }}
+
+        [class*="st-key-toolbar_"],
+        [class*="st-key-main_done_button"],
+        [class*="st-key-main_edit_button"],
+        [class*="st-key-start_task_planning"],
+        [class*="st-key-edit_task_planning"],
+        [class*="st-key-today_task_planning"],
+        [class*="st-key-done_task_planning"],
+        [class*="st-key-start_today_task"],
+        [class*="st-key-edit_today_task"],
+        [class*="st-key-done_today_task"],
+        [class*="st-key-del_email_"],
+        [class*="st-key-clear_email_due_date_"],
+        [class*="st-key-edit_clear_due_date_btn"],
+        [class*="st-key-close_inactive_"] {{
+            width: 40px !important;
+            min-width: 40px !important;
+            max-width: 40px !important;
+            height: 40px !important;
+            min-height: 40px !important;
+            max-height: 40px !important;
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+            margin: 0 !important;
+        }}
+
+        [class*="st-key-toolbar_"] {{
+            align-items: flex-start !important;
+            display: flex !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
 config = get_config()
 local_css(config.get('css_file', 'style.css'))
+render_icon_button_css()
 
 # --- State Management ---
 
@@ -137,147 +268,25 @@ def view_main():
         task_details = next((t for t in all_tasks if t['task_name'] == current_work['task_name']), {})
         is_done = task_details.get('status') == 'done'
 
-    # Custom CSS to keep the info box and edit button side-by-side and the button square
-    # This CSS is now more specific to target the toolbar and the current work display separately.
-    st.markdown("""
-        <style>
-        /* --- Toolbar (first stHorizontalBlock in stMainView) --- */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: flex-start !important;
-            gap: 0.5rem !important;
-        }
-        /* Fixed width for the toolbar button columns */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(1), /* t_col_new */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2), /* t_col_today */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(3), /* t_col_planning */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(4), /* t_col_email */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(5), /* t_col_start */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(6), /* t_col_info */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(7), /* t_col_stop */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(8), /* t_col_report */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(9) { /* t_col_settings */
-            flex: 0 0 40px !important;
-            width: 40px !important;
-            min-width: 40px !important;
-        }
-        /* Style for the actual buttons in the toolbar columns */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(1) button, /* New button (popover trigger) */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(2) button, /* Today button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(3) button, /* Planning button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(4) button, /* Email button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(5) button, /* Start button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(6) button, /* Info button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(7) button, /* Stop button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(8) button, /* Report button */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"]:nth-child(9) button { /* Settings button */
-            width: 40px !important;
-            height: 40px !important;
-            min-width: 40px !important;
-            min-height: 40px !important;
-            max-width: 40px !important;
-            max-height: 40px !important;
-            aspect-ratio: 1 / 1 !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            line-height: 1 !important; /* Ensure vertical centering of text/emoji */
-            font-size: 18px !important;
-        }
-        /* Ensure the content inside the toolbar buttons is also centered */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) button span,
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) button p {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            margin: 0 !important;
-            line-height: 1 !important;
-        }
-        /* Hide the chevron icon in the New-Popover button to ensure it stays square */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="stPopover"] button svg {
-            display: none !important;
-        }
-        /* Buttons *inside* the popover should not be square, restore default styling */
-        div[data-testid="stPopover"] button {
-            width: 100% !important;
-            height: auto !important;
-            padding: 0.5rem 1rem !important;
-            margin-top: 0 !important;
-        }
-
-        /* --- Current Active Work display (second stHorizontalBlock in stMainView) --- */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: flex-start !important;
-            gap: 0.5rem !important;
-        }
-        /* Ensure the info column takes remaining space */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(1) {
-            flex: 1 1 auto !important;
-            min-width: 0 !important;
-        }
-        /* Fixed width for the Done and Edit button columns */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(2), /* col_done */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(3) { /* col_edit */
-            flex: 0 0 40px !important;
-            width: 40px !important;
-            min-width: 40px !important;
-        }
-        /* Style for the actual Done and Edit buttons */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(2) button,
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"]:nth-child(3) button {
-            width: 40px !important;
-            height: 40px !important;
-            min-width: 40px !important;
-            min-height: 40px !important;
-            max-width: 40px !important;
-            max-height: 40px !important;
-            aspect-ratio: 1 / 1 !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            display: flex !important; /* Add flex properties for centering */
-            align-items: center !important;
-            justify-content: center !important;
-            line-height: 1 !important; /* Ensure vertical centering of text/emoji */
-            font-size: 18px !important;
-        }
-        /* Ensure the content inside these buttons is also centered */
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) button span,
-        [data-testid="stMainView"] > div > [data-testid="stHorizontalBlock"]:nth-of-type(2) button p {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            margin: 0 !important;
-            line-height: 1 !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
     # --- Toolbar ---
     t_col_new, t_col_today, t_col_planning, t_col_email, t_col_start, t_col_info, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 1, 3])
     with t_col_new:
-        with st.popover("✨", help=_("New")):
+        with st.popover("+", help=_("New"), key="toolbar_new_popover"):
             if st.button(_("New Project"), use_container_width=True):
                 navigate_to('add_main_project')
             if st.button(_("New Task"), use_container_width=True):
                 navigate_to('add_task')
 
     with t_col_today:
-        if st.button("⭐", help=_("Today View"), key="toolbar_today_btn"):
+        if st.button("★", help=_("Today View"), key="toolbar_today_btn"):
             navigate_to('today_view')
 
     with t_col_planning:
-        if st.button("📋", help=_("Task Planning"), key="toolbar_planning_btn"):
+        if st.button("▣", help=_("Task Planning"), key="toolbar_planning_btn"):
             navigate_to('task_planning')
 
     with t_col_email:
-        if st.button("✉️", help=_("E-Mail Task Assignment"), key="toolbar_email_btn"):
+        if st.button("@", help=_("E-Mail Task Assignment"), key="toolbar_email_btn"):
             navigate_to('email_assignment')
 
     with t_col_start:
@@ -285,11 +294,11 @@ def view_main():
             navigate_to('start_work')
 
     with t_col_info:
-        if st.button("ⓘ", help=_("Show current work"), key="toolbar_info_btn"):
+        if st.button("i", help=_("Show current work"), key="toolbar_info_btn"):
             navigate_to('show_current_work')
 
     with t_col_stop:
-        if st.button("⏹", help=_("Stop current work"), key="toolbar_stop_btn", disabled=not current_work):
+        if st.button("■", help=_("Stop current work"), key="toolbar_stop_btn", disabled=not current_work):
             if st.session_state.tracker.stop_work():
                 set_feedback(_("Work session stopped successfully."))
             else:
@@ -297,7 +306,7 @@ def view_main():
             st.rerun()
 
     with t_col_report:
-        with st.popover("📝", help=_("Reporting")):
+        with st.popover("▥", help=_("Reporting"), key="toolbar_report_popover"):
             if st.button(_("Daily Report (Today)"), use_container_width=True, key="pop_report_today"):
                 report = st.session_state.tracker.generate_daily_report()
                 st.session_state.context['report'] = report
@@ -314,7 +323,7 @@ def view_main():
                 navigate_to('report_detailed_daily')
 
     with t_col_settings:
-        if st.button("⚙️", help=_("Settings"), key="toolbar_settings_btn"):
+        if st.button("⚙", help=_("Settings"), key="toolbar_settings_btn"):
             navigate_to('settings')
 
     col_info, col_done, col_edit = st.columns([10, 1, 1])
@@ -326,7 +335,7 @@ def view_main():
             st.info(_("No active work session."))
             
     with col_done:
-        if st.button("✔", help=_("Done"), disabled=not current_work or is_done, key="main_done_button"):
+        if st.button("✓", help=_("Done"), disabled=not current_work or is_done, key="main_done_button"):
             st.session_state.tracker.update_task(
                 current_work['main_project_name'],
                 current_work['task_name'],
@@ -340,7 +349,7 @@ def view_main():
             st.rerun()
 
     with col_edit:
-        if st.button("✎", help=_("Edit current task"), disabled=not current_work):
+        if st.button("✎", help=_("Edit current task"), disabled=not current_work, key="main_edit_button"):
             st.session_state.context['selected_main'] = current_work['main_project_name']
             st.session_state.context['selected_task'] = current_work['task_name']
             st.session_state.context['return_to'] = 'main'
@@ -361,57 +370,7 @@ def view_task_planning():
     Renders the task planning view, showing all tasks that are not closed.
     """
     render_header(_("Task Planning"))
-
-    # Custom CSS for square action buttons in the task list
-    st.markdown("""
-        <style>
-        /* Target horizontal blocks that contain the task rows */
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: flex-start !important;
-            gap: 0.5rem !important;
-        }
-        /* Ensure the info column takes remaining space */
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(1) {
-            flex: 1 1 auto !important;
-            min-width: 0 !important;
-        }
-        /* Fixed width for the four button columns (Play, Edit, Today, Done) */
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(2),
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(3),
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(4),
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(5) {
-            flex: 0 0 40px !important;
-            width: 40px !important;
-            min-width: 40px !important;
-        }
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button {
-            width: 40px !important;
-            height: 40px !important;
-            min-width: 40px !important;
-            min-height: 40px !important;
-            max-width: 40px !important;
-            max-height: 40px !important;
-            aspect-ratio: 1 / 1 !important;
-            display: flex !important; /* Add flex properties for centering */
-            align-items: center !important;
-            justify-content: center !important;
-            line-height: 1 !important; /* Ensure vertical centering of text/emoji */
-            padding: 0 !important;
-            font-size: 18px !important;
-        }
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button span,
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button p {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            margin: 0 !important;
-            line-height: 1 !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # Icon action buttons are styled globally by render_icon_button_css().
 
     filter_options = [
         _("Today"), 
@@ -489,7 +448,7 @@ def view_task_planning():
                                 st.session_state.context['return_to'] = 'task_planning'
                                 navigate_to('edit_task_form')
                         with col_today_btn:
-                            if st.button("⭐", key=f"today_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Today")):
+                            if st.button("★", key=f"today_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Today"), disabled=task.get('today', False)):
                                 st.session_state.tracker.update_task(
                                     task['main_project_name'],
                                     task['task_name'],
@@ -502,7 +461,7 @@ def view_task_planning():
                                 )
                                 st.rerun()
                         with col_done_btn:
-                            if st.button("✔", key=f"done_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
+                            if st.button("✓", key=f"done_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
                                 st.session_state.tracker.update_task(
                                     task['main_project_name'],
                                     task['task_name'],
@@ -551,7 +510,7 @@ def view_task_planning():
                         st.session_state.context['return_to'] = 'task_planning'
                         navigate_to('edit_task_form')
                 with col_today_btn:
-                    if st.button("⭐", key=f"today_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Today")):
+                    if st.button("★", key=f"today_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Today"), disabled=task.get('today', False)):
                         st.session_state.tracker.update_task(
                             task['main_project_name'],
                             task['task_name'],
@@ -564,7 +523,7 @@ def view_task_planning():
                         )
                         st.rerun()
                 with col_done_btn:
-                    if st.button("✔", key=f"done_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
+                    if st.button("✓", key=f"done_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
                         st.session_state.tracker.update_task(
                             task['main_project_name'],
                             task['task_name'],
@@ -588,55 +547,7 @@ def view_today_tasks():
     """
     render_header(_("Today's Tasks"))
 
-    # Custom CSS for square action buttons in the task list
-    st.markdown("""
-        <style>
-        /* Target horizontal blocks that contain the task rows */
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: flex-start !important;
-            gap: 0.5rem !important;
-        }
-        /* Ensure the info column takes remaining space */
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(1) {
-            flex: 1 1 auto !important;
-            min-width: 0 !important;
-        }
-        /* Fixed width for the three button columns (Play, Edit, Done) */
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(2),
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(3),
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(4) {
-            flex: 0 0 40px !important;
-            width: 40px !important;
-            min-width: 40px !important;
-        }
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button {
-            width: 40px !important;
-            height: 40px !important;
-            min-width: 40px !important;
-            min-height: 40px !important;
-            max-width: 40px !important;
-            max-height: 40px !important;
-            aspect-ratio: 1 / 1 !important;
-            display: flex !important; /* Add flex properties for centering */
-            align-items: center !important;
-            justify-content: center !important;
-            line-height: 1 !important; /* Ensure vertical centering of text/emoji */
-            padding: 0 !important;
-            font-size: 18px !important;
-        }
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button span,
-        [data-testid="stMainView"] [data-testid="stHorizontalBlock"] [data-testid="column"] button p {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            margin: 0 !important;
-            line-height: 1 !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # Icon action buttons are styled globally by render_icon_button_css().
 
     st.session_state.tracker.cleanup_overdue_today_tasks()
     current_work = st.session_state.tracker.get_current_work()
@@ -686,7 +597,7 @@ def view_today_tasks():
                         st.session_state.context['return_to'] = 'today_view'
                         navigate_to('edit_task_form')
                 with col_done_btn:
-                    if st.button("✔", key=f"done_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
+                    if st.button("✓", key=f"done_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
                         st.session_state.tracker.update_task(
                             task['main_project_name'],
                             task['task_name'],
@@ -709,16 +620,6 @@ def view_email_assignment():
     Renders the view to assign tasks fetched from emails to active projects.
     """
     render_header(_("E-Mail Task Assignment"))
-    
-    # Custom CSS to resize the trash icon and ensure centering
-    st.markdown("""
-        <style>
-        /* Target the button text in the third column to reduce the icon size for better alignment */
-        [data-testid="stHorizontalBlock"] [data-testid="column"]:nth-child(3) button p {
-            font-size: 14px !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
 
     if 'confirm_delete_email_task_id' not in st.session_state:
         st.session_state.confirm_delete_email_task_id = None
@@ -776,7 +677,7 @@ def view_email_assignment():
                 # Placeholder for delete button if no confirmation is pending
                 with col_del_btn_placeholder:
                     # 'use_container_width' ensures the button fills the column, centering the icon
-                    if st.button("🗑", key=f"del_email_{task['id']}", help=_("Delete"), use_container_width=True):
+                    if st.button("⌫", key=f"del_email_{task['id']}", help=_("Delete"), use_container_width=True):
                         st.session_state.confirm_delete_email_task_id = task['id']
                         st.rerun()
 
@@ -805,7 +706,7 @@ def view_email_assignment():
                     st.session_state[f'email_due_{task["id"]}'] = new_due_date
                 with col_clear_date:
                     st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-                    if st.button("✖️", key=f"clear_email_due_date_{task['id']}", use_container_width=True, help=_("Clear")):
+                    if st.button("×", key=f"clear_email_due_date_{task['id']}", use_container_width=True, help=_("Clear")):
                         st.session_state[f'email_due_{task["id"]}'] = None
                         st.rerun()
                 with col_today:
@@ -1167,7 +1068,7 @@ def view_list_inactive_tasks():
                 st.markdown(f"**{item['main_project']}** / {item['task_name']}")
                 st.caption(f"{_('Last Activity')}: {item['last_activity']}")
             with col_btn:
-                if st.button("🔒", key=f"close_inactive_{i}", help=_("Close Task")):
+                if st.button("■", key=f"close_inactive_{i}", help=_("Close Task")):
                     st.session_state.tracker.close_task(item['main_project'], item['task_name'], task_id=item.get('id'))
                     st.rerun()
     else:
@@ -1808,7 +1709,7 @@ def view_edit_task_form():
         st.session_state.edit_due_date = new_due
     with col_clear:
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-        if st.button("✖️", use_container_width=True, help=_("Clear")):
+        if st.button("×", use_container_width=True, help=_("Clear"), key="edit_clear_due_date_btn"):
             st.session_state.edit_due_date = None
             st.rerun()
 
