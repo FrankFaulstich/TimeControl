@@ -69,6 +69,7 @@ def render_icon_button_css():
     """
     button_selectors = [
         '[class*="st-key-toolbar_new_popover"] [data-testid="stPopoverButton"]',
+        '[class*="st-key-toolbar_mgmt_popover"] [data-testid="stPopoverButton"]',
         '[class*="st-key-toolbar_report_popover"] [data-testid="stPopoverButton"]',
         '[class*="st-key-toolbar_today_btn"] button',
         '[class*="st-key-toolbar_planning_btn"] button',
@@ -269,13 +270,40 @@ def view_main():
         is_done = task_details.get('status') == 'done'
 
     # --- Toolbar ---
-    t_col_new, t_col_today, t_col_planning, t_col_email, t_col_start, t_col_info, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 1, 3])
+    t_col_new, t_col_mgmt, t_col_today, t_col_planning, t_col_email, t_col_start, t_col_info, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2])
     with t_col_new:
         with st.popover("+", help=_("New"), key="toolbar_new_popover"):
             if st.button(_("New Project"), use_container_width=True):
                 navigate_to('add_main_project')
             if st.button(_("New Task"), use_container_width=True):
                 navigate_to('add_task')
+
+    with t_col_mgmt:
+        with st.popover("☷", help=_("Project & Task Management"), key="toolbar_mgmt_popover"):
+            with st.expander(_("Main Project Management"), expanded=False):
+                if st.button(_("Add Project"), use_container_width=True, key="pop_mgmt_add_proj"): navigate_to('add_main_project')
+                if st.button(_("List Projects"), use_container_width=True, key="pop_mgmt_list_proj"): navigate_to('list_main_projects')
+                if st.button(_("Rename Project"), use_container_width=True, key="pop_mgmt_rename_proj"): navigate_to('rename_main_project')
+                if st.button(_("Close Project"), use_container_width=True, key="pop_mgmt_close_proj"): navigate_to('close_main_project')
+                if st.button(_("Re-open Project"), use_container_width=True, key="pop_mgmt_reopen_proj"): navigate_to('reopen_main_project')
+                if st.button(_("Delete Project"), use_container_width=True, key="pop_mgmt_del_proj"): navigate_to('delete_main_project')
+                if st.button(_("List Inactive Projects"), use_container_width=True, key="pop_mgmt_list_inact_proj"): navigate_to('list_inactive_main')
+                if st.button(_("Demote Project to Task"), use_container_width=True, key="pop_mgmt_demote_proj"): navigate_to('demote_main_project')
+                if st.button(_("List Completed Projects"), use_container_width=True, key="pop_mgmt_list_comp_proj"): navigate_to('list_completed_main')
+            
+            with st.expander(_("Task Management"), expanded=False):
+                if st.button(_("Add Task"), use_container_width=True, key="pop_t_mgmt_add"): navigate_to('add_task')
+                if st.button(_("List Tasks"), use_container_width=True, key="pop_t_mgmt_list"): navigate_to('list_tasks')
+                if st.button(_("Rename Task"), use_container_width=True, key="pop_t_mgmt_rename"): navigate_to('rename_task')
+                if st.button(_("Close Task"), use_container_width=True, key="pop_t_mgmt_close"): navigate_to('close_task')
+                if st.button(_("Re-open Task"), use_container_width=True, key="pop_t_mgmt_reopen"): navigate_to('reopen_task')
+                if st.button(_("Delete Task"), use_container_width=True, key="pop_t_mgmt_del"): navigate_to('delete_task')
+                if st.button(_("Move Task"), use_container_width=True, key="pop_t_mgmt_move"): navigate_to('move_task')
+                if st.button(_("List Inactive Tasks"), use_container_width=True, key="pop_t_mgmt_list_inact"): navigate_to('list_inactive_tasks')
+                if st.button(_("List All Closed Tasks"), use_container_width=True, key="pop_t_mgmt_list_closed"): navigate_to('list_closed_tasks')
+                if st.button(_("Edit Task"), use_container_width=True, key="pop_task_mgmt_edit_task"): navigate_to('edit_task')
+                if st.button(_("Delete All Closed Tasks"), use_container_width=True, key="pop_t_mgmt_del_all"): navigate_to('delete_all_closed_tasks')
+                if st.button(_("Promote Task to Project"), use_container_width=True, key="pop_t_mgmt_promote"): navigate_to('promote_task_to_project')
 
     with t_col_today:
         if st.button("★", help=_("Today View"), key="toolbar_today_btn"):
@@ -354,11 +382,6 @@ def view_main():
             st.session_state.context['selected_task'] = current_work['task_name']
             st.session_state.context['return_to'] = 'main'
             navigate_to('edit_task_form')
-
-    st.divider()
-
-    if st.button(_("Handle projects and tasks"), use_container_width=True):
-        navigate_to('project_management')
 
     st.divider()
     
