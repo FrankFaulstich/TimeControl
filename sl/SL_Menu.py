@@ -203,6 +203,7 @@ render_icon_button_css()
 if 'tracker' not in st.session_state:
     st.session_state.tracker = TimeTracker()
     st.session_state.tracker.initialize_dependencies()
+    st.session_state.tracker.set_today_flag_for_due_tasks() # Set 'today' flag for tasks due today
 
 if 'menu' not in st.session_state:
     st.session_state.menu = 'main'
