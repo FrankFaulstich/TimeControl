@@ -544,6 +544,28 @@ class TimeTracker:
             self._save_data()
         return changed
 
+    def set_today_flag_for_due_tasks(self):
+        """
+        Sets the 'today' flag (⭐) for tasks that have today's date as their due date
+        and are not yet marked as 'today'.
+        
+        :return: True if any task was updated and saved.
+        :rtype: bool
+        """
+        today_str = date.today().isoformat()
+        changed = False
+        for project in self.data.get("projects", []):
+            for task in project.get("tasks", []):
+                # Only consider open tasks
+                if task.get('status') == self.STATUS_OPEN:
+                    # If due date is today and 'today' flag is not set
+                    if task.get('due_date') == today_str and not task.get('today'):
+                        task['today'] = True
+                        changed = True
+        if changed:
+            self._save_data()
+        return changed
+
     def delete_task(self, main_project_name, task_name, task_id=None):
         """
         Deletes a task from a main project.
