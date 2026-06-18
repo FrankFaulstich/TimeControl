@@ -78,6 +78,7 @@ def render_icon_button_css():
         '[class*="st-key-toolbar_info_btn"] button',
         '[class*="st-key-toolbar_stop_btn"] button',
         '[class*="st-key-toolbar_settings_btn"] button',
+        '[class*="st-key-toolbar_export_btn"] button',
         '[class*="st-key-main_done_button"] button',
         '[class*="st-key-main_edit_button"] button',
         '[class*="st-key-start_task_planning"] button',
@@ -869,6 +870,7 @@ def view_settings():
     if st.button(_("1. Change Language"), use_container_width=True): navigate_to('settings_language')
     if st.button(_("2. Restore Previous Version"), use_container_width=True): navigate_to('settings_restore')
     if st.button(_("3. Change Data Storage Location"), use_container_width=True): navigate_to('settings_storage')
+    if st.button(_("Report Format"), use_container_width=True): navigate_to('settings_report_format')
     if st.button(_("4. Change Streamlit Port"), use_container_width=True): navigate_to('settings_port')
     if st.button(_("Email Settings"), use_container_width=True, key="settings_email"): navigate_to('settings_email')
     if st.button(_("Change CSS Style"), use_container_width=True, key="settings_css"): navigate_to('settings_css')
@@ -1993,6 +1995,24 @@ def view_settings_storage():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('settings')
 
+def view_settings_report_format():
+    """Renders the form to change the report format."""
+    render_header(_("Report Format"))
+    config = get_config()
+    current_format = config.get('report_format', 'markdown')
+    formats = ['markdown', 'html', 'rtf']
+    
+    with st.form("report_format_form"):
+        selected_format = st.selectbox(_("Select Format"), formats, index=formats.index(current_format))
+        submitted = st.form_submit_button(_("Save"), use_container_width=True)
+        if submitted:
+            config['report_format'] = selected_format
+            save_config(config)
+            set_feedback(_("Report format updated."))
+            navigate_to('settings')
+            st.rerun()
+    if st.button(_("Cancel"), use_container_width=True): navigate_to('settings')
+
 def view_settings_css():
     """
     Renders the form to change the CSS file.
@@ -2325,11 +2345,40 @@ def view_report_display():
     """
     render_header(_("Report Result"))
     report = st.session_state.context.get('report', '')
-    # The report is a Markdown string. Wrapping it inside an HTML div with
-    # unsafe_allow_html=True prevents Streamlit from rendering the Markdown.
-    # By passing the report string directly to st.markdown, it will be correctly parsed and displayed.
-    st.markdown(report)
-    if st.button(_("Back"), use_container_width=True): navigate_to('reporting')
+    
+    config = get_config()
+    report_format = config.get('report_format', 'markdown')
+    
+    # Preview based on format
+    if report_format == 'html':
+        st.markdown(report, unsafe_allow_html=True)
+    elif report_format == 'rtf':
+        st.code(report, language='rtf')
+    else:
+        st.markdown(report)
+        
+    st.divider()
+    
+    # Export Button Logic (unten rechts angeordnet)
+    ext_map = {'markdown': 'md', 'html': 'html', 'rtf': 'rtf'}
+    mime_map = {'markdown': 'text/markdown', 'html': 'text/html', 'rtf': 'application/rtf'}
+    filename = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext_map.get(report_format, 'md')}"
+    
+    col_spacer, col_btn = st.columns([11, 1])
+    with col_btn:
+        st.download_button(
+            label="⍈",
+            data=report,
+            file_name=filename,
+            mime=mime_map.get(report_format, 'text/plain'),
+            key="toolbar_export_btn",
+            help=_("Export Report")
+        )
+    
+    st.divider()
+    
+    if st.button(_("Back"), use_container_width=True): 
+        navigate_to('reporting')
 
 # --- Generic List/Action View Helper ---
 # To avoid creating 50 separate functions, we can use a generic pattern for simple lists/actions
@@ -2403,6 +2452,7 @@ menu_map = {
     'report_detailed_main': view_report_detailed_main,
     'report_detailed_daily': view_report_detailed_daily,
     
+    'settings_report_format': view_settings_report_format,
     'settings_language': view_settings_language,
     'settings_restore': view_settings_restore,
     'settings_storage': view_settings_storage,
