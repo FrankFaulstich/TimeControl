@@ -1101,6 +1101,46 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn(f"- **Sub 2**: 2:00:00 ({sessions_str_1}, 57.1%)", report) # 2h of 3.5h total
         self.assertIn(f"- **Sub 1**: 1:30:00 ({sessions_str_2}, 42.9%)", report) # 1.5h of 3.5h total
 
+    def test_markdown_to_rtf_logic(self):
+        """Tests basic Markdown to RTF conversion logic."""
+        md = "# H1\n## H2\n### H3\n- Bullet\n**Bold**\nLine"
+        rtf = self.tracker._markdown_to_rtf(md)
+        self.assertIn(r"\fs32 H1", rtf)
+        self.assertIn(r"\fs28 H2", rtf)
+        self.assertIn(r"\fs26 H3", rtf)
+        self.assertIn(r"\bullet  Bullet", rtf)
+        self.assertIn(r"\b Bold\b0", rtf)
+        self.assertIn("Line", rtf)
+
+    @unittest.mock.patch('tt.TimeTracker.pyperclip')
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    def test_format_and_copy_report_formats(self, mock_open, mock_exists, mock_pyperclip):
+        """Tests that reports are correctly formatted and copied to clipboard based on config."""
+        md_text = "# Title"
+        
+        # Test RTF
+        mock_exists.return_value = True
+        mock_open.return_value.__enter__.return_value.read.return_value = json.dumps({"report_format": "rtf"})
+        res = self.tracker._format_and_copy_report(md_text)
+        self.assertIn(r"{\rtf1", res)
+        mock_pyperclip.copy.assert_called_with(res)
+        
+        # Test Markdown
+        mock_open.return_value.__enter__.return_value.read.return_value = json.dumps({"report_format": "markdown"})
+        res = self.tracker._format_and_copy_report(md_text)
+        self.assertEqual(res, md_text)
+        mock_pyperclip.copy.assert_called_with(md_text)
+        
+        # Test HTML (if markdown module is present)
+        import tt.TimeTracker
+        if tt.TimeTracker.markdown:
+            mock_open.return_value.__enter__.return_value.read.return_value = json.dumps({"report_format": "html"})
+            res = self.tracker._format_and_copy_report(md_text)
+            # Expect basic HTML wrapping for a header
+            self.assertIn("<h1>Title</h1>", res)
+            mock_pyperclip.copy.assert_called_with(res)
+
     @unittest.mock.patch('TimeTrackerCLI.input')
     @unittest.mock.patch('TimeTrackerCLI.print')
     @unittest.mock.patch('os.path.isdir')
