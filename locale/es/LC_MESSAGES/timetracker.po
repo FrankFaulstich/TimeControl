@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: TimeControl\n"
-"Report-Msgid-Bugs-To: https://github.com/FrankFaulstich/TimeControl/issues\n"
-"POT-Creation-Date: 2026-01-01 14:30+0200\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-18 12:24+0200\n"
 "PO-Revision-Date: 2026-01-01 14:40+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: Spanish\n"
@@ -16,1014 +16,1268 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "Edit current task"
-msgstr "Editar tarea actual"
-
-#: TimeTracker.py:63
-msgid "Warning: Could not read {file}. Error: {error}"
-msgstr "Advertencia: No se pudo leer {file}. Error: {error}"
-
-#: TimeTracker.py:75
-msgid "Some required packages are missing. Attempting to install them..."
-msgstr "Faltan algunos paquetes requeridos. Intentando instalarlos..."
-
-#: TimeTracker.py:78
-msgid "Installing {package}..."
-msgstr "Instalando {package}..."
-
-#: TimeTracker.py:81
-msgid ""
-"\n"
-"Dependencies installed successfully."
-msgstr ""
-"\n"
-"Dependencias instaladas con éxito."
-
-#: TimeTracker.py:82
-msgid "Please restart the application for the changes to take effect."
-msgstr "Por favor, reinicie la aplicación para que los cambios surtan efecto."
-
-#: TimeTracker.py:85
-msgid ""
-"\n"
-"Error: Failed to install dependencies. Please install them manually using: "
-"pip install -r {requirements_path}"
-msgstr ""
-"\n"
-"Error: No se pudieron instalar las dependencias. Por favor, instálelas "
-"manualmente usando: pip install -r {requirements_path}"
-
-#: TimeTracker.py:88
-msgid "An unexpected error occurred during dependency check: {error}"
-msgstr "Ocurrió un error inesperado durante la comprobación de dependencias: {error}"
-
-#: TimeTracker.py:112
-msgid "Info: Report content has been copied to the clipboard."
-msgstr "Info: El contenido del informe ha sido copiado al portapapeles."
-
-#: TimeTracker.py:114
-msgid "Warning: Could not copy to clipboard. Error: {error}"
-msgstr "Advertencia: No se pudo copiar al portapapeles. Error: {error}"
-
-#: TimeTracker.py:116
-msgid ""
-"Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip "
-"install pyperclip`)."
-msgstr ""
-"Advertencia: No se pudo copiar al portapapeles. Por favor, instale "
-"'pyperclip' (`pip install pyperclip`)."
-
-#: TimeTracker.py:130
-msgid "{hours} hour ({dlp} DLP)"
-msgid_plural "{hours} hours ({dlp} DLP)"
-msgstr[0] "{hours} hora ({dlp} DLP)"
-msgstr[1] "{hours} horas ({dlp} DLP)"
-
-msgid "closed"
-msgstr "cerrado"
-
-msgid "open"
-msgstr "abierto"
-
-msgid "all"
-msgstr "todos"
-
-#: TimeTracker.py:350
-msgid "Source main project '{name}' not found."
-msgstr "Proyecto principal de origen '{name}' no encontrado."
-
-#: TimeTracker.py:352
-msgid "Destination main project '{name}' not found."
-msgstr "Proyecto principal de destino '{name}' no encontrado."
-
-#: tt/TimeTracker.py:356
-msgid "A task named '{task_name}' already exists in '{main_name}'."
-msgstr "Ya existe una tarea llamada '{task_name}' en '{main_name}'."
-
-msgid "Task '{task_name}' moved successfully."
-msgstr "Tarea '{task_name}' movida con éxito."
-
-#: TimeTracker.py:378
-msgid "A main project named '{name}' already exists."
-msgstr "Ya existe un proyecto principal llamado '{name}'."
-
-msgid "Main project '{old_name}' renamed to '{new_name}'."
-msgstr "Proyecto principal '{old_name}' renombrado a '{new_name}'."
-
-#: TimeTracker.py:398
-msgid "Task '{sub_name}' not found in '{main_name}'."
-msgstr "No se encontró la tarea '{sub_name}' en '{main_name}'."
-
-#: TimeTracker.py:406
-msgid "General"
-msgstr "General"
-
-#: TimeTracker.py:410
-msgid "Task '{name}' was promoted to a new main project."
-msgstr "La tarea '{name}' fue promovida a un nuevo proyecto principal."
-
-#: TimeTracker.py:439
-msgid "Main project to demote '{name}' not found."
-msgstr "No se encontró el proyecto principal a degradar '{name}'."
-
-#: TimeTracker.py:441
-msgid "New parent main project '{name}' not found."
-msgstr "No se encontró el nuevo proyecto principal padre '{name}'."
-
-#: TimeTracker.py:455
-msgid "Task '{old_name}' has been renamed to '{new_name}'."
-msgstr "La tarea '{old_name}' ha sido renombrada a '{new_name}'."
-
-#: TimeTracker.py:463
-msgid ""
-"Main project '{demoted_name}' was demoted to a task under "
-"'{parent_name}'."
-msgstr ""
-"El proyecto principal '{demoted_name}' fue degradado a un subproyecto bajo "
-"'{parent_name}'."
-
-msgid "Task Planning"
-msgstr "Planificación de tareas"
-
-msgid "Today View"
-msgstr "Vista de hoy"
-
-msgid "E-Mail Task Assignment"
-msgstr "Asignación de tareas por correo"
-
-msgid "Fetching emails..."
-msgstr "Recuperando correos electrónicos..."
-
-msgid "Error fetching emails: {error}"
-msgstr "Error al recuperar correos: {error}"
-
-msgid "{count} new tasks created from emails."
-msgstr "{count} nuevas tareas creadas desde correos."
-
-msgid "No new emails found."
-msgstr "No se encontraron correos nuevos."
-
-msgid "No unassigned email tasks available."
-msgstr "No hay tareas de correo sin asignar disponibles."
-
-msgid "Assign Project"
-msgstr "Asignar proyecto"
-
-msgid "Edit Details"
-msgstr "Editar detalles"
-
-msgid "Due Date"
-msgstr "Fecha de vencimiento"
-
-msgid "Clear"
-msgstr "Limpiar"
-
-msgid "Task Name"
-msgstr "Nombre de la tarea"
-
-msgid "Task details updated successfully."
-msgstr "Detalles de la tarea actualizados con éxito."
-
-msgid "Error updating task details."
-msgstr "Error al actualizar los detalles de la tarea."
-
-msgid "Email Settings"
-msgstr "Configuración de correo"
-
-msgid "Enable email import"
-msgstr "Activar importación de correo"
-
-msgid "Username"
-msgstr "Usuario"
-
-msgid "Password"
-msgstr "Contraseña"
-
-msgid "Use SSL"
-msgstr "Usar SSL"
-
-msgid "Email settings saved."
-msgstr "Configuración de correo guardada."
-
-msgid "4. Change Streamlit Port"
-msgstr "4. Cambiar puerto de Streamlit"
-
-msgid "Current Streamlit Port: {port}"
-msgstr "Puerto actual de Streamlit: {port}"
-
-msgid "Enter new port (or press Enter to keep current): "
-msgstr "Ingrese el nuevo puerto (o presione Enter para mantener el actual): "
-
-msgid "Port updated to {port}. Please restart Streamlit for changes to take effect."
-msgstr "Puerto actualizado a {port}. Reinicie Streamlit para que los cambios surtan efecto."
-
-msgid "Work started on '{task_name}' in project '{main_name}'."
-msgstr "Trabajo iniciado en '{task_name}' en el proyecto '{main_name}'."
-
-#: TimeTracker.py:651
-msgid "- {name}: {hours} hour"
-msgid_plural "- {name}: {hours} hours"
-msgstr[0] "- {name}: {hours} hora"
-msgstr[1] "- {name}: {hours} horas"
-
-#: TimeTracker.py:657
-msgid "## {name} ({hours} hour)\n"
-msgid_plural "## {name} ({hours} hours)\n"
-msgstr[0] "## {name} ({hours} hora)\n"
-msgstr[1] "## {name} ({hours} horas)\n"
-
-#: TimeTracker.py:665
-msgid "# Daily Time Report: {date}\n"
-msgstr "# Informe de Tiempo Diario: {date}\n"
-
-#: TimeTracker.py:666
-msgid "\n**Total Daily Time: {hours} hour**"
-msgid_plural "\n**Total Daily Time: {hours} hours**"
-msgstr[0] "\n**Tiempo Total Diario: {hours} hora**"
-msgstr[1] "\n**Tiempo Total Diario: {hours} horas**"
-
-#: TimeTracker.py:670
-msgid "No time tracked for {date}."
-msgstr "No hay tiempo registrado para {date}."
-
-#: TimeTracker.py:708
-msgid "# Time Report: {start_date} to {end_date}\n"
-msgstr "# Informe de Tiempo: {start_date} a {end_date}\n"
-
-#: TimeTracker.py:709
-msgid ""
-"\n"
-"**Total Time in Period: {total_time}**"
-msgstr ""
-"\n"
-"**Tiempo Total en el Periodo: {total_time}**"
-
-#: TimeTracker.py:721
-msgid "No time tracked between {start_date} and {end_date}."
-msgstr "No hay tiempo registrado entre {start_date} y {end_date}."
-
-msgid "now"
-msgstr "ahora"
-
-msgid "# Detailed Daily Report: {date}"
-msgstr "# Informe Diario Detallado: {date}"
-
-msgid "\nNo time tracked for {date}."
-msgstr "\nNo hay tiempo registrado para {date}."
-
-msgid "Active (working on '{sub_name}')"
-msgstr "Activo (trabajando en '{sub_name}')"
-
-msgid "Part of Main Project: {name}"
-msgstr "Parte del Proyecto Principal: {name}"
-
-msgid "Sub-Project Breakdown"
-msgstr "Desglose de Subproyectos"
-
-msgid "{num_sessions} sessions"
-msgstr "{num_sessions} sesiones"
-
-msgid "6. Detailed Daily Report"
-msgstr "6. Informe Diario Detallado"
-
-msgid "\n--- Detailed Daily Report ---"
-msgstr "\n--- Informe Diario Detallado ---"
-
-msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
-msgstr "Introduzca la fecha (AAAA-MM-DD) o presione Enter para hoy: "
-
-msgid "Active (currently running)"
-msgstr "Activo (actualmente en ejecución)"
-
-msgid "Last activity"
-msgstr "Última actividad"
-
-msgid "Inactive"
-msgstr "Inactivo"
-
-msgid "Status"
-msgstr "Estado"
-
-msgid "First entry"
-msgstr "Primera entrada"
-
-msgid "Total recorded time"
-msgstr "Tiempo total registrado"
-
-msgid "Total work sessions"
-msgstr "Total de sesiones de trabajo"
-
-msgid "Average session duration"
-msgstr "Duración media de la sesión"
-
-msgid "Weekday Distribution"
-msgstr "Distribución por día de la semana"
-
-msgid "Monday"
-msgstr "Lunes"
-
-msgid "Tuesday"
-msgstr "Martes"
-
-msgid "Wednesday"
-msgstr "Miércoles"
-
-msgid "Thursday"
-msgstr "Jueves"
-
-msgid "Friday"
-msgstr "Viernes"
-
-msgid "Saturday"
-msgstr "Sábado"
-
-msgid "Sunday"
-msgstr "Domingo"
-
-msgid "Daily Breakdown"
-msgstr "Desglose diario"
-
-msgid "Duration"
-msgstr "Duración"
-
-msgid "# Detailed Report for Main Project: {name}"
-msgstr "# Informe Detallado del Proyecto Principal: {name}"
-
-msgid "Number of sub-projects"
-msgstr "Número de subproyectos"
-
-#: TimeTrackerCLI.py:21
-msgid "\n--- Project Management ---"
-msgstr "\n--- Gestión de Proyectos ---"
-
-#: TimeTrackerCLI.py:22
-msgid "1.  Add Main Project"
-msgstr "1.  Añadir Proyecto Principal"
-
-#: TimeTrackerCLI.py:24
-msgid "2.  List Main Projects"
-msgstr "2.  Listar Proyectos Principales"
-
-#: TimeTrackerCLI.py:24
-msgid "3.  Rename Main Project"
-msgstr "3.  Renombrar Proyecto Principal"
-
 #: TimeTrackerCLI.py:25
-msgid "4.  Delete Main Project"
-msgstr "4.  Eliminar Proyecto Principal"
+msgid ""
+"\n"
+"--- Project Management ---"
+msgstr ""
+"\n"
+"--- Gestión de Proyectos ---"
 
 #: TimeTrackerCLI.py:26
-msgid "5.  List Inactive Main Projects"
-msgstr "5.  Listar Proyectos Principales Inactivos"
+msgid "1. Main Project Management"
+msgstr "1. Gestión de Proyecto Principal"
 
 #: TimeTrackerCLI.py:27
-msgid "6.  Demote Main-Project to Sub-Project"
-msgstr "6.  Degradar Proyecto Principal a Subproyecto"
+msgid "2. Task Management"
+msgstr "2. Gestión de Tareas"
 
 #: TimeTrackerCLI.py:29
-msgid "7.  Add Sub-Project"
-msgstr "7.  Añadir Subproyecto"
-
-#: TimeTrackerCLI.py:30
-msgid "8.  List Sub-Projects"
-msgstr "8.  Listar Subproyectos"
-
-#: TimeTrackerCLI.py:31
-#: TimeTrackerCLI.py:32
-msgid "9.  Rename Sub-Project"
-msgstr "9.  Renombrar Subproyecto"
-
-msgid "10. Close Sub-Project"
-msgstr "10. Cerrar Subproyecto"
-
-msgid "11. Re-open Sub-Project"
-msgstr "11. Reabrir Subproyecto"
-
-msgid "12. Delete Sub-Project"
-msgstr "12. Eliminar Subproyecto"
-
-msgid "13. Move Sub-Project"
-msgstr "13. Mover Subproyecto"
-
-msgid "14. List Inactive Sub-Projects"
-msgstr "14. Listar Subproyectos Inactivos"
-
-msgid "15. List All Closed Sub-Projects"
-msgstr "15. Listar Todos los Subproyectos Cerrados"
-
-msgid "16. Delete All Closed Sub-Projects"
-msgstr "16. Eliminar Todos los Subproyectos Cerrados"
-
-msgid "17. Promote Sub-Project to Main-Project"
-msgstr "17. Promover Subproyecto a Proyecto Principal"
-
-#: TimeTrackerCLI.py:37 TimeTrackerCLI.py:403 TimeTrackerCLI.py:461 TimeTrackerCLI.py:539
 msgid "0.  Back to Main Menu"
 msgstr "0.  Volver al Menú Principal"
 
-#: TimeTrackerCLI.py:40 TimeTrackerCLI.py:406 TimeTrackerCLI.py:464 TimeTrackerCLI.py:595
+#: TimeTrackerCLI.py:32 TimeTrackerCLI.py:60 TimeTrackerCLI.py:257
+#: TimeTrackerCLI.py:662 TimeTrackerCLI.py:701 TimeTrackerCLI.py:811
+#: TimeTrackerCLI.py:953
 msgid "Choice: "
 msgstr "Elección: "
 
-#: TimeTrackerCLI.py:44
-msgid "\n--- Add New Main Project ---"
-msgstr "\n--- Añadir Nuevo Proyecto Principal ---"
+#: TimeTrackerCLI.py:41
+msgid "Invalid choice. Please enter a number from 0 to 2."
+msgstr "Elección no válida. Por favor ingrese un número del 0 al 2."
 
-#: TimeTrackerCLI.py:45
+#: TimeTrackerCLI.py:46
+msgid ""
+"\n"
+"--- Main Project Management ---"
+msgstr ""
+"\n"
+"--- Gestión del proyecto principal ---"
+
+#: TimeTrackerCLI.py:47
+msgid "1.  Add Main Project"
+msgstr "1.  Añadir Proyecto Principal"
+
+#: TimeTrackerCLI.py:48
+msgid "2.  List Main Projects"
+msgstr "2.  Listar Proyectos Principales"
+
+#: TimeTrackerCLI.py:49
+msgid "3.  Rename Main Project"
+msgstr "3.  Renombrar Proyecto Principal"
+
+#: TimeTrackerCLI.py:50
+msgid "4.  Close Main Project"
+msgstr "4. Cerrar el proyecto principal"
+
+#: TimeTrackerCLI.py:51
+msgid "5.  Re-open Main Project"
+msgstr "5. Reabrir el proyecto principal"
+
+#: TimeTrackerCLI.py:52
+msgid "6.  Delete Main Project"
+msgstr "6. Eliminar el proyecto principal"
+
+#: TimeTrackerCLI.py:53
+msgid "7.  List Inactive Main Projects"
+msgstr "7. Enumerar proyectos principales inactivos"
+
+#: TimeTrackerCLI.py:54
+msgid "8.  Demote Main-Project to Sub-Project"
+msgstr "8. Degradar proyecto principal a subproyecto"
+
+#: TimeTrackerCLI.py:55
+msgid "9.  List Completed Main Projects"
+msgstr "9. Enumerar proyectos principales completados"
+
+#: TimeTrackerCLI.py:57 TimeTrackerCLI.py:254
+msgid "0.  Back"
+msgstr "0. Atrás"
+
+#: TimeTrackerCLI.py:64
+msgid ""
+"\n"
+"--- Add New Main Project ---"
+msgstr ""
+"\n"
+"--- Añadir Nuevo Proyecto Principal ---"
+
+#: TimeTrackerCLI.py:65
 msgid "Name of the main project: "
 msgstr "Nombre del proyecto principal: "
 
-#: TimeTrackerCLI.py:48
+#: TimeTrackerCLI.py:67
+#, python-brace-format
 msgid "Main project '{name}' added."
 msgstr "Proyecto principal '{name}' añadido."
 
-#: TimeTrackerCLI.py:50 TimeTrackerCLI.py:55
-msgid "\n--- List Main Projects ---"
-msgstr "\n--- Listar Proyectos Principales ---"
+#: TimeTrackerCLI.py:70
+msgid ""
+"\n"
+"--- List Main Projects ---"
+msgstr ""
+"\n"
+"--- Listar Proyectos Principales ---"
 
-#: TimeTrackerCLI.py:55 TimeTrackerCLI.py:166 TimeTrackerCLI.py:288 TimeTrackerCLI.py:479
+#: TimeTrackerCLI.py:76 TimeTrackerCLI.py:313 sl/SL_Menu.py:1246
+#: sl/SL_Menu.py:1310
+msgid "closed"
+msgstr "cerrado"
+
+#: TimeTrackerCLI.py:79
 msgid "No main projects found."
 msgstr "No se encontraron proyectos principales."
 
-#: TimeTrackerCLI.py:58
-msgid "\n--- Rename Main Project ---"
-msgstr "\n--- Renombrar Proyecto Principal ---"
+#: TimeTrackerCLI.py:82
+msgid ""
+"\n"
+"--- Rename Main Project ---"
+msgstr ""
+"\n"
+"--- Renombrar Proyecto Principal ---"
 
-#: TimeTrackerCLI.py:61
+#: TimeTrackerCLI.py:85
 msgid "No main projects to rename."
 msgstr "No hay proyectos principales para renombrar."
 
-#: TimeTrackerCLI.py:64
-msgid "Select a main project to rename:"
-msgstr "Seleccione un proyecto principal para renombrar:"
+#: TimeTrackerCLI.py:88
+msgid "Select an open main project to rename:"
+msgstr "Seleccione un proyecto principal abierto para cambiarle el nombre:"
 
-#: TimeTrackerCLI.py:68
+#: TimeTrackerCLI.py:93 TimeTrackerCLI.py:117 TimeTrackerCLI.py:139
+#: TimeTrackerCLI.py:162 TimeTrackerCLI.py:272 TimeTrackerCLI.py:301
+#: TimeTrackerCLI.py:333 TimeTrackerCLI.py:370 TimeTrackerCLI.py:405
+#: TimeTrackerCLI.py:441 TimeTrackerCLI.py:568 TimeTrackerCLI.py:604
+#: TimeTrackerCLI.py:855 TimeTrackerCLI.py:888 TimeTrackerCLI.py:969
 msgid "Enter the number of the main project: "
 msgstr "Introduzca el número del proyecto principal: "
 
-#: TimeTrackerCLI.py:71
+#: TimeTrackerCLI.py:96 TimeTrackerCLI.py:349
+#, python-brace-format
 msgid "Enter the new name for '{name}': "
 msgstr "Introduzca el nuevo nombre para '{name}': "
 
-#: TimeTrackerCLI.py:74
+#: TimeTrackerCLI.py:99
+#, python-brace-format
 msgid "Main project '{old_name}' successfully renamed to '{new_name}'."
 msgstr "Proyecto principal '{old_name}' renombrado a '{new_name}' con éxito."
 
-#: TimeTrackerCLI.py:76
-msgid "Error: Could not rename. The new name '{new_name}' might already exist."
-msgstr "Error: No se pudo renombrar. El nuevo nombre '{new_name}' ya podría existir."
+#: TimeTrackerCLI.py:101 sl/SL_Menu.py:1283
+#, python-brace-format
+msgid ""
+"Error: Could not rename. The new name '{new_name}' might already exist."
+msgstr ""
+"Error: No se pudo renombrar. El nuevo nombre '{new_name}' ya podría existir."
 
-#: TimeTrackerCLI.py:78 TimeTrackerCLI.py:98 TimeTrackerCLI.py:120 TimeTrackerCLI.py:139 TimeTrackerCLI.py:160 TimeTrackerCLI.py:194 TimeTrackerCLI.py:222 TimeTrackerCLI.py:247 TimeTrackerCLI.py:284 TimeTrackerCLI.py:311 TimeTrackerCLI.py:342 TimeTrackerCLI.py:387 TimeTrackerCLI.py:431 TimeTrackerCLI.py:456 TimeTrackerCLI.py:532
+#: TimeTrackerCLI.py:103 TimeTrackerCLI.py:125 TimeTrackerCLI.py:147
+#: TimeTrackerCLI.py:169 TimeTrackerCLI.py:221 TimeTrackerCLI.py:287
+#: TimeTrackerCLI.py:319 TimeTrackerCLI.py:356 TimeTrackerCLI.py:391
+#: TimeTrackerCLI.py:426 TimeTrackerCLI.py:463 TimeTrackerCLI.py:510
+#: TimeTrackerCLI.py:589 TimeTrackerCLI.py:794 TimeTrackerCLI.py:875
+#: TimeTrackerCLI.py:894 TimeTrackerCLI.py:992
 msgid "Invalid input. Please enter a valid number."
 msgstr "Entrada inválida. Por favor, introduzca un número válido."
 
-#: TimeTrackerCLI.py:81
-msgid "\n--- Delete Main Project ---"
-msgstr "\n--- Eliminar Proyecto Principal ---"
+#: TimeTrackerCLI.py:106
+msgid ""
+"\n"
+"--- Close Main Project ---"
+msgstr ""
+"\n"
+"--- Cerrar proyecto principal ---"
 
-#: TimeTrackerCLI.py:84
+#: TimeTrackerCLI.py:109
+msgid "No open main projects to close."
+msgstr "No hay proyectos principales abiertos para cerrar."
+
+#: TimeTrackerCLI.py:112
+msgid "Select a main project to close:"
+msgstr "Seleccione un proyecto principal para cerrar:"
+
+#: TimeTrackerCLI.py:121
+#, python-brace-format
+msgid "Main project '{name}' has been closed."
+msgstr "El proyecto principal '{name}' ha sido cerrado."
+
+#: TimeTrackerCLI.py:123 TimeTrackerCLI.py:145
+msgid "Error: Main project not found."
+msgstr "Error: Proyecto principal no encontrado."
+
+#: TimeTrackerCLI.py:128
+msgid ""
+"\n"
+"--- Re-open Main Project ---"
+msgstr ""
+"\n"
+"--- Reabrir proyecto principal ---"
+
+#: TimeTrackerCLI.py:131
+msgid "No closed main projects to reopen."
+msgstr "No hay proyectos principales cerrados para reabrir."
+
+#: TimeTrackerCLI.py:134
+msgid "Select a main project to reopen:"
+msgstr "Seleccione un proyecto principal para reabrir:"
+
+#: TimeTrackerCLI.py:143
+#, python-brace-format
+msgid "Main project '{name}' has been reopened."
+msgstr "El proyecto principal '{name}' ha sido reabierto."
+
+#: TimeTrackerCLI.py:150
+msgid ""
+"\n"
+"--- Delete Main Project ---"
+msgstr ""
+"\n"
+"--- Eliminar Proyecto Principal ---"
+
+#: TimeTrackerCLI.py:153
 msgid "No main projects to delete."
 msgstr "No hay proyectos principales para eliminar."
 
-#: TimeTrackerCLI.py:87
+#: TimeTrackerCLI.py:156
 msgid "Select a main project to delete:"
 msgstr "Seleccione un proyecto principal para eliminar:"
 
-#: TimeTrackerCLI.py:93
+#: TimeTrackerCLI.py:165
+#, python-brace-format
 msgid "Main project '{name}' deleted."
 msgstr "Proyecto principal '{name}' eliminado."
 
-#: TimeTrackerCLI.py:95
+#: TimeTrackerCLI.py:167 TimeTrackerCLI.py:285
+#, python-brace-format
 msgid "Error: Main project '{name}' not found."
 msgstr "Error: Proyecto principal '{name}' no encontrado."
 
-#: TimeTrackerCLI.py:101
-msgid "\n--- List Inactive Main-Projects ---"
-msgstr "\n--- Listar Proyectos Principales Inactivos ---"
+#: TimeTrackerCLI.py:172
+msgid ""
+"\n"
+"--- List Inactive Main-Projects ---"
+msgstr ""
+"\n"
+"--- Listar Proyectos Principales Inactivos ---"
 
-#: TimeTrackerCLI.py:103
+#: TimeTrackerCLI.py:174
 msgid "Enter the number of weeks without activity (e.g., 8): "
 msgstr "Introduzca el número de semanas sin actividad (ej: 8): "
 
-#: TimeTrackerCLI.py:105
+#: TimeTrackerCLI.py:176 TimeTrackerCLI.py:518
 msgid "Please enter a positive number."
 msgstr "Por favor, introduzca un número positivo."
 
-#: TimeTrackerCLI.py:110
-msgid "\nInactive Main-Projects (>{weeks} weeks):"
-msgstr "\nProyectos Principales Inactivos (>{weeks} semanas):"
+#: TimeTrackerCLI.py:182
+#, python-brace-format
+msgid ""
+"\n"
+"Inactive Main-Projects (>{weeks} weeks):"
+msgstr ""
+"\n"
+"Proyectos Principales Inactivos (>{weeks} semanas):"
 
-#: TimeTrackerCLI.py:112
+#: TimeTrackerCLI.py:184 TimeTrackerCLI.py:526
+#, python-brace-format
 msgid "  - Main Project: {name}"
 msgstr "  - Proyecto Principal: {name}"
 
-#: TimeTrackerCLI.py:113
+#: TimeTrackerCLI.py:185 TimeTrackerCLI.py:528
+#, python-brace-format
 msgid "    Last Activity: {date}"
 msgstr "    Última Actividad: {date}"
 
-#: TimeTrackerCLI.py:116
-msgid "No main-projects found inactive for more than {weeks} week."
-msgid_plural "No main-projects found inactive for more than {weeks} weeks."
-msgstr[0] "No se encontró ningún proyecto principal inactivo por más de {weeks} semana."
-msgstr[1] "No se encontraron proyectos principales inactivos por más de {weeks} semanas."
+#: TimeTrackerCLI.py:188
+#, python-brace-format
+msgid "No main-projects found inactive for more than {weeks} weeks."
+msgstr ""
+"No se encontraron proyectos principales inactivos durante más "
+"de{weeks}semanas."
 
-#: TimeTrackerCLI.py:119
+#: TimeTrackerCLI.py:191 TimeTrackerCLI.py:534
 msgid "Invalid input. Please enter a valid number for weeks."
-msgstr "Entrada inválida. Por favor, introduzca un número válido para las semanas."
+msgstr ""
+"Entrada inválida. Por favor, introduzca un número válido para las semanas."
 
-#: TimeTrackerCLI.py:122
-msgid "\n--- Add New Sub-Project ---"
-msgstr "\n--- Añadir Nuevo Subproyecto ---"
-
-#: TimeTrackerCLI.py:125
-msgid "No main projects found. Please add one first."
-msgstr "No se encontraron proyectos principales. Por favor, añada uno primero."
-
-#: TimeTrackerCLI.py:128
-msgid "Select a main project to add a sub-project to:"
-msgstr "Seleccione un proyecto principal para añadirle un subproyecto:"
-
-#: TimeTrackerCLI.py:135
-msgid "Name of the new sub-project: "
-msgstr "Nombre del nuevo subproyecto: "
-
-#: TimeTrackerCLI.py:137
-msgid "Sub-project '{sub_name}' added to '{main_name}'."
-msgstr "Subproyecto '{sub_name}' añadido a '{main_name}'."
-
-#: TimeTrackerCLI.py:142
-msgid "\n--- List Sub-Projects ---"
-msgstr "\n--- Listar Subproyectos ---"
-
-#: TimeTrackerCLI.py:145
-msgid "No main projects found. Cannot list sub-projects."
-msgstr "No se encontraron proyectos principales. No se pueden listar los subproyectos."
-
-#: TimeTrackerCLI.py:148
-msgid "Select the main project whose sub-projects you want to list:"
-msgstr "Seleccione el proyecto principal cuyos subproyectos desea listar:"
-
-#: TimeTrackerCLI.py:156
-msgid "Sub-projects for '{name}':"
-msgstr "Subproyectos para '{name}':"
-
-#: TimeTrackerCLI.py:159 TimeTrackerCLI.py:262 TimeTrackerCLI.py:489
-msgid "No sub-projects found for '{name}'."
-msgstr "No se encontraron subproyectos para '{name}'."
-
-#: TimeTrackerCLI.py:163
-msgid "\n--- Rename Sub-Project ---"
-msgstr "\n--- Renombrar Subproyecto ---"
-
-#: TimeTrackerCLI.py:169 TimeTrackerCLI.py:201 TimeTrackerCLI.py:414 TimeTrackerCLI.py:437 TimeTrackerCLI.py:482
-msgid "Select the main project:"
-msgstr "Seleccione el proyecto principal:"
-
-#: TimeTrackerCLI.py:177
-msgid "No sub-projects to rename for '{name}'."
-msgstr "No hay subproyectos para renombrar en '{name}'."
-
-#: TimeTrackerCLI.py:180
-msgid "Select a sub-project from '{name}' to rename:"
-msgstr "Seleccione un subproyecto de '{name}' para renombrar:"
-
-#: TimeTrackerCLI.py:184 TimeTrackerCLI.py:214 TimeTrackerCLI.py:267 TimeTrackerCLI.py:307 TimeTrackerCLI.py:499
-msgid "Enter the number of the sub-project: "
-msgstr "Introduzca el número del subproyecto: "
-
-#: TimeTrackerCLI.py:190
-msgid "Sub-project '{old_name}' renamed to '{new_name}'."
-msgstr "Subproyecto '{old_name}' renombrado a '{new_name}'."
-
-#: TimeTrackerCLI.py:192
+#: TimeTrackerCLI.py:194
 msgid ""
-"Error: Could not rename. The new name might already exist or the project "
-"was not found."
-msgstr "Error: No se pudo renombrar. El nuevo nombre ya podría existir o el proyecto no fue encontrado."
+"\n"
+"--- Demote Main-Project to Sub-Project ---"
+msgstr ""
+"\n"
+"--- Degradar Proyecto Principal a Subproyecto ---"
 
-#: TimeTrackerCLI.py:195
-msgid "\n--- Delete Sub-Project ---"
-msgstr "\n--- Eliminar Subproyecto ---"
+#: TimeTrackerCLI.py:197
+msgid "You need at least two open main projects for this operation."
+msgstr ""
+"Necesita al menos dos proyectos principales abiertos para esta operación."
 
-#: TimeTrackerCLI.py:207
-msgid "No sub-projects to delete for '{name}'."
-msgstr "No hay subproyectos para eliminar en '{name}'."
-
-#: TimeTrackerCLI.py:210
-msgid "Select a sub-project from '{name}' to delete:"
-msgstr "Seleccione un subproyecto de '{name}' para eliminar:"
-
-#: TimeTrackerCLI.py:217
-msgid "Sub-project '{sub_name}' deleted from '{main_name}'."
-msgstr "Subproyecto '{sub_name}' eliminado de '{main_name}'."
-
-msgid "\n--- List All Closed Sub-Projects ---"
-msgstr "\n--- Listar Todos los Subproyectos Cerrados ---"
-
-msgid "No closed sub-projects found."
-msgstr "No se encontraron subproyectos cerrados."
-
-msgid "\n--- Delete All Closed Sub-Projects ---"
-msgstr "\n--- Eliminar Todos los Subproyectos Cerrados ---"
-
-msgid "Are you sure you want to delete ALL closed sub-projects? (y/n): "
-msgstr "¿Está seguro de que desea eliminar TODOS los subproyectos cerrados? (s/n): "
-
-msgid "{count} closed sub-projects were deleted."
-msgstr "Se eliminaron {count} subproyectos cerrados."
-
-msgid "Operation cancelled."
-msgstr "Operación cancelada."
-
-#: TimeTrackerCLI.py:219 TimeTrackerCLI.py:281
-msgid "Error: Main project or sub-project not found."
-msgstr "Error: Proyecto principal o subproyecto no encontrado."
-
-#: TimeTrackerCLI.py:226
-msgid "\n--- List Inactive Sub-Projects ---"
-msgstr "\n--- Listar Subproyectos Inactivos ---"
-
-#: TimeTrackerCLI.py:228
-msgid "Enter the number of weeks without activity (e.g., 4): "
-msgstr "Introduzca el número de semanas sin actividad (ej: 4): "
-
-#: TimeTrackerCLI.py:235
-msgid "\nInactive Sub-Projects (>{weeks} weeks):"
-msgstr "\nSubproyectos Inactivos (>{weeks} semanas):"
-
-#: TimeTrackerCLI.py:238
-msgid "    Sub-Project: {name}"
-msgstr "    Subproyecto: {name}"
-
-#: TimeTrackerCLI.py:241
-msgid "No sub-projects found inactive for more than {weeks} week."
-msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
-msgstr[0] "No se encontró ningún subproyecto inactivo por más de {weeks} semana."
-msgstr[1] "No se encontraron subproyectos inactivos por más de {weeks} semanas."
-
-#: TimeTrackerCLI.py:248
-msgid "\n--- Move Sub-Project ---"
-msgstr "\n--- Mover Subproyecto ---"
-
-#: TimeTrackerCLI.py:250
-msgid "You need at least two main projects to move a sub-project."
-msgstr "Necesita al menos dos proyectos principales para mover un subproyecto."
-
-#: TimeTrackerCLI.py:254
-msgid "Select the source main project:"
-msgstr "Seleccione el proyecto principal de origen:"
-
-#: TimeTrackerCLI.py:257
-msgid "Enter the number of the source main project: "
-msgstr "Introduzca el número del proyecto principal de origen: "
-
-#: TimeTrackerCLI.py:265
-msgid "\nSelect a sub-project from '{name}' to move:"
-msgstr "\nSeleccione un subproyecto de '{name}' para mover:"
-
-#: TimeTrackerCLI.py:269
-msgid "\nSelect the destination main project:"
-msgstr "\nSeleccione el proyecto principal de destino:"
-
-#: TimeTrackerCLI.py:274
-msgid "Enter the number of the destination main project: "
-msgstr "Introduzca el número del proyecto principal de destino: "
-
-#: TimeTrackerCLI.py:279
-msgid "Successfully moved '{sub_name}' from '{source_name}' to '{dest_name}'."
-msgstr "Se ha movido '{sub_name}' de '{source_name}' a '{dest_name}' con éxito."
-
-msgid "Error: {message}"
-msgstr "Error: {message}"
-
-#: TimeTrackerCLI.py:286
-msgid "\n--- Promote Sub-Project to Main-Project ---"
-msgstr "\n--- Promover Subproyecto a Proyecto Principal ---"
-
-#: TimeTrackerCLI.py:293
-msgid "Select the main project containing the sub-project to promote:"
-msgstr "Seleccione el proyecto principal que contiene el subproyecto a promover:"
-
-#: TimeTrackerCLI.py:301
-msgid "No sub-projects to promote in '{name}'."
-msgstr "No hay subproyectos para promover en '{name}'."
-
-#: TimeTrackerCLI.py:304
-msgid "\nSelect a sub-project from '{name}' to promote:"
-msgstr "\nSeleccione un subproyecto de '{name}' para promover:"
-
-#: TimeTrackerCLI.py:315
-msgid "\n--- Demote Main-Project to Sub-Project ---"
-msgstr "\n--- Degradar Proyecto Principal a Subproyecto ---"
-
-#: TimeTrackerCLI.py:318 TimeTrackerCLI.py:322
-msgid "You need at least two main projects for this operation."
-msgstr "Necesita al menos dos proyectos principales para esta operación."
-
+#: TimeTrackerCLI.py:202
 msgid "Select the main project to demote:"
 msgstr "Seleccione el proyecto principal a degradar:"
 
-#: TimeTrackerCLI.py:325
+#: TimeTrackerCLI.py:205
 msgid "Enter the number of the project to demote: "
 msgstr "Introduzca el número del proyecto a degradar: "
 
-#: TimeTrackerCLI.py:328
-msgid "\nSelect the new parent main project:"
-msgstr "\nSeleccione el nuevo proyecto principal padre:"
+#: TimeTrackerCLI.py:209
+msgid ""
+"\n"
+"Select the new parent main project:"
+msgstr ""
+"\n"
+"Seleccione el nuevo proyecto principal padre:"
 
-#: TimeTrackerCLI.py:333
+#: TimeTrackerCLI.py:213
 msgid "Enter the number of the new parent project: "
 msgstr "Introduzca el número del nuevo proyecto padre: "
 
-msgid "Invalid choice. Please enter a number from 0 to 17."
-msgstr "Elección inválida. Por favor, introduzca un número del 0 al 17."
+#: TimeTrackerCLI.py:224
+msgid ""
+"\n"
+"--- List Completed Main Projects ---"
+msgstr ""
+"\n"
+"--- Lista de proyectos principales completados ---"
 
-#: TimeTrackerCLI.py:348
-msgid "\n--- Reporting ---"
-msgstr "\n--- Informes ---"
+#: TimeTrackerCLI.py:227
+msgid "Main projects with only closed or no sub-projects:"
+msgstr ""
+"Proyectos principales con solo subproyectos cerrados o sin subproyectos:"
 
-#: TimeTrackerCLI.py:349
-msgid "1. Daily Report (Today)"
-msgstr "1. Informe Diario (Hoy)"
+#: TimeTrackerCLI.py:231
+msgid "No completed main projects found."
+msgstr "No se encontraron proyectos principales completados."
 
-#: TimeTrackerCLI.py:350
-msgid "2. Daily Report (Specific Day)"
-msgstr "2. Informe Diario (Día Específico)"
+#: TimeTrackerCLI.py:235
+msgid "Invalid choice. Please enter a number from 0 to 9."
+msgstr "Elección no válida. Por favor ingrese un número del 0 al 9."
 
-#: TimeTrackerCLI.py:351
-msgid "3. Date Range Report"
-msgstr "3. Informe por Rango de Fechas"
+#: TimeTrackerCLI.py:240
+msgid ""
+"\n"
+"--- Task Management ---"
+msgstr ""
+"\n"
+"--- Gestión de tareas ---"
 
-#: TimeTrackerCLI.py:352
-msgid "4. Detailed Sub-Project Report"
-msgstr "4. Informe Detallado de Subproyecto"
+#: TimeTrackerCLI.py:241
+msgid "1.  Add Task"
+msgstr "1. Agregar tarea"
 
-#: TimeTrackerCLI.py:353
-msgid "5. Detailed Main-Project Report"
-msgstr "5. Informe Detallado de Proyecto Principal"
+#: TimeTrackerCLI.py:242
+msgid "2.  List Tasks"
+msgstr "2. Enumerar tareas"
+
+#: TimeTrackerCLI.py:243
+msgid "3.  Rename Task"
+msgstr "3. Cambiar nombre de tarea"
+
+#: TimeTrackerCLI.py:244
+msgid "4.  Close Task"
+msgstr "4. Cerrar tarea"
+
+#: TimeTrackerCLI.py:245
+msgid "5.  Re-open Task"
+msgstr "5. Reabrir tarea"
+
+#: TimeTrackerCLI.py:246
+msgid "6.  Delete Task"
+msgstr "6. Eliminar tarea"
+
+#: TimeTrackerCLI.py:247
+msgid "7.  Move Task"
+msgstr "7. Mover tarea"
+
+#: TimeTrackerCLI.py:248
+msgid "8.  List Inactive Tasks"
+msgstr "8. Enumerar tareas inactivas"
+
+#: TimeTrackerCLI.py:249
+msgid "9.  List All Closed Tasks"
+msgstr "9. Enumerar todas las tareas cerradas"
+
+#: TimeTrackerCLI.py:250
+msgid "10. Delete All Closed Tasks"
+msgstr "10. Eliminar todas las tareas cerradas"
+
+#: TimeTrackerCLI.py:251
+msgid "11. Promote Task to Main-Project"
+msgstr "11. Promocionar tarea a proyecto principal"
+
+#: TimeTrackerCLI.py:252
+msgid "12. Edit Task (Name & Due Date)"
+msgstr "12. Editar tarea (nombre y fecha de vencimiento)"
+
+#: TimeTrackerCLI.py:261
+msgid ""
+"\n"
+"--- Add New Task ---"
+msgstr ""
+"\n"
+"--- Agregar nueva tarea ---"
+
+#: TimeTrackerCLI.py:264 TimeTrackerCLI.py:960
+msgid "No open main projects found. Please add one first."
+msgstr ""
+"No se encontraron proyectos principales abiertos. Por favor agregue uno "
+"primero."
+
+#: TimeTrackerCLI.py:267
+msgid "Select a main project to add a task to:"
+msgstr "Seleccione un proyecto principal al que agregar una tarea:"
+
+#: TimeTrackerCLI.py:275
+msgid "Name of the new task: "
+msgstr "Nombre de la nueva tarea:"
+
+#: TimeTrackerCLI.py:276
+msgid "Due date (YYYY-MM-DD, press Enter to skip): "
+msgstr "Fecha de vencimiento (AAAA-MM-DD, presione Entrar para omitir):"
+
+#: TimeTrackerCLI.py:278
+msgid "Add to 'Today' list? (y/n, default n): "
+msgstr "¿Agregar a la lista 'Hoy'? (sí/no, n predeterminado):"
+
+#: TimeTrackerCLI.py:280
+msgid "Note (Markdown supported): "
+msgstr "Nota (se admite Markdown):"
+
+#: TimeTrackerCLI.py:283
+#, python-brace-format
+msgid "Task '{task_name}' added."
+msgstr "Se agregó la tarea '{task_name}'."
+
+#: TimeTrackerCLI.py:290
+msgid ""
+"\n"
+"--- List Tasks ---"
+msgstr ""
+"\n"
+"--- Listar tareas ---"
+
+#: TimeTrackerCLI.py:293
+msgid "No main projects found. Cannot list tasks."
+msgstr ""
+"No se encontraron proyectos principales. No se pueden enumerar tareas."
+
+#: TimeTrackerCLI.py:296
+msgid "Select the main project whose tasks you want to list:"
+msgstr "Seleccione el proyecto principal cuyas tareas desea enumerar:"
+
+#: TimeTrackerCLI.py:305 sl/SL_Menu.py:1307
+#, python-brace-format
+msgid "Tasks for '{name}':"
+msgstr "Tareas para '{name}':"
+
+#: TimeTrackerCLI.py:308 sl/SL_Menu.py:524 sl/SL_Menu.py:612
+msgid "Due"
+msgstr "Vencimiento"
+
+#: TimeTrackerCLI.py:309 sl/SL_Menu.py:409 sl/SL_Menu.py:419 sl/SL_Menu.py:484
+#: sl/SL_Menu.py:546 sl/SL_Menu.py:747 sl/SL_Menu.py:1603 sl/SL_Menu.py:1771
+msgid "Today"
+msgstr "hoy"
+
+#: TimeTrackerCLI.py:317 TimeTrackerCLI.py:861 sl/SL_Menu.py:1315
+#: sl/SL_Menu.py:2276
+#, python-brace-format
+msgid "No tasks found for '{name}'."
+msgstr "No se encontraron tareas para '{name}'."
+
+#: TimeTrackerCLI.py:322
+msgid ""
+"\n"
+"--- Rename Task ---"
+msgstr ""
+"\n"
+"--- Cambiar nombre de tarea ---"
+
+#: TimeTrackerCLI.py:325 TimeTrackerCLI.py:362 TimeTrackerCLI.py:397
+#: TimeTrackerCLI.py:432 TimeTrackerCLI.py:560
+msgid "No open main projects found."
+msgstr "No se encontraron proyectos principales abiertos."
+
+#: TimeTrackerCLI.py:328 TimeTrackerCLI.py:365 TimeTrackerCLI.py:400
+#: TimeTrackerCLI.py:435 TimeTrackerCLI.py:599 TimeTrackerCLI.py:852
+msgid "Select the main project:"
+msgstr "Seleccione el proyecto principal:"
+
+#: TimeTrackerCLI.py:338
+#, python-brace-format
+msgid "No tasks to rename for '{name}'."
+msgstr "No hay tareas para cambiar el nombre de '{name}'."
+
+#: TimeTrackerCLI.py:341
+#, python-brace-format
+msgid "Select a task from '{name}' to rename:"
+msgstr "Seleccione una tarea de '{name}' para cambiarle el nombre:"
+
+#: TimeTrackerCLI.py:345 TimeTrackerCLI.py:382 TimeTrackerCLI.py:417
+#: TimeTrackerCLI.py:453 TimeTrackerCLI.py:489 TimeTrackerCLI.py:580
+#: TimeTrackerCLI.py:867 TimeTrackerCLI.py:982
+msgid "Enter the number of the task: "
+msgstr "Ingrese el número de la tarea:"
+
+#: TimeTrackerCLI.py:352 sl/SL_Menu.py:1358
+#, python-brace-format
+msgid "Task '{old_name}' renamed to '{new_name}'."
+msgstr "Tarea '{old_name}' renombrada a '{new_name}'."
+
+#: TimeTrackerCLI.py:354
+msgid ""
+"Error: Could not rename. The new name might already exist or the project was"
+" not found."
+msgstr ""
+"Error: No se pudo renombrar. El nuevo nombre ya podría existir o el proyecto"
+" no fue encontrado."
 
 #: TimeTrackerCLI.py:359
-msgid "\n--- Generate Daily Report (Today) ---"
-msgstr "\n--- Generar Informe Diario (Hoy) ---"
-
-#: TimeTrackerCLI.py:363
-msgid "\n--- Generate Daily Report for a specific Day ---"
-msgstr "\n--- Generar Informe Diario para un Día Específico ---"
-
-#: TimeTrackerCLI.py:364
-msgid "Enter the date (YYYY-MM-DD): "
-msgstr "Introduzca la fecha (AAAA-MM-DD): "
-
-#: TimeTrackerCLI.py:369
-msgid "Invalid date format. Please use YYYY-MM-DD."
-msgstr "Formato de fecha inválido. Por favor, use AAAA-MM-DD."
-
-#: TimeTrackerCLI.py:371 TimeTrackerCLI.py:373
-msgid "\n--- Generate Report for a Date Range ---"
-msgstr "\n--- Generar Informe por Rango de Fechas ---"
-
-msgid "Enter the start date (YYYY-MM-DD): "
-msgstr "Introduzca la fecha de inicio (AAAA-MM-DD): "
+msgid ""
+"\n"
+"--- Close Task ---"
+msgstr ""
+"\n"
+"--- Cerrar tarea ---"
 
 #: TimeTrackerCLI.py:375
-msgid "Enter the end date (YYYY-MM-DD): "
-msgstr "Introduzca la fecha de fin (AAAA-MM-DD): "
+#, python-brace-format
+msgid "No open tasks to close for '{name}'."
+msgstr "No hay tareas abiertas para cerrar para '{name}'."
 
-#: TimeTrackerCLI.py:377
-msgid "Error: The start date cannot be after the end date."
-msgstr "Error: La fecha de inicio no puede ser posterior a la fecha de fin."
+#: TimeTrackerCLI.py:378
+#, python-brace-format
+msgid "Select a task from '{name}' to close:"
+msgstr "Seleccione una tarea de '{name}' para cerrar:"
 
-#: TimeTrackerCLI.py:382
-msgid "\n--- Detailed Sub-Project Report ---"
-msgstr "\n--- Informe Detallado de Subproyecto ---"
+#: TimeTrackerCLI.py:387
+#, python-brace-format
+msgid "Task '{task_name}' in '{main_name}' has been closed."
+msgstr "La tarea '{task_name}' en '{main_name}' se ha cerrado."
 
-#: TimeTrackerCLI.py:384 TimeTrackerCLI.py:407
-msgid "No projects found."
-msgstr "No se encontraron proyectos."
+#: TimeTrackerCLI.py:389 TimeTrackerCLI.py:424 TimeTrackerCLI.py:460
+#: sl/SL_Menu.py:945 sl/SL_Menu.py:990 sl/SL_Menu.py:1036
+msgid "Error: Main project or task not found."
+msgstr "Error: Proyecto principal o tarea no encontrada."
 
-#: TimeTrackerCLI.py:397
-msgid "\nSelect the sub-project for the report:"
-msgstr "\nSeleccione el subproyecto para el informe:"
+#: TimeTrackerCLI.py:394
+msgid ""
+"\n"
+"--- Re-open Task ---"
+msgstr ""
+"\n"
+"--- Reabrir tarea ---"
 
-#: TimeTrackerCLI.py:405
-msgid "\n--- Detailed Main-Project Report ---"
-msgstr "\n--- Informe Detallado del Proyecto Principal ---"
+#: TimeTrackerCLI.py:410
+#, python-brace-format
+msgid "No closed tasks to reopen for '{name}'."
+msgstr "No hay tareas cerradas para reabrir para '{name}'."
 
-#: TimeTrackerCLI.py:417
-msgid "Select the main project for the report:"
-msgstr "Seleccione el proyecto principal para el informe:"
+#: TimeTrackerCLI.py:413
+#, python-brace-format
+msgid "Select a task from '{name}' to reopen:"
+msgstr "Seleccione una tarea de '{name}' para reabrir:"
 
-#: TimeTrackerCLI.py:424
-msgid "Invalid choice. Please enter a number from 0 to 5."
-msgstr "Elección inválida. Por favor, introduzca un número del 0 al 5."
+#: TimeTrackerCLI.py:422
+#, python-brace-format
+msgid "Task '{task_name}' in '{main_name}' has been reopened."
+msgstr "La tarea '{task_name}' en '{main_name}' se ha reabierto."
 
-#: TimeTrackerCLI.py:428 TimeTrackerCLI.py:469
-msgid "\n--- Settings ---"
-msgstr "\n--- Configuración ---"
+#: TimeTrackerCLI.py:429
+msgid ""
+"\n"
+"--- Delete Task ---"
+msgstr ""
+"\n"
+"--- Eliminar tarea ---"
 
-#: TimeTrackerCLI.py:429 TimeTrackerCLI.py:562
+#: TimeTrackerCLI.py:446
+#, python-brace-format
+msgid "No tasks to delete for '{name}'."
+msgstr "No hay tareas para eliminar para '{name}'."
+
+#: TimeTrackerCLI.py:449
+#, python-brace-format
+msgid "Select a task from '{name}' to delete:"
+msgstr "Seleccione una tarea de '{name}' para eliminar:"
+
+#: TimeTrackerCLI.py:458
+#, python-brace-format
+msgid "Task '{task_name}' deleted from '{main_name}'."
+msgstr "Tarea '{task_name}' eliminada de '{main_name}'."
+
+#: TimeTrackerCLI.py:466
+msgid ""
+"\n"
+"--- Move Task ---"
+msgstr ""
+"\n"
+"--- Mover tarea ---"
+
+#: TimeTrackerCLI.py:469
+msgid "You need at least two open main projects to move a task."
+msgstr ""
+"Necesita al menos dos proyectos principales abiertos para mover una tarea."
+
+#: TimeTrackerCLI.py:474
+msgid "Select the source main project:"
+msgstr "Seleccione el proyecto principal de origen:"
+
+#: TimeTrackerCLI.py:477
+msgid "Enter the number of the source main project: "
+msgstr "Introduzca el número del proyecto principal de origen: "
+
+#: TimeTrackerCLI.py:483
+#, python-brace-format
+msgid "No tasks to move from '{name}'."
+msgstr "No hay tareas para mover desde '{name}'."
+
+#: TimeTrackerCLI.py:486
+#, python-brace-format
+msgid ""
+"\n"
+"Select a task from '{name}' to move:"
+msgstr ""
+"\n"
+"Seleccione una tarea de '{name}' para mover:"
+
+#: TimeTrackerCLI.py:494
+msgid ""
+"\n"
+"Select the destination main project:"
+msgstr ""
+"\n"
+"Seleccione el proyecto principal de destino:"
+
+#: TimeTrackerCLI.py:499
+msgid "Enter the number of the destination main project: "
+msgstr "Introduzca el número del proyecto principal de destino: "
+
+#: TimeTrackerCLI.py:505
+#, python-brace-format
+msgid ""
+"Successfully moved '{task_name}' from '{source_main_project}' to "
+"'{dest_main_project}'."
+msgstr ""
+"Se movió correctamente '{task_name}' de '{source_main_project}' a "
+"'{dest_main_project}'."
+
+#: TimeTrackerCLI.py:507
+#, python-brace-format
+msgid "Error: {message}"
+msgstr "Error: {message}"
+
+#: TimeTrackerCLI.py:514
+msgid ""
+"\n"
+"--- List Inactive Tasks ---"
+msgstr ""
+"\n"
+"--- Listar tareas inactivas ---"
+
+#: TimeTrackerCLI.py:516
+msgid "Enter the number of weeks without activity (e.g., 4): "
+msgstr "Introduzca el número de semanas sin actividad (ej: 4): "
+
+#: TimeTrackerCLI.py:524
+#, python-brace-format
+msgid ""
+"\n"
+"Inactive Tasks (>{weeks} weeks):"
+msgstr ""
+"\n"
+"Tareas inactivas (>{weeks}semanas):"
+
+#: TimeTrackerCLI.py:527
+#, python-brace-format
+msgid "    Task: {name}"
+msgstr "Tarea:{name}"
+
+#: TimeTrackerCLI.py:531 sl/SL_Menu.py:1118
+#, python-brace-format
+msgid "No tasks found inactive for more than {weeks} weeks."
+msgstr "No se encontraron tareas inactivas durante más de{weeks}semanas."
+
+#: TimeTrackerCLI.py:537
+msgid ""
+"\n"
+"--- List All Closed Tasks ---"
+msgstr ""
+"\n"
+"--- Listar todas las tareas cerradas ---"
+
+#: TimeTrackerCLI.py:543 sl/SL_Menu.py:1143 sl/SL_Menu.py:1166
+msgid "No closed tasks found."
+msgstr "No se encontraron tareas cerradas."
+
+#: TimeTrackerCLI.py:547
+msgid ""
+"\n"
+"--- Delete All Closed Tasks ---"
+msgstr ""
+"\n"
+"--- Eliminar todas las tareas cerradas ---"
+
+#: TimeTrackerCLI.py:548
+msgid "Are you sure you want to delete ALL closed tasks? (y/n): "
+msgstr "¿Está seguro de que desea eliminar TODAS las tareas cerradas? (t/n):"
+
+#: TimeTrackerCLI.py:551
+#, python-brace-format
+msgid "{count} closed tasks were deleted."
+msgstr "Se eliminaron{count}tareas cerradas."
+
+#: TimeTrackerCLI.py:553
+msgid "Operation cancelled."
+msgstr "Operación cancelada."
+
+#: TimeTrackerCLI.py:557
+msgid ""
+"\n"
+"--- Promote Task to Main-Project ---"
+msgstr ""
+"\n"
+"--- Promocionar tarea a proyecto principal ---"
+
+#: TimeTrackerCLI.py:565
+msgid "Select the main project containing the task to promote:"
+msgstr "Seleccione el proyecto principal que contiene la tarea a promover:"
+
+#: TimeTrackerCLI.py:574
+#, python-brace-format
+msgid "No tasks to promote in '{name}'."
+msgstr "No hay tareas para promover en '{name}'."
+
+#: TimeTrackerCLI.py:577
+#, python-brace-format
+msgid ""
+"\n"
+"Select a task from '{name}' to promote:"
+msgstr ""
+"\n"
+"Seleccione una tarea de '{name}' para promover:"
+
+#: TimeTrackerCLI.py:593
+msgid ""
+"\n"
+"--- Edit Task ---"
+msgstr ""
+"\n"
+"--- Editar tarea ---"
+
+#: TimeTrackerCLI.py:596 sl/SL_Menu.py:913 sl/SL_Menu.py:958
+#: sl/SL_Menu.py:1003 sl/SL_Menu.py:1049 sl/SL_Menu.py:1198 sl/SL_Menu.py:1328
+#: sl/SL_Menu.py:1487 sl/SL_Menu.py:1677
+msgid "No open projects found."
+msgstr "No se encontraron proyectos abiertos."
+
+#: TimeTrackerCLI.py:609
+#, python-brace-format
+msgid "No open tasks in '{name}'."
+msgstr "No hay tareas abiertas en '{name}'."
+
+#: TimeTrackerCLI.py:612
+msgid "Select a task to edit:"
+msgstr "Seleccione una tarea para editar:"
+
+#: TimeTrackerCLI.py:616
+msgid "Enter the number: "
+msgstr "Ingrese el número:"
+
+#: TimeTrackerCLI.py:623
+#, python-brace-format
+msgid "New name (press Enter to keep '{name}'): "
+msgstr "Nuevo nombre (presione Enter para conservar '{name}'):"
+
+#: TimeTrackerCLI.py:624
+#, python-brace-format
+msgid "New due date (YYYY-MM-DD, current: '{due}', enter '-' to clear): "
+msgstr ""
+"Nueva fecha de vencimiento (AAAA-MM-DD, actual: '{due}', ingrese '-' para "
+"borrar):"
+
+#: TimeTrackerCLI.py:627
+#, python-brace-format
+msgid "Is this for today? (current: {current}, y/n, press Enter to keep): "
+msgstr ""
+"¿Es esto para hoy? (actual:{current}, y/n, presione Enter para mantener):"
+
+#: TimeTrackerCLI.py:630
+#, python-brace-format
+msgid "Current Note: {note}"
+msgstr "Nota actual:{note}"
+
+#: TimeTrackerCLI.py:631
+msgid "New note (press Enter to keep current): "
+msgstr "Nueva nota (presione Enter para mantener actual):"
+
+#: TimeTrackerCLI.py:635
+#, python-brace-format
+msgid "Is this task done? (current: {current}, y/n, press Enter to keep): "
+msgstr ""
+"¿Se completó esta tarea? (actual:{current}, y/n, presione Entrar para "
+"mantener):"
+
+#: TimeTrackerCLI.py:639 sl/SL_Menu.py:1834
+msgid "Task updated successfully."
+msgstr "Tarea actualizada exitosamente."
+
+#: TimeTrackerCLI.py:641
+msgid "Error updating task."
+msgstr "Error al actualizar la tarea."
+
+#: TimeTrackerCLI.py:643
+msgid "Invalid input."
+msgstr "Entrada no válida."
+
+#: TimeTrackerCLI.py:648
+msgid "Invalid choice. Please enter a number from 0 to 11."
+msgstr "Elección no válida. Ingrese un número del 0 al 11."
+
+#: TimeTrackerCLI.py:653
+msgid ""
+"\n"
+"--- Settings ---"
+msgstr ""
+"\n"
+"--- Configuración ---"
+
+#: TimeTrackerCLI.py:654 sl/SL_Menu.py:870
 msgid "1. Change Language"
 msgstr "1. Cambiar Idioma"
 
-#: TimeTrackerCLI.py:430
+#: TimeTrackerCLI.py:655 sl/SL_Menu.py:871
 msgid "2. Restore Previous Version"
 msgstr "2. Restaurar Versión Anterior"
 
+#: TimeTrackerCLI.py:656 sl/SL_Menu.py:872
 msgid "3. Change Data Storage Location"
 msgstr "3. Cambiar Ubicación de Almacenamiento de Datos"
 
-msgid "Invalid choice. Please enter a number from 0 to 3."
-msgstr "Elección inválida. Por favor, introduzca un número del 0 al 3."
+#: TimeTrackerCLI.py:657 sl/SL_Menu.py:874
+msgid "4. Change Streamlit Port"
+msgstr "4. Cambiar puerto de Streamlit"
 
-#: TimeTrackerCLI.py:446 TimeTrackerCLI.py:545
-msgid "\n--- Language Settings ---"
-msgstr "\n--- Configuración de Idioma ---"
+#: TimeTrackerCLI.py:659 TimeTrackerCLI.py:698 TimeTrackerCLI.py:808
+#: sl/SL_Menu.py:881
+msgid "0. Back to Main Menu"
+msgstr "0. Volver al menú principal"
 
-#: TimeTrackerCLI.py:449 TimeTrackerCLI.py:548
+#: TimeTrackerCLI.py:682
+msgid "Invalid choice. Please enter a number from 0 to 4."
+msgstr "Elección no válida. Por favor ingrese un número del 0 al 4."
+
+#: TimeTrackerCLI.py:687
+msgid ""
+"\n"
+"--- Language Settings ---"
+msgstr ""
+"\n"
+"--- Configuración de Idioma ---"
+
+#: TimeTrackerCLI.py:692
 msgid "No additional languages found."
 msgstr "No se encontraron idiomas adicionales."
 
-#: TimeTrackerCLI.py:458 TimeTrackerCLI.py:587
+#: TimeTrackerCLI.py:716
+#, python-brace-format
 msgid "Language changed to '{lang}'. Please restart the application."
 msgstr "Idioma cambiado a '{lang}'. Por favor, reinicie la aplicación."
 
-#: TimeTrackerCLI.py:460 TimeTrackerCLI.py:590
+#: TimeTrackerCLI.py:719
 msgid "Invalid choice."
 msgstr "Elección inválida."
 
-#: TimeTrackerCLI.py:462 TimeTrackerCLI.py:592
+#: TimeTrackerCLI.py:721
 msgid "Invalid input. Please enter a number."
 msgstr "Entrada inválida. Por favor, introduzca un número."
 
-msgid "\n--- Data Storage Settings ---"
-msgstr "\n--- Configuración de Almacenamiento de Datos ---"
+#: TimeTrackerCLI.py:725
+msgid ""
+"\n"
+"--- Data Storage Settings ---"
+msgstr ""
+"\n"
+"--- Configuración de Almacenamiento de Datos ---"
 
+#: TimeTrackerCLI.py:726
+#, python-brace-format
 msgid "Current data file: {path}"
 msgstr "Archivo de datos actual: {path}"
 
+#: TimeTrackerCLI.py:728
 msgid "Enter the new path for the data file (e.g., /path/to/my_data.json)."
-msgstr "Introduzca la nueva ruta para el archivo de datos (ej: /ruta/a/mis_datos.json)."
+msgstr ""
+"Introduzca la nueva ruta para el archivo de datos (ej: "
+"/ruta/a/mis_datos.json)."
 
+#: TimeTrackerCLI.py:729
 msgid "Leave empty to cancel."
 msgstr "Dejar vacío para cancelar."
 
+#: TimeTrackerCLI.py:730
 msgid "New Path: "
 msgstr "Nueva Ruta: "
 
+#: TimeTrackerCLI.py:738 sl/SL_Menu.py:1974
+#, python-brace-format
 msgid "Error: The directory '{dir}' does not exist."
 msgstr "Error: El directorio '{dir}' no existe."
 
+#: TimeTrackerCLI.py:752
 msgid "Storage location updated."
 msgstr "Ubicación de almacenamiento actualizada."
 
+#: TimeTrackerCLI.py:756
 msgid "Do you want to move the existing data to the new location? (y/n): "
 msgstr "¿Desea mover los datos existentes a la nueva ubicación? (s/n): "
 
+#: TimeTrackerCLI.py:760 sl/SL_Menu.py:1985
 msgid "Data moved successfully."
 msgstr "Datos movidos con éxito."
 
+#: TimeTrackerCLI.py:762 sl/SL_Menu.py:1987
+#, python-brace-format
 msgid "Error moving data: {error}"
 msgstr "Error al mover datos: {error}"
 
-#: TimeTrackerCLI.py:508
-msgid "\n--- Update Available ---"
-msgstr "\n--- Actualización Disponible ---"
+#: TimeTrackerCLI.py:764 tt/TimeTracker.py:117
+msgid "Please restart the application for the changes to take effect."
+msgstr "Por favor, reinicie la aplicación para que los cambios surtan efecto."
 
-#: TimeTrackerCLI.py:509
+#: TimeTrackerCLI.py:767
+#, python-brace-format
+msgid "Error updating configuration: {error}"
+msgstr "Error al actualizar la configuración: {error}"
+
+#: TimeTrackerCLI.py:771
+msgid ""
+"\n"
+"--- Streamlit Port Settings ---"
+msgstr ""
+"\n"
+"--- Configuración del puerto Streamlit ---"
+
+#: TimeTrackerCLI.py:781
+#, python-brace-format
+msgid "Current Streamlit Port: {port}"
+msgstr "Puerto actual de Streamlit: {port}"
+
+#: TimeTrackerCLI.py:783
+msgid "Enter new port (or press Enter to keep current): "
+msgstr "Ingrese el nuevo puerto (o presione Enter para mantener el actual): "
+
+#: TimeTrackerCLI.py:792
+#, python-brace-format
+msgid ""
+"Port updated to {port}. Please restart Streamlit for changes to take effect."
+msgstr ""
+"Puerto actualizado a {port}. Reinicie Streamlit para que los cambios surtan "
+"efecto."
+
+#: TimeTrackerCLI.py:800
+msgid ""
+"\n"
+"--- Reporting ---"
+msgstr ""
+"\n"
+"--- Informes ---"
+
+#: TimeTrackerCLI.py:801
+msgid "1. Daily Report (Today)"
+msgstr "1. Informe Diario (Hoy)"
+
+#: TimeTrackerCLI.py:802
+msgid "2. Daily Report (Specific Day)"
+msgstr "2. Informe Diario (Día Específico)"
+
+#: TimeTrackerCLI.py:803
+msgid "3. Date Range Report"
+msgstr "3. Informe por Rango de Fechas"
+
+#: TimeTrackerCLI.py:804
+msgid "4. Detailed Task Report"
+msgstr "4. Informe detallado de tareas"
+
+#: TimeTrackerCLI.py:805
+msgid "5. Detailed Main-Project Report"
+msgstr "5. Informe Detallado de Proyecto Principal"
+
+#: TimeTrackerCLI.py:806
+msgid "6. Detailed Daily Report"
+msgstr "6. Informe Diario Detallado"
+
+#: TimeTrackerCLI.py:815
+msgid ""
+"\n"
+"--- Generate Daily Report (Today) ---"
+msgstr ""
+"\n"
+"--- Generar Informe Diario (Hoy) ---"
+
+#: TimeTrackerCLI.py:820
+msgid ""
+"\n"
+"--- Generate Daily Report for a specific Day ---"
+msgstr ""
+"\n"
+"--- Generar Informe Diario para un Día Específico ---"
+
+#: TimeTrackerCLI.py:821
+msgid "Enter the date (YYYY-MM-DD): "
+msgstr "Introduzca la fecha (AAAA-MM-DD): "
+
+#: TimeTrackerCLI.py:827 TimeTrackerCLI.py:842 TimeTrackerCLI.py:903
+msgid "Invalid date format. Please use YYYY-MM-DD."
+msgstr "Formato de fecha inválido. Por favor, use AAAA-MM-DD."
+
+#: TimeTrackerCLI.py:830
+msgid ""
+"\n"
+"--- Generate Report for a Date Range ---"
+msgstr ""
+"\n"
+"--- Generar Informe por Rango de Fechas ---"
+
+#: TimeTrackerCLI.py:831
+msgid "Enter the start date (YYYY-MM-DD): "
+msgstr "Introduzca la fecha de inicio (AAAA-MM-DD): "
+
+#: TimeTrackerCLI.py:832
+msgid "Enter the end date (YYYY-MM-DD): "
+msgstr "Introduzca la fecha de fin (AAAA-MM-DD): "
+
+#: TimeTrackerCLI.py:837 sl/SL_Menu.py:2227
+msgid "Error: The start date cannot be after the end date."
+msgstr "Error: La fecha de inicio no puede ser posterior a la fecha de fin."
+
+#: TimeTrackerCLI.py:844
+msgid ""
+"\n"
+"--- Detailed Task Report ---"
+msgstr ""
+"\n"
+"--- Informe de tarea detallado ---"
+
+#: TimeTrackerCLI.py:847 TimeTrackerCLI.py:880 sl/SL_Menu.py:1249
+#: sl/SL_Menu.py:1296 sl/SL_Menu.py:1435 sl/SL_Menu.py:2245 sl/SL_Menu.py:2304
+msgid "No projects found."
+msgstr "No se encontraron proyectos."
+
+#: TimeTrackerCLI.py:864
+msgid ""
+"\n"
+"Select the task for the report:"
+msgstr ""
+"\n"
+"Seleccione la tarea para el informe:"
+
+#: TimeTrackerCLI.py:877
+msgid ""
+"\n"
+"--- Detailed Main-Project Report ---"
+msgstr ""
+"\n"
+"--- Informe Detallado del Proyecto Principal ---"
+
+#: TimeTrackerCLI.py:885
+msgid "Select the main project for the report:"
+msgstr "Seleccione el proyecto principal para el informe:"
+
+#: TimeTrackerCLI.py:896
+msgid ""
+"\n"
+"--- Detailed Daily Report ---"
+msgstr ""
+"\n"
+"--- Informe Diario Detallado ---"
+
+#: TimeTrackerCLI.py:897
+msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
+msgstr "Introduzca la fecha (AAAA-MM-DD) o presione Enter para hoy: "
+
+#: TimeTrackerCLI.py:911 TimeTrackerCLI.py:1042
+msgid "Invalid choice. Please enter a number from 0 to 6."
+msgstr "Elección inválida. Por favor, introduzca un número del 0 al 6."
+
+#: TimeTrackerCLI.py:919
+msgid ""
+"\n"
+"--- Update Available ---"
+msgstr ""
+"\n"
+"--- Actualización Disponible ---"
+
+#: TimeTrackerCLI.py:920
 msgid "A downloaded update is ready to be installed."
 msgstr "Una actualización descargada está lista para ser instalada."
 
-#: TimeTrackerCLI.py:510
+#: TimeTrackerCLI.py:921
 msgid "0. Skip update for now"
 msgstr "0. Omitir actualización por ahora"
 
-#: TimeTrackerCLI.py:511
+#: TimeTrackerCLI.py:922
 msgid "1. Install update now"
 msgstr "1. Instalar actualización ahora"
 
-#: TimeTrackerCLI.py:512
+#: TimeTrackerCLI.py:923
 msgid "Enter your choice (0 or 1): "
 msgstr "Introduzca su elección (0 o 1): "
 
-#: TimeTrackerCLI.py:515
+#: TimeTrackerCLI.py:927
 msgid "Application is restarting to complete the update..."
 msgstr "La aplicación se está reiniciando para completar la actualización..."
 
-#: TimeTrackerCLI.py:518
+#: TimeTrackerCLI.py:931
 msgid "Update installation skipped. The application will start normally."
-msgstr "Instalación de la actualización omitida. La aplicación se iniciará normalmente."
+msgstr ""
+"Instalación de la actualización omitida. La aplicación se iniciará "
+"normalmente."
 
-#: TimeTrackerCLI.py:520
+#: TimeTrackerCLI.py:933
 msgid ""
 "Invalid choice. Update installation skipped. The application will start "
 "normally."
 msgstr ""
-"Elección inválida. Instalación de la actualización omitida. La aplicación se "
-"iniciará normalmente."
+"Elección inválida. Instalación de la actualización omitida. La aplicación se"
+" iniciará normalmente."
 
-#: TimeTrackerCLI.py:525
-msgid "\n=== Time Control {version} ==="
-msgstr "\n=== Time Control {version} ==="
+#: TimeTrackerCLI.py:940
+#, python-brace-format
+msgid ""
+"\n"
+"=== Time Control {version} ==="
+msgstr ""
+"\n"
+"=== Time Control {version} ==="
 
-#: TimeTrackerCLI.py:526
+#: TimeTrackerCLI.py:941
 msgid "--- Main Menu ---"
 msgstr "--- Menú Principal ---"
 
-msgid "1. Start work on sub-project"
-msgstr "1. Iniciar trabajo en subproyecto"
+#: TimeTrackerCLI.py:942
+msgid "1. Start work on task"
+msgstr "1. Comenzar a trabajar en la tarea"
 
-#: TimeTrackerCLI.py:528
+#: TimeTrackerCLI.py:943
 msgid "2. Show current work"
 msgstr "2. Mostrar trabajo actual"
 
-#: TimeTrackerCLI.py:530
+#: TimeTrackerCLI.py:944
 msgid "3. Stop current work"
 msgstr "3. Detener trabajo actual"
 
-#: TimeTrackerCLI.py:531
-msgid "4. Handle projects and sub-projects"
-msgstr "4. Gestionar proyectos y subproyectos"
+#: TimeTrackerCLI.py:946
+msgid "4. Handle projects and tasks"
+msgstr "4. Manejar proyectos y tareas"
 
-#: TimeTrackerCLI.py:532
+#: TimeTrackerCLI.py:947
 msgid "5. Reporting"
 msgstr "5. Informes"
 
-#: TimeTrackerCLI.py:533
+#: TimeTrackerCLI.py:948
 msgid "6. Settings"
 msgstr "6. Configuración"
 
-#: TimeTrackerCLI.py:535
+#: TimeTrackerCLI.py:950
 msgid "0. Exit"
 msgstr "0. Salir"
 
-#: TimeTrackerCLI.py:541
-msgid "\n--- Start Work on a Sub-Project ---"
-msgstr "\n--- Iniciar Trabajo en un Subproyecto ---"
+#: TimeTrackerCLI.py:957
+msgid ""
+"\n"
+"--- Start Work on a Task ---"
+msgstr ""
+"\n"
+"--- Comenzar a trabajar en una tarea ---"
 
-#: TimeTrackerCLI.py:498
-msgid "Select a sub-project from '{name}':"
-msgstr "Seleccione un subproyecto de '{name}':"
+#: TimeTrackerCLI.py:963
+msgid "Select a main project:"
+msgstr "Seleccione un proyecto principal:"
 
-#: TimeTrackerCLI.py:507
-msgid "Work started on '{sub_name}' in project '{main_name}'."
-msgstr "Trabajo iniciado en '{sub_name}' en el proyecto '{main_name}'."
+#: TimeTrackerCLI.py:974
+#, python-brace-format
+msgid "No open tasks found for '{name}' to start work on."
+msgstr ""
+"No se encontraron tareas abiertas para '{name}' para comenzar a trabajar."
 
+#: TimeTrackerCLI.py:977
+#, python-brace-format
+msgid "Select a task from '{name}':"
+msgstr "Seleccione una tarea de '{name}':"
+
+#: TimeTrackerCLI.py:987 sl/SL_Menu.py:1884
+#, python-brace-format
+msgid "Work started on '{task_name}' in project '{main_name}'."
+msgstr "Trabajo iniciado en '{task_name}' en el proyecto '{main_name}'."
+
+#: TimeTrackerCLI.py:989 sl/SL_Menu.py:1888
 msgid "Error starting work."
 msgstr "Error al iniciar el trabajo."
 
-#: TimeTrackerCLI.py:514
-msgid "\n--- Current Active Work ---"
-msgstr "\n--- Trabajo Activo Actual ---"
+#: TimeTrackerCLI.py:996
+msgid ""
+"\n"
+"--- Current Active Work ---"
+msgstr ""
+"\n"
+"--- Trabajo Activo Actual ---"
 
-#: TimeTrackerCLI.py:523
+#: TimeTrackerCLI.py:1006
 msgid "You are currently working on:"
 msgstr "Actualmente está trabajando en:"
 
-#: TimeTrackerCLI.py:524
+#: TimeTrackerCLI.py:1007
+#, python-brace-format
 msgid "  Main Project: {name}"
 msgstr "  Proyecto Principal: {name}"
 
-#: TimeTrackerCLI.py:525
-msgid "  Sub-Project:  {name}"
-msgstr "  Subproyecto:  {name}"
+#: TimeTrackerCLI.py:1008
+#, python-brace-format
+msgid "  Task:         {name}"
+msgstr "Tarea:{name}"
 
-#: TimeTrackerCLI.py:526
+#: TimeTrackerCLI.py:1009
+#, python-brace-format
 msgid "  Started at:   {date}"
 msgstr "  Iniciado a las:   {date}"
 
-#: TimeTrackerCLI.py:527
+#: TimeTrackerCLI.py:1010
+#, python-brace-format
 msgid "  Duration:     {duration}"
 msgstr "  Duración:     {duration}"
 
-#: TimeTrackerCLI.py:529
+#: TimeTrackerCLI.py:1012 sl/SL_Menu.py:373 sl/SL_Menu.py:1910
 msgid "No active work session."
 msgstr "No hay sesión de trabajo activa."
 
-#: TimeTrackerCLI.py:532
-msgid "\n--- Stop Work ---"
-msgstr "\n--- Detener Trabajo ---"
+#: TimeTrackerCLI.py:1016
+msgid ""
+"\n"
+"--- Stop Work ---"
+msgstr ""
+"\n"
+"--- Detener Trabajo ---"
 
-#: TimeTrackerCLI.py:534
+#: TimeTrackerCLI.py:1018 sl/SL_Menu.py:341
 msgid "Work session stopped successfully."
 msgstr "Sesión de trabajo detenida con éxito."
 
-#: TimeTrackerCLI.py:536
+#: TimeTrackerCLI.py:1020 sl/SL_Menu.py:343
 msgid "No active work session to stop."
 msgstr "No hay ninguna sesión de trabajo activa para detener."
 
-#: TimeTrackerCLI.py:598
-msgid "\nChecking for updates..."
-msgstr "\nBuscando actualizaciones..."
+#: TimeTrackerCLI.py:1034
+msgid ""
+"\n"
+"Checking for updates..."
+msgstr ""
+"\n"
+"Buscando actualizaciones..."
 
-#: TimeTrackerCLI.py:602
+#: TimeTrackerCLI.py:1038
 msgid "Exiting application. Goodbye!"
 msgstr "Saliendo de la aplicación. ¡Adiós!"
 
-#: TimeTrackerCLI.py:605
-msgid "Invalid choice. Please enter a number from 0 to 6."
-msgstr "Elección inválida. Por favor, introduzca un número del 0 al 6."
-
-#: update.py:24
+#: update.py:35
 msgid ""
 "Warning: Update check skipped. 'github_repo' not found in config.json or "
 "file is invalid."
@@ -1031,75 +1285,86 @@ msgstr ""
 "Advertencia: Comprobación de actualizaciones omitida. 'github_repo' no "
 "encontrado en config.json o el archivo es inválido."
 
-#: update.py:24
-msgid "Error updating configuration: {error}"
-msgstr "Error al actualizar la configuración: {error}"
-
-#: update.py:38
+#: update.py:49
+#, python-brace-format
 msgid "A new version ({version}) is available."
 msgstr "Una nueva versión ({version}) está disponible."
 
-#: update.py:43
+#: update.py:55
 msgid "Error: Download URL for the new version not found."
 msgstr "Error: No se encontró la URL de descarga para la nueva versión."
 
-#: update.py:47
+#: update.py:59
+#, python-brace-format
 msgid "Error checking for updates: {error}"
 msgstr "Error al buscar actualizaciones: {error}"
 
-#: update.py:49
+#: update.py:61
+#, python-brace-format
 msgid "An unexpected error occurred while checking for updates: {error}"
 msgstr "Ocurrió un error inesperado al buscar actualizaciones: {error}"
 
-#: update.py:61
+#: update.py:73
 msgid "Downloading update..."
 msgstr "Descargando actualización..."
 
-#: update.py:67
+#: update.py:79
 msgid "Download complete. The update will be installed on the next start."
-msgstr "Descarga completa. La actualización se instalará en el próximo inicio."
+msgstr ""
+"Descarga completa. La actualización se instalará en el próximo inicio."
 
-#: update.py:70
+#: update.py:82
+#, python-brace-format
 msgid "Error downloading the update: {error}"
 msgstr "Error al descargar la actualización: {error}"
 
-#: update.py:112
+#: update.py:108
 msgid "Creating backup of current version before update..."
-msgstr "Creando copia de seguridad de la versión actual antes de la actualización..."
+msgstr ""
+"Creando copia de seguridad de la versión actual antes de la actualización..."
 
-#: update.py:121
+#: update.py:118
+#, python-brace-format
 msgid "Backup created successfully as {filename}."
 msgstr "Copia de seguridad creada con éxito como {filename}."
 
-#: update.py:123
+#: update.py:120
+#, python-brace-format
 msgid "Warning: Could not create backup. Error: {error}"
 msgstr "Advertencia: No se pudo crear la copia de seguridad. Error: {error}"
 
-#: update.py:125
+#: update.py:122
 msgid "Installing update..."
 msgstr "Instalando actualización..."
 
-#: update.py:143
+#: update.py:142
+#, python-brace-format
 msgid "Skipping protected file: {filename}. It will not be overwritten."
 msgstr "Omitiendo archivo protegido: {filename}. No será sobrescrito."
 
-#: update.py:152
+#: update.py:151
 msgid "Update installed successfully."
 msgstr "Actualización instalada con éxito."
 
-#: update.py:154
+#: update.py:153
+#, python-brace-format
 msgid "Error during update installation: {error}"
 msgstr "Error durante la instalación de la actualización: {error}"
 
-#: update.py:164
+#: update.py:168
+#, python-brace-format
 msgid "Error: No previous version backup '{filename}' found."
-msgstr "Error: No se encontró la copia de seguridad de la versión anterior '{filename}'."
+msgstr ""
+"Error: No se encontró la copia de seguridad de la versión anterior "
+"'{filename}'."
 
-#: update.py:167
+#: update.py:171
+#, python-brace-format
 msgid "Restoring previous version from '{filename}'..."
 msgstr "Restaurando la versión anterior desde '{filename}'..."
 
-#: update.py:182
+#: update.py:192
+#, python-brace-format
 msgid ""
 "Skipping user data file: {filename}. It will not be overwritten during "
 "restore."
@@ -1107,163 +1372,1103 @@ msgstr ""
 "Omitiendo archivo de datos de usuario: {filename}. No será sobrescrito "
 "durante la restauración."
 
-#: update.py:188
+#: update.py:199
 msgid "Previous version restored successfully."
 msgstr "Versión anterior restaurada con éxito."
 
-#: update.py:190
+#: update.py:201
 msgid "Restarting application to apply changes..."
 msgstr "Reiniciando la aplicación para aplicar los cambios..."
 
-#: update.py:192
+#: update.py:204
+#, python-brace-format
 msgid "Error during restoration: {error}"
 msgstr "Error durante la restauración: {error}"
 
-#: update.py:193
+#: update.py:205
+#, python-brace-format
 msgid "The backup file '{filename}' was not deleted."
 msgstr "El archivo de copia de seguridad '{filename}' no fue eliminado."
 
-msgid "Back"
-msgstr "Atrás"
+#: update.py:212
+msgid "Error: Could not import TimeTracker to get the current version."
+msgstr ""
+"Error: No se pudo importar TimeTracker para obtener la versión actual."
 
+#: update.py:215
+msgid "Checking for updates..."
+msgstr "Buscando actualizaciones..."
+
+#: update.py:222
+msgid "No updates available."
+msgstr "No hay actualizaciones disponibles."
+
+#: tt/TimeTracker.py:90
+#, python-brace-format
+msgid "Warning: Could not read {file}. Error: {error}"
+msgstr "Advertencia: No se pudo leer {file}. Error: {error}"
+
+#: tt/TimeTracker.py:105
+msgid "Some required packages are missing. Attempting to install them..."
+msgstr "Faltan algunos paquetes requeridos. Intentando instalarlos..."
+
+#: tt/TimeTracker.py:108
+#, python-brace-format
+msgid "Installing {package}..."
+msgstr "Instalando {package}..."
+
+#: tt/TimeTracker.py:112
+#, python-brace-format
+msgid "Failed to install {package}. Continuing without it."
+msgstr "No se pudo instalar{package}. Continuar sin él."
+
+#: tt/TimeTracker.py:116
+msgid ""
+"\n"
+"Dependencies installed successfully."
+msgstr ""
+"\n"
+"Dependencias instaladas con éxito."
+
+#: tt/TimeTracker.py:120
+#, python-brace-format
+msgid ""
+"\n"
+"Warning: Some dependencies could not be installed: {packages}"
+msgstr ""
+"\n"
+"Advertencia: No se pudieron instalar algunas dependencias:{packages}"
+
+#: tt/TimeTracker.py:122
+#, python-brace-format
+msgid "An unexpected error occurred during dependency check: {error}"
+msgstr ""
+"Ocurrió un error inesperado durante la comprobación de dependencias: {error}"
+
+#: tt/TimeTracker.py:229
+msgid "Info: Report content has been copied to the clipboard."
+msgstr "Info: El contenido del informe ha sido copiado al portapapeles."
+
+#: tt/TimeTracker.py:231
+#, python-brace-format
+msgid "Warning: Could not copy to clipboard. Error: {error}"
+msgstr "Advertencia: No se pudo copiar al portapapeles. Error: {error}"
+
+#: tt/TimeTracker.py:233
+msgid ""
+"Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip "
+"install pyperclip`)."
+msgstr ""
+"Advertencia: No se pudo copiar al portapapeles. Por favor, instale "
+"'pyperclip' (`pip install pyperclip`)."
+
+#: tt/TimeTracker.py:253
+#, python-brace-format
+msgid "{hours} hours ({dlp} DLP)"
+msgstr "{hours}horas ({dlp}DLP)"
+
+#: tt/TimeTracker.py:846 tt/TimeTracker.py:886
+#, python-brace-format
+msgid "Source main project '{name}' not found."
+msgstr "Proyecto principal de origen '{name}' no encontrado."
+
+#: tt/TimeTracker.py:848
+#, python-brace-format
+msgid "Destination main project '{name}' not found."
+msgstr "Proyecto principal de destino '{name}' no encontrado."
+
+#: tt/TimeTracker.py:860
+#, python-brace-format
+msgid "Task '{task_name}' moved successfully."
+msgstr "Tarea '{task_name}' movida con éxito."
+
+#: tt/TimeTracker.py:861 tt/TimeTracker.py:896 tt/TimeTracker.py:1373
+#, python-brace-format
+msgid "Task '{task_name}' not found in '{main_name}'."
+msgstr "Tarea '{task_name}' no encontrada en '{main_name}'."
+
+#: tt/TimeTracker.py:880
+#, python-brace-format
+msgid "A main project named '{name}' already exists."
+msgstr "Ya existe un proyecto principal llamado '{name}'."
+
+#: tt/TimeTracker.py:905
+msgid "General"
+msgstr "General"
+
+#: tt/TimeTracker.py:909
+#, python-brace-format
+msgid "Task '{task_name}' was promoted to a new main project."
+msgstr "La tarea '{task_name}' fue promovida a un nuevo proyecto principal."
+
+#: tt/TimeTracker.py:936
+#, python-brace-format
+msgid "Main project to demote '{name}' not found."
+msgstr "No se encontró el proyecto principal a degradar '{name}'."
+
+#: tt/TimeTracker.py:938
+#, python-brace-format
+msgid "New parent main project '{name}' not found."
+msgstr "No se encontró el nuevo proyecto principal padre '{name}'."
+
+#: tt/TimeTracker.py:963
+#, python-brace-format
+msgid ""
+"Main project '{demoted_name}' was demoted to a sub-project under "
+"'{parent_name}'."
+msgstr ""
+"El proyecto principal '{demoted_name}' fue degradado a un subproyecto bajo "
+"'{parent_name}'."
+
+#: tt/TimeTracker.py:1042
+msgid "Email import is not enabled."
+msgstr "La importación de correo electrónico no está habilitada."
+
+#: tt/TimeTracker.py:1051
+msgid "Email settings are incomplete."
+msgstr "La configuración de correo electrónico está incompleta."
+
+#: tt/TimeTracker.py:1064
+msgid "Error searching emails."
+msgstr "Error al buscar correos electrónicos."
+
+#: tt/TimeTracker.py:1079
+msgid "No Subject"
+msgstr "Sin asunto"
+
+#: tt/TimeTracker.py:1139
+msgid "Unknown Task"
+msgstr "Tarea desconocida"
+
+#: tt/TimeTracker.py:1330
+#, python-brace-format
+msgid "- {name}: {hours} hours"
+msgstr "-{name}:{hours}horas"
+
+#: tt/TimeTracker.py:1338
+#, python-brace-format
+msgid "## {name} ({hours} hours)\n"
+msgstr "##{name}({hours}horas)\n"
+
+#: tt/TimeTracker.py:1347
+#, python-brace-format
+msgid "# Daily Time Report: {date}\n"
+msgstr "# Informe de Tiempo Diario: {date}\n"
+
+#: tt/TimeTracker.py:1348
+#, python-brace-format
+msgid ""
+"\n"
+"**Total Daily Time: {hours} hours**"
+msgstr ""
+"\n"
+"**Tiempo diario total:{hours}horas**"
+
+#: tt/TimeTracker.py:1352 tt/TimeTracker.py:1665
+#, python-brace-format
+msgid "No time tracked for {date}."
+msgstr "No hay tiempo registrado para {date}."
+
+#: tt/TimeTracker.py:1369 tt/TimeTracker.py:1464
+#, python-brace-format
+msgid "Main project '{name}' not found."
+msgstr "Proyecto principal '{name}' no encontrado."
+
+#: tt/TimeTracker.py:1377
+#, python-brace-format
+msgid "No time entries found for task '{task_name}'."
+msgstr "No se encontraron entradas de tiempo para la tarea '{task_name}'."
+
+#: tt/TimeTracker.py:1410 tt/TimeTracker.py:1640
+msgid "now"
+msgstr "ahora"
+
+#: tt/TimeTracker.py:1411 sl/SL_Menu.py:1908
+msgid "Duration"
+msgstr "Duración"
+
+#: tt/TimeTracker.py:1415
+#, python-brace-format
+msgid "# Detailed Report for Task: {name}"
+msgstr "# Informe detallado de la tarea:{name}"
+
+#: tt/TimeTracker.py:1416
+#, python-brace-format
+msgid "Part of Main Project: {name}"
+msgstr "Parte del Proyecto Principal: {name}"
+
+#: tt/TimeTracker.py:1419
+msgid "Active (currently running)"
+msgstr "Activo (actualmente en ejecución)"
+
+#: tt/TimeTracker.py:1419 tt/TimeTracker.py:1516
+msgid "Inactive"
+msgstr "Inactivo"
+
+#: tt/TimeTracker.py:1420 tt/TimeTracker.py:1517
+msgid "Status"
+msgstr "Estado"
+
+#: tt/TimeTracker.py:1422 tt/TimeTracker.py:1519
+msgid "First entry"
+msgstr "Primera entrada"
+
+#: tt/TimeTracker.py:1424 tt/TimeTracker.py:1521
+msgid "Last activity"
+msgstr "Última actividad"
+
+#: tt/TimeTracker.py:1426 tt/TimeTracker.py:1523
+msgid "Total recorded time"
+msgstr "Tiempo total registrado"
+
+#: tt/TimeTracker.py:1427 tt/TimeTracker.py:1525
+msgid "Total work sessions"
+msgstr "Total de sesiones de trabajo"
+
+#: tt/TimeTracker.py:1431 tt/TimeTracker.py:1529
+msgid "Average session duration"
+msgstr "Duración media de la sesión"
+
+#: tt/TimeTracker.py:1434 tt/TimeTracker.py:1532
+msgid "Weekday Distribution"
+msgstr "Distribución por día de la semana"
+
+#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
+msgid "Monday"
+msgstr "Lunes"
+
+#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
+msgid "Tuesday"
+msgstr "Martes"
+
+#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
+msgid "Wednesday"
+msgstr "Miércoles"
+
+#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
+msgid "Thursday"
+msgstr "Jueves"
+
+#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
+msgid "Friday"
+msgstr "Viernes"
+
+#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
+msgid "Saturday"
+msgstr "Sábado"
+
+#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
+msgid "Sunday"
+msgstr "Domingo"
+
+#: tt/TimeTracker.py:1444
+msgid "Daily Breakdown"
+msgstr "Desglose diario"
+
+#: tt/TimeTracker.py:1513
+#, python-brace-format
+msgid "# Detailed Report for Main Project: {name}"
+msgstr "# Informe Detallado del Proyecto Principal: {name}"
+
+#: tt/TimeTracker.py:1516
+#, python-brace-format
+msgid "Active (working on '{task_name}')"
+msgstr "Activo (trabajando en '{task_name}')"
+
+#: tt/TimeTracker.py:1524
+msgid "Number of tasks"
+msgstr "Número de tareas"
+
+#: tt/TimeTracker.py:1543
+msgid "Task Breakdown"
+msgstr "Desglose de tareas"
+
+#: tt/TimeTracker.py:1552
+#, python-brace-format
+msgid "{num_sessions} sessions"
+msgstr "{num_sessions} sesiones"
+
+#: tt/TimeTracker.py:1605
+#, python-brace-format
+msgid "# Time Report: {start_date} to {end_date}\n"
+msgstr "# Informe de Tiempo: {start_date} a {end_date}\n"
+
+#: tt/TimeTracker.py:1606
+#, python-brace-format
+msgid ""
+"\n"
+"**Total Time in Period: {total_time}**"
+msgstr ""
+"\n"
+"**Tiempo Total en el Periodo: {total_time}**"
+
+#: tt/TimeTracker.py:1610
+#, python-brace-format
+msgid "No time tracked between {start_date} and {end_date}."
+msgstr "No hay tiempo registrado entre {start_date} y {end_date}."
+
+#: tt/TimeTracker.py:1626
+#, python-brace-format
+msgid "# Detailed Daily Report: {date}"
+msgstr "# Informe Diario Detallado: {date}"
+
+#: sl/SL_Menu.py:277
+msgid "New"
+msgstr "Nuevo"
+
+#: sl/SL_Menu.py:278
+msgid "New Project"
+msgstr "Nuevo proyecto"
+
+#: sl/SL_Menu.py:281
+msgid "New Task"
+msgstr "Nueva tarea"
+
+#: sl/SL_Menu.py:286
+msgid "Project & Task Management"
+msgstr "Gestión de proyectos y tareas"
+
+#: sl/SL_Menu.py:287 sl/SL_Menu.py:780
+msgid "Main Project Management"
+msgstr "Gestión de Proyectos Principales"
+
+#: sl/SL_Menu.py:288 sl/SL_Menu.py:796 sl/SL_Menu.py:894
+msgid "Add Project"
+msgstr "Añadir Proyecto"
+
+#: sl/SL_Menu.py:291 sl/SL_Menu.py:799 sl/SL_Menu.py:1242
+msgid "List Projects"
+msgstr "Listar Proyectos"
+
+#: sl/SL_Menu.py:292 sl/SL_Menu.py:800 sl/SL_Menu.py:1257
+msgid "Rename Project"
+msgstr "Renombrar Proyecto"
+
+#: sl/SL_Menu.py:293 sl/SL_Menu.py:801 sl/SL_Menu.py:1371 sl/SL_Menu.py:1384
+msgid "Close Project"
+msgstr "Cerrar Proyecto"
+
+#: sl/SL_Menu.py:294 sl/SL_Menu.py:802 sl/SL_Menu.py:1401 sl/SL_Menu.py:1414
+msgid "Re-open Project"
+msgstr "Reabrir Proyecto"
+
+#: sl/SL_Menu.py:295 sl/SL_Menu.py:803 sl/SL_Menu.py:1431 sl/SL_Menu.py:1445
+msgid "Delete Project"
+msgstr "Eliminar Proyecto"
+
+#: sl/SL_Menu.py:296 sl/SL_Menu.py:804 sl/SL_Menu.py:1462
+msgid "List Inactive Projects"
+msgstr "Listar Proyectos Inactivos"
+
+#: sl/SL_Menu.py:297 sl/SL_Menu.py:805
+msgid "Demote Project to Task"
+msgstr "Degradar Proyecto a Tarea"
+
+#: sl/SL_Menu.py:298 sl/SL_Menu.py:806 sl/SL_Menu.py:1524
+msgid "List Completed Projects"
+msgstr "Listar Proyectos Completados"
+
+#: sl/SL_Menu.py:300 sl/SL_Menu.py:782 sl/SL_Menu.py:817
+msgid "Task Management"
+msgstr "Gestión de Tareas"
+
+#: sl/SL_Menu.py:301 sl/SL_Menu.py:819 sl/SL_Menu.py:1542 sl/SL_Menu.py:1573
+#: sl/SL_Menu.py:1646
+msgid "Add Task"
+msgstr "Añadir Tarea"
+
+#: sl/SL_Menu.py:304 sl/SL_Menu.py:822 sl/SL_Menu.py:1292
+msgid "List Tasks"
+msgstr "Listar Tareas"
+
+#: sl/SL_Menu.py:305 sl/SL_Menu.py:823 sl/SL_Menu.py:1324
+msgid "Rename Task"
+msgstr "Renombrar Tarea"
+
+#: sl/SL_Menu.py:306 sl/SL_Menu.py:824 sl/SL_Menu.py:909 sl/SL_Menu.py:935
+#: sl/SL_Menu.py:1114
+msgid "Close Task"
+msgstr "Cerrar Tarea"
+
+#: sl/SL_Menu.py:307 sl/SL_Menu.py:825 sl/SL_Menu.py:954 sl/SL_Menu.py:980
+msgid "Re-open Task"
+msgstr "Reabrir Tarea"
+
+#: sl/SL_Menu.py:308 sl/SL_Menu.py:826 sl/SL_Menu.py:999 sl/SL_Menu.py:1026
+msgid "Delete Task"
+msgstr "Eliminar Tarea"
+
+#: sl/SL_Menu.py:309 sl/SL_Menu.py:827 sl/SL_Menu.py:1045 sl/SL_Menu.py:1081
+msgid "Move Task"
+msgstr "Mover Tarea"
+
+#: sl/SL_Menu.py:310 sl/SL_Menu.py:828 sl/SL_Menu.py:1100
+msgid "List Inactive Tasks"
+msgstr "Listar Tareas Inactivas"
+
+#: sl/SL_Menu.py:311 sl/SL_Menu.py:829 sl/SL_Menu.py:1127
+msgid "List All Closed Tasks"
+msgstr "Listar Todas las Tareas Cerradas"
+
+#: sl/SL_Menu.py:312 sl/SL_Menu.py:477 sl/SL_Menu.py:539 sl/SL_Menu.py:626
+#: sl/SL_Menu.py:830 sl/SL_Menu.py:1673 sl/SL_Menu.py:1693 sl/SL_Menu.py:1728
+msgid "Edit Task"
+msgstr "Editar tarea"
+
+#: sl/SL_Menu.py:315 sl/SL_Menu.py:833 sl/SL_Menu.py:1152
+msgid "Delete All Closed Tasks"
+msgstr "Eliminar Todas las Tareas Cerradas"
+
+#: sl/SL_Menu.py:316 sl/SL_Menu.py:834 sl/SL_Menu.py:1194
+msgid "Promote Task to Project"
+msgstr "Promover Tarea a Proyecto"
+
+#: sl/SL_Menu.py:319
+msgid "Today View"
+msgstr "Vista de hoy"
+
+#: sl/SL_Menu.py:323 sl/SL_Menu.py:405
+msgid "Task Planning"
+msgstr "Planificación de tareas"
+
+#: sl/SL_Menu.py:327 sl/SL_Menu.py:655
+msgid "E-Mail Task Assignment"
+msgstr "Asignación de tareas por correo"
+
+#: sl/SL_Menu.py:331 sl/SL_Menu.py:473 sl/SL_Menu.py:535 sl/SL_Menu.py:622
+msgid "Start work on task"
+msgstr "Iniciar trabajo en tarea"
+
+#: sl/SL_Menu.py:335
+msgid "Show current work"
+msgstr "Mostrar trabajo actual"
+
+#: sl/SL_Menu.py:339
+msgid "Stop current work"
+msgstr "Detener trabajo actual"
+
+#: sl/SL_Menu.py:347 sl/SL_Menu.py:845
+msgid "Reporting"
+msgstr "Informes"
+
+#: sl/SL_Menu.py:348 sl/SL_Menu.py:848
+msgid "Daily Report (Today)"
+msgstr "Informe Diario (Hoy)"
+
+#: sl/SL_Menu.py:352 sl/SL_Menu.py:853 sl/SL_Menu.py:2195
+msgid "Daily Report (Specific Day)"
+msgstr "Informe Diario (Día Específico)"
+
+#: sl/SL_Menu.py:354 sl/SL_Menu.py:854 sl/SL_Menu.py:2214
+msgid "Date Range Report"
+msgstr "Informe por Rango de Fechas"
+
+#: sl/SL_Menu.py:356 sl/SL_Menu.py:855 sl/SL_Menu.py:2241 sl/SL_Menu.py:2272
+msgid "Detailed Task Report"
+msgstr "Informe Detallado de Tarea"
+
+#: sl/SL_Menu.py:358 sl/SL_Menu.py:856 sl/SL_Menu.py:2300
+msgid "Detailed Project Report"
+msgstr "Informe Detallado de Proyecto"
+
+#: sl/SL_Menu.py:360 sl/SL_Menu.py:857 sl/SL_Menu.py:2327
+msgid "Detailed Daily Report"
+msgstr "Informe Diario Detallado"
+
+#: sl/SL_Menu.py:364 sl/SL_Menu.py:868
+msgid "Settings"
+msgstr "Configuración"
+
+#: sl/SL_Menu.py:371 sl/SL_Menu.py:1897
 msgid "Current Active Work"
 msgstr "Trabajo Activo Actual"
 
-msgid "Handle projects and sub-projects"
-msgstr "Gestionar proyectos y subproyectos"
+#: sl/SL_Menu.py:376 sl/SL_Menu.py:497 sl/SL_Menu.py:559 sl/SL_Menu.py:633
+#: sl/SL_Menu.py:1773
+msgid "Done"
+msgstr "Hecho"
 
+#: sl/SL_Menu.py:390
+msgid "Edit current task"
+msgstr "Editar tarea actual"
+
+#: sl/SL_Menu.py:398
 msgid "Exit"
 msgstr "Salir"
 
-msgid "No open main projects found."
-msgstr "No se encontraron proyectos principales abiertos."
+#: sl/SL_Menu.py:410 sl/SL_Menu.py:420
+msgid "Tomorrow"
+msgstr "Mañana"
 
-msgid "No open sub-projects to close in '{name}'."
-msgstr "No hay subproyectos abiertos para cerrar en '{name}'."
+#: sl/SL_Menu.py:411 sl/SL_Menu.py:421
+msgid "Weekly overview"
+msgstr "Resumen semanal"
 
-msgid "Sub-project '{sub_name}' in '{main_name}' has been closed."
-msgstr "El subproyecto '{sub_name}' en '{main_name}' ha sido cerrado."
+#: sl/SL_Menu.py:412 sl/SL_Menu.py:422
+msgid "Overdue tasks"
+msgstr "Tareas vencidas"
 
-msgid "No closed sub-projects to reopen in '{name}'."
-msgstr "No hay subproyectos cerrados para reabrir en '{name}'."
+#: sl/SL_Menu.py:413 sl/SL_Menu.py:423
+msgid "Unplanned tasks"
+msgstr "Tareas no planificadas"
 
-msgid "Sub-project '{sub_name}' in '{main_name}' has been reopened."
-msgstr "El subproyecto '{sub_name}' en '{main_name}' ha sido reabierto."
+#: sl/SL_Menu.py:414
+msgid "All"
+msgstr "Todo"
 
-msgid "No open sub-projects to delete in '{name}'."
-msgstr "No hay subproyectos abiertos para eliminar en '{name}'."
+#: sl/SL_Menu.py:416
+msgid "Filter"
+msgstr "Filtro"
 
+#: sl/SL_Menu.py:430
+msgid "Tasks"
+msgstr "Tareas"
+
+#: sl/SL_Menu.py:572
+msgid "No tasks found."
+msgstr "No Tareas encontradas."
+
+#: sl/SL_Menu.py:574 sl/SL_Menu.py:648 sl/SL_Menu.py:770 sl/SL_Menu.py:810
+#: sl/SL_Menu.py:838 sl/SL_Menu.py:914 sl/SL_Menu.py:925 sl/SL_Menu.py:959
+#: sl/SL_Menu.py:970 sl/SL_Menu.py:1004 sl/SL_Menu.py:1015 sl/SL_Menu.py:1050
+#: sl/SL_Menu.py:1061 sl/SL_Menu.py:1069 sl/SL_Menu.py:1120 sl/SL_Menu.py:1145
+#: sl/SL_Menu.py:1167 sl/SL_Menu.py:1199 sl/SL_Menu.py:1210 sl/SL_Menu.py:1250
+#: sl/SL_Menu.py:1262 sl/SL_Menu.py:1297 sl/SL_Menu.py:1317 sl/SL_Menu.py:1329
+#: sl/SL_Menu.py:1340 sl/SL_Menu.py:1376 sl/SL_Menu.py:1406 sl/SL_Menu.py:1436
+#: sl/SL_Menu.py:1476 sl/SL_Menu.py:1488 sl/SL_Menu.py:1535 sl/SL_Menu.py:1547
+#: sl/SL_Menu.py:1678 sl/SL_Menu.py:1697 sl/SL_Menu.py:1710 sl/SL_Menu.py:1725
+#: sl/SL_Menu.py:1858 sl/SL_Menu.py:1868 sl/SL_Menu.py:1912 sl/SL_Menu.py:2097
+#: sl/SL_Menu.py:2102 sl/SL_Menu.py:2207 sl/SL_Menu.py:2234 sl/SL_Menu.py:2246
+#: sl/SL_Menu.py:2258 sl/SL_Menu.py:2277 sl/SL_Menu.py:2293 sl/SL_Menu.py:2305
+#: sl/SL_Menu.py:2320 sl/SL_Menu.py:2339 sl/SL_Menu.py:2380 sl/SL_Menu.py:2395
+msgid "Back"
+msgstr "Atrás"
+
+#: sl/SL_Menu.py:581
+msgid "Today's Tasks"
+msgstr "Tareas de hoy"
+
+#: sl/SL_Menu.py:646
+msgid "No tasks for today."
+msgstr "No hay tareas para hoy."
+
+#: sl/SL_Menu.py:661
+msgid "Fetching emails..."
+msgstr "Recuperando correos electrónicos..."
+
+#: sl/SL_Menu.py:664
+#, python-brace-format
+msgid "Error fetching emails: {error}"
+msgstr "Error al recuperar correos: {error}"
+
+#: sl/SL_Menu.py:667
+#, python-brace-format
+msgid "{count} new tasks created from emails."
+msgstr "{count} nuevas tareas creadas desde correos."
+
+#: sl/SL_Menu.py:669
+msgid "No new emails found."
+msgstr "No se encontraron correos nuevos."
+
+#: sl/SL_Menu.py:675
+msgid "No unassigned email tasks available."
+msgstr "No hay tareas de correo sin asignar disponibles."
+
+#: sl/SL_Menu.py:687
+msgid "Assign Project"
+msgstr "Asignar proyecto"
+
+#: sl/SL_Menu.py:698
+msgid "Are you sure you want to delete this task?"
+msgstr "¿Está seguro de que desea eliminar esta tarea?"
+
+#: sl/SL_Menu.py:701
+msgid "Yes, delete"
+msgstr "Sí, eliminar"
+
+#: sl/SL_Menu.py:706
+msgid "No, cancel"
+msgstr "No, cancelar"
+
+#: sl/SL_Menu.py:713
+msgid "Delete"
+msgstr "Eliminar"
+
+#: sl/SL_Menu.py:717
+msgid "Edit Details"
+msgstr "Editar detalles"
+
+#: sl/SL_Menu.py:725 sl/SL_Menu.py:1757
+msgid "Task Name"
+msgstr "Nombre de la tarea"
+
+#: sl/SL_Menu.py:734 sl/SL_Menu.py:1761
+msgid "Due Date"
+msgstr "Fecha de vencimiento"
+
+#: sl/SL_Menu.py:742 sl/SL_Menu.py:1765
+msgid "Clear"
+msgstr "Limpiar"
+
+#: sl/SL_Menu.py:749 sl/SL_Menu.py:1634 sl/SL_Menu.py:1804
+msgid "Notes (Markdown)"
+msgstr "Notas (Markdown)"
+
+#: sl/SL_Menu.py:751 sl/SL_Menu.py:1816
+msgid "Save Changes"
+msgstr "Guardar cambios"
+
+#: sl/SL_Menu.py:762
+msgid "Task details updated successfully."
+msgstr "Detalles de la tarea actualizados con éxito."
+
+#: sl/SL_Menu.py:768
+msgid "Error updating task details."
+msgstr "Error al actualizar los detalles de la tarea."
+
+#: sl/SL_Menu.py:778 sl/SL_Menu.py:794
+msgid "Project Management"
+msgstr "Gestión de Proyectos"
+
+#: sl/SL_Menu.py:787 sl/SL_Menu.py:861
+msgid "Back to Main Menu"
+msgstr "Volver al Menú Principal"
+
+#: sl/SL_Menu.py:873 sl/SL_Menu.py:2000
+msgid "Report Format"
+msgstr "Formato de informe"
+
+#: sl/SL_Menu.py:875 sl/SL_Menu.py:2159
+msgid "Email Settings"
+msgstr "Configuración de correo"
+
+#: sl/SL_Menu.py:876 sl/SL_Menu.py:2020
+msgid "Change CSS Style"
+msgstr "Cambiar estilo CSS"
+
+#: sl/SL_Menu.py:877 sl/SL_Menu.py:2058
+msgid "Change View Mode"
+msgstr "Cambiar modo de vista"
+
+#: sl/SL_Menu.py:890
+msgid "Add New Project"
+msgstr "Agregar nuevo proyecto"
+
+#: sl/SL_Menu.py:893
+msgid "Name of the project"
+msgstr "Nombre del proyecto"
+
+#: sl/SL_Menu.py:897
+#, python-brace-format
+msgid "Project '{name}' added."
+msgstr "Proyecto '{name}' agregado."
+
+#: sl/SL_Menu.py:901 sl/SL_Menu.py:947 sl/SL_Menu.py:992 sl/SL_Menu.py:1038
+#: sl/SL_Menu.py:1093 sl/SL_Menu.py:1187 sl/SL_Menu.py:1235 sl/SL_Menu.py:1285
+#: sl/SL_Menu.py:1364 sl/SL_Menu.py:1394 sl/SL_Menu.py:1424 sl/SL_Menu.py:1455
+#: sl/SL_Menu.py:1517 sl/SL_Menu.py:1557 sl/SL_Menu.py:1666 sl/SL_Menu.py:1685
+#: sl/SL_Menu.py:1843 sl/SL_Menu.py:1890 sl/SL_Menu.py:1934 sl/SL_Menu.py:1995
+#: sl/SL_Menu.py:2014 sl/SL_Menu.py:2051 sl/SL_Menu.py:2084 sl/SL_Menu.py:2152
+#: sl/SL_Menu.py:2188
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: sl/SL_Menu.py:919 sl/SL_Menu.py:964 sl/SL_Menu.py:1009 sl/SL_Menu.py:1204
+#: sl/SL_Menu.py:1267 sl/SL_Menu.py:1302 sl/SL_Menu.py:1334 sl/SL_Menu.py:1383
+#: sl/SL_Menu.py:1413 sl/SL_Menu.py:1443 sl/SL_Menu.py:1863 sl/SL_Menu.py:2251
+#: sl/SL_Menu.py:2312
+msgid "Select Project"
+msgstr "Seleccionar Proyecto"
+
+#: sl/SL_Menu.py:924
+#, python-brace-format
+msgid "No open tasks to close in '{name}'."
+msgstr "No hay tareas abiertas para cerrar en '{name}'."
+
+#: sl/SL_Menu.py:931 sl/SL_Menu.py:976 sl/SL_Menu.py:1021 sl/SL_Menu.py:1075
+#: sl/SL_Menu.py:1216 sl/SL_Menu.py:1344 sl/SL_Menu.py:1700 sl/SL_Menu.py:1874
+#: sl/SL_Menu.py:2282
+msgid "Select Task"
+msgstr "Seleccionar Tarea"
+
+#: sl/SL_Menu.py:941
+#, python-brace-format
+msgid "Task '{sub_name}' in '{main_name}' has been closed."
+msgstr "La tarea '{sub_name}' en '{main_name}' se ha cerrado."
+
+#: sl/SL_Menu.py:969
+#, python-brace-format
+msgid "No closed tasks to reopen in '{name}'."
+msgstr "No hay tareas cerradas para reabrir en '{name}'."
+
+#: sl/SL_Menu.py:986
+#, python-brace-format
+msgid "Task '{sub_name}' in '{main_name}' has been reopened."
+msgstr "La tarea '{sub_name}' en '{main_name}' se ha reabierto."
+
+#: sl/SL_Menu.py:1014
+#, python-brace-format
+msgid "No open tasks to delete in '{name}'."
+msgstr "No hay tareas abiertas para eliminar en '{name}'."
+
+#: sl/SL_Menu.py:1025
 msgid "This action cannot be undone."
 msgstr "Esta acción no se puede deshacer."
 
-msgid "No sub-projects found in '{name}'."
-msgstr "No se encontraron subproyectos en '{name}'."
+#: sl/SL_Menu.py:1032
+#, python-brace-format
+msgid "Task '{sub_name}' deleted from '{main_name}'."
+msgstr "Tarea '{sub_name}' eliminada de '{main_name}'."
 
-msgid "No other main projects available to move to."
-msgstr "No hay otros proyectos principales disponibles para mover."
+#: sl/SL_Menu.py:1055
+msgid "Select Source Project"
+msgstr "Seleccionar proyecto fuente"
 
-msgid "Sub-project '{sub}' moved from '{src}' to '{dst}'."
-msgstr "Subproyecto '{sub}' movido de '{src}' a '{dst}'."
+#: sl/SL_Menu.py:1060
+#, python-brace-format
+msgid "No tasks found in '{name}'."
+msgstr "No se encontraron tareas en '{name}'."
 
-msgid "Error: Could not move sub-project."
-msgstr "Error: No se pudo mover el subproyecto."
+#: sl/SL_Menu.py:1068
+msgid "No other projects available to move to."
+msgstr "No hay otros proyectos disponibles para mudarse."
 
+#: sl/SL_Menu.py:1079 sl/SL_Menu.py:1503
+msgid "Select Target Project"
+msgstr "Seleccionar proyecto de destino"
+
+#: sl/SL_Menu.py:1087
+#, python-brace-format
+msgid "Task '{sub}' moved from '{src}' to '{dst}'."
+msgstr "La tarea '{sub}' se movió de '{src}' a '{dst}'."
+
+#: sl/SL_Menu.py:1091
+msgid "Error: Could not move task."
+msgstr "Error: No se pudo mover la tarea."
+
+#: sl/SL_Menu.py:1102 sl/SL_Menu.py:1464
 msgid "Weeks of inactivity"
 msgstr "Semanas de inactividad"
 
-msgid "Inactive Sub-Projects (> {weeks} weeks):"
-msgstr "Subproyectos Inactivos (> {weeks} semanas):"
+#: sl/SL_Menu.py:1107
+#, python-brace-format
+msgid "Inactive Tasks (> {weeks} weeks):"
+msgstr "Tareas inactivas (>{weeks}semanas):"
 
+#: sl/SL_Menu.py:1112 sl/SL_Menu.py:1472
+msgid "Last Activity"
+msgstr "Última actividad"
+
+#: sl/SL_Menu.py:1171
+#, python-brace-format
 msgid ""
-"Are you sure you want to delete {count} closed sub-projects? This action "
-"cannot be undone."
+"Are you sure you want to delete {count} closed tasks? This action cannot be "
+"undone."
 msgstr ""
-"¿Está seguro de que desea eliminar {count} subproyectos cerrados? Esta "
-"acción no se puede deshacer."
+"¿Está seguro de que desea eliminar{count}tareas cerradas? Esta acción no se "
+"puede deshacer."
 
+#: sl/SL_Menu.py:1173
 msgid "Show projects to delete"
 msgstr "Mostrar proyectos a eliminar"
 
-msgid "Successfully deleted {count} sub-projects."
-msgstr "Se eliminaron {count} subproyectos con éxito."
+#: sl/SL_Menu.py:1177
+msgid "Delete All"
+msgstr "Eliminar todo"
 
-msgid "No open sub-projects to promote in '{name}'."
-msgstr "No hay subproyectos abiertos para promover en '{name}'."
+#: sl/SL_Menu.py:1183
+#, python-brace-format
+msgid "Successfully deleted {count} tasks."
+msgstr "Tareas{count}eliminadas correctamente."
 
+#: sl/SL_Menu.py:1209
+#, python-brace-format
+msgid "No open tasks to promote in '{name}'."
+msgstr "No hay tareas abiertas para promocionar en '{name}'."
+
+#: sl/SL_Menu.py:1220
 msgid ""
-"This will create a new Main Project with the sub-project's name and move all "
-"time entries to a 'General' sub-project within it."
+"This will create a new Project with the task's name and move all time "
+"entries to a 'General' task within it."
 msgstr ""
-"Esto creará un nuevo Proyecto Principal con el nombre del subproyecto y "
-"moverá todas las entradas de tiempo a un subproyecto 'General' dentro de él."
+"Esto creará un nuevo Proyecto con el nombre de la tarea y moverá todas las "
+"entradas de tiempo a una tarea 'General' dentro de él."
 
-msgid "No open main projects to rename."
-msgstr "No hay proyectos principales abiertos para renombrar."
+#: sl/SL_Menu.py:1222
+msgid "Promote to Project"
+msgstr "Promocionar a Proyecto"
 
+#: sl/SL_Menu.py:1261
+msgid "No open projects to rename."
+msgstr "No hay proyectos abiertos para cambiar el nombre."
+
+#: sl/SL_Menu.py:1270 sl/SL_Menu.py:1349
 msgid "New Name"
 msgstr "Nuevo Nombre"
 
+#: sl/SL_Menu.py:1271 sl/SL_Menu.py:1350
+msgid "Rename"
+msgstr "Renombrar"
+
+#: sl/SL_Menu.py:1275 sl/SL_Menu.py:1354
 msgid "Please enter a new name."
 msgstr "Por favor, introduzca un nuevo nombre."
 
+#: sl/SL_Menu.py:1277 sl/SL_Menu.py:1356
 msgid "New name is the same as the old name."
 msgstr "El nuevo nombre es el mismo que el antiguo."
 
-msgid "No open sub-projects to rename in '{name}'."
-msgstr "No hay subproyectos abiertos para renombrar en '{name}'."
+#: sl/SL_Menu.py:1279
+#, python-brace-format
+msgid "Project '{old_name}' successfully renamed to '{new_name}'."
+msgstr "El proyecto '{old_name}' se renombra exitosamente a '{new_name}'."
 
-msgid "No open main projects to close."
-msgstr "No hay proyectos principales abiertos para cerrar."
+#: sl/SL_Menu.py:1339
+#, python-brace-format
+msgid "No open tasks to rename in '{name}'."
+msgstr "No hay tareas abiertas para cambiar el nombre en '{name}'."
 
-msgid "Main project '{name}' has been closed."
-msgstr "El proyecto principal '{name}' ha sido cerrado."
-
-msgid "No closed main projects to reopen."
-msgstr "No hay proyectos principales cerrados para reabrir."
-
-msgid "Main project '{name}' has been reopened."
-msgstr "El proyecto principal '{name}' ha sido reabierto."
-
-msgid ""
-"This action cannot be undone. All associated sub-projects and time entries "
-"will be deleted."
+#: sl/SL_Menu.py:1362
+msgid "Error: Could not rename. The new name might already exist."
 msgstr ""
-"Esta acción no se puede deshacer. Todos los subproyectos y entradas de "
-"tiempo asociados serán eliminados."
+"Error: No se pudo cambiar el nombre. Es posible que el nuevo nombre ya "
+"exista."
 
-msgid "Main project '{name}' has been deleted."
-msgstr "El proyecto principal '{name}' ha sido eliminado."
+#: sl/SL_Menu.py:1375
+msgid "No open projects to close."
+msgstr "No hay proyectos abiertos para cerrar."
 
-msgid "Inactive Main Projects (> {weeks} weeks):"
-msgstr "Proyectos Principales Inactivos (> {weeks} semanas):"
+#: sl/SL_Menu.py:1388
+#, python-brace-format
+msgid "Project '{name}' has been closed."
+msgstr "El proyecto '{name}' ha sido cerrado."
 
-msgid "No main projects found inactive for more than {weeks} weeks."
-msgstr "No se encontraron proyectos principales inactivos por más de {weeks} semanas."
+#: sl/SL_Menu.py:1392 sl/SL_Menu.py:1422 sl/SL_Menu.py:1453
+msgid "Error: Project not found."
+msgstr "Error: Proyecto no encontrado."
 
-msgid "No other main projects available to demote into."
-msgstr "No hay otros proyectos principales disponibles para degradar."
+#: sl/SL_Menu.py:1405
+msgid "No closed projects to reopen."
+msgstr "No hay proyectos cerrados para reabrir."
 
-msgid "This will convert '{src}' into a sub-project of '{dst}'."
-msgstr "Esto convertirá '{src}' en un subproyecto de '{dst}'."
+#: sl/SL_Menu.py:1418
+#, python-brace-format
+msgid "Project '{name}' has been reopened."
+msgstr "El proyecto '{name}' ha sido reabierto."
 
-msgid "Main projects with only closed or no sub-projects:"
-msgstr "Proyectos principales con solo subproyectos cerrados o sin subproyectos:"
+#: sl/SL_Menu.py:1444
+msgid ""
+"This action cannot be undone. All associated tasks and time entries will be "
+"deleted."
+msgstr ""
+"Esta acción no se puede deshacer. Se eliminarán todas las tareas asociadas y"
+" entradas de tiempo."
 
-msgid "No completed main projects found."
-msgstr "No se encontraron proyectos principales completados."
+#: sl/SL_Menu.py:1449
+#, python-brace-format
+msgid "Project '{name}' has been deleted."
+msgstr "El proyecto '{name}' ha sido eliminado."
 
-msgid "A sub-project with this name already exists in this main project."
-msgstr "Ya existe un subproyecto con este nombre en este proyecto principal."
+#: sl/SL_Menu.py:1469
+#, python-brace-format
+msgid "Inactive Projects (> {weeks} weeks):"
+msgstr "Proyectos inactivos (>{weeks}semanas):"
 
-msgid "No open sub-projects to start work on in '{name}'."
-msgstr "No hay subproyectos abiertos para iniciar trabajo en '{name}'."
+#: sl/SL_Menu.py:1474
+#, python-brace-format
+msgid "No projects found inactive for more than {weeks} weeks."
+msgstr "No se encontraron proyectos inactivos durante más de{weeks}semanas."
 
+#: sl/SL_Menu.py:1483 sl/SL_Menu.py:1506
+msgid "Demote Project"
+msgstr "Degradar proyecto"
+
+#: sl/SL_Menu.py:1495
+msgid "Select Project to Demote"
+msgstr "Seleccionar proyecto para degradar"
+
+#: sl/SL_Menu.py:1501
+msgid "No other projects available to demote into."
+msgstr "No hay otros proyectos disponibles para degradar."
+
+#: sl/SL_Menu.py:1504
+#, python-brace-format
+msgid "This will convert '{src}' into a task of '{dst}'."
+msgstr "Esto convertirá '{src}' en una tarea de '{dst}'."
+
+#: sl/SL_Menu.py:1529
+msgid "Projects with only closed or no tasks:"
+msgstr "Proyectos con solo tareas cerradas o sin tareas:"
+
+#: sl/SL_Menu.py:1533
+msgid "No completed projects found."
+msgstr "No se encontraron proyectos completados."
+
+#: sl/SL_Menu.py:1542 sl/SL_Menu.py:1673 sl/SL_Menu.py:2241
+msgid "Step 1: Select Project"
+msgstr "Paso 1: Seleccionar proyecto"
+
+#: sl/SL_Menu.py:1546 sl/SL_Menu.py:1857
+msgid "No open projects found. Please add one first."
+msgstr "No se encontraron proyectos abiertos. Por favor agregue uno primero."
+
+#: sl/SL_Menu.py:1551 sl/SL_Menu.py:1680 sl/SL_Menu.py:1905
+msgid "Project"
+msgstr "Proyecto"
+
+#: sl/SL_Menu.py:1553 sl/SL_Menu.py:1681 sl/SL_Menu.py:1705 sl/SL_Menu.py:2253
+msgid "Next"
+msgstr "Siguiente"
+
+#: sl/SL_Menu.py:1568 sl/SL_Menu.py:2267
+msgid "No project selected. Please start again."
+msgstr "Ningún proyecto seleccionado. Por favor, empieza de nuevo."
+
+#: sl/SL_Menu.py:1573
+msgid "To Project:"
+msgstr "Al proyecto:"
+
+#: sl/SL_Menu.py:1594
+msgid "Name of the new task"
+msgstr "Nombre de la nueva tarea"
+
+#: sl/SL_Menu.py:1600
+msgid "Due date"
+msgstr "Fecha de vencimiento"
+
+#: sl/SL_Menu.py:1606 sl/SL_Menu.py:1775
+msgid "Recurring"
+msgstr "Recurrente"
+
+#: sl/SL_Menu.py:1620 sl/SL_Menu.py:1788
+msgid "daily"
+msgstr "diario"
+
+#: sl/SL_Menu.py:1620 sl/SL_Menu.py:1788
+msgid "on all business days"
+msgstr "todos los días hábiles"
+
+#: sl/SL_Menu.py:1620 sl/SL_Menu.py:1788
+msgid "weekly"
+msgstr "semanal"
+
+#: sl/SL_Menu.py:1620 sl/SL_Menu.py:1788
+msgid "monthly"
+msgstr "mensual"
+
+#: sl/SL_Menu.py:1620 sl/SL_Menu.py:1788
+msgid "userdefined"
+msgstr "definido por el usuario"
+
+#: sl/SL_Menu.py:1624 sl/SL_Menu.py:1797
+msgid "Frequency"
+msgstr "Frecuencia"
+
+#: sl/SL_Menu.py:1628 sl/SL_Menu.py:1800
+msgid "Days"
+msgstr "Días"
+
+#: sl/SL_Menu.py:1632 sl/SL_Menu.py:1802
+msgid "Edit"
+msgstr "Editar"
+
+#: sl/SL_Menu.py:1632 sl/SL_Menu.py:1802
+msgid "Preview"
+msgstr "Vista previa"
+
+#: sl/SL_Menu.py:1637 sl/SL_Menu.py:1807
+msgid "No notes provided."
+msgstr "No se proporcionaron notas."
+
+#: sl/SL_Menu.py:1642 sl/SL_Menu.py:1812
+msgid "A due date is required for recurring tasks."
+msgstr "Se requiere una fecha de vencimiento para las tareas recurrentes."
+
+#: sl/SL_Menu.py:1650
+msgid "Please enter a name."
+msgstr "Por favor ingrese un nombre."
+
+#: sl/SL_Menu.py:1661
+#, python-brace-format
+msgid "Task '{sub_name}' added to '{main_name}'."
+msgstr "Tarea '{sub_name}' agregada a '{main_name}'."
+
+#: sl/SL_Menu.py:1693 sl/SL_Menu.py:2272
+msgid "Step 2: Select Task from"
+msgstr "Paso 2: Seleccione Tarea de"
+
+#: sl/SL_Menu.py:1696
+msgid "No open tasks found."
+msgstr "No se encontraron tareas abiertas."
+
+#: sl/SL_Menu.py:1724
+msgid "Task not found."
+msgstr "Tarea no encontrada."
+
+#: sl/SL_Menu.py:1840
+msgid "Error: Could not update task."
+msgstr "Error: No se pudo actualizar la tarea."
+
+#: sl/SL_Menu.py:1853
+msgid "Start Work on Task"
+msgstr "Comenzar a trabajar en la tarea"
+
+#: sl/SL_Menu.py:1867
+#, python-brace-format
+msgid "No open tasks to start work on in '{name}'."
+msgstr "No hay tareas abiertas para comenzar a trabajar en '{name}'."
+
+#: sl/SL_Menu.py:1878
+msgid "Start Work"
+msgstr "Iniciar trabajo"
+
+#: sl/SL_Menu.py:1906
+msgid "Task"
+msgstr "Tarea"
+
+#: sl/SL_Menu.py:1907
+msgid "Started at"
+msgstr "Comenzó en"
+
+#: sl/SL_Menu.py:1918
+msgid "Streamlit Port Settings"
+msgstr "Configuración del puerto Streamlit"
+
+#: sl/SL_Menu.py:1922
 msgid "Current Streamlit Port"
 msgstr "Puerto actual de Streamlit"
 
+#: sl/SL_Menu.py:1925
+msgid "New Port"
+msgstr "Nuevo puerto"
+
+#: sl/SL_Menu.py:1926 sl/SL_Menu.py:1958 sl/SL_Menu.py:2007 sl/SL_Menu.py:2042
+#: sl/SL_Menu.py:2074 sl/SL_Menu.py:2141 sl/SL_Menu.py:2173
+msgid "Save"
+msgstr "Guardar"
+
+#: sl/SL_Menu.py:1930
+#, python-brace-format
 msgid "Port updated to {port}. Please restart Streamlit."
 msgstr "Puerto actualizado a {port}. Por favor, reinicie Streamlit."
 
+#: sl/SL_Menu.py:1940
+msgid "Change Data Storage Location"
+msgstr "Cambiar ubicación de almacenamiento de datos"
+
+#: sl/SL_Menu.py:1943
+msgid "Current data file"
+msgstr "Archivo de datos actual"
+
+#: sl/SL_Menu.py:1946
+msgid "New Path for data file"
+msgstr "Nueva ruta para el archivo de datos"
+
+#: sl/SL_Menu.py:1952
+msgid "Move existing data to the new location"
+msgstr "Mover datos existentes a la nueva ubicación"
+
+#: sl/SL_Menu.py:1955
 msgid ""
 "If unchecked, the old data file will remain, and a new empty one might be "
 "created at the new location on restart."
@@ -1271,6 +2476,11 @@ msgstr ""
 "Si no se marca, el archivo de datos antiguo permanecerá y se podría crear "
 "uno nuevo vacío en la nueva ubicación al reiniciar."
 
+#: sl/SL_Menu.py:1962
+msgid "Please enter a new path."
+msgstr "Por favor ingrese una nueva ruta."
+
+#: sl/SL_Menu.py:1970
 msgid ""
 "Error: For security, the data file must be located within the application "
 "directory."
@@ -1278,6 +2488,7 @@ msgstr ""
 "Error: Por seguridad, el archivo de datos debe estar ubicado dentro del "
 "directorio de la aplicación."
 
+#: sl/SL_Menu.py:1980
 msgid ""
 "Storage location updated. Please restart the application for the changes to "
 "take effect."
@@ -1285,9 +2496,23 @@ msgstr ""
 "Ubicación de almacenamiento actualizada. Por favor, reinicie la aplicación "
 "para que los cambios surtan efecto."
 
+#: sl/SL_Menu.py:2006
+msgid "Select Format"
+msgstr "Seleccionar formato"
+
+#: sl/SL_Menu.py:2011
+msgid "Report format updated."
+msgstr "Formato de informe actualizado."
+
+#: sl/SL_Menu.py:2024
 msgid "Current CSS file"
 msgstr "Archivo CSS actual"
 
+#: sl/SL_Menu.py:2041
+msgid "Select CSS File"
+msgstr "Seleccionar archivo CSS"
+
+#: sl/SL_Menu.py:2047
 msgid ""
 "CSS style updated. Please restart the application for the changes to take "
 "effect."
@@ -1295,21 +2520,73 @@ msgstr ""
 "Estilo CSS actualizado. Por favor, reinicie la aplicación para que los "
 "cambios surtan efecto."
 
-msgid "The 'update' module is not available. This feature is disabled."
-msgstr "El módulo 'update' no está disponible. Esta función está deshabilitada."
+#: sl/SL_Menu.py:2063
+msgid "App Window (Webview)"
+msgstr "Ventana de aplicación (vista web)"
 
+#: sl/SL_Menu.py:2063
+msgid "System Browser"
+msgstr "Navegador del sistema"
+
+#: sl/SL_Menu.py:2073
+msgid "Select View Mode"
+msgstr "Seleccionar modo de visualización"
+
+#: sl/SL_Menu.py:2080
+msgid ""
+"View mode updated. Please restart the application for the changes to take "
+"effect."
+msgstr ""
+"Modo de visualización actualizado. Reinicie la aplicación para que los "
+"cambios surtan efecto."
+
+#: sl/SL_Menu.py:2091
+msgid "Restore Previous Version"
+msgstr "Restaurar versión anterior"
+
+#: sl/SL_Menu.py:2096
+msgid "The 'update' module is not available. This feature is disabled."
+msgstr ""
+"El módulo 'update' no está disponible. Esta función está deshabilitada."
+
+#: sl/SL_Menu.py:2101
+#, python-brace-format
+msgid "No previous version backup '{filename}' found."
+msgstr ""
+"No se encontró ninguna copia de seguridad de la versión anterior "
+"'{filename}'."
+
+#: sl/SL_Menu.py:2105
 msgid ""
 "This will restore the application to the previously backed-up version. The "
-"application will then restart. You may need to manually refresh your browser "
-"if it does not reconnect automatically."
+"application will then restart. You may need to manually refresh your browser"
+" if it does not reconnect automatically."
 msgstr ""
 "Esto restaurará la aplicación a la versión respaldada anteriormente. La "
 "aplicación se reiniciará. Es posible que deba actualizar manualmente su "
 "navegador si no se vuelve a conectar automáticamente."
 
+#: sl/SL_Menu.py:2107
+msgid "Restore and Restart"
+msgstr "Restaurar y reiniciar"
+
+#: sl/SL_Menu.py:2108
 msgid "Restoring and restarting..."
 msgstr "Restaurando y reiniciando..."
 
+#: sl/SL_Menu.py:2111
+msgid "Restore complete. Please restart the application."
+msgstr "Restauración completa. Reinicie la aplicación."
+
+#: sl/SL_Menu.py:2117
+msgid "Change Language"
+msgstr "Cambiar idioma"
+
+#: sl/SL_Menu.py:2140
+msgid "Select Language"
+msgstr "Seleccionar idioma"
+
+#: sl/SL_Menu.py:2148
 msgid ""
 "Language changed. Please restart the application for the changes to take "
 "effect."
@@ -1317,185 +2594,251 @@ msgstr ""
 "Idioma cambiado. Por favor, reinicie la aplicación para que los cambios "
 "surtan efecto."
 
-msgid "Step 2: Select Sub-Project from"
-msgstr "Paso 2: Seleccionar Subproyecto de"
+#: sl/SL_Menu.py:2166
+msgid "Enable email import"
+msgstr "Activar importación de correo"
 
-msgid "No main project selected. Please start again."
-msgstr "No se ha seleccionado ningún proyecto principal. Por favor, empiece de nuevo."
+#: sl/SL_Menu.py:2167
+msgid "IMAP Server"
+msgstr "Servidor IMAP"
 
-msgid "Report Result"
-msgstr "Resultado del Informe"
+#: sl/SL_Menu.py:2168
+msgid "Port"
+msgstr "Puerto"
 
-msgid "Error: Could not find main project '{name}'."
-msgstr "Error: No se pudo encontrar el proyecto principal '{name}'."
+#: sl/SL_Menu.py:2169
+msgid "Username"
+msgstr "Usuario"
 
-msgid "Start work on sub-project"
-msgstr "Iniciar trabajo en subproyecto"
+#: sl/SL_Menu.py:2170
+msgid "Password"
+msgstr "Contraseña"
 
-msgid "Show current work"
-msgstr "Mostrar trabajo actual"
+#: sl/SL_Menu.py:2171
+msgid "Use SSL"
+msgstr "Usar SSL"
 
-msgid "Stop current work"
-msgstr "Detener trabajo actual"
+#: sl/SL_Menu.py:2184
+msgid "Email settings saved."
+msgstr "Configuración de correo guardada."
 
-msgid "Project Management"
-msgstr "Gestión de Proyectos"
+#: sl/SL_Menu.py:2198 sl/SL_Menu.py:2330
+msgid "Select Date"
+msgstr "Seleccionar fecha"
 
-msgid "Reporting"
-msgstr "Informes"
-
-msgid "Settings"
-msgstr "Configuración"
-
-msgid "Task Management"
-msgstr "Gestión de Tareas"
-
-msgid "Add Project"
-msgstr "Añadir Proyecto"
-
-msgid "List Projects"
-msgstr "Listar Proyectos"
-
-msgid "Rename Project"
-msgstr "Renombrar Proyecto"
-
-msgid "Close Project"
-msgstr "Cerrar Proyecto"
-
-msgid "Re-open Project"
-msgstr "Reabrir Proyecto"
-
-msgid "Delete Project"
-msgstr "Eliminar Proyecto"
-
-msgid "List Inactive Projects"
-msgstr "Listar Proyectos Inactivos"
-
-msgid "Demote Project to Task"
-msgstr "Degradar Proyecto a Tarea"
-
-msgid "List Completed Projects"
-msgstr "Listar Proyectos Completados"
-
-msgid "Add Task"
-msgstr "Añadir Tarea"
-
-msgid "List Tasks"
-msgstr "Listar Tareas"
-
-msgid "Rename Task"
-msgstr "Renombrar Tarea"
-
-msgid "Close Task"
-msgstr "Cerrar Tarea"
-
-msgid "Re-open Task"
-msgstr "Reabrir Tarea"
-
-msgid "Delete Task"
-msgstr "Eliminar Tarea"
-
-msgid "Move Task"
-msgstr "Mover Tarea"
-
-msgid "List Inactive Tasks"
-msgstr "Listar Tareas Inactivas"
-
-msgid "List All Closed Tasks"
-msgstr "Listar Todas las Tareas Cerradas"
-
-msgid "Delete All Closed Tasks"
-msgstr "Eliminar Todas las Tareas Cerradas"
-
-msgid "Promote Task to Project"
-msgstr "Promover Tarea a Proyecto"
-
-msgid "Daily Report (Today)"
-msgstr "Informe Diario (Hoy)"
-
-msgid "Daily Report (Specific Day)"
-msgstr "Informe Diario (Día Específico)"
-
-msgid "Date Range Report"
-msgstr "Informe por Rango de Fechas"
-
-msgid "Detailed Task Report"
-msgstr "Informe Detallado de Tarea"
-
-msgid "Detailed Project Report"
-msgstr "Informe Detallado de Proyecto"
-
-msgid "Detailed Daily Report"
-msgstr "Informe Diario Detallado"
-
-msgid "Main Project Management"
-msgstr "Gestión de Proyectos Principales"
-
-msgid "Start work on task"
-msgstr "Iniciar trabajo en tarea"
-
-msgid "Handle projects and tasks"
-msgstr "Gestionar proyectos y tareas"
-
-msgid "Select Action"
-msgstr "Seleccionar Acción"
-
-msgid "Select Project"
-msgstr "Seleccionar Proyecto"
-
-msgid "Select Task"
-msgstr "Seleccionar Tarea"
-
-msgid "Back to Main Menu"
-msgstr "Volver al Menú Principal"
-
-msgid "Add"
-msgstr "Añadir"
-
-msgid "Delete"
-msgstr "Eliminar"
-
-msgid "Rename"
-msgstr "Renombrar"
-
-msgid "Close"
-msgstr "Cerrar"
-
-msgid "Reopen"
-msgstr "Reabrir"
-
-msgid "Yes"
-msgstr "Sí"
-
-msgid "No"
-msgstr "No"
-
-msgid "Save"
-msgstr "Guardar"
-
-msgid "Cancel"
-msgstr "Cancelar"
-
-msgid "Confirm"
-msgstr "Confirmar"
-
-msgid "Submit"
-msgstr "Enviar"
-
-msgid "Edit"
-msgstr "Editar"
-
+#: sl/SL_Menu.py:2199 sl/SL_Menu.py:2223 sl/SL_Menu.py:2287 sl/SL_Menu.py:2313
+#: sl/SL_Menu.py:2331
 msgid "Generate Report"
 msgstr "Generar Informe"
 
-msgid "Start"
-msgstr "Iniciar"
+#: sl/SL_Menu.py:2219
+msgid "Start Date"
+msgstr "Fecha de inicio"
 
-msgid "Stop"
-msgstr "Detener"
+#: sl/SL_Menu.py:2221
+msgid "End Date"
+msgstr "Fecha de finalización"
 
-msgid "Step 1: Select Main Project"
-msgstr "Paso 1: Seleccionar Proyecto Principal"
+#: sl/SL_Menu.py:2346
+msgid "Report Result"
+msgstr "Resultado del Informe"
 
-msgid "Refresh"
-msgstr "Actualizar"
+#: sl/SL_Menu.py:2375
+msgid "Export Report"
+msgstr "Exportar informe"
+
+#~ msgid ""
+#~ "\n"
+#~ "Error: Failed to install dependencies. Please install them manually using: pip install -r {requirements_path}"
+#~ msgstr ""
+#~ "\n"
+#~ "Error: No se pudieron instalar las dependencias. Por favor, instálelas manualmente usando: pip install -r {requirements_path}"
+
+#~ msgid "open"
+#~ msgstr "abierto"
+
+#~ msgid "A task named '{task_name}' already exists in '{main_name}'."
+#~ msgstr "Ya existe una tarea llamada '{task_name}' en '{main_name}'."
+
+#~ msgid "Main project '{old_name}' renamed to '{new_name}'."
+#~ msgstr "Proyecto principal '{old_name}' renombrado a '{new_name}'."
+
+#~ msgid ""
+#~ "\n"
+#~ "No time tracked for {date}."
+#~ msgstr ""
+#~ "\n"
+#~ "No hay tiempo registrado para {date}."
+
+#~ msgid "Sub-Project Breakdown"
+#~ msgstr "Desglose de Subproyectos"
+
+#~ msgid "7.  Add Sub-Project"
+#~ msgstr "7.  Añadir Subproyecto"
+
+#~ msgid "8.  List Sub-Projects"
+#~ msgstr "8.  Listar Subproyectos"
+
+#~ msgid "9.  Rename Sub-Project"
+#~ msgstr "9.  Renombrar Subproyecto"
+
+#~ msgid "10. Close Sub-Project"
+#~ msgstr "10. Cerrar Subproyecto"
+
+#~ msgid "11. Re-open Sub-Project"
+#~ msgstr "11. Reabrir Subproyecto"
+
+#~ msgid "12. Delete Sub-Project"
+#~ msgstr "12. Eliminar Subproyecto"
+
+#~ msgid "14. List Inactive Sub-Projects"
+#~ msgstr "14. Listar Subproyectos Inactivos"
+
+#~ msgid "15. List All Closed Sub-Projects"
+#~ msgstr "15. Listar Todos los Subproyectos Cerrados"
+
+#~ msgid "16. Delete All Closed Sub-Projects"
+#~ msgstr "16. Eliminar Todos los Subproyectos Cerrados"
+
+#~ msgid "17. Promote Sub-Project to Main-Project"
+#~ msgstr "17. Promover Subproyecto a Proyecto Principal"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Add New Sub-Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Añadir Nuevo Subproyecto ---"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- List Sub-Projects ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Listar Subproyectos ---"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Rename Sub-Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Renombrar Subproyecto ---"
+
+#~ msgid "Sub-project '{old_name}' renamed to '{new_name}'."
+#~ msgstr "Subproyecto '{old_name}' renombrado a '{new_name}'."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Delete Sub-Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Eliminar Subproyecto ---"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- List All Closed Sub-Projects ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Listar Todos los Subproyectos Cerrados ---"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Delete All Closed Sub-Projects ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Eliminar Todos los Subproyectos Cerrados ---"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- List Inactive Sub-Projects ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Listar Subproyectos Inactivos ---"
+
+#~ msgid ""
+#~ "\n"
+#~ "Inactive Sub-Projects (>{weeks} weeks):"
+#~ msgstr ""
+#~ "\n"
+#~ "Subproyectos Inactivos (>{weeks} semanas):"
+
+#~ msgid "    Sub-Project: {name}"
+#~ msgstr "    Subproyecto: {name}"
+
+#~ msgid "No sub-projects found inactive for more than {weeks} week."
+#~ msgid_plural "No sub-projects found inactive for more than {weeks} weeks."
+#~ msgstr[0] ""
+#~ "No se encontró ningún subproyecto inactivo por más de {weeks} semana."
+#~ msgstr[1] ""
+#~ "No se encontraron subproyectos inactivos por más de {weeks} semanas."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Move Sub-Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Mover Subproyecto ---"
+
+#~ msgid "4. Detailed Sub-Project Report"
+#~ msgstr "4. Informe Detallado de Subproyecto"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Detailed Sub-Project Report ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Informe Detallado de Subproyecto ---"
+
+#~ msgid "Invalid choice. Please enter a number from 0 to 3."
+#~ msgstr "Elección inválida. Por favor, introduzca un número del 0 al 3."
+
+#~ msgid "1. Start work on sub-project"
+#~ msgstr "1. Iniciar trabajo en subproyecto"
+
+#~ msgid "4. Handle projects and sub-projects"
+#~ msgstr "4. Gestionar proyectos y subproyectos"
+
+#~ msgid "Work started on '{sub_name}' in project '{main_name}'."
+#~ msgstr "Trabajo iniciado en '{sub_name}' en el proyecto '{main_name}'."
+
+#~ msgid "  Sub-Project:  {name}"
+#~ msgstr "  Subproyecto:  {name}"
+
+#~ msgid "Handle projects and sub-projects"
+#~ msgstr "Gestionar proyectos y subproyectos"
+
+#~ msgid "A sub-project with this name already exists in this main project."
+#~ msgstr "Ya existe un subproyecto con este nombre en este proyecto principal."
+
+#~ msgid "Error: Could not find main project '{name}'."
+#~ msgstr "Error: No se pudo encontrar el proyecto principal '{name}'."
+
+#~ msgid "Start work on sub-project"
+#~ msgstr "Iniciar trabajo en subproyecto"
+
+#~ msgid "Add"
+#~ msgstr "Añadir"
+
+#~ msgid "Close"
+#~ msgstr "Cerrar"
+
+#~ msgid "Reopen"
+#~ msgstr "Reabrir"
+
+#~ msgid "Yes"
+#~ msgstr "Sí"
+
+#~ msgid "No"
+#~ msgstr "No"
+
+#~ msgid "Confirm"
+#~ msgstr "Confirmar"
+
+#~ msgid "Submit"
+#~ msgstr "Enviar"
+
+#~ msgid "Stop"
+#~ msgstr "Detener"
+
+#~ msgid "Refresh"
+#~ msgstr "Actualizar"
