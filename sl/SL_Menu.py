@@ -587,7 +587,10 @@ def view_today_tasks():
     
     # Here we show tasks that are explicitly marked as 'today' (⭐)
     all_open = st.session_state.tracker.list_tasks(status_filter='open')
-    today_tasks = [t for t in all_open if t.get('today')]
+    today_tasks_all = [t for t in all_open if t.get('today')]
+
+    show_only_open = st.checkbox(_("Show only open tasks"), value=False, key="today_show_only_open")
+    today_tasks = [t for t in today_tasks_all if t.get('status') != 'done'] if show_only_open else today_tasks_all
 
     if today_tasks:
         # Group tasks by main project for better organization
@@ -642,6 +645,8 @@ def view_today_tasks():
                             task_id=task.get('id'),
                         )
                         st.rerun()
+    elif show_only_open and today_tasks_all:
+        st.info(_("No open tasks for today."))
     else:
         st.info(_("No tasks for today."))
 
