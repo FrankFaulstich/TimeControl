@@ -258,7 +258,7 @@ class TimeTracker:
         rtf += r"\viewkind4\uc1\pard\lang1031\f0\fs24 "
         for line in text.split('\n'):
             # Escape RTF control characters
-            line = line.replace('\\', '\\\\').replace('{', '\{').replace('}', '\}')
+            line = line.replace('\\', '\\\\').replace('{', r'\{').replace('}', r'\}')
             if line.startswith('# '):
                 rtf += r"\b\fs32 " + line[2:] + r"\b0\fs24\par "
             elif line.startswith('## '):
