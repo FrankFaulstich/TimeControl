@@ -2,17 +2,20 @@
 
 A simple, object-oriented Python application for tracking time spent on projects and sub-projects. All data is stored locally in a `data.json` file.
 
+> ⚠️ **Note:** The command-line interface (`TimeTrackerCLI.py`) is no longer actively maintained. All development effort now goes into the **Streamlit GUI** (`TimeTrackerSL_GUI.py`). New features, bug fixes, and translations will only be added there — please use the GUI going forward.
+
 ## Table of Contents
 
 - [Time Tracker Application ⏱️](#time-tracker-application-️)
   - [Table of Contents](#table-of-contents)
   - [Features 🚀](#features-)
+  - [Screenshots 📸](#screenshots-)
   - [Prerequisites 📋](#prerequisites-)
   - [Installation 🛠️](#installation-️)
   - [Configuration ⚙️](#configuration-️)
   - [Usage ⚙️](#usage-️)
-    - [Running the Interactive CLI](#running-the-interactive-cli)
-    - [Running the Streamlit GUI CLI](#running-the-streamlit-gui-cli)
+    - [Running the Streamlit GUI](#running-the-streamlit-gui)
+    - [Running the Interactive CLI (Deprecated)](#running-the-interactive-cli-deprecated)
     - [CLI Menu Options](#cli-menu-options)
   - [Building the Documentation 📚](#building-the-documentation-)
   - [Data Storage 🗄️](#data-storage-️)
@@ -44,12 +47,35 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **Interface:**
 
-- **Experimental GUI:** A graphical user interface based on Streamlit for a more visual experience.
-**Interactive CLI:** A user-friendly command-line interface (`TimeTrackerCLI.py`) for task and project management.
+- **Streamlit GUI:** A graphical, browser-based user interface (`TimeTrackerSL_GUI.py`) and the actively developed way to use TimeControl.
+- **Interactive CLI (deprecated):** A command-line interface (`TimeTrackerCLI.py`) for task and project management. It is no longer maintained — see the note at the top of this document.
 
 **SOAP API:** A full-featured SOAP web service (`TimeTrackerSOAP_Server.py`) to integrate TimeControl with other tools or dashboards.
 
 **Unit Testing:** Includes comprehensive unit tests in `tests/test_TimeTracker.py` for feature reliability.
+
+---
+
+## Screenshots 📸
+
+The Streamlit GUI groups all actions behind a compact icon toolbar — hover over an icon to see what it does, or click it to open the corresponding menu.
+
+**Main menu:** the toolbar, plus the currently active work session (if any).
+
+![Main menu](screenshots/main-menu.png)
+
+**Today's Tasks (★):** all tasks marked for today. The **Show only open tasks** checkbox above the list hides tasks that are already done.
+
+![Today's Tasks view](screenshots/today-view.png)
+![Today's Tasks view filtered to open tasks](screenshots/today-view-filtered.png)
+
+**Adding a task:** set a due date, mark it for today, and optionally make it recurring.
+
+![Add task dialog](screenshots/add-task.png)
+
+**Reports:** generated as Markdown and automatically copied to the clipboard.
+
+![Daily report](screenshots/daily-report.png)
 
 ---
 
@@ -104,7 +130,23 @@ The application can be configured via the `config.json` file.
 
 ## Usage ⚙️
 
-### Running the Interactive CLI
+### Running the Streamlit GUI
+
+The GUI is the primary, actively developed way to use TimeControl (see [Screenshots](#screenshots-) above). To start it, run:
+
+```bash
+python TimeTrackerSL_GUI.py
+```
+
+or
+
+```bash
+python3 TimeTrackerSL_GUI.py
+```
+
+### Running the Interactive CLI (Deprecated)
+
+> ⚠️ This interface is no longer actively maintained. It still works, but new features, bug fixes, and translations are only added to the Streamlit GUI going forward.
 
 To start the interactive command-line interface, run:
 
@@ -117,21 +159,6 @@ or
 ```bash
 python3 TimeTrackerCLI.py
 ```
-
-### Running the Streamlit GUI CLI
-
-To start the interactive command-line interface, run:
-
-```bash
-python TimeTrackerSL_GUI.py
-```
-
-or
-
-```bash
-python3 TimeTrackerSL_GUI.py
-```
-
 
 ### CLI Menu Options
 
