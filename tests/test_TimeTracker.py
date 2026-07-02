@@ -1101,6 +1101,95 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn(f"- **Sub 2**: 2:00:00 ({sessions_str_1}, 57.1%)", report) # 2h of 3.5h total
         self.assertIn(f"- **Sub 1**: 1:30:00 ({sessions_str_2}, 42.9%)", report) # 1.5h of 3.5h total
 
+    def test_generate_detailed_daily_report(self):
+        """Tests the detailed daily report listing individual time entries."""
+        main_proj = "Detailed Daily Main"
+        task_1 = "Detailed Daily Task 1"
+        task_2 = "Detailed Daily Task 2"
+        self.tracker.add_main_project(main_proj)
+        self.tracker.add_task(main_proj, task_1)
+        self.tracker.add_task(main_proj, task_2)
+
+        today = datetime.now().date()
+        day_start = datetime.combine(today, datetime.min.time())
+        entry1_start = day_start.replace(hour=8)
+        entry1_end = entry1_start + timedelta(hours=1)
+        entry2_start = day_start.replace(hour=10)
+        entry2_end = entry2_start + timedelta(minutes=45)
+
+        self.tracker.data["projects"][0]["tasks"][0]["time_entries"].append({
+            "start_time": entry1_start.isoformat(),
+            "end_time": entry1_end.isoformat()
+        })
+        self.tracker.data["projects"][0]["tasks"][1]["time_entries"].append({
+            "start_time": entry2_start.isoformat(),
+            "end_time": entry2_end.isoformat()
+        })
+
+        # An entry from yesterday must be excluded from today's report.
+        yesterday_start = entry1_start - timedelta(days=1)
+        self.tracker.data["projects"][0]["tasks"][0]["time_entries"].append({
+            "start_time": yesterday_start.isoformat(),
+            "end_time": (yesterday_start + timedelta(hours=1)).isoformat()
+        })
+        self.tracker._save_data()
+
+        report = self.tracker.generate_detailed_daily_report(today)
+
+        self.assertTrue(report.startswith(_("# Detailed Daily Report: {date}").format(date=today.strftime('%Y-%m-%d'))))
+        self.assertIn(f"- 08:00:00, 09:00:00, 1:00:00, {main_proj}, {task_1}", report)
+        self.assertIn(f"- 10:00:00, 10:45:00, 0:45:00, {main_proj}, {task_2}", report)
+        # Entries must be listed in chronological order (08:00 before 10:00).
+        self.assertLess(report.index(task_1), report.index(task_2))
+        # The entry from yesterday must not show up (only 2 lines reference the main project).
+        self.assertEqual(report.count(main_proj), 2)
+
+    def test_report_translations_have_correct_placeholder_spacing(self):
+        """
+        Regression test for a translation bug where several report strings
+        were missing the space around a `{placeholder}` in non-English
+        locales, e.g. German "##{name}({hours}Stunden)" instead of the
+        correct "## {name} ({hours} Stunden)".
+        """
+        import gettext
+        locale_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'locale'))
+        name, hours, dlp = "Sample Project", "1,500", "0,038"
+
+        for lang in ('en', 'de', 'fr', 'es', 'cs'):
+            translation = gettext.translation('timetracker', localedir=locale_dir, languages=[lang], fallback=True)
+            t = translation.gettext
+
+            heading = t("## {name} ({hours} hours)\n").format(name=name, hours=hours)
+            self.assertTrue(heading.startswith(f"## {name} ("), f"[{lang}] heading: {heading!r}")
+            self.assertIn(f"{hours} ", heading.split('(', 1)[1], f"[{lang}] heading: {heading!r}")
+
+            bullet = t("- {name}: {hours} hours").format(name=name, hours=hours)
+            self.assertTrue(bullet.startswith(f"- {name}: {hours} "), f"[{lang}] bullet: {bullet!r}")
+
+            duration = t("{hours} hours ({dlp} DLP)").format(hours=hours, dlp=dlp)
+            self.assertTrue(duration.startswith(f"{hours} "), f"[{lang}] duration: {duration!r}")
+            self.assertIn(f"({dlp} ", duration, f"[{lang}] duration: {duration!r}")
+
+            for template in (
+                "# Detailed Report for Task: {name}",
+                "# Detailed Report for Main Project: {name}",
+                "Part of Main Project: {name}",
+            ):
+                rendered = t(template).format(name=name)
+                self.assertIn(f": {name}", rendered, f"[{lang}] {template!r}: {rendered!r}")
+
+        # End-to-end sanity check: the actual report output must contain the
+        # correctly spaced heading and bullet, not just the raw translation.
+        self._create_mock_project_with_task("Sample Project", "Sample Task")
+        now = datetime.now()
+        self.tracker.data["projects"][0]["tasks"][0]["time_entries"].append({
+            "start_time": now.replace(hour=8, minute=0, second=0, microsecond=0).isoformat(),
+            "end_time": now.replace(hour=9, minute=30, second=0, microsecond=0).isoformat()
+        })
+        report = self.tracker.generate_daily_report(now.date())
+        self.assertIn("## Sample Project (1,500 hours)", report)
+        self.assertIn("- Sample Task: 1,500 hours", report)
+
     def test_markdown_to_rtf_logic(self):
         """Tests basic Markdown to RTF conversion logic."""
         md = "# H1\n## H2\n### H3\n- Bullet\n**Bold**\nLine"

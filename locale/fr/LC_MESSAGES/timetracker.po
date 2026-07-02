@@ -691,12 +691,12 @@ msgstr ""
 #: TimeTrackerCLI.py:527
 #, python-brace-format
 msgid "    Task: {name}"
-msgstr "Tâche :{name}"
+msgstr "Tâche : {name}"
 
 #: TimeTrackerCLI.py:531 sl/SL_Menu.py:1123
 #, python-brace-format
 msgid "No tasks found inactive for more than {weeks} weeks."
-msgstr "Aucune tâche n'a été trouvée inactive pendant plus de{weeks}semaines."
+msgstr "Aucune tâche n'a été trouvée inactive pendant plus de {weeks} semaines."
 
 #: TimeTrackerCLI.py:537
 msgid ""
@@ -726,7 +726,7 @@ msgstr ""
 #: TimeTrackerCLI.py:551
 #, python-brace-format
 msgid "{count} closed tasks were deleted."
-msgstr "{count}les tâches fermées ont été supprimées."
+msgstr "{count} les tâches fermées ont été supprimées."
 
 #: TimeTrackerCLI.py:553
 msgid "Operation cancelled."
@@ -807,7 +807,7 @@ msgstr ""
 #: TimeTrackerCLI.py:630
 #, python-brace-format
 msgid "Current Note: {note}"
-msgstr "Note actuelle :{note}"
+msgstr "Note actuelle : {note}"
 
 #: TimeTrackerCLI.py:631
 msgid "New note (press Enter to keep current): "
@@ -1238,12 +1238,12 @@ msgstr "Vous travaillez actuellement sur :"
 #: TimeTrackerCLI.py:1007
 #, python-brace-format
 msgid "  Main Project: {name}"
-msgstr "Projet principal :{name}"
+msgstr "Projet principal : {name}"
 
 #: TimeTrackerCLI.py:1008
 #, python-brace-format
 msgid "  Task:         {name}"
-msgstr "Tâche :{name}"
+msgstr "Tâche : {name}"
 
 #: TimeTrackerCLI.py:1009
 #, python-brace-format
@@ -1432,7 +1432,7 @@ msgstr "Installation de {package}..."
 #: tt/TimeTracker.py:112
 #, python-brace-format
 msgid "Failed to install {package}. Continuing without it."
-msgstr "Échec de l'installation de{package}. Continuer sans cela."
+msgstr "Échec de l'installation de {package}. Continuer sans cela."
 
 #: tt/TimeTracker.py:116
 msgid ""
@@ -1480,7 +1480,7 @@ msgstr ""
 #: tt/TimeTracker.py:253
 #, python-brace-format
 msgid "{hours} hours ({dlp} DLP)"
-msgstr "{hours}heures ({dlp}DLP)"
+msgstr "{hours} heures ({dlp} DLP)"
 
 #: tt/TimeTracker.py:846 tt/TimeTracker.py:886
 #, python-brace-format
@@ -1558,12 +1558,12 @@ msgstr "Tâche inconnue"
 #: tt/TimeTracker.py:1330
 #, python-brace-format
 msgid "- {name}: {hours} hours"
-msgstr "-{name}:{hours}heures"
+msgstr "- {name}: {hours} heures"
 
 #: tt/TimeTracker.py:1338
 #, python-brace-format
 msgid "## {name} ({hours} hours)\n"
-msgstr "##{name}({hours}heures)\n"
+msgstr "## {name} ({hours} heures)\n"
 
 #: tt/TimeTracker.py:1347
 #, python-brace-format
@@ -2176,7 +2176,7 @@ msgstr "Semaines d'inactivité"
 #: sl/SL_Menu.py:1112
 #, python-brace-format
 msgid "Inactive Tasks (> {weeks} weeks):"
-msgstr "Tâches inactives (>{weeks}semaines) :"
+msgstr "Tâches inactives (> {weeks} semaines) :"
 
 #: sl/SL_Menu.py:1117 sl/SL_Menu.py:1477
 msgid "Last Activity"
@@ -2202,7 +2202,7 @@ msgstr "Supprimer tout"
 #: sl/SL_Menu.py:1188
 #, python-brace-format
 msgid "Successfully deleted {count} tasks."
-msgstr "Tâches{count}supprimées avec succès."
+msgstr "Tâches {count} supprimées avec succès."
 
 #: sl/SL_Menu.py:1214
 #, python-brace-format
@@ -2294,12 +2294,12 @@ msgstr "Le projet '{name}' a été supprimé."
 #: sl/SL_Menu.py:1474
 #, python-brace-format
 msgid "Inactive Projects (> {weeks} weeks):"
-msgstr "Projets inactifs (>{weeks}semaines) :"
+msgstr "Projets inactifs (> {weeks} semaines) :"
 
 #: sl/SL_Menu.py:1479
 #, python-brace-format
 msgid "No projects found inactive for more than {weeks} weeks."
-msgstr "Aucun projet trouvé inactif pendant plus de{weeks}semaines."
+msgstr "Aucun projet trouvé inactif pendant plus de {weeks} semaines."
 
 #: sl/SL_Menu.py:1488 sl/SL_Menu.py:1511
 msgid "Demote Project"

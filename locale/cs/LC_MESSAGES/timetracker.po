@@ -277,7 +277,7 @@ msgstr ""
 #: TimeTrackerCLI.py:184 TimeTrackerCLI.py:526
 #, python-brace-format
 msgid "  - Main Project: {name}"
-msgstr "- Hlavní projekt:{name}"
+msgstr "- Hlavní projekt: {name}"
 
 #: TimeTrackerCLI.py:185 TimeTrackerCLI.py:528
 #, python-brace-format
@@ -686,7 +686,7 @@ msgstr "    Úkol: {name}"
 #: TimeTrackerCLI.py:531 sl/SL_Menu.py:1123
 #, python-brace-format
 msgid "No tasks found inactive for more than {weeks} weeks."
-msgstr "Žádné úkoly nebyly nalezeny neaktivní déle než{weeks}týdnů."
+msgstr "Žádné úkoly nebyly nalezeny neaktivní déle než {weeks} týdnů."
 
 #: TimeTrackerCLI.py:537
 msgid ""
@@ -715,7 +715,7 @@ msgstr "Opravdu chcete smazat VŠECHNY uzavřené úkoly? (y/n):"
 #: TimeTrackerCLI.py:551
 #, python-brace-format
 msgid "{count} closed tasks were deleted."
-msgstr "{count}uzavřené úkoly byly smazány."
+msgstr "{count} uzavřené úkoly byly smazány."
 
 #: TimeTrackerCLI.py:553
 msgid "Operation cancelled."
@@ -795,7 +795,7 @@ msgstr ""
 #: TimeTrackerCLI.py:630
 #, python-brace-format
 msgid "Current Note: {note}"
-msgstr "Aktuální poznámka:{note}"
+msgstr "Aktuální poznámka: {note}"
 
 #: TimeTrackerCLI.py:631
 msgid "New note (press Enter to keep current): "
@@ -949,7 +949,7 @@ msgstr ""
 #: TimeTrackerCLI.py:781
 #, python-brace-format
 msgid "Current Streamlit Port: {port}"
-msgstr "Aktuální streamovaný port:{port}"
+msgstr "Aktuální streamovaný port: {port}"
 
 #: TimeTrackerCLI.py:783
 msgid "Enter new port (or press Enter to keep current): "
@@ -1218,12 +1218,12 @@ msgstr "Právě pracujete na:"
 #: TimeTrackerCLI.py:1007
 #, python-brace-format
 msgid "  Main Project: {name}"
-msgstr "Hlavní projekt:{name}"
+msgstr "Hlavní projekt: {name}"
 
 #: TimeTrackerCLI.py:1008
 #, python-brace-format
 msgid "  Task:         {name}"
-msgstr "Úkol:{name}"
+msgstr "Úkol: {name}"
 
 #: TimeTrackerCLI.py:1009
 #, python-brace-format
@@ -1315,12 +1315,12 @@ msgstr "Vytváření zálohy aktuální verze před aktualizací..."
 #: update.py:118
 #, python-brace-format
 msgid "Backup created successfully as {filename}."
-msgstr "Záloha byla úspěšně vytvořena jako{filename}."
+msgstr "Záloha byla úspěšně vytvořena jako {filename}."
 
 #: update.py:120
 #, python-brace-format
 msgid "Warning: Could not create backup. Error: {error}"
-msgstr "Varování: Nelze vytvořit zálohu. Chyba:{error}"
+msgstr "Varování: Nelze vytvořit zálohu. Chyba: {error}"
 
 #: update.py:122
 msgid "Installing update..."
@@ -1370,7 +1370,7 @@ msgstr "Restartování aplikace za účelem použití změn..."
 #: update.py:204
 #, python-brace-format
 msgid "Error during restoration: {error}"
-msgstr "Chyba při obnovování:{error}"
+msgstr "Chyba při obnovování: {error}"
 
 #: update.py:205
 #, python-brace-format
@@ -1406,7 +1406,7 @@ msgstr "Instaluji {package}..."
 #: tt/TimeTracker.py:112
 #, python-brace-format
 msgid "Failed to install {package}. Continuing without it."
-msgstr "Nepodařilo se nainstalovat{package}. Pokračování bez toho."
+msgstr "Nepodařilo se nainstalovat {package}. Pokračování bez toho."
 
 #: tt/TimeTracker.py:116
 msgid ""
@@ -1450,7 +1450,7 @@ msgstr ""
 #: tt/TimeTracker.py:253
 #, python-brace-format
 msgid "{hours} hours ({dlp} DLP)"
-msgstr "{hours}hodin ({dlp}DLP)"
+msgstr "{hours} hodin ({dlp} DLP)"
 
 #: tt/TimeTracker.py:846 tt/TimeTracker.py:886
 #, python-brace-format
@@ -1528,12 +1528,12 @@ msgstr "Neznámý úkol"
 #: tt/TimeTracker.py:1330
 #, python-brace-format
 msgid "- {name}: {hours} hours"
-msgstr "-{name}:{hours}hodin"
+msgstr "- {name}: {hours} hodin"
 
 #: tt/TimeTracker.py:1338
 #, python-brace-format
 msgid "## {name} ({hours} hours)\n"
-msgstr "##{name}({hours}hodin)\n"
+msgstr "## {name} ({hours} hodin)\n"
 
 #: tt/TimeTracker.py:1347
 #, python-brace-format
@@ -1580,7 +1580,7 @@ msgstr "# Podrobná zpráva o úkolu: {name}"
 #: tt/TimeTracker.py:1416
 #, python-brace-format
 msgid "Part of Main Project: {name}"
-msgstr "Část hlavního projektu:{name}"
+msgstr "Část hlavního projektu: {name}"
 
 #: tt/TimeTracker.py:1419
 msgid "Active (currently running)"
@@ -1653,7 +1653,7 @@ msgstr "Denní rozpis"
 #: tt/TimeTracker.py:1513
 #, python-brace-format
 msgid "# Detailed Report for Main Project: {name}"
-msgstr "# Podrobná zpráva pro hlavní projekt:{name}"
+msgstr "# Podrobná zpráva pro hlavní projekt: {name}"
 
 #: tt/TimeTracker.py:1516
 #, python-brace-format
@@ -1952,12 +1952,12 @@ msgstr "Načítání e-mailů..."
 #: sl/SL_Menu.py:669
 #, python-brace-format
 msgid "Error fetching emails: {error}"
-msgstr "Chyba při načítání e-mailů:{error}"
+msgstr "Chyba při načítání e-mailů: {error}"
 
 #: sl/SL_Menu.py:672
 #, python-brace-format
 msgid "{count} new tasks created from emails."
-msgstr "{count}nových úkolů vytvořených z e-mailů."
+msgstr "{count} nových úkolů vytvořených z e-mailů."
 
 #: sl/SL_Menu.py:674
 msgid "No new emails found."
@@ -2146,7 +2146,7 @@ msgstr "Týdny neaktivity"
 #: sl/SL_Menu.py:1112
 #, python-brace-format
 msgid "Inactive Tasks (> {weeks} weeks):"
-msgstr "Neaktivní úkoly (>{weeks}týdnů):"
+msgstr "Neaktivní úkoly (> {weeks} týdnů):"
 
 #: sl/SL_Menu.py:1117 sl/SL_Menu.py:1477
 msgid "Last Activity"
@@ -2171,7 +2171,7 @@ msgstr "Smazat vše"
 #: sl/SL_Menu.py:1188
 #, python-brace-format
 msgid "Successfully deleted {count} tasks."
-msgstr "Úspěšně odstraněno{count}úkolů."
+msgstr "Úspěšně odstraněno {count} úkolů."
 
 #: sl/SL_Menu.py:1214
 #, python-brace-format
@@ -2262,7 +2262,7 @@ msgstr "Projekt '{name}' byl smazán."
 #: sl/SL_Menu.py:1474
 #, python-brace-format
 msgid "Inactive Projects (> {weeks} weeks):"
-msgstr "Neaktivní projekty (>{weeks}týdnů):"
+msgstr "Neaktivní projekty (> {weeks} týdnů):"
 
 #: sl/SL_Menu.py:1479
 #, python-brace-format
@@ -2444,7 +2444,7 @@ msgstr "Uložit"
 #: sl/SL_Menu.py:1935
 #, python-brace-format
 msgid "Port updated to {port}. Please restart Streamlit."
-msgstr "Port aktualizován na{port}. Restartujte prosím Streamlit."
+msgstr "Port aktualizován na {port}. Restartujte prosím Streamlit."
 
 #: sl/SL_Menu.py:1945
 msgid "Change Data Storage Location"
