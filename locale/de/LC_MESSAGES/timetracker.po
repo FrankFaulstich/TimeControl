@@ -280,7 +280,7 @@ msgstr ""
 #: TimeTrackerCLI.py:184 TimeTrackerCLI.py:526
 #, python-brace-format
 msgid "  - Main Project: {name}"
-msgstr "- Hauptprojekt:{name}"
+msgstr "- Hauptprojekt: {name}"
 
 #: TimeTrackerCLI.py:185 TimeTrackerCLI.py:528
 #, python-brace-format
@@ -812,7 +812,7 @@ msgstr ""
 #: TimeTrackerCLI.py:630
 #, python-brace-format
 msgid "Current Note: {note}"
-msgstr "Aktuelle Notiz:{note}"
+msgstr "Aktuelle Notiz: {note}"
 
 #: TimeTrackerCLI.py:631
 msgid "New note (press Enter to keep current): "
@@ -1240,12 +1240,12 @@ msgstr "Du arbeitest gerade an:"
 #: TimeTrackerCLI.py:1007
 #, python-brace-format
 msgid "  Main Project: {name}"
-msgstr "Hauptprojekt:{name}"
+msgstr "Hauptprojekt: {name}"
 
 #: TimeTrackerCLI.py:1008
 #, python-brace-format
 msgid "  Task:         {name}"
-msgstr "Aufgabe:{name}"
+msgstr "Aufgabe: {name}"
 
 #: TimeTrackerCLI.py:1009
 #, python-brace-format
@@ -1434,7 +1434,7 @@ msgstr "Installiere {package}..."
 #: tt/TimeTracker.py:112
 #, python-brace-format
 msgid "Failed to install {package}. Continuing without it."
-msgstr "Installation von{package}fehlgeschlagen. Weiter ohne."
+msgstr "Installation von {package}fehlgeschlagen. Weiter ohne."
 
 #: tt/TimeTracker.py:116
 msgid ""
@@ -1480,7 +1480,7 @@ msgstr ""
 #: tt/TimeTracker.py:253
 #, python-brace-format
 msgid "{hours} hours ({dlp} DLP)"
-msgstr "{hours}Stunden ({dlp}DLP)"
+msgstr "{hours} Stunden ({dlp} DLP)"
 
 #: tt/TimeTracker.py:846 tt/TimeTracker.py:886
 #, python-brace-format
@@ -1558,12 +1558,12 @@ msgstr "Unbekannte Aufgabe"
 #: tt/TimeTracker.py:1330
 #, python-brace-format
 msgid "- {name}: {hours} hours"
-msgstr "-{name}:{hours}Stunden"
+msgstr "- {name}: {hours} Stunden"
 
 #: tt/TimeTracker.py:1338
 #, python-brace-format
 msgid "## {name} ({hours} hours)\n"
-msgstr "##{name}({hours}Stunden)\n"
+msgstr "## {name} ({hours} Stunden)\n"
 
 #: tt/TimeTracker.py:1347
 #, python-brace-format
@@ -1605,7 +1605,7 @@ msgstr "Dauer"
 #: tt/TimeTracker.py:1415
 #, python-brace-format
 msgid "# Detailed Report for Task: {name}"
-msgstr "# Detaillierter Bericht für Aufgabe:{name}"
+msgstr "# Detaillierter Bericht für Aufgabe: {name}"
 
 #: tt/TimeTracker.py:1416
 #, python-brace-format
@@ -1683,7 +1683,7 @@ msgstr "Tagesaufschlüsselung"
 #: tt/TimeTracker.py:1513
 #, python-brace-format
 msgid "# Detailed Report for Main Project: {name}"
-msgstr "# Detaillierter Bericht für Hauptprojekt:{name}"
+msgstr "# Detaillierter Bericht für Hauptprojekt: {name}"
 
 #: tt/TimeTracker.py:1516
 #, python-brace-format
@@ -2176,7 +2176,7 @@ msgstr "Wochen der Inaktivität"
 #: sl/SL_Menu.py:1112
 #, python-brace-format
 msgid "Inactive Tasks (> {weeks} weeks):"
-msgstr "Inaktive Aufgaben (>{weeks}Wochen):"
+msgstr "Inaktive Aufgaben (> {weeks} Wochen):"
 
 #: sl/SL_Menu.py:1117 sl/SL_Menu.py:1477
 msgid "Last Activity"
@@ -2202,7 +2202,7 @@ msgstr "Alle löschen"
 #: sl/SL_Menu.py:1188
 #, python-brace-format
 msgid "Successfully deleted {count} tasks."
-msgstr "{count}Aufgaben erfolgreich gelöscht."
+msgstr "{count} Aufgaben erfolgreich gelöscht."
 
 #: sl/SL_Menu.py:1214
 #, python-brace-format
@@ -2295,12 +2295,12 @@ msgstr "Projekt „{name}“ wurde gelöscht."
 #: sl/SL_Menu.py:1474
 #, python-brace-format
 msgid "Inactive Projects (> {weeks} weeks):"
-msgstr "Inaktive Projekte (>{weeks}Wochen):"
+msgstr "Inaktive Projekte (> {weeks} Wochen):"
 
 #: sl/SL_Menu.py:1479
 #, python-brace-format
 msgid "No projects found inactive for more than {weeks} weeks."
-msgstr "Keine Projekte gefunden, die länger als{weeks}Wochen inaktiv waren."
+msgstr "Keine Projekte gefunden, die länger als {weeks} Wochen inaktiv waren."
 
 #: sl/SL_Menu.py:1488 sl/SL_Menu.py:1511
 msgid "Demote Project"
@@ -2475,7 +2475,7 @@ msgstr "Speichern"
 #: sl/SL_Menu.py:1935
 #, python-brace-format
 msgid "Port updated to {port}. Please restart Streamlit."
-msgstr "Port aktualisiert auf{port}. Bitte starten Sie Streamlit neu."
+msgstr "Port aktualisiert auf {port}. Bitte starten Sie Streamlit neu."
 
 #: sl/SL_Menu.py:1945
 msgid "Change Data Storage Location"
