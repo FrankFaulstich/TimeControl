@@ -854,18 +854,34 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.data["projects"][2]["tasks"][0]["time_entries"].append({
             "start_time": (now - timedelta(days=1)).isoformat()
         })
-        
+
+        # P4: 'done' task, inactive for 5 weeks -> SHOULD be listed (not yet closed).
+        self._create_mock_project_with_task("P4_Done", "T4_Done")
+        self.tracker.data["projects"][3]["tasks"][0]["time_entries"].append({
+            "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
+            "end_time": (now - timedelta(weeks=5)).isoformat()
+        })
+        self.tracker.data["projects"][3]["tasks"][0]["status"] = self.tracker.STATUS_DONE
+
+        # P5: 'closed' task, inactive for 5 weeks -> should NOT be listed (already archived).
+        self._create_mock_project_with_task("P5_Closed", "T5_Closed")
+        self.tracker.data["projects"][4]["tasks"][0]["time_entries"].append({
+            "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
+            "end_time": (now - timedelta(weeks=5)).isoformat()
+        })
+        self.tracker.data["projects"][4]["tasks"][0]["status"] = self.tracker.STATUS_CLOSED
+
         # Save to ensure data consistency
         self.tracker._save_data()
-        
+
         # Test with 4 weeks inactivity threshold
         inactive_list = self.tracker.list_inactive_tasks(inactive_weeks=4)
-        
-        # Expectation: Only P2_Inactive should be listed
-        self.assertEqual(len(inactive_list), 1)
-        self.assertEqual(inactive_list[0]['task_name'], "T2_Old")
-        self.assertEqual(inactive_list[0]['main_project'], "P2_Inactive")
-        
+
+        # Expectation: P2_Inactive (open) and P4_Done ('done') should be listed;
+        # P5_Closed ('closed') must stay excluded.
+        task_names = {item['task_name'] for item in inactive_list}
+        self.assertEqual(task_names, {"T2_Old", "T4_Done"})
+
         # Test with 6 weeks inactivity threshold (should be empty)
         inactive_list_6w = self.tracker.list_inactive_tasks(inactive_weeks=6)
         self.assertEqual(len(inactive_list_6w), 0)
