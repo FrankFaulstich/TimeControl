@@ -1143,11 +1143,12 @@ class TimeTracker:
 
     def list_inactive_tasks(self, inactive_weeks):
         """
-        Lists sub-projects that have not had any activity (completed time entry) 
+        Lists sub-projects that have not had any activity (completed time entry)
         within the specified number of weeks.
         Currently running sessions are ignored (i.e., not listed as inactive).
         Sub-projects with no time entries are also ignored.
-        Only sub-projects with status 'open' are considered.
+        Closed tasks are excluded, but 'done' tasks are included since they
+        may still need to be closed.
 
         :param inactive_weeks: The number of weeks defining the inactivity threshold.
         :type inactive_weeks: int
@@ -1171,9 +1172,9 @@ class TimeTracker:
                 if "end_time" not in last_entry:
                     continue # Skip if currently running
 
-                # Only consider sub-projects that are currently 'open'
+                # Exclude closed tasks, but keep 'done' tasks (they may still need closing).
                 # This check is now after the 'running' check to correctly ignore running projects regardless of status.
-                if task.get("status", self.STATUS_OPEN) != self.STATUS_OPEN:
+                if task.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED:
                     continue
 
                 latest_timestamp = None
