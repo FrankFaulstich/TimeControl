@@ -1,3 +1,4 @@
+import io
 import unittest
 from unittest.mock import MagicMock, patch
 import sys
@@ -38,16 +39,16 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         # Reset mock for every test
         self.MockTimeTrackerClass.reset_mock()
 
-        # Create a service instance. Its __init__ will create an instance of our mocked TimeTracker.
-        self.service_instance = self.soap_server.TimeControlService()
-        
-        # This is the mock instance we want to configure and assert against.
-        self.mock_tracker = self.service_instance.tracker
-        
+        # Real spyne dispatches @rpc methods as unbound functions on the
+        # service *class*; it never instantiates TimeControlService and
+        # never sets a 'service' attribute on ctx. Per-request state is
+        # carried via ctx.udc instead (see TimeTrackerSOAP_Server.py's
+        # 'method_call' event listener), so we mock that directly here.
+        self.mock_tracker = self.MockTimeTrackerClass.return_value
+
         # Context object for Spyne methods (often needed, mocked here)
-        # The context's 'service' attribute must point to our instance.
         self.ctx = MagicMock()
-        self.ctx.service = self.service_instance
+        self.ctx.udc = self.mock_tracker
 
     def test_get_version(self):
         self.mock_tracker.get_version.return_value = "1.2.3"
@@ -163,6 +164,101 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         self.mock_tracker.generate_date_range_report.return_value = "Range Report"
         self.soap_server.TimeControlService.generate_date_range_report(self.ctx, "2025-01-01", "2025-01-31")
         self.mock_tracker.generate_date_range_report.assert_called_with(date(2025, 1, 1), date(2025, 1, 31))
+
+
+class TestTimeTrackerSOAP_ServerEndToEnd(unittest.TestCase):
+    """
+    Drives a real spyne WsgiApplication end-to-end with real SOAP envelopes,
+    instead of mocking `ctx`. This exercises spyne's actual context/dispatch
+    machinery (spyne.service.ServiceBase.call_wrapper calling the unbound
+    @rpc functions), which is what caught that TimeControlService relied on
+    a per-request `ctx.service` instance spyne never creates. The
+    TestTimeTrackerSOAP_Server tests above call methods directly with a
+    hand-built ctx and would not catch a regression of that bug.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            import TimeTrackerSOAP_Server
+            from spyne import Application
+            from spyne.protocol.soap import Soap11
+            from spyne.server.wsgi import WsgiApplication
+        except ImportError:
+            raise unittest.SkipTest("Could not import TimeTrackerSOAP_Server or spyne.")
+        except SystemExit:
+            raise unittest.SkipTest("Spyne not installed or import error in TimeTrackerSOAP_Server")
+
+        cls.soap_server = TimeTrackerSOAP_Server
+        cls.wsgi_app = WsgiApplication(Application(
+            [TimeTrackerSOAP_Server.TimeControlService],
+            tns='spyne.examples.timecontrol',
+            in_protocol=Soap11(validator='lxml'),
+            out_protocol=Soap11(),
+        ))
+
+    def setUp(self):
+        # Patch the name as bound inside TimeTrackerSOAP_Server (it was
+        # imported there via `from tt.TimeTracker import TimeTracker`), so
+        # the real TimeTracker (with its file I/O) never runs.
+        patcher = patch('TimeTrackerSOAP_Server.TimeTracker')
+        self.MockTimeTrackerClass = patcher.start()
+        self.addCleanup(patcher.stop)
+        self.mock_tracker = self.MockTimeTrackerClass.return_value
+
+    def _post_soap(self, body_xml):
+        envelope = (
+            '<soap11env:Envelope '
+            'xmlns:soap11env="http://schemas.xmlsoap.org/soap/envelope/" '
+            'xmlns:tns="spyne.examples.timecontrol">'
+            '<soap11env:Body>%s</soap11env:Body>'
+            '</soap11env:Envelope>' % body_xml
+        ).encode('utf-8')
+
+        environ = {
+            'REQUEST_METHOD': 'POST',
+            'PATH_INFO': '/',
+            'CONTENT_TYPE': 'text/xml; charset=utf-8',
+            'CONTENT_LENGTH': str(len(envelope)),
+            'wsgi.input': io.BytesIO(envelope),
+            'wsgi.url_scheme': 'http',
+            'SERVER_NAME': 'localhost',
+            'SERVER_PORT': '8600',
+        }
+
+        captured = {}
+        def start_response(status, headers):
+            captured['status'] = status
+            captured['headers'] = headers
+
+        response_body = b''.join(self.wsgi_app(environ, start_response))
+        return captured['status'], response_body
+
+    def test_get_version_via_real_wsgi_dispatch(self):
+        self.mock_tracker.get_version.return_value = "9.9.9"
+
+        status, body = self._post_soap('<tns:get_version/>')
+
+        self.assertTrue(status.startswith('200'), "status=%r body=%r" % (status, body))
+        self.assertNotIn(b'Fault', body)
+        self.assertIn(b'9.9.9', body)
+        # Proves the 'method_call' event actually constructed a tracker for
+        # this request -- under the old ctx.service-based code, spyne never
+        # instantiated TimeControlService, so TimeTracker() was never called.
+        self.MockTimeTrackerClass.assert_called_once()
+        self.mock_tracker.get_version.assert_called_once()
+
+    def test_add_main_project_via_real_wsgi_dispatch(self):
+        status, body = self._post_soap(
+            '<tns:add_main_project>'
+            '<tns:main_project_name>Acme</tns:main_project_name>'
+            '</tns:add_main_project>'
+        )
+
+        self.assertTrue(status.startswith('200'), "status=%r body=%r" % (status, body))
+        self.assertNotIn(b'Fault', body)
+        self.mock_tracker.add_main_project.assert_called_once_with("Acme")
+
 
 if __name__ == '__main__':
     unittest.main()

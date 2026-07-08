@@ -61,130 +61,132 @@ class OperationResultModel(ComplexModel):
 # --- The SOAP Service ---
 
 class TimeControlService(ServiceBase):
-    # We initialize the tracker in the instance.
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.tracker = TimeTracker()
-
+    # Spyne dispatches @rpc methods as unbound functions on the service
+    # *class* (see spyne.service.ServiceBase.call_wrapper) -- it never
+    # instantiates TimeControlService, so there is no per-request `self`
+    # and no `ctx.service`. Per-request state has to go through ctx.udc
+    # ("user defined context"), which we populate below via the
+    # 'method_call' event that spyne fires for every RPC call on this
+    # service class.
     @rpc(_returns=Unicode)
     def get_version(ctx):
-        return ctx.service.tracker.get_version()
+        return ctx.udc.get_version()
 
     # --- Main Project Management ---
 
     @rpc(Unicode, _returns=Boolean)
     def add_main_project(ctx, main_project_name):
-        ctx.service.tracker.add_main_project(main_project_name)
+        ctx.udc.add_main_project(main_project_name)
         return True
 
     @rpc(Unicode, _returns=Array(MainProjectModel))
     def list_main_projects(ctx, status_filter='all'):
-        projects = ctx.service.tracker.list_main_projects(status_filter)
+        projects = ctx.udc.list_main_projects(status_filter)
         return [MainProjectModel(**p) for p in projects]
 
     @rpc(Unicode, _returns=Boolean)
     def delete_main_project(ctx, main_project_name):
-        return ctx.service.tracker.delete_main_project(main_project_name)
+        return ctx.udc.delete_main_project(main_project_name)
 
     @rpc(Unicode, Unicode, _returns=Boolean)
     def rename_main_project(ctx, old_name, new_name):
-        return ctx.service.tracker.rename_main_project(old_name, new_name)
+        return ctx.udc.rename_main_project(old_name, new_name)
 
     @rpc(Unicode, _returns=Boolean)
     def close_main_project(ctx, main_project_name):
-        return ctx.service.tracker.close_main_project(main_project_name)
+        return ctx.udc.close_main_project(main_project_name)
 
     @rpc(Unicode, _returns=Boolean)
     def reopen_main_project(ctx, main_project_name):
-        return ctx.service.tracker.reopen_main_project(main_project_name)
+        return ctx.udc.reopen_main_project(main_project_name)
 
     @rpc(Unicode, Unicode, _returns=OperationResultModel)
     def demote_main_project(ctx, main_project_to_demote, new_parent):
-        success, msg = ctx.service.tracker.demote_main_project(main_project_to_demote, new_parent)
+        success, msg = ctx.udc.demote_main_project(main_project_to_demote, new_parent)
         return OperationResultModel(success=success, message=msg)
 
     @rpc(_returns=Array(Unicode))
     def list_completed_main_projects(ctx):
-        return ctx.service.tracker.list_completed_main_projects()
+        return ctx.udc.list_completed_main_projects()
 
     # --- Task Management ---
 
     @rpc(Unicode, Unicode, Unicode, Boolean, Unicode, Boolean, Unicode, Integer, _returns=Boolean)
     def add_task(ctx, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1):
-        return ctx.service.tracker.add_task(main_project_name, task_name, due_date, today, note, recurring, frequency, userdefined_days)
+        return ctx.udc.add_task(main_project_name, task_name, due_date, today, note, recurring, frequency, userdefined_days)
 
     @rpc(Unicode, Unicode, Unicode, _returns=Array(TaskModel))
     def list_tasks(ctx, main_project_name=None, status_filter='all', planning_filter=None):
         # To avoid breaking existing unit tests that expect only 2 parameters,
         # we only pass planning_filter if it is actually set.
         if planning_filter:
-            tasks = ctx.service.tracker.list_tasks(main_project_name, status_filter, planning_filter)
+            tasks = ctx.udc.list_tasks(main_project_name, status_filter, planning_filter)
         else:
-            tasks = ctx.service.tracker.list_tasks(main_project_name, status_filter)
+            tasks = ctx.udc.list_tasks(main_project_name, status_filter)
         return [TaskModel(**t) for t in tasks]
 
     @rpc(_returns=Boolean)
     def cleanup_overdue_today_tasks(ctx):
-        return ctx.service.tracker.cleanup_overdue_today_tasks()
+        return ctx.udc.cleanup_overdue_today_tasks()
 
     @rpc(Unicode, Unicode, Integer, _returns=Boolean)
     def delete_task(ctx, main_project_name, task_name, task_id=None):
         if task_id is not None:
-            return ctx.service.tracker.delete_task(main_project_name, task_name, task_id=task_id)
-        return ctx.service.tracker.delete_task(main_project_name, task_name)
+            return ctx.udc.delete_task(main_project_name, task_name, task_id=task_id)
+        return ctx.udc.delete_task(main_project_name, task_name)
 
     @rpc(Unicode, Unicode, Integer, _returns=Boolean)
     def close_task(ctx, main_project_name, task_name, task_id=None):
         if task_id is not None:
-            return ctx.service.tracker.close_task(main_project_name, task_name, task_id=task_id)
-        return ctx.service.tracker.close_task(main_project_name, task_name)
+            return ctx.udc.close_task(main_project_name, task_name, task_id=task_id)
+        return ctx.udc.close_task(main_project_name, task_name)
 
     @rpc(Unicode, Unicode, Integer, _returns=Boolean)
     def reopen_task(ctx, main_project_name, task_name, task_id=None):
         if task_id is not None:
-            return ctx.service.tracker.reopen_task(main_project_name, task_name, task_id=task_id)
-        return ctx.service.tracker.reopen_task(main_project_name, task_name)
+            return ctx.udc.reopen_task(main_project_name, task_name, task_id=task_id)
+        return ctx.udc.reopen_task(main_project_name, task_name)
 
     @rpc(Unicode, Unicode, Unicode, Integer, _returns=Boolean)
     def rename_task(ctx, main_project_name, old_name, new_name, task_id=None):
         if task_id is not None:
-            return ctx.service.tracker.rename_task(main_project_name, old_name, new_name, task_id=task_id)
-        return ctx.service.tracker.rename_task(main_project_name, old_name, new_name)
+            return ctx.udc.rename_task(main_project_name, old_name, new_name, task_id=task_id)
+        return ctx.udc.rename_task(main_project_name, old_name, new_name)
 
     @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, Unicode, Boolean, Unicode, Integer, Integer, _returns=Boolean)
     def update_task(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, task_id=None):
         if task_id is not None:
-            return ctx.service.tracker.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, task_id=task_id)
-        return ctx.service.tracker.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days)
+            return ctx.udc.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, task_id=task_id)
+        return ctx.udc.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days)
 
     @rpc(Unicode, Unicode, Unicode, Unicode, _returns=OperationResultModel)
     def move_task(ctx, old_main, task_name, new_main, task_id=None):
         if task_id is not None:
-            success, msg = ctx.service.tracker.move_task(old_main, task_name, new_main, task_id=task_id)
+            success, msg = ctx.udc.move_task(old_main, task_name, new_main, task_id=task_id)
         else:
-            success, msg = ctx.service.tracker.move_task(old_main, task_name, new_main)
+            success, msg = ctx.udc.move_task(old_main, task_name, new_main)
         return OperationResultModel(success=success, message=msg)
 
     @rpc(Unicode, Unicode, Integer, _returns=OperationResultModel)
     def promote_task_to_project(ctx, main_project_name, task_name, task_id=None):
         if task_id is not None:
-            success, msg = ctx.service.tracker.promote_task_to_project(main_project_name, task_name, task_id=task_id)
+            success, msg = ctx.udc.promote_task_to_project(main_project_name, task_name, task_id=task_id)
         else:
-            success, msg = ctx.service.tracker.promote_task_to_project(main_project_name, task_name)
+            success, msg = ctx.udc.promote_task_to_project(main_project_name, task_name)
         return OperationResultModel(success=success, message=msg)
 
     @rpc(_returns=Integer)
     def delete_all_closed_tasks(ctx):
-        return ctx.service.tracker.delete_all_closed_tasks()
+        return ctx.udc.delete_all_closed_tasks()
 
     @rpc(Integer, _returns=Array(InactiveProjectModel))
     def list_inactive_tasks(ctx, inactive_weeks):
-        res = ctx.service.tracker.list_inactive_tasks(inactive_weeks)
+        res = ctx.udc.list_inactive_tasks(inactive_weeks)
         return [InactiveProjectModel(**p) for p in res]
 
     @rpc(Integer, _returns=Array(InactiveProjectModel))
     def list_inactive_main_projects(ctx, inactive_weeks):
-        res = ctx.service.tracker.list_inactive_main_projects(inactive_weeks)
+        res = ctx.udc.list_inactive_main_projects(inactive_weeks)
         # list_inactive_main_projects returns keys 'main_project' and 'last_activity'
         return [InactiveProjectModel(**p) for p in res]
 
@@ -193,16 +195,16 @@ class TimeControlService(ServiceBase):
     @rpc(Unicode, Unicode, Integer, _returns=Boolean)
     def start_work(ctx, main_project_name, task_name=None, task_id=None):
         if task_id is not None:
-            return ctx.service.tracker.start_work(main_project_name, task_id=task_id)
-        return ctx.service.tracker.start_work(main_project_name, task_name)
+            return ctx.udc.start_work(main_project_name, task_id=task_id)
+        return ctx.udc.start_work(main_project_name, task_name)
 
     @rpc(_returns=Boolean)
     def stop_work(ctx):
-        return ctx.service.tracker.stop_work()
+        return ctx.udc.stop_work()
 
     @rpc(_returns=CurrentWorkModel)
     def get_current_work(ctx):
-        work = ctx.service.tracker.get_current_work()
+        work = ctx.udc.get_current_work()
         if work:
             return CurrentWorkModel(**work)
         return None
@@ -218,7 +220,7 @@ class TimeControlService(ServiceBase):
                 date_obj = datetime.strptime(report_date_str, "%Y-%m-%d").date()
             except ValueError:
                 return "Fehler: Datum muss im Format YYYY-MM-DD sein."
-        return ctx.service.tracker.generate_daily_report(date_obj)
+        return ctx.udc.generate_daily_report(date_obj)
 
     @rpc(Unicode, _returns=Unicode)
     def generate_detailed_daily_report(ctx, report_date_str=None):
@@ -229,7 +231,7 @@ class TimeControlService(ServiceBase):
                 date_obj = datetime.strptime(report_date_str, "%Y-%m-%d").date()
             except ValueError:
                 return "Fehler: Datum muss im Format YYYY-MM-DD sein."
-        return ctx.service.tracker.generate_detailed_daily_report(date_obj)
+        return ctx.udc.generate_detailed_daily_report(date_obj)
 
     @rpc(Unicode, Unicode, _returns=Unicode)
     def generate_date_range_report(ctx, start_date_str, end_date_str):
@@ -237,17 +239,28 @@ class TimeControlService(ServiceBase):
         try:
             start = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             end = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-            return ctx.service.tracker.generate_date_range_report(start, end)
+            return ctx.udc.generate_date_range_report(start, end)
         except ValueError:
             return "Fehler: Datum muss im Format YYYY-MM-DD sein."
 
     @rpc(Unicode, Unicode, _returns=Unicode)
     def generate_task_report(ctx, main_project_name, task_name):
-        return ctx.service.tracker.generate_task_report(main_project_name, task_name)
+        return ctx.udc.generate_task_report(main_project_name, task_name)
 
     @rpc(Unicode, _returns=Unicode)
     def generate_main_project_report(ctx, main_project_name):
-        return ctx.service.tracker.generate_main_project_report(main_project_name)
+        return ctx.udc.generate_main_project_report(main_project_name)
+
+
+def _init_tracker_context(ctx):
+    """Populates ctx.udc with a fresh TimeTracker for the current request."""
+    ctx.udc = TimeTracker()
+
+
+# Registers the handler above for the 'method_call' event, which spyne fires
+# for every RPC call dispatched to TimeControlService.
+TimeControlService.event_manager.add_listener('method_call', _init_tracker_context)
+
 
 def load_config():
     """Loads the configuration from the config.json file."""
