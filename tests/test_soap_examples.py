@@ -66,10 +66,13 @@ class TestSoapExamplesSmoke(unittest.TestCase):
             text=True,
         )
 
-        if not cls._wait_for_server(timeout=15):
-            cls._stop_server()
+        # A cold CI runner can take a while to build spyne's lxml-based
+        # schema validator the first time it runs, so this is deliberately
+        # generous: a healthy server usually answers within a second or
+        # two, but a slow machine should not turn into a flaky build.
+        if not cls._wait_for_server(timeout=60):
+            output = cls._stop_server() or "(no output captured)"
             shutil.rmtree(cls.sandbox_dir, ignore_errors=True)
-            output = cls.server_output
             if "spyne" in output.lower() or "Bibliotheken" in output:
                 raise unittest.SkipTest(
                     "The SOAP server could not start because 'spyne' is not usable "
@@ -83,25 +86,28 @@ class TestSoapExamplesSmoke(unittest.TestCase):
         deadline = time.time() + timeout
         while time.time() < deadline:
             if cls.server_process.poll() is not None:
-                cls.server_output = cls.server_process.stdout.read()
                 return False
             try:
-                urllib.request.urlopen(WSDL_URL, timeout=1)
-                cls.server_output = ""
+                urllib.request.urlopen(WSDL_URL, timeout=2)
                 return True
             except (urllib.error.URLError, ConnectionError):
                 time.sleep(0.5)
-        cls.server_output = "(timed out waiting for the server to respond)"
         return False
 
     @classmethod
     def _stop_server(cls):
-        if cls.server_process and cls.server_process.poll() is None:
+        """Terminates the server process (if still running) and returns whatever it printed."""
+        if cls.server_process.poll() is None:
             cls.server_process.terminate()
             try:
                 cls.server_process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 cls.server_process.kill()
+                cls.server_process.wait(timeout=5)
+        try:
+            return cls.server_process.stdout.read()
+        except ValueError:
+            return ""
 
     @classmethod
     def tearDownClass(cls):
