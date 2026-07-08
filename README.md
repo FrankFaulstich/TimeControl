@@ -50,7 +50,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 - **Streamlit GUI:** A graphical, browser-based user interface (`TimeTrackerSL_GUI.py`) and the actively developed way to use TimeControl.
 - **Interactive CLI (deprecated):** A command-line interface (`TimeTrackerCLI.py`) for task and project management. It is no longer maintained — see the note at the top of this document.
 
-**SOAP API:** A full-featured SOAP web service (`TimeTrackerSOAP_Server.py`) to integrate TimeControl with other tools or dashboards.
+**SOAP API:** A full-featured SOAP web service (`TimeTrackerSOAP_Server.py`) to integrate TimeControl with other tools or dashboards. See [examples/SOAP](examples/SOAP) for runnable client examples.
 
 **Unit Testing:** Includes comprehensive unit tests in `tests/test_TimeTracker.py` for feature reliability.
 
