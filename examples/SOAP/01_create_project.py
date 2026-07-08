@@ -47,7 +47,11 @@ def main():
     # looking for a match first is the standard "look before you leap"
     # pattern you should use for any operation that isn't naturally safe to
     # repeat.
-    existing_projects = client.service.list_main_projects("all")
+    # zeep turns an *empty* SOAP array into None rather than an empty list
+    # (there's nothing in the XML response for it to build a list from), so
+    # "or []" is needed here to make the very first run - when no projects
+    # exist yet - work the same way as every later run.
+    existing_projects = client.service.list_main_projects("all") or []
     if any(p.main_project_name == PROJECT_NAME for p in existing_projects):
         print(f"Project '{PROJECT_NAME}' already exists, nothing to do.")
         return

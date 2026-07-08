@@ -25,7 +25,10 @@ def main():
     # not stop you from creating two tasks with the same name in the same
     # project, so we check ourselves first to keep this script safe to
     # re-run.
-    existing_tasks = client.service.list_tasks(PROJECT_NAME, "all")
+    # As in 01_create_project.py: zeep represents an *empty* SOAP array as
+    # None instead of an empty list, so "or []" keeps this working even
+    # before the very first task has been created.
+    existing_tasks = client.service.list_tasks(PROJECT_NAME, "all") or []
     if any(t.task_name == TASK_NAME for t in existing_tasks):
         print(f"Task '{TASK_NAME}' already exists in '{PROJECT_NAME}', nothing to do.")
         return
