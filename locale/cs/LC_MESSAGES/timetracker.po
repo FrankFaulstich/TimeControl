@@ -1963,6 +1963,11 @@ msgstr "{count} nových úkolů vytvořených z e-mailů."
 msgid "No new emails found."
 msgstr "Nebyly nalezeny žádné nové e-maily."
 
+#: sl/SL_Menu.py:741
+#, python-brace-format
+msgid "{remaining} of {total} emails still to process"
+msgstr "{remaining} z {total} e-mailů zbývá zpracovat"
+
 #: sl/SL_Menu.py:680
 msgid "No unassigned email tasks available."
 msgstr "Nejsou k dispozici žádné nepřiřazené e-mailové úkoly."

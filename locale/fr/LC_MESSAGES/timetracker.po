@@ -1993,6 +1993,11 @@ msgstr "{count} nouvelles tâches créées à partir des e-mails."
 msgid "No new emails found."
 msgstr "Aucun nouvel e-mail trouvé."
 
+#: sl/SL_Menu.py:741
+#, python-brace-format
+msgid "{remaining} of {total} emails still to process"
+msgstr "{remaining} e-mails sur {total} restants à traiter"
+
 #: sl/SL_Menu.py:680
 msgid "No unassigned email tasks available."
 msgstr "Aucune tâche par e-mail non attribuée disponible."

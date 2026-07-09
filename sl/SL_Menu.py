@@ -728,7 +728,19 @@ def view_email_assignment():
         st.session_state.email_fetched = True
 
     hidden_tasks = st.session_state.tracker.list_tasks(main_project_name="hide", status_filter='open')
-    
+
+    # Remember how many tasks there were when this view was opened, so the
+    # progress bar below has a stable total to measure against even as
+    # tasks are assigned or deleted (which shrinks hidden_tasks itself).
+    if 'email_task_total' not in st.session_state:
+        st.session_state.email_task_total = len(hidden_tasks)
+
+    total_tasks = st.session_state.email_task_total
+    remaining_tasks = len(hidden_tasks)
+    if total_tasks > 0:
+        st.markdown(f"**{_('{remaining} of {total} emails still to process').format(remaining=remaining_tasks, total=total_tasks)}**")
+        st.progress((total_tasks - remaining_tasks) / total_tasks)
+
     if not hidden_tasks:
         st.info(_("No unassigned email tasks available."))
     else:
@@ -805,16 +817,22 @@ def view_email_assignment():
                     new_today_flag = st.checkbox(_("Today"), value=current_today_flag, key=f"email_task_today_{task['id']}")
 
                 new_note = st.text_area(_("Notes (Markdown)"), value=current_note, key=f"email_task_note_{task['id']}", height=150)
-                
-                if st.button(_("Save Changes"), key=f"save_email_details_{task['id']}", use_container_width=True):
-                    final_due_date = new_due_date.isoformat() if new_due_date else None
+
+                # No explicit "Save" button: as soon as any field's current
+                # widget value differs from what's actually stored, persist
+                # it right away.
+                final_due_date = new_due_date.isoformat() if new_due_date else None
+                if (new_task_name != current_task_name
+                        or final_due_date != current_due_date_str
+                        or new_today_flag != current_today_flag
+                        or new_note != current_note):
                     if st.session_state.tracker.update_task(
-                        "hide", 
-                        task['task_name'], 
-                        new_task_name=new_task_name, # New: Pass the updated task name
-                        due_date=final_due_date, 
-                        today=new_today_flag, 
-                        note=new_note, 
+                        "hide",
+                        task['task_name'],
+                        new_task_name=new_task_name,
+                        due_date=final_due_date,
+                        today=new_today_flag,
+                        note=new_note,
                         task_id=task['id']
                     ):
                         set_feedback(_("Task details updated successfully."))
@@ -827,6 +845,7 @@ def view_email_assignment():
     
     if st.button(_("Back"), use_container_width=True):
         if 'email_fetched' in st.session_state: del st.session_state.email_fetched
+        if 'email_task_total' in st.session_state: del st.session_state.email_task_total
         navigate_to('main')
 
 def view_project_management():
