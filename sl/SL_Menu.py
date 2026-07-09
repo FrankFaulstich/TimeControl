@@ -714,6 +714,17 @@ def view_email_assignment():
                     st.success(_("{count} new tasks created from emails.").format(count=count))
                 else:
                     st.info(_("No new emails found."))
+
+        # Tasks imported before this due date was tracked (or simply left
+        # unassigned since an earlier day) should show today's date again
+        # whenever this view is opened, instead of a stale or missing one.
+        today_str = datetime.now().date().isoformat()
+        for task in st.session_state.tracker.list_tasks(main_project_name="hide", status_filter='open'):
+            if not task.get('due_date') or task['due_date'] < today_str:
+                st.session_state.tracker.update_task(
+                    "hide", task['task_name'], due_date=today_str, task_id=task.get('id')
+                )
+
         st.session_state.email_fetched = True
 
     hidden_tasks = st.session_state.tracker.list_tasks(main_project_name="hide", status_filter='open')

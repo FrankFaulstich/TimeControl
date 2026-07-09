@@ -646,6 +646,39 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("start_time", general_task["time_entries"][0])
         self.assertIn("end_time", general_task["time_entries"][0])
 
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_sets_due_date_to_today(self, mock_imap_cls, mock_open, mock_exists):
+        """
+        Regression test: a task created from an imported email must have
+        today's date written into its 'due_date' field right away. It used
+        to only show up as a default in the GUI's date picker while the
+        stored task actually had due_date=None.
+        """
+        mock_exists.return_value = True
+        mock_open.return_value.__enter__.return_value.read.return_value = json.dumps({
+            "email": {
+                "enabled": True,
+                "imap_server": "imap.example.com",
+                "user": "user@example.com",
+                "password": "secret",
+            }
+        })
+
+        mock_mail = mock_imap_cls.return_value
+        mock_mail.search.return_value = ("OK", [b"1"])
+        mock_mail.fetch.return_value = ("OK", [(None, b"Subject: Test Email\r\n\r\nThis is the body.")])
+
+        count, error = self.tracker.fetch_emails_to_tasks()
+
+        self.assertIsNone(error)
+        self.assertEqual(count, 1)
+
+        tasks = self.tracker.list_tasks(main_project_name=self.tracker.HIDDEN_PROJECT, status_filter='all')
+        self.assertEqual(len(tasks), 1)
+        self.assertEqual(tasks[0]['due_date'], date.today().isoformat())
+
     def test_promote_task_to_project_name_conflict(self):
         """Tests that promoting fails if a main project with the same name already exists."""
         self.tracker.add_main_project("Source Main")
