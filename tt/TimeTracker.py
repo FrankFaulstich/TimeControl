@@ -1094,7 +1094,7 @@ class TimeTracker:
                 else:
                     body = msg.get_payload(decode=True).decode(msg.get_content_charset() or 'utf-8', errors='replace')
                 
-                self.add_task(self.HIDDEN_PROJECT, subject, note=body)
+                self.add_task(self.HIDDEN_PROJECT, subject, due_date=date.today().isoformat(), note=body)
                 count += 1
                 mail.store(m_id, '+FLAGS', '\\Deleted')
             
