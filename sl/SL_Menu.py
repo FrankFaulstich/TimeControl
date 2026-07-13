@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import re
+import time
 from datetime import datetime, timedelta
 import shutil
 
@@ -205,6 +206,12 @@ if 'tracker' not in st.session_state:
     st.session_state.tracker = TimeTracker()
     st.session_state.tracker.initialize_dependencies()
     st.session_state.tracker.set_today_flag_for_due_tasks() # Set 'today' flag for tasks due today
+else:
+    # Reload from disk on every rerun (i.e. on every click/navigation), so
+    # changes made by another process sharing the same data file - the SOAP
+    # server, or the optional MCP server used by Claude - show up here too,
+    # without needing to restart the whole GUI session.
+    st.session_state.tracker.data = st.session_state.tracker._load_data()
 
 if 'menu' not in st.session_state:
     st.session_state.menu = 'main'
@@ -235,6 +242,28 @@ def set_feedback(message, type='success'):
     :param type: The type of message ('success', 'info', 'error'). Defaults to 'success'.
     """
     st.session_state.feedback = {'message': message, 'type': type}
+
+@st.fragment(run_every=5)
+def _auto_refresh_on_external_changes():
+    """
+    Periodically triggers a full rerun so changes made by another process
+    sharing the same data file (in particular the optional MCP server used
+    by Claude) become visible on their own, without the user needing to
+    click or navigate first. Only used while that MCP server is enabled,
+    since without it nothing external is expected to change the data.
+
+    This function is invoked twice per cycle: once inline as a normal part
+    of every full script run (including the one it itself triggers below),
+    and once on its own every `run_every` seconds via the fragment's timer.
+    The timestamp check tells those two cases apart - without it, calling
+    st.rerun() unconditionally here would re-trigger itself instantly on
+    every single run and the app would never finish rendering.
+    """
+    now = time.monotonic()
+    last_refresh = st.session_state.get("_last_auto_refresh")
+    st.session_state["_last_auto_refresh"] = now
+    if last_refresh is not None and (now - last_refresh) >= 4:
+        st.rerun()
 
 # --- UI Components ---
 
@@ -2586,6 +2615,9 @@ menu_map = {
 }
 
 # --- Execution ---
+
+if config.get('mcp_server_enabled', False):
+    _auto_refresh_on_external_changes()
 
 if st.session_state.menu in menu_map:
     menu_map[st.session_state.menu]()

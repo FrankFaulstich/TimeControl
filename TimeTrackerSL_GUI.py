@@ -68,7 +68,9 @@ def start_streamlit_server():
     x = None
     y = None
     view_mode = 'webview'
-    
+    mcp_server_enabled = False
+    mcp_port = 8700
+
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -79,19 +81,32 @@ def start_streamlit_server():
                 x = config.get('window_x', None)
                 y = config.get('window_y', None)
                 view_mode = config.get('view_mode', 'webview')
+                mcp_server_enabled = config.get('mcp_server_enabled', False)
+                mcp_port = config.get('mcp_port', 8700)
         except (json.JSONDecodeError, IOError) as e:
             print(f"Warning: Could not read config.json. Using default settings. Error: {e}")
 
     print(f"Starting TimeControl GUI on port {port}...")
-    
+
     # Determine headless mode based on webview availability
     headless_mode = "true"
-    
+
     # Use sys.executable to ensure the same python environment is used
     cmd = [sys.executable, "-m", "streamlit", "run", os.path.join("sl", "SL_Menu.py"), "--server.port", str(port), "--server.headless", headless_mode]
-    
+
     process = subprocess.Popen(cmd)
-    
+
+    # The MCP server is a separate, optional long-running process (like the
+    # SOAP server), started here only if the user opted in via config.json.
+    mcp_process = None
+    if mcp_server_enabled:
+        print(f"Starting TimeControl MCP server on port {mcp_port}...")
+        mcp_process = subprocess.Popen([sys.executable, "TimeTrackerMCP_Server.py"])
+
+    def stop_mcp_server():
+        if mcp_process and mcp_process.poll() is None:
+            mcp_process.terminate()
+
     if webview and view_mode == 'webview':
         time.sleep(2) # Wait for Streamlit to initialize
         
@@ -133,13 +148,14 @@ def start_streamlit_server():
         monitor_thread.start()
 
         webview.start()
-        
+
         if process.poll() is None:
             process.terminate()
+        stop_mcp_server()
     else:
         if not webview:
             print("Warning: 'webview' module not found. Opening in system browser instead.")
-        
+
         time.sleep(2)
         webbrowser.open(f"http://localhost:{port}")
         try:
@@ -147,6 +163,8 @@ def start_streamlit_server():
         except KeyboardInterrupt:
             if process.poll() is None:
                 process.terminate()
+        finally:
+            stop_mcp_server()
 
 if __name__ == '__main__':
     if UPDATE_AVAILABLE and os.path.exists("update.zip"):

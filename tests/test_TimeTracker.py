@@ -172,6 +172,32 @@ class TestTimeTracker(unittest.TestCase):
         # Assert sys.exit(0) was called (restart)
         mock_exit.assert_called_with(0)
 
+    @unittest.mock.patch('tt.TimeTracker.distributions')
+    @unittest.mock.patch('subprocess.check_call')
+    @unittest.mock.patch('sys.exit')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open, read_data='mcp; python_version >= "3.10"')
+    @unittest.mock.patch('os.path.exists')
+    def test_check_and_install_dependencies_ignores_environment_marker(self, mock_exists, mock_open, mock_exit, mock_subprocess, mock_distributions):
+        """
+        Regression test: a requirement with a PEP 508 environment marker
+        (e.g. "mcp; python_version >= \"3.10\"") must still be recognized as
+        already installed. The naive '>=' -based parsing used to treat the
+        marker's own '>=' as a version specifier, mangling the package name
+        into "mcp; python_version" - which never matches anything, so the
+        already-installed package was endlessly "reinstalled" and the
+        process exited every time.
+        """
+        mock_exists.return_value = True
+
+        mock_dist = unittest.mock.MagicMock()
+        mock_dist.metadata = {'Name': 'mcp'}
+        mock_distributions.return_value = [mock_dist]
+
+        self.tracker._check_and_install_dependencies()
+
+        mock_subprocess.assert_not_called()
+        mock_exit.assert_not_called()
+
     # --- General Method Tests ---
 
     def test_get_version(self):
@@ -777,7 +803,24 @@ class TestTimeTracker(unittest.TestCase):
     def test_start_work_main_not_found(self):
         """Tests starting work on a non-existent main project."""
         self.assertFalse(self.tracker.start_work("Non Existent", "Task"))
-        
+
+    def test_start_work_invalid_target_does_not_stop_previous(self):
+        """
+        Regression test: trying to start work on a task/project that does
+        not exist must not stop whatever session is currently running. It
+        used to unconditionally stop the previous session before even
+        checking whether the new target existed.
+        """
+        self._create_mock_project_with_task("P1", "T1")
+        self.tracker.start_work("P1", "T1")
+
+        success = self.tracker.start_work("P1", "Nonexistent Task")
+        self.assertFalse(success)
+
+        entries = self.tracker.data["projects"][0]["tasks"][0]["time_entries"]
+        self.assertEqual(len(entries), 1)
+        self.assertNotIn("end_time", entries[0])
+
     def test_start_work_stops_previous(self):
         """Tests if a running session is stopped when a new one is started."""
         self._create_mock_project_with_task("P1", "T1") # Initially at index 0

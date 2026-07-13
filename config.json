@@ -12,6 +12,8 @@
     "css_file": "style.css",
     "view_mode": "webview",
     "soap_port": 8600,
+    "mcp_server_enabled": false,
+    "mcp_port": 8700,
     "email": {
         "imap_server": "",
         "imap_port": 993,
