@@ -84,7 +84,7 @@ The Streamlit GUI groups all actions behind a compact icon toolbar — hover ove
 
 ## Prerequisites 📋
 
-- **Python 3.9 - 3.14:** Ensure you have Python 3 installed on your system. You can download it from [python.org](https://www.python.org/).
+- **Python 3.10 - 3.14:** Ensure you have Python 3 installed on your system. You can download it from [python.org](https://www.python.org/).
   *(Note: Python 3.14 is currently not supported on Windows due to dependency issues.)*
 
 ---
