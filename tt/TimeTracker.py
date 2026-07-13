@@ -37,7 +37,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.17"
+    VERSION = "3.18"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -95,9 +95,10 @@ class TimeTracker:
             installed_packages = {dist.metadata['Name'].lower() for dist in installed_packages_dist if dist.metadata and dist.metadata['Name']}
             
             missing_packages = []
-            for req in requirements: # e.g., "requests==2.28.1"
-                # A simple check for the package name, ignoring version specifiers for now
-                req_name = req.split('==')[0].split('>=')[0].split('<=')[0].split('<')[0].split('>')[0].strip()
+            for req in requirements: # e.g., "requests==2.28.1" or "mcp; python_version >= \"3.10\""
+                # A simple check for the package name, ignoring version specifiers and
+                # environment markers (the part after ';', e.g. 'python_version >= "3.10"').
+                req_name = req.split(';')[0].split('==')[0].split('>=')[0].split('<=')[0].split('<')[0].split('>')[0].strip()
                 if req_name.lower() not in installed_packages:
                     missing_packages.append(req)
 
@@ -975,13 +976,11 @@ class TimeTracker:
         :return: True if work was started successfully, otherwise False.
         :rtype: bool
         """
-        self.stop_work()
-        
         main_project = None
         main_project_index = -1
         task = None
         task_index = -1
-        
+
         fallback_task = None
         fallback_index = -1
 
@@ -1006,6 +1005,11 @@ class TimeTracker:
             task, task_index = fallback_task, fallback_index
 
         if task and main_project:
+            # Only stop the previous session once we know a new one can
+            # actually be started - otherwise a typo'd/unknown task would
+            # silently end whatever was running without replacing it.
+            self.stop_work()
+
             # Add the new time entry
             new_entry = {
                 "start_time": datetime.now().isoformat()

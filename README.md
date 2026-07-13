@@ -17,6 +17,7 @@ A simple, object-oriented Python application for tracking time spent on projects
     - [Running the Streamlit GUI](#running-the-streamlit-gui)
     - [Running the Interactive CLI (Deprecated)](#running-the-interactive-cli-deprecated)
     - [CLI Menu Options](#cli-menu-options)
+  - [MCP Server 🤖](#mcp-server-)
   - [Building the Documentation 📚](#building-the-documentation-)
   - [Data Storage 🗄️](#data-storage-️)
   - [Contributing 🤝](#contributing-)
@@ -52,6 +53,8 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **SOAP API:** A full-featured SOAP web service (`TimeTrackerSOAP_Server.py`) to integrate TimeControl with other tools or dashboards. See [examples/SOAP](examples/SOAP) for runnable client examples.
 
+**MCP Server (optional):** An [MCP](https://modelcontextprotocol.io/) server (`TimeTrackerMCP_Server.py`) that exposes the app's entire functionality — project/task management, time tracking, reporting, and email import — to an MCP client such as Claude Desktop, so you can manage TimeControl in natural language while keeping the GUI in sync — see [MCP Server](#mcp-server-) below.
+
 **Unit Testing:** Includes comprehensive unit tests in `tests/test_TimeTracker.py` for feature reliability.
 
 ---
@@ -81,7 +84,7 @@ The Streamlit GUI groups all actions behind a compact icon toolbar — hover ove
 
 ## Prerequisites 📋
 
-- **Python 3.9 - 3.14:** Ensure you have Python 3 installed on your system. You can download it from [python.org](https://www.python.org/).
+- **Python 3.10 - 3.14:** Ensure you have Python 3 installed on your system. You can download it from [python.org](https://www.python.org/).
   *(Note: Python 3.14 is currently not supported on Windows due to dependency issues.)*
 
 ---
@@ -117,6 +120,8 @@ The application can be configured via the `config.json` file.
     "language": "de",
     "streamlit_port": 8501,
     "soap_port": 8600,
+    "mcp_server_enabled": false,
+    "mcp_port": 8700,
     "data_file": "data.json",
     "css_file": "style.css"
 }
@@ -125,6 +130,8 @@ The application can be configured via the `config.json` file.
 - **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions.
 - **`language`**: The user interface language ("en", "de", "fr", "es", "cs").
 - **`soap_port`**: The port on which the SOAP server listens (default: 8600).
+- **`mcp_server_enabled`**: Whether `TimeTrackerSL_GUI.py` also starts the MCP server (default: `false`). See [MCP Server](#mcp-server-).
+- **`mcp_port`**: The port on which the MCP server listens (default: 8700).
 
 ---
 
@@ -249,6 +256,48 @@ The interactive CLI provides a structured menu for all operations.
 --------------------------
 0. Back to Main Menu
 ```
+
+---
+
+## MCP Server 🤖
+
+TimeControl can optionally run a [Model Context Protocol](https://modelcontextprotocol.io/) server (`TimeTrackerMCP_Server.py`), letting an MCP client such as **Claude Desktop** talk to it directly — e.g. *"start work on task X"*, *"create a new project called Y"*, or *"stop what I'm working on"* — while you keep using the GUI at the same time. Both sides read and write the same `data.json`, and the GUI reloads its data on every interaction and (while the MCP server is enabled) also refreshes itself automatically every few seconds, so you can freely switch back and forth between Claude and the GUI.
+
+**Enabling it:** set these two keys in `config.json` (see [Configuration](#configuration-️)) and install the extra dependency:
+
+```bash
+pip install mcp
+```
+
+```json
+{
+    "mcp_server_enabled": true,
+    "mcp_port": 8700
+}
+```
+
+With `mcp_server_enabled` set to `true`, `TimeTrackerSL_GUI.py` starts the MCP server automatically alongside the Streamlit GUI (and stops it again on exit), the same way it already can run the SOAP server. `mcp` requires Python 3.10+; on older versions the feature is simply unavailable.
+
+You can also run it stand-alone instead:
+
+```bash
+python TimeTrackerMCP_Server.py
+```
+
+**Available tools:** the server exposes the full functional scope of the app as 33 tools:
+
+- **Main project management:** `add_main_project`, `list_main_projects`, `rename_main_project`, `close_main_project`, `reopen_main_project`, `delete_main_project`, `demote_main_project`, `list_completed_main_projects`, `list_inactive_main_projects`.
+- **Task management:** `add_task`, `list_tasks`, `update_task`, `mark_task_done`, `rename_task`, `close_task`, `reopen_task`, `delete_task`, `delete_all_closed_tasks`, `move_task`, `promote_task_to_project`, `list_inactive_tasks`, `cleanup_overdue_today_tasks`, `set_today_flag_for_due_tasks`.
+- **Time tracking:** `start_work`, `stop_work`, `get_current_work`. Both the target project and task must already exist for `start_work` — it does not create them for you.
+- **Reporting:** `generate_daily_report`, `generate_detailed_daily_report`, `generate_date_range_report`, `generate_task_report`, `generate_main_project_report`.
+- **Email import:** `fetch_emails_to_tasks` (requires email import to be configured, see above).
+- **Misc:** `get_version`.
+
+`update_task` only changes the fields you actually pass — in particular, a task's due date is preserved automatically if you don't specify one, since updating it always requires re-sending the current value under the hood.
+
+> ⚠️ **Destructive tools:** `delete_task`, `delete_all_closed_tasks`, and `delete_main_project` permanently delete data and cannot be undone. An MCP client should always confirm with you before calling them.
+
+**Connecting Claude Desktop:** add an entry to Claude Desktop's MCP server configuration pointing at the Streamable HTTP endpoint, `http://127.0.0.1:8700/mcp` (adjust the port to match `mcp_port`). Consult Claude Desktop's current documentation for the exact steps, since how it's configured has changed between versions.
 
 ## Building the Documentation 📚
 

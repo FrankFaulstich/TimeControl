@@ -78,6 +78,41 @@ class TestStreamlitGUI(unittest.TestCase):
         self.assertEqual(kwargs.get('x'), 265)
         self.assertEqual(kwargs.get('y'), 130)
 
+    @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
+    @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
+    @unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.start')
+    @unittest.mock.patch('TimeTrackerSL_GUI.time.sleep')
+    def test_start_streamlit_server_starts_mcp_server_when_enabled(self, mock_sleep, mock_webview_start, mock_create_window, mock_popen, mock_json_load, mock_exists):
+        """
+        The optional MCP server must only be started as a second subprocess
+        when explicitly enabled in config.json, using the configured port.
+        """
+        mock_exists.return_value = True
+        mock_json_load.return_value = {'mcp_server_enabled': True, 'mcp_port': 8765}
+
+        TimeTrackerSL_GUI.start_streamlit_server()
+
+        self.assertEqual(mock_popen.call_count, 2)
+        mcp_call_args = mock_popen.call_args_list[1][0][0]
+        self.assertIn('TimeTrackerMCP_Server.py', mcp_call_args)
+
+    @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
+    @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
+    @unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.start')
+    @unittest.mock.patch('TimeTrackerSL_GUI.time.sleep')
+    def test_start_streamlit_server_skips_mcp_server_by_default(self, mock_sleep, mock_webview_start, mock_create_window, mock_popen, mock_json_load, mock_exists):
+        """The MCP server must not be started unless explicitly enabled."""
+        mock_exists.return_value = True
+        mock_json_load.return_value = {}
+
+        TimeTrackerSL_GUI.start_streamlit_server()
+
+        mock_popen.assert_called_once()
+
     def test_save_window_state_persists_position(self):
         """
         Regression test: closing the window must persist both size AND
