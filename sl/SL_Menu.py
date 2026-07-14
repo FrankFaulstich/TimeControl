@@ -484,7 +484,17 @@ def view_task_planning():
         _("Unplanned tasks"), 
         _("All")
     ]
-    selected_filter = st.selectbox(_("Filter"), options=filter_options, index=0)
+    # See the comment in view_today_tasks() for why the persisted index is
+    # tracked separately from the widget's own (key-bound) session state.
+    if "task_planning_filter_index" not in st.session_state:
+        st.session_state.task_planning_filter_index = 0
+    selected_filter = st.selectbox(
+        _("Filter"),
+        options=filter_options,
+        index=st.session_state.task_planning_filter_index,
+        key="task_planning_filter_select",
+    )
+    st.session_state.task_planning_filter_index = filter_options.index(selected_filter)
 
     filter_map = {
         _("Today"): 'today',
@@ -660,7 +670,20 @@ def view_today_tasks():
     all_open = st.session_state.tracker.list_tasks(status_filter='open')
     today_tasks_all = [t for t in all_open if t.get('today')]
 
-    show_only_open = st.checkbox(_("Show only open tasks"), value=False, key="today_show_only_open")
+    # A widget's own session-state entry (keyed via `key=`) is cleared by
+    # Streamlit whenever the widget isn't instantiated during a script run
+    # (e.g. while the edit-task form is showing) - so the checkbox appears to
+    # "forget" its value on returning to this view. Persisting the value in a
+    # plain, non-widget-bound key survives that gap for the rest of the
+    # session, while still starting fresh (False) on the next app start.
+    if "today_show_only_open_value" not in st.session_state:
+        st.session_state.today_show_only_open_value = False
+    show_only_open = st.checkbox(
+        _("Show only open tasks"),
+        value=st.session_state.today_show_only_open_value,
+        key="today_show_only_open",
+    )
+    st.session_state.today_show_only_open_value = show_only_open
     today_tasks = [t for t in today_tasks_all if t.get('status') != 'done'] if show_only_open else today_tasks_all
 
     if today_tasks:
