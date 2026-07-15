@@ -69,6 +69,7 @@ def start_streamlit_server():
     y = None
     view_mode = 'webview'
     mcp_server_enabled = False
+    mcp_transport = 'http'
     mcp_port = 8700
 
     if os.path.exists(CONFIG_FILE):
@@ -82,6 +83,7 @@ def start_streamlit_server():
                 y = config.get('window_y', None)
                 view_mode = config.get('view_mode', 'webview')
                 mcp_server_enabled = config.get('mcp_server_enabled', False)
+                mcp_transport = config.get('mcp_transport', 'http')
                 mcp_port = config.get('mcp_port', 8700)
         except (json.JSONDecodeError, IOError) as e:
             print(f"Warning: Could not read config.json. Using default settings. Error: {e}")
@@ -98,8 +100,11 @@ def start_streamlit_server():
 
     # The MCP server is a separate, optional long-running process (like the
     # SOAP server), started here only if the user opted in via config.json.
+    # With the stdio transport there is nothing useful to launch here at
+    # all - an MCP client (e.g. Claude Desktop) spawns that process itself
+    # and talks to it over its stdin/stdout directly.
     mcp_process = None
-    if mcp_server_enabled:
+    if mcp_server_enabled and mcp_transport != 'stdio':
         print(f"Starting TimeControl MCP server on port {mcp_port}...")
         mcp_process = subprocess.Popen([sys.executable, "TimeTrackerMCP_Server.py"])
 

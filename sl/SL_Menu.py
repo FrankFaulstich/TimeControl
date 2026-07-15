@@ -249,8 +249,10 @@ def _auto_refresh_on_external_changes():
     Periodically triggers a full rerun so changes made by another process
     sharing the same data file (in particular the optional MCP server used
     by Claude) become visible on their own, without the user needing to
-    click or navigate first. Only used while that MCP server is enabled,
-    since without it nothing external is expected to change the data.
+    click or navigate first. Only called while MCP is in use in some form
+    (see the call site below) - with the stdio transport this is always,
+    since an MCP client can be spawning that process independently of what
+    this app's own config says, so there's no reliable way to know it isn't.
 
     This function is invoked twice per cycle: once inline as a normal part
     of every full script run (including the one it itself triggers below),
@@ -1051,6 +1053,7 @@ def view_settings():
     if st.button(_("Email Settings"), use_container_width=True, key="settings_email"): navigate_to('settings_email')
     if st.button(_("Change CSS Style"), use_container_width=True, key="settings_css"): navigate_to('settings_css')
     if st.button(_("Change View Mode"), use_container_width=True, key="settings_view_mode"): navigate_to('settings_view_mode')
+    if st.button(_("MCP Server Settings"), use_container_width=True, key="settings_mcp"): navigate_to('settings_mcp')
     
     st.divider()
     
@@ -2364,6 +2367,53 @@ def view_settings_email():
     if st.button(_("Cancel"), use_container_width=True):
         navigate_to('settings')
 
+def view_settings_mcp():
+    """
+    Renders the form to configure the MCP server (enable/disable, transport,
+    port).
+    """
+    render_header(_("MCP Server Settings"))
+    config = get_config()
+
+    transport_options = {
+        'http': _("HTTP (Streamable HTTP)"),
+        'stdio': _("stdio (recommended for Claude Desktop)"),
+    }
+    transport_keys = list(transport_options.keys())
+    transport_labels = list(transport_options.values())
+    try:
+        current_transport_index = transport_keys.index(config.get('mcp_transport', 'http'))
+    except ValueError:
+        current_transport_index = 0
+
+    with st.form("mcp_settings_form"):
+        enabled = st.checkbox(_("Enable MCP server"), value=config.get('mcp_server_enabled', False))
+        selected_transport_label = st.selectbox(_("Transport"), transport_labels, index=current_transport_index)
+        port = st.number_input(
+            _("Port (HTTP only)"),
+            min_value=1024,
+            max_value=65535,
+            value=config.get('mcp_port', 8700),
+        )
+        st.caption(_(
+            "With stdio, the app does not start the MCP server itself - the "
+            "MCP client (e.g. Claude Desktop) launches it directly, and the "
+            "port is ignored."
+        ))
+
+        submitted = st.form_submit_button(_("Save"), use_container_width=True)
+        if submitted:
+            config['mcp_server_enabled'] = enabled
+            config['mcp_transport'] = transport_keys[transport_labels.index(selected_transport_label)]
+            config['mcp_port'] = port
+            save_config(config)
+            set_feedback(_("MCP server settings saved. Please restart the application for the changes to take effect."))
+            navigate_to('settings')
+            st.rerun()
+
+    if st.button(_("Cancel"), use_container_width=True):
+        navigate_to('settings')
+
 def view_report_specific_day():
     """
     Renders the form to generate a daily report for a specific date.
@@ -2635,11 +2685,12 @@ menu_map = {
     'settings_email': view_settings_email,
     'settings_css': view_settings_css,
     'settings_view_mode': view_settings_view_mode,
+    'settings_mcp': view_settings_mcp,
 }
 
 # --- Execution ---
 
-if config.get('mcp_server_enabled', False):
+if config.get('mcp_server_enabled', False) or config.get('mcp_transport', 'http') == 'stdio':
     _auto_refresh_on_external_changes()
 
 if st.session_state.menu in menu_map:

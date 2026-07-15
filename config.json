@@ -13,6 +13,7 @@
     "view_mode": "webview",
     "soap_port": 8600,
     "mcp_server_enabled": false,
+    "mcp_transport": "http",
     "mcp_port": 8700,
     "email": {
         "imap_server": "",
