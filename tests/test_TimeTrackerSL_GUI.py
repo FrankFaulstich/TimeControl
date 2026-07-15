@@ -113,6 +113,26 @@ class TestStreamlitGUI(unittest.TestCase):
 
         mock_popen.assert_called_once()
 
+    @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
+    @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
+    @unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.start')
+    @unittest.mock.patch('TimeTrackerSL_GUI.time.sleep')
+    def test_start_streamlit_server_skips_mcp_server_for_stdio_transport(self, mock_sleep, mock_webview_start, mock_create_window, mock_popen, mock_json_load, mock_exists):
+        """
+        With the stdio transport, an MCP client (e.g. Claude Desktop) spawns
+        TimeTrackerMCP_Server.py itself and talks to it over stdin/stdout, so
+        the GUI must not also launch it as a background subprocess - even if
+        'mcp_server_enabled' is true.
+        """
+        mock_exists.return_value = True
+        mock_json_load.return_value = {'mcp_server_enabled': True, 'mcp_transport': 'stdio', 'mcp_port': 8765}
+
+        TimeTrackerSL_GUI.start_streamlit_server()
+
+        mock_popen.assert_called_once()
+
     def test_save_window_state_persists_position(self):
         """
         Regression test: closing the window must persist both size AND

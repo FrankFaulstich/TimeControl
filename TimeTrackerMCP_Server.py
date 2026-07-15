@@ -8,8 +8,8 @@ from datetime import datetime
 try:
     from mcp.server.fastmcp import FastMCP
 except ImportError:
-    print("Error: The required library is not installed.")
-    print("Please run: pip install mcp")
+    print("Error: The required library is not installed.", file=sys.stderr)
+    print("Please run: pip install mcp", file=sys.stderr)
     sys.exit(1)
 
 # Import of TimeTracker logic
@@ -18,7 +18,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 try:
     from tt.TimeTracker import TimeTracker
 except ImportError as e:
-    print(f"Error importing TimeTracker: {e}")
+    print(f"Error importing TimeTracker: {e}", file=sys.stderr)
     sys.exit(1)
 
 CONFIG_FILE = 'config.json'
@@ -40,6 +40,13 @@ def load_config():
 _config = load_config()
 mcp = FastMCP("TimeControl", port=_config.get('mcp_port', 8700))
 
+# stdio uses stdout as the JSON-RPC message channel itself, so nothing else
+# may write to it - unlike the HTTP transport, where stray console output is
+# harmless. Report generation can print a "copied to clipboard" notice (see
+# TimeTracker._copy_to_clipboard), which would otherwise corrupt every report
+# tool's response when running over stdio.
+_STDIO_MODE = _config.get('mcp_transport', 'http') == 'stdio'
+
 
 def get_tracker():
     """
@@ -51,6 +58,21 @@ def get_tracker():
     interface - and so its own changes are picked up by them immediately too.
     """
     return TimeTracker()
+
+
+def _call_protecting_stdio(fn, *args, **kwargs):
+    """
+    Runs fn, redirecting stdout to stderr for the duration of the call if the
+    server is running over the stdio transport (see _STDIO_MODE above).
+    """
+    if not _STDIO_MODE:
+        return fn(*args, **kwargs)
+    old_stdout = sys.stdout
+    sys.stdout = sys.stderr
+    try:
+        return fn(*args, **kwargs)
+    finally:
+        sys.stdout = old_stdout
 
 
 def parse_date(date_str, param_name):
@@ -456,7 +478,7 @@ def generate_daily_report(report_date: str | None = None) -> str:
     date_obj, error = parse_date(report_date, "report_date")
     if error:
         return error
-    return get_tracker().generate_daily_report(date_obj)
+    return _call_protecting_stdio(get_tracker().generate_daily_report, date_obj)
 
 
 @mcp.tool()
@@ -470,7 +492,7 @@ def generate_detailed_daily_report(report_date: str | None = None) -> str:
     date_obj, error = parse_date(report_date, "report_date")
     if error:
         return error
-    return get_tracker().generate_detailed_daily_report(date_obj)
+    return _call_protecting_stdio(get_tracker().generate_detailed_daily_report, date_obj)
 
 
 @mcp.tool()
@@ -487,19 +509,19 @@ def generate_date_range_report(start_date: str, end_date: str) -> str:
     end_obj, error = parse_date(end_date, "end_date")
     if error:
         return error
-    return get_tracker().generate_date_range_report(start_obj, end_obj)
+    return _call_protecting_stdio(get_tracker().generate_date_range_report, start_obj, end_obj)
 
 
 @mcp.tool()
 def generate_task_report(main_project_name: str, task_name: str) -> str:
     """Generates a detailed report as Markdown for a single task."""
-    return get_tracker().generate_task_report(main_project_name, task_name)
+    return _call_protecting_stdio(get_tracker().generate_task_report, main_project_name, task_name)
 
 
 @mcp.tool()
 def generate_main_project_report(main_project_name: str) -> str:
     """Generates a detailed report as Markdown for a single main project, including a breakdown across its tasks."""
-    return get_tracker().generate_main_project_report(main_project_name)
+    return _call_protecting_stdio(get_tracker().generate_main_project_report, main_project_name)
 
 
 # --- Misc ---
@@ -511,8 +533,14 @@ def get_version() -> str:
 
 
 def main():
-    print(f"Starting TimeControl MCP server on http://{mcp.settings.host}:{mcp.settings.port}{mcp.settings.streamable_http_path} ...")
-    mcp.run(transport="streamable-http")
+    if _STDIO_MODE:
+        # No prints here: stdout is the JSON-RPC channel for this transport,
+        # and Claude Desktop (the typical client) spawns this process itself
+        # and reads its stdout directly.
+        mcp.run(transport="stdio")
+    else:
+        print(f"Starting TimeControl MCP server on http://{mcp.settings.host}:{mcp.settings.port}{mcp.settings.streamable_http_path} ...")
+        mcp.run(transport="streamable-http")
 
 
 if __name__ == '__main__':

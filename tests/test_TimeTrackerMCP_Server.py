@@ -389,6 +389,70 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
         result = self.mcp_server.get_version()
         self.assertEqual(result, "3.18")
 
+    # --- transport selection (http vs stdio) ---
+
+    def test_main_runs_http_transport_by_default(self):
+        with patch.object(self.mcp_server, '_STDIO_MODE', False), \
+             patch.object(self.mcp_server, 'mcp') as mock_mcp:
+            self.mcp_server.main()
+        mock_mcp.run.assert_called_once_with(transport="streamable-http")
+
+    def test_main_runs_stdio_transport_when_configured(self):
+        with patch.object(self.mcp_server, '_STDIO_MODE', True), \
+             patch.object(self.mcp_server, 'mcp') as mock_mcp:
+            self.mcp_server.main()
+        mock_mcp.run.assert_called_once_with(transport="stdio")
+
+    def test_main_stdio_does_not_print_to_stdout(self):
+        """
+        stdout is the JSON-RPC message channel for the stdio transport, so
+        main() must not print anything to it in that mode (unlike the HTTP
+        branch, which announces its URL on stdout).
+        """
+        import io
+        captured = io.StringIO()
+        with patch.object(self.mcp_server, '_STDIO_MODE', True), \
+             patch.object(self.mcp_server, 'mcp'), \
+             patch('sys.stdout', captured):
+            self.mcp_server.main()
+        self.assertEqual(captured.getvalue(), "")
+
+    # --- stdout protection for report tools under stdio ---
+
+    def test_call_protecting_stdio_passes_through_for_http(self):
+        with patch.object(self.mcp_server, '_STDIO_MODE', False):
+            result = self.mcp_server._call_protecting_stdio(lambda a, b: a + b, 1, 2)
+        self.assertEqual(result, 3)
+
+    def test_call_protecting_stdio_redirects_stdout_for_stdio(self):
+        """
+        Regression test: TimeTracker's report methods can print a
+        clipboard-copy notice (see TimeTracker._copy_to_clipboard). Under the
+        stdio transport that print would corrupt the JSON-RPC stream, so it
+        must land on stderr instead while stdio is active.
+        """
+        def prints_and_returns(value):
+            print("Info: Report content has been copied to the clipboard.")
+            return value
+
+        import io
+        captured_stdout = io.StringIO()
+        captured_stderr = io.StringIO()
+        with patch.object(self.mcp_server, '_STDIO_MODE', True), \
+             patch('sys.stdout', captured_stdout), \
+             patch('sys.stderr', captured_stderr):
+            result = self.mcp_server._call_protecting_stdio(prints_and_returns, "# Report")
+
+        self.assertEqual(result, "# Report")
+        self.assertEqual(captured_stdout.getvalue(), "")
+        self.assertIn("copied to the clipboard", captured_stderr.getvalue())
+
+    def test_call_protecting_stdio_restores_stdout_after_call(self):
+        real_stdout = sys.stdout
+        with patch.object(self.mcp_server, '_STDIO_MODE', True):
+            self.mcp_server._call_protecting_stdio(lambda: None)
+        self.assertIs(sys.stdout, real_stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

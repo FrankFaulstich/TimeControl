@@ -121,6 +121,7 @@ The application can be configured via the `config.json` file.
     "streamlit_port": 8501,
     "soap_port": 8600,
     "mcp_server_enabled": false,
+    "mcp_transport": "http",
     "mcp_port": 8700,
     "data_file": "data.json",
     "css_file": "style.css"
@@ -130,8 +131,11 @@ The application can be configured via the `config.json` file.
 - **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions.
 - **`language`**: The user interface language ("en", "de", "fr", "es", "cs").
 - **`soap_port`**: The port on which the SOAP server listens (default: 8600).
-- **`mcp_server_enabled`**: Whether `TimeTrackerSL_GUI.py` also starts the MCP server (default: `false`). See [MCP Server](#mcp-server-).
-- **`mcp_port`**: The port on which the MCP server listens (default: 8700).
+- **`mcp_server_enabled`**: Whether `TimeTrackerSL_GUI.py` also starts the MCP server when `mcp_transport` is `"http"` (default: `false`). See [MCP Server](#mcp-server-).
+- **`mcp_transport`**: `"http"` or `"stdio"` (default: `"http"`). See [MCP Server](#mcp-server-).
+- **`mcp_port`**: The port on which the MCP server listens when using the `"http"` transport (default: 8700).
+
+All of these MCP settings can also be changed from the GUI, under **Settings → MCP Server Settings**.
 
 ---
 
@@ -261,9 +265,14 @@ The interactive CLI provides a structured menu for all operations.
 
 ## MCP Server 🤖
 
-TimeControl can optionally run a [Model Context Protocol](https://modelcontextprotocol.io/) server (`TimeTrackerMCP_Server.py`), letting an MCP client such as **Claude Desktop** talk to it directly — e.g. *"start work on task X"*, *"create a new project called Y"*, or *"stop what I'm working on"* — while you keep using the GUI at the same time. Both sides read and write the same `data.json`, and the GUI reloads its data on every interaction and (while the MCP server is enabled) also refreshes itself automatically every few seconds, so you can freely switch back and forth between Claude and the GUI.
+TimeControl can optionally run a [Model Context Protocol](https://modelcontextprotocol.io/) server (`TimeTrackerMCP_Server.py`), letting an MCP client such as **Claude Desktop** talk to it directly — e.g. *"start work on task X"*, *"create a new project called Y"*, or *"stop what I'm working on"* — while you keep using the GUI at the same time. Both sides read and write the same `data.json`, and the GUI reloads its data on every interaction. It also refreshes itself automatically every few seconds — whenever `mcp_server_enabled` is `true`, and always when `mcp_transport` is `"stdio"` (since a stdio client can be talking to the server independently of that flag, see below) — so you can freely switch back and forth between Claude and the GUI.
 
-**Enabling it:** set these two keys in `config.json` (see [Configuration](#configuration-️)) and install the extra dependency:
+It supports two transports, chosen via `mcp_transport` in `config.json`:
+
+- **`http`** (default): a Streamable HTTP server the GUI starts and stops for you as a background process, the same way it already can run the SOAP server. Multiple clients can connect to it at once.
+- **`stdio`**: the MCP client (e.g. Claude Desktop) launches `TimeTrackerMCP_Server.py` itself and talks to it over its stdin/stdout - nothing needs to be running beforehand. This is the transport Claude Desktop supports most reliably, so prefer it when connecting Claude Desktop.
+
+**Enabling it:** install the extra dependency and configure it either through the GUI (**Settings → MCP Server Settings**) or directly in `config.json` (see [Configuration](#configuration-️)):
 
 ```bash
 pip install mcp
@@ -272,13 +281,14 @@ pip install mcp
 ```json
 {
     "mcp_server_enabled": true,
+    "mcp_transport": "http",
     "mcp_port": 8700
 }
 ```
 
-With `mcp_server_enabled` set to `true`, `TimeTrackerSL_GUI.py` starts the MCP server automatically alongside the Streamlit GUI (and stops it again on exit), the same way it already can run the SOAP server. `mcp` requires Python 3.10+; on older versions the feature is simply unavailable.
+With `mcp_server_enabled` set to `true` and `mcp_transport` set to `"http"`, `TimeTrackerSL_GUI.py` starts the MCP server automatically alongside the Streamlit GUI (and stops it again on exit). With `mcp_transport` set to `"stdio"`, the GUI does *not* start it - there is nothing useful for it to start, since a stdio server only makes sense spawned directly by its client - and `mcp_server_enabled`/`mcp_port` are then not used. `mcp` requires Python 3.10+; on older versions the feature is simply unavailable.
 
-You can also run it stand-alone instead:
+You can also run it stand-alone instead (it reads `mcp_transport` from `config.json` the same way):
 
 ```bash
 python TimeTrackerMCP_Server.py
@@ -297,7 +307,21 @@ python TimeTrackerMCP_Server.py
 
 > ⚠️ **Destructive tools:** `delete_task`, `delete_all_closed_tasks`, and `delete_main_project` permanently delete data and cannot be undone. An MCP client should always confirm with you before calling them.
 
-**Connecting Claude Desktop:** add an entry to Claude Desktop's MCP server configuration pointing at the Streamable HTTP endpoint, `http://127.0.0.1:8700/mcp` (adjust the port to match `mcp_port`). Consult Claude Desktop's current documentation for the exact steps, since how it's configured has changed between versions.
+**Connecting Claude Desktop:** the recommended way is the **stdio** transport - set `"mcp_transport": "stdio"` (via the GUI or `config.json`) and add an entry to Claude Desktop's MCP server configuration that launches the script directly:
+
+```json
+{
+    "mcpServers": {
+        "timecontrol": {
+            "command": "python3",
+            "args": ["/absolute/path/to/TimeTrackerMCP_Server.py"],
+            "cwd": "/absolute/path/to/TimeControl"
+        }
+    }
+}
+```
+
+Claude Desktop then starts and stops the server itself - it does not need to be running beforehand, and the GUI does not start a second copy of it (see above). Alternatively, with `"mcp_transport": "http"` and the server running (either via the GUI or stand-alone), point Claude Desktop at the Streamable HTTP endpoint, `http://127.0.0.1:8700/mcp` (adjust the port to match `mcp_port`), instead. Consult Claude Desktop's current documentation for the exact configuration steps, since these have changed between versions.
 
 ## Building the Documentation 📚
 
