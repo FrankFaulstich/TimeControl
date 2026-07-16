@@ -47,6 +47,30 @@ def save_window_state(window):
     except Exception as e:
         print(f"Error saving window state: {e}")
 
+def _safe_window_position(x, y):
+    """
+    Returns (x, y) unchanged if that position lies on a currently connected
+    screen, otherwise (None, None) so pywebview falls back to its own
+    default placement.
+
+    A position saved from a monitor arrangement that no longer matches -
+    most commonly, an external display that has since been disconnected -
+    otherwise crashes the Cocoa pywebview backend outright on window
+    creation: it can't resolve an NSScreen for a point that isn't on any
+    screen, and its own move handler dies with
+    "AttributeError: 'NoneType' object has no attribute 'frame'".
+    """
+    if x is None or y is None:
+        return None, None
+    try:
+        screens = webview.screens
+    except Exception:
+        return None, None
+    for screen in screens:
+        if screen.x <= x < screen.x + screen.width and screen.y <= y < screen.y + screen.height:
+            return x, y
+    return None, None
+
 def start_streamlit_server():
     """
     Initializes and runs the pywebview GUI for the Streamlit app.
@@ -114,7 +138,9 @@ def start_streamlit_server():
 
     if webview and view_mode == 'webview':
         time.sleep(2) # Wait for Streamlit to initialize
-        
+
+        x, y = _safe_window_position(x, y)
+
         window = webview.create_window(
             "Time Control",
             f"http://localhost:{port}",
