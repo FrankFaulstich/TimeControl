@@ -2,6 +2,7 @@ import unittest
 import unittest.mock
 import os
 import sys
+import types
 
 # Add parent directory to path to import modules from root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -50,13 +51,15 @@ class TestStreamlitGUI(unittest.TestCase):
     @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
     @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
     @unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.screens', [types.SimpleNamespace(x=0, y=0, width=1920, height=1080)], create=True)
     @unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window')
     @unittest.mock.patch('TimeTrackerSL_GUI.webview.start')
     @unittest.mock.patch('TimeTrackerSL_GUI.time.sleep')
     def test_start_streamlit_server_restores_window_position(self, mock_sleep, mock_webview_start, mock_create_window, mock_popen, mock_json_load, mock_exists):
         """
         Regression test: the window's last saved position (window_x/window_y)
-        must be restored on startup, not just its size.
+        must be restored on startup, not just its size - as long as that
+        position is still on a currently connected screen.
         """
         # --- Setup ---
         mock_exists.return_value = True
@@ -77,6 +80,61 @@ class TestStreamlitGUI(unittest.TestCase):
         self.assertEqual(kwargs.get('height'), 800)
         self.assertEqual(kwargs.get('x'), 265)
         self.assertEqual(kwargs.get('y'), 130)
+
+    @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
+    @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
+    @unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.screens', [
+        types.SimpleNamespace(x=0, y=0, width=1512, height=982),
+        types.SimpleNamespace(x=0, y=982, width=1920, height=1080),
+    ], create=True)
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.start')
+    @unittest.mock.patch('TimeTrackerSL_GUI.time.sleep')
+    def test_start_streamlit_server_ignores_offscreen_saved_position(self, mock_sleep, mock_webview_start, mock_create_window, mock_popen, mock_json_load, mock_exists):
+        """
+        Regression test: a saved window position from a monitor arrangement
+        that no longer applies (e.g. an external display that was unplugged)
+        must not be handed to pywebview as-is. Passing an (x, y) that isn't on
+        any currently connected screen crashes the Cocoa backend outright -
+        it can't resolve an NSScreen for the point and dies with
+        "AttributeError: 'NoneType' object has no attribute 'frame'" inside
+        its own window-move handler. Falling back to (None, None) lets
+        pywebview pick a safe default placement instead.
+        """
+        mock_exists.return_value = True
+        mock_json_load.return_value = {
+            'window_width': 1200,
+            'window_height': 800,
+            'window_x': 265,
+            'window_y': -662,
+        }
+
+        TimeTrackerSL_GUI.start_streamlit_server()
+
+        mock_create_window.assert_called_once()
+        _args, kwargs = mock_create_window.call_args
+        self.assertIsNone(kwargs.get('x'))
+        self.assertIsNone(kwargs.get('y'))
+
+    @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
+    @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
+    @unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.screens', [], create=True)
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window')
+    @unittest.mock.patch('TimeTrackerSL_GUI.webview.start')
+    @unittest.mock.patch('TimeTrackerSL_GUI.time.sleep')
+    def test_start_streamlit_server_handles_no_screens_reported(self, mock_sleep, mock_webview_start, mock_create_window, mock_popen, mock_json_load, mock_exists):
+        """No connected screens at all must also fall back safely, not crash."""
+        mock_exists.return_value = True
+        mock_json_load.return_value = {'window_x': 265, 'window_y': 130}
+
+        TimeTrackerSL_GUI.start_streamlit_server()
+
+        mock_create_window.assert_called_once()
+        _args, kwargs = mock_create_window.call_args
+        self.assertIsNone(kwargs.get('x'))
+        self.assertIsNone(kwargs.get('y'))
 
     @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
     @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
