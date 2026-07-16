@@ -6,4 +6,6 @@ pywebview
 spyne
 lxml
 zeep
+fastapi
+uvicorn
 mcp; python_version >= "3.10"
