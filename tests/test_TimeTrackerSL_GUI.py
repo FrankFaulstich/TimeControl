@@ -215,6 +215,47 @@ class TestStreamlitGUI(unittest.TestCase):
         self.assertEqual(saved_config['window_x'], 50)
         self.assertEqual(saved_config['window_y'], 75)
 
+    def test_set_macos_dock_icon_noop_on_non_darwin(self):
+        """
+        The Dock-icon override is a macOS-only concept (AppKit doesn't exist
+        elsewhere); it must not even attempt to import AppKit on other
+        platforms.
+        """
+        fake_appkit = unittest.mock.MagicMock()
+        with unittest.mock.patch('TimeTrackerSL_GUI.sys.platform', 'win32'), \
+             unittest.mock.patch.dict(sys.modules, {'AppKit': fake_appkit}):
+            TimeTrackerSL_GUI._set_macos_dock_icon()
+
+        fake_appkit.NSImage.alloc.assert_not_called()
+        fake_appkit.NSApplication.sharedApplication.assert_not_called()
+
+    def test_set_macos_dock_icon_sets_icon_on_darwin(self):
+        """
+        On macOS, the Dock icon shown while this app runs must be replaced
+        with our own icon (see _set_macos_dock_icon's docstring for why:
+        launching via python.org's python3 otherwise shows the Python.app
+        rocket-ship icon instead).
+        """
+        fake_appkit = unittest.mock.MagicMock()
+        fake_image = fake_appkit.NSImage.alloc.return_value.initByReferencingFile_.return_value
+        fake_image.isValid.return_value = True
+
+        with unittest.mock.patch('TimeTrackerSL_GUI.sys.platform', 'darwin'), \
+             unittest.mock.patch.dict(sys.modules, {'AppKit': fake_appkit}):
+            TimeTrackerSL_GUI._set_macos_dock_icon()
+
+        fake_appkit.NSImage.alloc.return_value.initByReferencingFile_.assert_called_once_with(TimeTrackerSL_GUI.ICON_FILE)
+        fake_appkit.NSApplication.sharedApplication.return_value.setApplicationIconImage_.assert_called_once_with(fake_image)
+
+    def test_set_macos_dock_icon_swallows_errors(self):
+        """Icon setting is purely cosmetic - any failure here must never break startup."""
+        fake_appkit = unittest.mock.MagicMock()
+        fake_appkit.NSImage.alloc.side_effect = RuntimeError("boom")
+
+        with unittest.mock.patch('TimeTrackerSL_GUI.sys.platform', 'darwin'), \
+             unittest.mock.patch.dict(sys.modules, {'AppKit': fake_appkit}):
+            TimeTrackerSL_GUI._set_macos_dock_icon()  # must not raise
+
 
 if __name__ == '__main__':
     unittest.main()

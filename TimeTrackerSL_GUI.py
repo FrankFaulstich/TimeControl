@@ -19,6 +19,27 @@ except ImportError:
     UPDATE_AVAILABLE = False
 
 CONFIG_FILE = 'config.json'
+ICON_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sl', 'icon.png')
+
+def _set_macos_dock_icon():
+    """
+    Replaces the Dock icon shown while this app runs.
+
+    Launching a script with python.org's python3 goes through its bundled
+    "Python.app" as soon as GUI features (like pywebview's Cocoa backend)
+    are used, which shows that bundle's own icon - a rocket ship - in the
+    Dock. pywebview doesn't offer any way to override this itself (its
+    `icon=` option is GTK/QT only), but AppKit does, directly.
+    """
+    if sys.platform != 'darwin':
+        return
+    try:
+        import AppKit
+        image = AppKit.NSImage.alloc().initByReferencingFile_(ICON_FILE)
+        if image and image.isValid():
+            AppKit.NSApplication.sharedApplication().setApplicationIconImage_(image)
+    except Exception:
+        pass  # Cosmetic only - never let icon issues break startup.
 
 def save_window_state(window):
     """Saves the current window dimensions and position to config.json.
@@ -137,6 +158,7 @@ def start_streamlit_server():
             mcp_process.terminate()
 
     if webview and view_mode == 'webview':
+        _set_macos_dock_icon()
         time.sleep(2) # Wait for Streamlit to initialize
 
         x, y = _safe_window_position(x, y)
