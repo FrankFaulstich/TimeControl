@@ -53,6 +53,8 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **SOAP API:** A full-featured SOAP web service (`TimeTrackerSOAP_Server.py`) to integrate TimeControl with other tools or dashboards. See [examples/SOAP](examples/SOAP) for runnable client examples.
 
+**REST API:** A REST web service (`TimeTrackerREST_Server.py`) covering the same operations as the SOAP API, for tools or dashboards that prefer JSON over SOAP/XML. See [examples/REST](examples/REST) for runnable client examples.
+
 **MCP Server (optional):** An [MCP](https://modelcontextprotocol.io/) server (`TimeTrackerMCP_Server.py`) that exposes the app's entire functionality — project/task management, time tracking, reporting, and email import — to an MCP client such as Claude Desktop, so you can manage TimeControl in natural language while keeping the GUI in sync — see [MCP Server](#mcp-server-) below.
 
 **Unit Testing:** Includes comprehensive unit tests in `tests/test_TimeTracker.py` for feature reliability.
@@ -120,6 +122,7 @@ The application can be configured via the `config.json` file.
     "language": "de",
     "streamlit_port": 8501,
     "soap_port": 8600,
+    "rest_port": 8800,
     "mcp_server_enabled": false,
     "mcp_transport": "http",
     "mcp_port": 8700,
@@ -131,6 +134,7 @@ The application can be configured via the `config.json` file.
 - **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions.
 - **`language`**: The user interface language ("en", "de", "fr", "es", "cs").
 - **`soap_port`**: The port on which the SOAP server listens (default: 8600).
+- **`rest_port`**: The port on which the REST server listens (default: 8800). See [REST API](#rest-api-).
 - **`mcp_server_enabled`**: Whether `TimeTrackerSL_GUI.py` also starts the MCP server when `mcp_transport` is `"http"` (default: `false`). See [MCP Server](#mcp-server-).
 - **`mcp_transport`**: `"http"` or `"stdio"` (default: `"http"`). See [MCP Server](#mcp-server-).
 - **`mcp_port`**: The port on which the MCP server listens when using the `"http"` transport (default: 8700).
