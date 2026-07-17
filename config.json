@@ -14,7 +14,7 @@
     "soap_port": 8600,
     "rest_port": 8800,
     "mcp_server_enabled": false,
-    "mcp_transport": "http",
+    "mcp_transport": "stdio",
     "mcp_port": 8700,
     "email": {
         "imap_server": "",
