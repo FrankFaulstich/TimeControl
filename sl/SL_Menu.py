@@ -4,6 +4,7 @@ import os
 import sys
 import re
 import time
+import contextlib
 from datetime import datetime, timedelta
 import shutil
 
@@ -242,6 +243,36 @@ def set_feedback(message, type='success'):
     :param type: The type of message ('success', 'info', 'error'). Defaults to 'success'.
     """
     st.session_state.feedback = {'message': message, 'type': type}
+
+@contextlib.contextmanager
+def _settings_section(section_key, label):
+    """
+    A collapsible settings section, using the same persisted-expand/collapse
+    pattern as the project groups in view_today_tasks(): on_change="rerun"
+    is required for st.expander to track its state in st.session_state[key]
+    at all (the default, "ignore", makes it a purely client-side toggle
+    Python never learns about), and that state is then mirrored into a
+    plain session-state dict because the expander's own (key-bound) state
+    would otherwise reset to collapsed every time a different top-level
+    view is shown (e.g. navigating to "Main Menu") and this one is
+    returned to.
+
+    The mirror-update has to run in a `finally`: saving a section's form
+    calls st.rerun() while still inside the `with` block below (to show the
+    "saved" feedback message), which raises an exception that unwinds
+    straight through this generator - without `finally`, that skips the
+    mirror-update and the section snaps shut on save instead of staying
+    open to show the result.
+    """
+    if "settings_expanded_sections" not in st.session_state:
+        st.session_state.settings_expanded_sections = {}
+    widget_key = f"settings_expander_{section_key}"
+    is_expanded = st.session_state.settings_expanded_sections.get(section_key, False)
+    with st.expander(label, expanded=is_expanded, key=widget_key, on_change="rerun") as section:
+        try:
+            yield section
+        finally:
+            st.session_state.settings_expanded_sections[section_key] = st.session_state[widget_key]
 
 @st.fragment(run_every=5)
 def _auto_refresh_on_external_changes():
@@ -713,49 +744,57 @@ def view_today_tasks():
             expander_key = f"today_expander_{main_proj_name}"
             is_expanded = st.session_state.today_view_expanded_projects.get(main_proj_name, True)
             with st.expander(f"{main_proj_name} ({len(sub_tasks)})", expanded=is_expanded, key=expander_key, on_change="rerun"):
-                for t_idx, task in enumerate(sub_tasks): # Iterate through tasks in the group
-                    col_task, col_start_btn, col_edit_btn, col_done_btn = st.columns([10, 1, 1, 1])
-                    with col_task:
-                        name = task['task_name']
-                        status = task.get('status')
-                        is_done = status == 'done'
-                        is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
-                        display_name = f"{name} (done)" if is_done else name
-                        if is_active: display_name = f"**{display_name}**"
-                        due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
-                        recurring_info = " ↻" if task.get('recurring') else ""
-                        if is_active:
-                            bullet = "🔨"
-                        elif is_done:
-                            bullet = "✔"
-                        else:
-                            bullet = "-"
-                        st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{recurring_info}", unsafe_allow_html=True)
-                    with col_start_btn:
-                        if st.button("▶", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
-                            st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
-                            st.rerun()
-                    with col_edit_btn:
-                        if st.button("✎", key=f"edit_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
-                            st.session_state.context['selected_main'] = task['main_project_name']
-                            st.session_state.context['selected_task'] = task['task_name']
-                            st.session_state.context['selected_task_id'] = task.get('id')
-                            st.session_state.context['return_to'] = 'today_view'
-                            navigate_to('edit_task_form')
-                    with col_done_btn:
-                        if st.button("✓", key=f"done_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
-                            st.session_state.tracker.update_task(
-                                task['main_project_name'],
-                                task['task_name'],
-                                status='done',
-                                due_date=task.get('due_date'),
-                                recurring=task.get('recurring'),
-                                frequency=task.get('frequency'),
-                                userdefined_days=task.get('userdefined_days'),
-                                task_id=task.get('id'),
-                            )
-                            st.rerun()
-            st.session_state.today_view_expanded_projects[main_proj_name] = st.session_state[expander_key]
+                # The mirror-update in the `finally` below has to run even
+                # when a button below calls st.rerun() (or navigate_to(),
+                # which does the same) - that raises an exception to unwind
+                # the script right here, which would otherwise skip the
+                # mirror-update and snap this project's group shut instead
+                # of leaving it open on the way to/from editing a task.
+                try:
+                    for t_idx, task in enumerate(sub_tasks): # Iterate through tasks in the group
+                        col_task, col_start_btn, col_edit_btn, col_done_btn = st.columns([10, 1, 1, 1])
+                        with col_task:
+                            name = task['task_name']
+                            status = task.get('status')
+                            is_done = status == 'done'
+                            is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
+                            display_name = f"{name} (done)" if is_done else name
+                            if is_active: display_name = f"**{display_name}**"
+                            due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
+                            recurring_info = " ↻" if task.get('recurring') else ""
+                            if is_active:
+                                bullet = "🔨"
+                            elif is_done:
+                                bullet = "✔"
+                            else:
+                                bullet = "-"
+                            st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{recurring_info}", unsafe_allow_html=True)
+                        with col_start_btn:
+                            if st.button("▶", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
+                                st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
+                                st.rerun()
+                        with col_edit_btn:
+                            if st.button("✎", key=f"edit_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
+                                st.session_state.context['selected_main'] = task['main_project_name']
+                                st.session_state.context['selected_task'] = task['task_name']
+                                st.session_state.context['selected_task_id'] = task.get('id')
+                                st.session_state.context['return_to'] = 'today_view'
+                                navigate_to('edit_task_form')
+                        with col_done_btn:
+                            if st.button("✓", key=f"done_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
+                                st.session_state.tracker.update_task(
+                                    task['main_project_name'],
+                                    task['task_name'],
+                                    status='done',
+                                    due_date=task.get('due_date'),
+                                    recurring=task.get('recurring'),
+                                    frequency=task.get('frequency'),
+                                    userdefined_days=task.get('userdefined_days'),
+                                    task_id=task.get('id'),
+                                )
+                                st.rerun()
+                finally:
+                    st.session_state.today_view_expanded_projects[main_proj_name] = st.session_state[expander_key]
     elif show_only_open and today_tasks_all:
         st.info(_("No open tasks for today."))
     else:
@@ -1056,23 +1095,272 @@ def view_reporting():
 
 def view_settings():
     """
-    Renders the settings submenu view.
+    Renders every application setting as a collapsible section in one view
+    (see _settings_section for the expand/collapse persistence pattern).
+    Each section reads and writes config.json independently via the shared
+    `config` dict read once below - safe because only one section's form can
+    actually be submitted per script rerun.
     """
     render_header(_("Settings"))
-    
-    if st.button(_("1. Change Language"), use_container_width=True): navigate_to('settings_language')
-    if st.button(_("2. Restore Previous Version"), use_container_width=True): navigate_to('settings_restore')
-    if st.button(_("3. Change Data Storage Location"), use_container_width=True): navigate_to('settings_storage')
-    if st.button(_("Report Format"), use_container_width=True): navigate_to('settings_report_format')
-    if st.button(_("4. Change Streamlit Port"), use_container_width=True): navigate_to('settings_port')
-    if st.button(_("Email Settings"), use_container_width=True, key="settings_email"): navigate_to('settings_email')
-    if st.button(_("Change CSS Style"), use_container_width=True, key="settings_css"): navigate_to('settings_css')
-    if st.button(_("Change View Mode"), use_container_width=True, key="settings_view_mode"): navigate_to('settings_view_mode')
-    if st.button(_("MCP Server Settings"), use_container_width=True, key="settings_mcp"): navigate_to('settings_mcp')
-    
+    config = get_config()
+
+    with _settings_section("language", _("Change Language")):
+        supported_languages = {'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'cs': 'Čeština'}
+        # 'en' is always available as the default
+        available_languages = {'en': 'English'}
+        # Add other languages if their locale directory exists
+        for lang, name in supported_languages.items():
+            if lang != 'en' and os.path.isdir(os.path.join('locale', lang)):
+                available_languages[lang] = name
+
+        lang_codes = list(available_languages.keys())
+        lang_names = [f"{name} ({code})" for code, name in available_languages.items()]
+        current_lang_code = config.get('language', 'en')
+        try:
+            current_lang_index = lang_codes.index(current_lang_code)
+        except ValueError:
+            current_lang_index = 0
+
+        with st.form("language_form"):
+            selected_lang_name = st.selectbox(_("Select Language"), options=lang_names, index=current_lang_index)
+            submitted = st.form_submit_button(_("Save"), use_container_width=True)
+            if submitted:
+                selected_index = lang_names.index(selected_lang_name)
+                new_lang_code = lang_codes[selected_index]
+                config['language'] = new_lang_code
+                save_config(config)
+                set_feedback(_("Language changed. Please restart the application for the changes to take effect."))
+                st.rerun()
+
+    with _settings_section("restore", _("Restore Previous Version")):
+        backup_zip_file = "prev-version.zip"
+        if not UPDATE_MODULE_AVAILABLE:
+            st.error(_("The 'update' module is not available. This feature is disabled."))
+        elif not os.path.exists(backup_zip_file):
+            st.info(_("No previous version backup '{filename}' found.").format(filename=backup_zip_file))
+        else:
+            st.warning(_("This will restore the application to the previously backed-up version. The application will then restart. You may need to manually refresh your browser if it does not reconnect automatically."))
+            if st.button(_("Restore and Restart"), type="primary", use_container_width=True, key="settings_restore_btn"):
+                with st.spinner(_("Restoring and restarting...")):
+                    restore_previous_version()
+                # This code is unreachable due to os.execv in the called function
+                st.success(_("Restore complete. Please restart the application."))
+
+    with _settings_section("storage", _("Change Data Storage Location")):
+        current_path = st.session_state.tracker.file_path
+        st.markdown(f"**{_('Current data file')}:** `{current_path}`")
+
+        with st.form("storage_form"):
+            new_path_input = st.text_input(_("New Path for data file"), placeholder="data.json").strip()
+
+            # Offer to move data only if the old file exists and a new path is provided
+            can_move = os.path.exists(current_path) and new_path_input and os.path.abspath(new_path_input) != os.path.abspath(current_path)
+
+            move_data = st.checkbox(
+                _("Move existing data to the new location"),
+                value=True,
+                disabled=not can_move,
+                help=_("If unchecked, the old data file will remain, and a new empty one might be created at the new location on restart.")
+            )
+
+            submitted = st.form_submit_button(_("Save"), use_container_width=True)
+
+            if submitted:
+                if not new_path_input:
+                    st.error(_("Please enter a new path."))
+                else:
+                    # --- Security Fix: Path Traversal ---
+                    # Normalize the path and ensure it's within the application's directory.
+                    app_root = os.path.abspath(os.getcwd())
+                    safe_path = os.path.abspath(new_path_input)
+
+                    if not safe_path.startswith(app_root):
+                        st.error(_("Error: For security, the data file must be located within the application directory."))
+                    else:
+                        directory = os.path.dirname(safe_path)
+                        if directory and not os.path.exists(directory):
+                            st.error(_("Error: The directory '{dir}' does not exist.").format(dir=directory))
+                        else:
+                            config['data_file'] = new_path_input # Store user's relative/simple path
+                            save_config(config)
+
+                            feedback_message = _("Storage location updated. Please restart the application for the changes to take effect.")
+
+                            if move_data and can_move:
+                                try:
+                                    shutil.move(current_path, safe_path)
+                                    feedback_message += " " + _("Data moved successfully.")
+                                except Exception as e:
+                                    st.error(_("Error moving data: {error}").format(error=e))
+                                    feedback_message = None # Prevent navigation on error
+
+                            if feedback_message:
+                                set_feedback(feedback_message)
+                                st.rerun()
+
+    with _settings_section("report_format", _("Report Format")):
+        current_format = config.get('report_format', 'markdown')
+        formats = ['markdown', 'html', 'rtf']
+
+        with st.form("report_format_form"):
+            selected_format = st.selectbox(_("Select Format"), formats, index=formats.index(current_format))
+            submitted = st.form_submit_button(_("Save"), use_container_width=True)
+            if submitted:
+                config['report_format'] = selected_format
+                save_config(config)
+                set_feedback(_("Report format updated."))
+                st.rerun()
+
+    with _settings_section("port", _("Streamlit Port Settings")):
+        current_port = config.get('streamlit_port', 8501)
+        st.markdown(f"**{_('Current Streamlit Port')}:** {current_port}")
+
+        with st.form("port_form"):
+            new_port = st.number_input(_("New Port"), min_value=1024, max_value=65535, value=current_port, key="settings_streamlit_port")
+            submitted = st.form_submit_button(_("Save"), use_container_width=True)
+            if submitted:
+                config['streamlit_port'] = new_port
+                save_config(config)
+                set_feedback(_("Port updated to {port}. Please restart Streamlit.").format(port=new_port))
+                st.rerun()
+
+    with _settings_section("email", _("Email Settings")):
+        email_cfg = config.get('email', {
+            "imap_server": "", "imap_port": 993, "user": "", "password": "", "use_ssl": True, "enabled": False
+        })
+
+        with st.form("email_settings_form"):
+            enabled = st.checkbox(_("Enable email import"), value=email_cfg.get('enabled', False))
+            server = st.text_input(_("IMAP Server"), value=email_cfg.get('imap_server', ''))
+            port = st.number_input(_("Port"), value=email_cfg.get('imap_port', 993), key="settings_email_port")
+            user = st.text_input(_("Username"), value=email_cfg.get('user', ''))
+            password = st.text_input(_("Password"), value=email_cfg.get('password', ''), type="password")
+            use_ssl = st.checkbox(_("Use SSL"), value=email_cfg.get('use_ssl', True))
+
+            submitted = st.form_submit_button(_("Save"), use_container_width=True)
+            if submitted:
+                config['email'] = {
+                    "imap_server": server,
+                    "imap_port": port,
+                    "user": user,
+                    "password": password,
+                    "use_ssl": use_ssl,
+                    "enabled": enabled
+                }
+                save_config(config)
+                set_feedback(_("Email settings saved."))
+                st.rerun()
+
+    with _settings_section("css", _("Change CSS Style")):
+        current_css = config.get('css_file', 'style.css')
+        st.markdown(f"**{_('Current CSS file')}:** `{current_css}`")
+
+        # Find .css files in the current directory
+        css_files = [f for f in os.listdir(SL_DIR) if f.endswith('.css')]
+        if not css_files:
+            css_files = ['style.css']
+
+        # Ensure current_css is in the list for the selectbox index
+        if current_css not in css_files and os.path.exists(os.path.join(SL_DIR, current_css)):
+            css_files.append(current_css)
+
+        try:
+            current_index = css_files.index(current_css)
+        except ValueError:
+            current_index = 0
+
+        with st.form("css_form"):
+            selected_css = st.selectbox(_("Select CSS File"), css_files, index=current_index)
+            submitted = st.form_submit_button(_("Save"), use_container_width=True)
+
+            if submitted:
+                config['css_file'] = selected_css
+                save_config(config)
+                set_feedback(_("CSS style updated. Please restart the application for the changes to take effect."))
+                st.rerun()
+
+    with _settings_section("view_mode", _("Change View Mode")):
+        current_mode = config.get('view_mode', 'webview')
+
+        # Map internal values to display labels
+        modes = {'webview': _('App Window (Webview)'), 'browser': _('System Browser')}
+        mode_keys = list(modes.keys())
+        mode_labels = list(modes.values())
+
+        try:
+            current_index = mode_keys.index(current_mode)
+        except ValueError:
+            current_index = 0
+
+        with st.form("view_mode_form"):
+            selected_label = st.selectbox(_("Select View Mode"), mode_labels, index=current_index)
+            submitted = st.form_submit_button(_("Save"), use_container_width=True)
+
+            if submitted:
+                new_mode = mode_keys[mode_labels.index(selected_label)]
+                config['view_mode'] = new_mode
+                save_config(config)
+                set_feedback(_("View mode updated. Please restart the application for the changes to take effect."))
+                st.rerun()
+
+    with _settings_section("mcp", _("MCP Server Settings")):
+        transport_options = {
+            'http': _("HTTP (Streamable HTTP)"),
+            'stdio': _("stdio (recommended for Claude Desktop)"),
+        }
+        transport_keys = list(transport_options.keys())
+        transport_labels = list(transport_options.values())
+        try:
+            current_transport_index = transport_keys.index(config.get('mcp_transport', 'http'))
+        except ValueError:
+            current_transport_index = 0
+
+        # Placed outside the form (unlike the fields below) so picking a
+        # transport immediately updates whether "Enable MCP server" is shown
+        # as available - a form only reruns the script on submit, so a
+        # widget inside one can't react live to another widget in the same
+        # form.
+        selected_transport_label = st.selectbox(_("Transport"), transport_labels, index=current_transport_index, key="settings_mcp_transport_select")
+        selected_transport = transport_keys[transport_labels.index(selected_transport_label)]
+        is_stdio = selected_transport == 'stdio'
+
+        with st.form("mcp_settings_form"):
+            # With stdio, the MCP client (e.g. Claude Desktop) starts and
+            # stops the server itself - "Enable MCP server" has no effect at
+            # all in that mode (see the GUI-launch and auto-refresh checks
+            # that key off mcp_transport instead), so it's disabled rather
+            # than left as a checkbox that silently does nothing.
+            enabled = st.checkbox(
+                _("Enable MCP server"),
+                value=False if is_stdio else config.get('mcp_server_enabled', False),
+                disabled=is_stdio,
+                help=_("Not used with stdio - the MCP client starts and stops the server itself.") if is_stdio else None,
+            )
+            port = st.number_input(
+                _("Port (HTTP only)"),
+                min_value=1024,
+                max_value=65535,
+                value=config.get('mcp_port', 8700),
+                key="settings_mcp_port",
+            )
+            st.caption(_(
+                "With stdio, the app does not start the MCP server itself - the "
+                "MCP client (e.g. Claude Desktop) launches it directly, and the "
+                "port is ignored."
+            ))
+
+            submitted = st.form_submit_button(_("Save"), use_container_width=True)
+            if submitted:
+                config['mcp_server_enabled'] = False if is_stdio else enabled
+                config['mcp_transport'] = selected_transport
+                config['mcp_port'] = port
+                save_config(config)
+                set_feedback(_("MCP server settings saved. Please restart the application for the changes to take effect."))
+                st.rerun()
+
     st.divider()
-    
-    if st.button(_("0. Back to Main Menu"), use_container_width=True):
+
+    if st.button(_("Back to Main Menu"), use_container_width=True):
         navigate_to('main')
 
 # --- Action Views (Forms) ---
@@ -2105,347 +2393,6 @@ def view_show_current_work():
     
     if st.button(_("Back"), use_container_width=True): navigate_to('main')
 
-def view_settings_port():
-    """
-    Renders the form to change the Streamlit server port.
-    """
-    render_header(_("Streamlit Port Settings"))
-    config = get_config()
-    current_port = config.get('streamlit_port', 8501)
-    
-    st.markdown(f"**{_('Current Streamlit Port')}:** {current_port}")
-    
-    with st.form("port_form"):
-        new_port = st.number_input(_("New Port"), min_value=1024, max_value=65535, value=current_port)
-        submitted = st.form_submit_button(_("Save"), use_container_width=True)
-        if submitted:
-            config['streamlit_port'] = new_port
-            save_config(config)
-            set_feedback(_("Port updated to {port}. Please restart Streamlit.").format(port=new_port))
-            navigate_to('settings')
-            st.rerun()
-            
-    if st.button(_("Cancel"), use_container_width=True): navigate_to('settings')
-
-def view_settings_storage():
-    """
-    Renders the form to change the data storage location.
-    """
-    render_header(_("Change Data Storage Location"))
-    
-    current_path = st.session_state.tracker.file_path
-    st.markdown(f"**{_('Current data file')}:** `{current_path}`")
-
-    with st.form("storage_form"):
-        new_path_input = st.text_input(_("New Path for data file"), placeholder="data.json").strip()
-        
-        # Offer to move data only if the old file exists and a new path is provided
-        can_move = os.path.exists(current_path) and new_path_input and os.path.abspath(new_path_input) != os.path.abspath(current_path)
-        
-        move_data = st.checkbox(
-            _("Move existing data to the new location"), 
-            value=True, 
-            disabled=not can_move,
-            help=_("If unchecked, the old data file will remain, and a new empty one might be created at the new location on restart.")
-        )
-
-        submitted = st.form_submit_button(_("Save"), use_container_width=True)
-
-        if submitted:
-            if not new_path_input:
-                st.error(_("Please enter a new path."))
-            else:
-                # --- Security Fix: Path Traversal ---
-                # Normalize the path and ensure it's within the application's directory.
-                app_root = os.path.abspath(os.getcwd())
-                safe_path = os.path.abspath(new_path_input)
-
-                if not safe_path.startswith(app_root):
-                    st.error(_("Error: For security, the data file must be located within the application directory."))
-                else:
-                    directory = os.path.dirname(safe_path)
-                    if directory and not os.path.exists(directory):
-                        st.error(_("Error: The directory '{dir}' does not exist.").format(dir=directory))
-                    else:
-                        config = get_config()
-                        config['data_file'] = new_path_input # Store user's relative/simple path
-                        save_config(config)
-                        
-                        feedback_message = _("Storage location updated. Please restart the application for the changes to take effect.")
-                        
-                        if move_data and can_move:
-                            try:
-                                shutil.move(current_path, safe_path)
-                                feedback_message += " " + _("Data moved successfully.")
-                            except Exception as e:
-                                st.error(_("Error moving data: {error}").format(error=e))
-                                feedback_message = None # Prevent navigation on error
-
-                        if feedback_message:
-                            set_feedback(feedback_message)
-                            navigate_to('settings')
-                            st.rerun()
-
-    if st.button(_("Cancel"), use_container_width=True):
-        navigate_to('settings')
-
-def view_settings_report_format():
-    """Renders the form to change the report format."""
-    render_header(_("Report Format"))
-    config = get_config()
-    current_format = config.get('report_format', 'markdown')
-    formats = ['markdown', 'html', 'rtf']
-    
-    with st.form("report_format_form"):
-        selected_format = st.selectbox(_("Select Format"), formats, index=formats.index(current_format))
-        submitted = st.form_submit_button(_("Save"), use_container_width=True)
-        if submitted:
-            config['report_format'] = selected_format
-            save_config(config)
-            set_feedback(_("Report format updated."))
-            navigate_to('settings')
-            st.rerun()
-    if st.button(_("Cancel"), use_container_width=True): navigate_to('settings')
-
-def view_settings_css():
-    """
-    Renders the form to change the CSS file.
-    """
-    render_header(_("Change CSS Style"))
-    
-    config = get_config()
-    current_css = config.get('css_file', 'style.css')
-    st.markdown(f"**{_('Current CSS file')}:** `{current_css}`")
-    
-    # Find .css files in the current directory
-    css_files = [f for f in os.listdir(SL_DIR) if f.endswith('.css')]
-    if not css_files:
-        css_files = ['style.css']
-    
-    # Ensure current_css is in the list for the selectbox index
-    if current_css not in css_files and os.path.exists(os.path.join(SL_DIR, current_css)):
-        css_files.append(current_css)
-    
-    try:
-        current_index = css_files.index(current_css)
-    except ValueError:
-        current_index = 0
-
-    with st.form("css_form"):
-        selected_css = st.selectbox(_("Select CSS File"), css_files, index=current_index)
-        submitted = st.form_submit_button(_("Save"), use_container_width=True)
-        
-        if submitted:
-            config['css_file'] = selected_css
-            save_config(config)
-            set_feedback(_("CSS style updated. Please restart the application for the changes to take effect."))
-            navigate_to('settings')
-            st.rerun()
-
-    if st.button(_("Cancel"), use_container_width=True):
-        navigate_to('settings')
-
-def view_settings_view_mode():
-    """
-    Renders the form to change the application view mode (Webview vs Browser).
-    """
-    render_header(_("Change View Mode"))
-    config = get_config()
-    current_mode = config.get('view_mode', 'webview')
-    
-    # Map internal values to display labels
-    modes = {'webview': _('App Window (Webview)'), 'browser': _('System Browser')}
-    mode_keys = list(modes.keys())
-    mode_labels = list(modes.values())
-    
-    try:
-        current_index = mode_keys.index(current_mode)
-    except ValueError:
-        current_index = 0
-
-    with st.form("view_mode_form"):
-        selected_label = st.selectbox(_("Select View Mode"), mode_labels, index=current_index)
-        submitted = st.form_submit_button(_("Save"), use_container_width=True)
-        
-        if submitted:
-            new_mode = mode_keys[mode_labels.index(selected_label)]
-            config['view_mode'] = new_mode
-            save_config(config)
-            set_feedback(_("View mode updated. Please restart the application for the changes to take effect."))
-            navigate_to('settings')
-            st.rerun()
-
-    if st.button(_("Cancel"), use_container_width=True):
-        navigate_to('settings')
-
-def view_settings_restore():
-    """
-    Renders the view to restore the application to a previous version.
-    """
-    render_header(_("Restore Previous Version"))
-    
-    backup_zip_file = "prev-version.zip"
-
-    if not UPDATE_MODULE_AVAILABLE:
-        st.error(_("The 'update' module is not available. This feature is disabled."))
-        if st.button(_("Back"), use_container_width=True): navigate_to('settings')
-        return
-
-    if not os.path.exists(backup_zip_file):
-        st.info(_("No previous version backup '{filename}' found.").format(filename=backup_zip_file))
-        if st.button(_("Back"), use_container_width=True): navigate_to('settings')
-        return
-
-    st.warning(_("This will restore the application to the previously backed-up version. The application will then restart. You may need to manually refresh your browser if it does not reconnect automatically."))
-    
-    if st.button(_("Restore and Restart"), type="primary", use_container_width=True):
-        with st.spinner(_("Restoring and restarting...")):
-            restore_previous_version()
-        # This code is unreachable due to os.execv in the called function
-        st.success(_("Restore complete. Please restart the application."))
-            
-def view_settings_language():
-    """
-    Renders the form to change the application language.
-    """
-    render_header(_("Change Language"))
-
-    supported_languages = {'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español', 'cs': 'Čeština'}
-    
-    # 'en' is always available as the default
-    available_languages = {'en': 'English'}
-    # Add other languages if their locale directory exists
-    for lang, name in supported_languages.items():
-        if lang != 'en' and os.path.isdir(os.path.join('locale', lang)):
-            available_languages[lang] = name
-
-    lang_codes = list(available_languages.keys())
-    lang_names = [f"{name} ({code})" for code, name in available_languages.items()]
-
-    config = get_config()
-    current_lang_code = config.get('language', 'en')
-    
-    try:
-        current_lang_index = lang_codes.index(current_lang_code)
-    except ValueError:
-        current_lang_index = 0
-
-    with st.form("language_form"):
-        selected_lang_name = st.selectbox(_("Select Language"), options=lang_names, index=current_lang_index)
-        submitted = st.form_submit_button(_("Save"), use_container_width=True)
-
-        if submitted:
-            selected_index = lang_names.index(selected_lang_name)
-            new_lang_code = lang_codes[selected_index]
-            config['language'] = new_lang_code
-            save_config(config)
-            set_feedback(_("Language changed. Please restart the application for the changes to take effect."))
-            navigate_to('settings')
-            st.rerun()
-
-    if st.button(_("Cancel"), use_container_width=True):
-        navigate_to('settings')
-
-def view_settings_email():
-    """
-    Renders the form to configure email account settings.
-    """
-    render_header(_("Email Settings"))
-    config = get_config()
-    email_cfg = config.get('email', {
-        "imap_server": "", "imap_port": 993, "user": "", "password": "", "use_ssl": True, "enabled": False
-    })
-
-    with st.form("email_settings_form"):
-        enabled = st.checkbox(_("Enable email import"), value=email_cfg.get('enabled', False))
-        server = st.text_input(_("IMAP Server"), value=email_cfg.get('imap_server', ''))
-        port = st.number_input(_("Port"), value=email_cfg.get('imap_port', 993))
-        user = st.text_input(_("Username"), value=email_cfg.get('user', ''))
-        password = st.text_input(_("Password"), value=email_cfg.get('password', ''), type="password")
-        use_ssl = st.checkbox(_("Use SSL"), value=email_cfg.get('use_ssl', True))
-        
-        submitted = st.form_submit_button(_("Save"), use_container_width=True)
-        if submitted:
-            config['email'] = {
-                "imap_server": server,
-                "imap_port": port,
-                "user": user,
-                "password": password,
-                "use_ssl": use_ssl,
-                "enabled": enabled
-            }
-            save_config(config)
-            set_feedback(_("Email settings saved."))
-            navigate_to('settings')
-            st.rerun()
-            
-    if st.button(_("Cancel"), use_container_width=True):
-        navigate_to('settings')
-
-def view_settings_mcp():
-    """
-    Renders the form to configure the MCP server (enable/disable, transport,
-    port).
-    """
-    render_header(_("MCP Server Settings"))
-    config = get_config()
-
-    transport_options = {
-        'http': _("HTTP (Streamable HTTP)"),
-        'stdio': _("stdio (recommended for Claude Desktop)"),
-    }
-    transport_keys = list(transport_options.keys())
-    transport_labels = list(transport_options.values())
-    try:
-        current_transport_index = transport_keys.index(config.get('mcp_transport', 'http'))
-    except ValueError:
-        current_transport_index = 0
-
-    # Placed outside the form (unlike the fields below) so picking a
-    # transport immediately updates whether "Enable MCP server" is shown as
-    # available - a form only reruns the script on submit, so a widget
-    # inside one can't react live to another widget in the same form.
-    selected_transport_label = st.selectbox(_("Transport"), transport_labels, index=current_transport_index)
-    selected_transport = transport_keys[transport_labels.index(selected_transport_label)]
-    is_stdio = selected_transport == 'stdio'
-
-    with st.form("mcp_settings_form"):
-        # With stdio, the MCP client (e.g. Claude Desktop) starts and stops
-        # the server itself - "Enable MCP server" has no effect at all in
-        # that mode (see the GUI-launch and auto-refresh checks that key off
-        # mcp_transport instead), so it's disabled rather than left as a
-        # checkbox that silently does nothing.
-        enabled = st.checkbox(
-            _("Enable MCP server"),
-            value=False if is_stdio else config.get('mcp_server_enabled', False),
-            disabled=is_stdio,
-            help=_("Not used with stdio - the MCP client starts and stops the server itself.") if is_stdio else None,
-        )
-        port = st.number_input(
-            _("Port (HTTP only)"),
-            min_value=1024,
-            max_value=65535,
-            value=config.get('mcp_port', 8700),
-        )
-        st.caption(_(
-            "With stdio, the app does not start the MCP server itself - the "
-            "MCP client (e.g. Claude Desktop) launches it directly, and the "
-            "port is ignored."
-        ))
-
-        submitted = st.form_submit_button(_("Save"), use_container_width=True)
-        if submitted:
-            config['mcp_server_enabled'] = False if is_stdio else enabled
-            config['mcp_transport'] = selected_transport
-            config['mcp_port'] = port
-            save_config(config)
-            set_feedback(_("MCP server settings saved. Please restart the application for the changes to take effect."))
-            navigate_to('settings')
-            st.rerun()
-
-    if st.button(_("Cancel"), use_container_width=True):
-        navigate_to('settings')
-
 def view_report_specific_day():
     """
     Renders the form to generate a daily report for a specific date.
@@ -2676,7 +2623,6 @@ menu_map = {
     'list_main_projects': view_list_main_projects,
     'start_work': view_start_work,
     'show_current_work': view_show_current_work,
-    'settings_port': view_settings_port,
     'view_report': view_report_display,
     
     'rename_main_project': view_rename_main_project,
@@ -2709,15 +2655,6 @@ menu_map = {
     'report_detailed_task_select_task': view_report_detailed_task_select_task,
     'report_detailed_main': view_report_detailed_main,
     'report_detailed_daily': view_report_detailed_daily,
-    
-    'settings_report_format': view_settings_report_format,
-    'settings_language': view_settings_language,
-    'settings_restore': view_settings_restore,
-    'settings_storage': view_settings_storage,
-    'settings_email': view_settings_email,
-    'settings_css': view_settings_css,
-    'settings_view_mode': view_settings_view_mode,
-    'settings_mcp': view_settings_mcp,
 }
 
 # --- Execution ---
