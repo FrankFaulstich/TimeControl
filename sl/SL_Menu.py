@@ -2401,9 +2401,26 @@ def view_settings_mcp():
     except ValueError:
         current_transport_index = 0
 
+    # Placed outside the form (unlike the fields below) so picking a
+    # transport immediately updates whether "Enable MCP server" is shown as
+    # available - a form only reruns the script on submit, so a widget
+    # inside one can't react live to another widget in the same form.
+    selected_transport_label = st.selectbox(_("Transport"), transport_labels, index=current_transport_index)
+    selected_transport = transport_keys[transport_labels.index(selected_transport_label)]
+    is_stdio = selected_transport == 'stdio'
+
     with st.form("mcp_settings_form"):
-        enabled = st.checkbox(_("Enable MCP server"), value=config.get('mcp_server_enabled', False))
-        selected_transport_label = st.selectbox(_("Transport"), transport_labels, index=current_transport_index)
+        # With stdio, the MCP client (e.g. Claude Desktop) starts and stops
+        # the server itself - "Enable MCP server" has no effect at all in
+        # that mode (see the GUI-launch and auto-refresh checks that key off
+        # mcp_transport instead), so it's disabled rather than left as a
+        # checkbox that silently does nothing.
+        enabled = st.checkbox(
+            _("Enable MCP server"),
+            value=False if is_stdio else config.get('mcp_server_enabled', False),
+            disabled=is_stdio,
+            help=_("Not used with stdio - the MCP client starts and stops the server itself.") if is_stdio else None,
+        )
         port = st.number_input(
             _("Port (HTTP only)"),
             min_value=1024,
@@ -2418,8 +2435,8 @@ def view_settings_mcp():
 
         submitted = st.form_submit_button(_("Save"), use_container_width=True)
         if submitted:
-            config['mcp_server_enabled'] = enabled
-            config['mcp_transport'] = transport_keys[transport_labels.index(selected_transport_label)]
+            config['mcp_server_enabled'] = False if is_stdio else enabled
+            config['mcp_transport'] = selected_transport
             config['mcp_port'] = port
             save_config(config)
             set_feedback(_("MCP server settings saved. Please restart the application for the changes to take effect."))

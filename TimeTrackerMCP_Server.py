@@ -14,7 +14,19 @@ except ImportError:
 
 # Import of TimeTracker logic
 # We add the current directory to the path so that tt.TimeTracker can be found
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(SCRIPT_DIR)
+
+# MCP clients (Claude Desktop in particular) launch this script with an
+# undefined, unpredictable working directory rather than the repo root, and
+# do not reliably honor a `cwd` override in their server config even though
+# some setups suggest one. Every relative path used here and inside
+# TimeTracker itself (config.json, data.json, ...) resolves against the
+# process's cwd, so without this the server would silently fall back to
+# defaults - including the wrong transport (http instead of the configured
+# stdio) - when launched by such a client, rather than failing loudly.
+os.chdir(SCRIPT_DIR)
+
 try:
     from tt.TimeTracker import TimeTracker
 except ImportError as e:

@@ -318,12 +318,13 @@ python TimeTrackerMCP_Server.py
     "mcpServers": {
         "timecontrol": {
             "command": "python3",
-            "args": ["/absolute/path/to/TimeTrackerMCP_Server.py"],
-            "cwd": "/absolute/path/to/TimeControl"
+            "args": ["/absolute/path/to/TimeTrackerMCP_Server.py"]
         }
     }
 }
 ```
+
+Use the absolute path to the script - Claude Desktop (like most MCP clients) launches it with an undefined working directory, not necessarily the repo root, and does not reliably support a `cwd` override for that even though some setups suggest one. The server accounts for this itself: it always resolves `config.json`/`data.json` relative to its own location on disk, not the process's working directory, so no `cwd` entry is needed.
 
 Claude Desktop then starts and stops the server itself - it does not need to be running beforehand, and the GUI does not start a second copy of it (see above). Alternatively, with `"mcp_transport": "http"` and the server running (either via the GUI or stand-alone), point Claude Desktop at the Streamable HTTP endpoint, `http://127.0.0.1:8700/mcp` (adjust the port to match `mcp_port`), instead. Consult Claude Desktop's current documentation for the exact configuration steps, since these have changed between versions.
 
