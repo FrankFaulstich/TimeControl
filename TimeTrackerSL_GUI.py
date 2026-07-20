@@ -68,11 +68,12 @@ def save_window_state(window):
     except Exception as e:
         print(f"Error saving window state: {e}")
 
-def _safe_window_position(x, y):
+def _safe_window_position(x, y, width, height):
     """
-    Returns (x, y) unchanged if that position lies on a currently connected
-    screen, otherwise (None, None) so pywebview falls back to its own
-    default placement.
+    Returns (x, y) unchanged if a window of the given size at that position
+    would land on (at least partially overlap) a currently connected screen,
+    otherwise (None, None) so pywebview falls back to its own default
+    placement.
 
     A position saved from a monitor arrangement that no longer matches -
     most commonly, an external display that has since been disconnected -
@@ -80,17 +81,37 @@ def _safe_window_position(x, y):
     creation: it can't resolve an NSScreen for a point that isn't on any
     screen, and its own move handler dies with
     "AttributeError: 'NoneType' object has no attribute 'frame'".
+
+    This only does anything on macOS, and deliberately talks to AppKit
+    directly rather than using webview.screens: pywebview's Cocoa backend
+    expresses x/y relative to the *main* screen's own top-left corner, with
+    y increasing downward (see its move()/get_position() in
+    webview/platforms/cocoa.py), but webview.screens reports each screen's
+    raw AppKit frame - origin at the bottom-left of the whole desktop, y
+    increasing upward. Comparing the two directly (as an earlier version of
+    this function did) silently rejects perfectly valid positions on any
+    monitor other than the main one - in particular, a second monitor placed
+    above the main one legitimately produces a *negative* y here, which is
+    indistinguishable from "off-screen" without converting coordinate
+    spaces first. On any other platform this just returns (x, y) unchanged;
+    there's no evidence of the equivalent crash happening there.
     """
     if x is None or y is None:
         return None, None
+    if sys.platform != 'darwin':
+        return x, y
     try:
-        screens = webview.screens
+        import AppKit
+        main = AppKit.NSScreen.mainScreen().frame()
+        raw_x = main.origin.x + x
+        raw_top = main.origin.y + main.size.height - y
+        target = AppKit.NSMakeRect(raw_x, raw_top - height, width, height)
+        for screen in AppKit.NSScreen.screens():
+            if AppKit.NSIntersectsRect(target, screen.frame()):
+                return x, y
+        return None, None
     except Exception:
         return None, None
-    for screen in screens:
-        if screen.x <= x < screen.x + screen.width and screen.y <= y < screen.y + screen.height:
-            return x, y
-    return None, None
 
 def start_streamlit_server():
     """
@@ -161,7 +182,7 @@ def start_streamlit_server():
         _set_macos_dock_icon()
         time.sleep(2) # Wait for Streamlit to initialize
 
-        x, y = _safe_window_position(x, y)
+        x, y = _safe_window_position(x, y, int(width), int(height))
 
         window = webview.create_window(
             "Time Control",

@@ -51,7 +51,6 @@ class TestStreamlitGUI(unittest.TestCase):
     @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
     @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
     @unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen')
-    @unittest.mock.patch('TimeTrackerSL_GUI.webview.screens', [types.SimpleNamespace(x=0, y=0, width=1920, height=1080)], create=True)
     @unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window')
     @unittest.mock.patch('TimeTrackerSL_GUI.webview.start')
     @unittest.mock.patch('TimeTrackerSL_GUI.time.sleep')
@@ -59,15 +58,19 @@ class TestStreamlitGUI(unittest.TestCase):
         """
         Regression test: the window's last saved position (window_x/window_y)
         must be restored on startup, not just its size - as long as that
-        position is still on a currently connected screen.
+        position is still on a currently connected screen. sys.platform on
+        the test runner may or may not be 'darwin'; either way
+        _safe_window_position must pass an on-main-screen position through
+        unchanged (on non-macOS it's always a no-op passthrough; on macOS
+        (0, 0, 1512, 982) is squarely inside the real main screen).
         """
         # --- Setup ---
         mock_exists.return_value = True
         mock_json_load.return_value = {
             'window_width': 1200,
             'window_height': 800,
-            'window_x': 265,
-            'window_y': 130,
+            'window_x': 100,
+            'window_y': 100,
         }
 
         # --- Action ---
@@ -78,63 +81,131 @@ class TestStreamlitGUI(unittest.TestCase):
         _args, kwargs = mock_create_window.call_args
         self.assertEqual(kwargs.get('width'), 1200)
         self.assertEqual(kwargs.get('height'), 800)
-        self.assertEqual(kwargs.get('x'), 265)
-        self.assertEqual(kwargs.get('y'), 130)
+        self.assertEqual(kwargs.get('x'), 100)
+        self.assertEqual(kwargs.get('y'), 100)
 
-    @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
-    @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
-    @unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen')
-    @unittest.mock.patch('TimeTrackerSL_GUI.webview.screens', [
-        types.SimpleNamespace(x=0, y=0, width=1512, height=982),
-        types.SimpleNamespace(x=0, y=982, width=1920, height=1080),
-    ], create=True)
-    @unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window')
-    @unittest.mock.patch('TimeTrackerSL_GUI.webview.start')
-    @unittest.mock.patch('TimeTrackerSL_GUI.time.sleep')
-    def test_start_streamlit_server_ignores_offscreen_saved_position(self, mock_sleep, mock_webview_start, mock_create_window, mock_popen, mock_json_load, mock_exists):
+    # --- _safe_window_position: direct unit tests ---
+    #
+    # pywebview's Cocoa backend expresses x/y relative to the *main*
+    # screen's own top-left corner, y increasing downward (see move()/
+    # get_position() in webview/platforms/cocoa.py) - not the raw AppKit
+    # frame coordinates webview.screens reports (origin at the bottom-left
+    # of the whole desktop, y increasing upward). These tests fake out
+    # AppKit directly (rather than webview.screens) so they can exercise
+    # that exact conversion with real, verified monitor geometry: a 1512x982
+    # main screen at (0, 0) and a 2560x1440 second screen at (-415, 982) -
+    # i.e. positioned *above* the main screen and offset slightly to the
+    # left, which is what produces the legitimate negative y values a naive
+    # same-space comparison mistakes for "off-screen".
+
+    @staticmethod
+    def _fake_appkit(main_frame, screen_frames):
+        """Builds a minimal fake `AppKit` good enough to stand in for NSScreen/NSMakeRect/NSIntersectsRect."""
+        def make_rect(x, y, w, h):
+            return types.SimpleNamespace(
+                origin=types.SimpleNamespace(x=x, y=y),
+                size=types.SimpleNamespace(width=w, height=h),
+            )
+
+        def intersects(a, b):
+            return not (
+                a.origin.x + a.size.width <= b.origin.x
+                or b.origin.x + b.size.width <= a.origin.x
+                or a.origin.y + a.size.height <= b.origin.y
+                or b.origin.y + b.size.height <= a.origin.y
+            )
+
+        def fake_screen(frame):
+            screen = unittest.mock.MagicMock()
+            screen.frame.return_value = frame
+            return screen
+
+        fake = unittest.mock.MagicMock()
+        fake.NSMakeRect.side_effect = make_rect
+        fake.NSIntersectsRect.side_effect = intersects
+        fake.NSScreen.mainScreen.return_value.frame.return_value = make_rect(*main_frame)
+        fake.NSScreen.screens.return_value = [fake_screen(make_rect(*fr)) for fr in screen_frames]
+        return fake
+
+    def test_safe_window_position_noop_on_non_darwin(self):
+        """Not a macOS-specific concept there, and no AppKit to talk to - always pass x/y through unchanged."""
+        with unittest.mock.patch('TimeTrackerSL_GUI.sys.platform', 'win32'):
+            result = TimeTrackerSL_GUI._safe_window_position(265, -662, 1200, 800)
+        self.assertEqual(result, (265, -662))
+
+    def test_safe_window_position_none_input_passes_through(self):
+        result = TimeTrackerSL_GUI._safe_window_position(None, None, 1200, 800)
+        self.assertEqual(result, (None, None))
+
+    def test_safe_window_position_on_main_screen(self):
+        fake_appkit = self._fake_appkit(
+            main_frame=(0, 0, 1512, 982),
+            screen_frames=[(0, 0, 1512, 982), (-415, 982, 2560, 1440)],
+        )
+        with unittest.mock.patch('TimeTrackerSL_GUI.sys.platform', 'darwin'), \
+             unittest.mock.patch.dict(sys.modules, {'AppKit': fake_appkit}):
+            result = TimeTrackerSL_GUI._safe_window_position(100, 100, 1200, 800)
+        self.assertEqual(result, (100, 100))
+
+    def test_safe_window_position_on_second_screen_above_main(self):
         """
-        Regression test: a saved window position from a monitor arrangement
-        that no longer applies (e.g. an external display that was unplugged)
-        must not be handed to pywebview as-is. Passing an (x, y) that isn't on
-        any currently connected screen crashes the Cocoa backend outright -
-        it can't resolve an NSScreen for the point and dies with
-        "AttributeError: 'NoneType' object has no attribute 'frame'" inside
-        its own window-move handler. Falling back to (None, None) lets
-        pywebview pick a safe default placement instead.
+        Regression test: this is the exact (265, -662) value from the
+        original bug report. A naive comparison against webview.screens'
+        raw coordinates rejects it as "off-screen" every time - but given
+        this real monitor arrangement (second screen above and slightly
+        left of the main one), it is a perfectly valid, currently-visible
+        position spanning both screens, and must be preserved.
         """
-        mock_exists.return_value = True
-        mock_json_load.return_value = {
-            'window_width': 1200,
-            'window_height': 800,
-            'window_x': 265,
-            'window_y': -662,
-        }
+        fake_appkit = self._fake_appkit(
+            main_frame=(0, 0, 1512, 982),
+            screen_frames=[(0, 0, 1512, 982), (-415, 982, 2560, 1440)],
+        )
+        with unittest.mock.patch('TimeTrackerSL_GUI.sys.platform', 'darwin'), \
+             unittest.mock.patch.dict(sys.modules, {'AppKit': fake_appkit}):
+            result = TimeTrackerSL_GUI._safe_window_position(265, -662, 1200, 800)
+        self.assertEqual(result, (265, -662))
 
-        TimeTrackerSL_GUI.start_streamlit_server()
+    def test_safe_window_position_ignores_offscreen_saved_position(self):
+        """
+        A position from a monitor arrangement that no longer applies (e.g.
+        the second screen above the main one, from the previous test, has
+        since been unplugged) must not be handed to pywebview as-is -
+        passing an (x, y) that isn't on any currently connected screen
+        crashes the Cocoa backend outright on window creation. Falling back
+        to (None, None) lets pywebview pick a safe default placement
+        instead.
 
-        mock_create_window.assert_called_once()
-        _args, kwargs = mock_create_window.call_args
-        self.assertIsNone(kwargs.get('x'))
-        self.assertIsNone(kwargs.get('y'))
+        y=-1800 (deep within where the removed second screen used to be)
+        rather than the -662 used above: with only the main screen left, the
+        window's bottom edge at -662 would still dip down far enough to
+        overlap the top of the main screen (800px is a lot of window), which
+        would make it a bad example of "genuinely off-screen".
+        """
+        fake_appkit = self._fake_appkit(
+            main_frame=(0, 0, 1512, 982),
+            screen_frames=[(0, 0, 1512, 982)],  # second screen no longer connected
+        )
+        with unittest.mock.patch('TimeTrackerSL_GUI.sys.platform', 'darwin'), \
+             unittest.mock.patch.dict(sys.modules, {'AppKit': fake_appkit}):
+            result = TimeTrackerSL_GUI._safe_window_position(265, -1800, 1200, 800)
+        self.assertEqual(result, (None, None))
 
-    @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
-    @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
-    @unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen')
-    @unittest.mock.patch('TimeTrackerSL_GUI.webview.screens', [], create=True)
-    @unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window')
-    @unittest.mock.patch('TimeTrackerSL_GUI.webview.start')
-    @unittest.mock.patch('TimeTrackerSL_GUI.time.sleep')
-    def test_start_streamlit_server_handles_no_screens_reported(self, mock_sleep, mock_webview_start, mock_create_window, mock_popen, mock_json_load, mock_exists):
+    def test_safe_window_position_handles_no_screens_reported(self):
         """No connected screens at all must also fall back safely, not crash."""
-        mock_exists.return_value = True
-        mock_json_load.return_value = {'window_x': 265, 'window_y': 130}
+        fake_appkit = self._fake_appkit(main_frame=(0, 0, 1512, 982), screen_frames=[])
+        with unittest.mock.patch('TimeTrackerSL_GUI.sys.platform', 'darwin'), \
+             unittest.mock.patch.dict(sys.modules, {'AppKit': fake_appkit}):
+            result = TimeTrackerSL_GUI._safe_window_position(100, 100, 1200, 800)
+        self.assertEqual(result, (None, None))
 
-        TimeTrackerSL_GUI.start_streamlit_server()
-
-        mock_create_window.assert_called_once()
-        _args, kwargs = mock_create_window.call_args
-        self.assertIsNone(kwargs.get('x'))
-        self.assertIsNone(kwargs.get('y'))
+    def test_safe_window_position_swallows_errors(self):
+        """Purely defensive - any AppKit failure must fall back, not crash startup."""
+        fake_appkit = unittest.mock.MagicMock()
+        fake_appkit.NSScreen.mainScreen.side_effect = RuntimeError("boom")
+        with unittest.mock.patch('TimeTrackerSL_GUI.sys.platform', 'darwin'), \
+             unittest.mock.patch.dict(sys.modules, {'AppKit': fake_appkit}):
+            result = TimeTrackerSL_GUI._safe_window_position(100, 100, 1200, 800)
+        self.assertEqual(result, (None, None))
 
     @unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists')
     @unittest.mock.patch('TimeTrackerSL_GUI.json.load')
