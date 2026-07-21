@@ -1,5 +1,6 @@
 import json
 import os
+import tempfile
 import imaplib
 import re
 import email
@@ -37,7 +38,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.21"
+    VERSION = "3.22"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -212,9 +213,26 @@ class TimeTracker:
     def _save_data(self):
         """
         Saves the current project data to the configured JSON file.
+
+        Writes to a temporary file in the same directory first, then
+        atomically swaps it into place with os.replace(). A plain
+        open(path, 'w') would truncate the file before writing the new
+        content, and several processes can share this same file (the GUI,
+        the SOAP/REST/MCP servers) - one of them reloading data.json at that
+        exact moment would see a truncated, invalid JSON file and crash.
+        os.replace() has no such window: readers always see either the
+        complete old file or the complete new one.
         """
-        with open(self.file_path, 'w', encoding='utf-8') as f:
-            json.dump(self.data, f, indent=2)
+        directory = os.path.dirname(os.path.abspath(self.file_path)) or '.'
+        fd, tmp_path = tempfile.mkstemp(dir=directory, prefix='.tmp_data_', suffix='.json')
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(self.data, f, indent=2)
+            os.replace(tmp_path, self.file_path)
+        except BaseException:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            raise
 
     def _copy_to_clipboard(self, text):
         """

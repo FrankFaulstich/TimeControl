@@ -211,8 +211,17 @@ else:
     # Reload from disk on every rerun (i.e. on every click/navigation), so
     # changes made by another process sharing the same data file - the SOAP
     # server, or the optional MCP server used by Claude - show up here too,
-    # without needing to restart the whole GUI session.
-    st.session_state.tracker.data = st.session_state.tracker._load_data()
+    # without needing to restart the whole GUI session. _save_data() writes
+    # atomically (temp file + os.replace), but this stays wrapped as a
+    # defensive fallback: if the reload ever lands on an unreadable file
+    # (e.g. a transient OS/antivirus lock), keep the previously loaded data
+    # for this run instead of crashing the whole script - which, since this
+    # runs on every auto-refresh tick too, used to reset the visible view
+    # back to the main menu once the user reloaded after such a crash.
+    try:
+        st.session_state.tracker.data = st.session_state.tracker._load_data()
+    except (json.JSONDecodeError, OSError):
+        pass
 
 if 'menu' not in st.session_state:
     st.session_state.menu = 'main'
@@ -233,6 +242,14 @@ def navigate_to(menu_name):
     :param menu_name: The key of the menu to navigate to (must exist in menu_map).
     """
     st.session_state.menu = menu_name
+    # Counts as "just refreshed" so the auto-refresh fragment (see
+    # _auto_refresh_on_external_changes below) doesn't fire its own
+    # competing st.rerun() while this navigation's rerun is still being
+    # processed - otherwise that second rerun can win the race and abort
+    # this one before the newly selected menu ever gets rendered, making the
+    # click look like it did nothing (or, if the user then clicks again out
+    # of impatience, like the view jumped to the wrong place).
+    st.session_state["_last_auto_refresh"] = time.monotonic()
     st.rerun()
     
 def set_feedback(message, type='success'):
@@ -2659,7 +2676,33 @@ menu_map = {
 
 # --- Execution ---
 
-if config.get('mcp_server_enabled', False) or config.get('mcp_transport', 'http') == 'stdio':
+# Menus where the periodic auto-refresh's full-script rerun is more likely
+# to disrupt the user than to help them:
+# - Menus with a free-text/number input the user might be actively typing
+#   into (task/project names, notes, storage paths, email/port settings,
+#   ...). Streamlit keeps in-progress edits across most reruns, but one
+#   triggered while the browser tab is backgrounded (and its timers
+#   throttled) can still surface as the field reverting to its last-saved
+#   value once the tab reconnects.
+# - 'main', because its toolbar's New/Management/Reporting menus are plain
+#   st.popover()s: unlike st.expander, popover has no `expanded=`-style
+#   parameter to keep it programmatically open across a rerun, so a
+#   background rerun while one is open always closes it under the user's
+#   cursor - visibly "jumping" back to the collapsed toolbar mid-browse.
+# Neither exclusion affects whether the MCP server can still write to
+# data.json in the meantime, only how quickly the GUI's own display picks
+# that up, so skipping the refresh here is safe: leaving the view (by
+# saving, cancelling, or clicking anything else on the toolbar) triggers an
+# immediate rerun anyway, which then shows whatever changed while it was
+# suppressed.
+_MENUS_TO_SKIP_AUTOREFRESH = {
+    'main', 'email_assignment', 'settings', 'add_main_project',
+    'rename_main_project', 'list_inactive_main', 'add_task_form',
+    'edit_task_form', 'rename_task', 'list_inactive_tasks',
+}
+
+mcp_in_use = config.get('mcp_server_enabled', False) or config.get('mcp_transport', 'http') == 'stdio'
+if mcp_in_use and st.session_state.menu not in _MENUS_TO_SKIP_AUTOREFRESH:
     _auto_refresh_on_external_changes()
 
 if st.session_state.menu in menu_map:
