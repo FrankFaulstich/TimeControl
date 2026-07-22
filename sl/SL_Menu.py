@@ -70,9 +70,12 @@ def render_icon_button_css():
     Keeps icon-only action buttons visually consistent across all Streamlit views.
     """
     button_selectors = [
-        '[class*="st-key-toolbar_new_popover"] [data-testid="stPopoverButton"]',
-        '[class*="st-key-toolbar_mgmt_popover"] [data-testid="stPopoverButton"]',
-        '[class*="st-key-toolbar_report_popover"] [data-testid="stPopoverButton"]',
+        # st.popover's `key=` doesn't get reflected as a "st-key-*" class
+        # anywhere in its rendered DOM (unlike st.button/st.expander), so a
+        # per-key selector like the ones below can never match it - every
+        # popover trigger in this app is one of these three toolbar icons,
+        # so targeting the testid directly covers all of them.
+        '[data-testid="stPopoverButton"]',
         '[class*="st-key-toolbar_today_btn"] button',
         '[class*="st-key-toolbar_planning_btn"] button',
         '[class*="st-key-toolbar_email_btn"] button',
@@ -113,7 +116,7 @@ def render_icon_button_css():
             align-items: center !important;
             justify-content: center !important;
             gap: 0 !important;
-            color: #3f3f3f !important;
+            color: var(--tc-icon-color, #3f3f3f) !important;
             font-family: Arial, Helvetica, sans-serif !important;
             font-size: 20px !important;
             font-weight: 700 !important;
