@@ -1,23 +1,28 @@
 /* ==========================================================================
-   TimeControl - Dark Style
+   TimeControl - Claude Style
    ==========================================================================
+   Warm, editorial palette inspired by the Claude Desktop app: a soft cream
+   page background, a warm charcoal ink for text, and a terracotta/clay
+   accent for interactive elements, in place of the usual cool blues/grays.
+
    Custom properties live on :root (not .stApp) because several Streamlit
-   components (popover panels, select/date dropdowns, tooltips) render into
-   a portal appended directly to <body>, outside .stApp's own subtree - a
-   variable defined only on .stApp would never reach them.
+   components (popover panels, select/date dropdowns) render into a portal
+   appended directly to <body>, outside .stApp's own subtree - a variable
+   defined only on .stApp would never reach them.
    ========================================================================== */
 
 :root {
-    --tc-bg: #1e1e1e;
-    --tc-bg-elevated: #2a2a2a;
-    --tc-bg-input: #2d2d2d;
-    --tc-bg-hover: #3a3a3a;
-    --tc-text: #f5f5f7;
-    --tc-text-muted: #a8a8ad;
-    --tc-border: #3a3a3a;
-    --tc-accent: #409cff;
-    --tc-icon-color: #d5d5da;
-    --tc-code-text: #7ee787;
+    --tc-bg: #F5F4EE;
+    --tc-bg-elevated: #FFFFFF;
+    --tc-bg-input: #FFFFFF;
+    --tc-bg-hover: #ECE9DF;
+    --tc-text: #3D3929;
+    --tc-text-muted: #83817D;
+    --tc-border: #E0DCD0;
+    --tc-accent: #CC785C;
+    --tc-accent-hover: #B15E42;
+    --tc-icon-color: #6B6960;
+    --tc-code-text: #AF5A3F;
 }
 
 /* Global Font & Background */
@@ -29,8 +34,8 @@
 
 /* Native Streamlit chrome: the fixed header bar (Deploy/hamburger menu) and
    the toolbar/decoration strip sit outside .stApp's own background, so they
-   otherwise stay on Streamlit's default white regardless of the rest of the
-   page. */
+   otherwise stay on Streamlit's default white/gray regardless of the rest
+   of the page. */
 header[data-testid="stHeader"],
 [data-testid="stToolbar"],
 [data-testid="stDecoration"] {
@@ -39,7 +44,7 @@ header[data-testid="stHeader"],
 }
 
 header[data-testid="stHeader"] svg {
-    fill: var(--tc-text) !important;
+    fill: var(--tc-icon-color) !important;
 }
 
 /* Headings */
@@ -78,8 +83,7 @@ h5, h6 {
     font-size: 1.0rem;
 }
 
-/* Widget labels, captions and help tooltips default to Streamlit's own
-   near-black text regardless of theme - unreadable on a dark background. */
+/* Widget labels, captions and help tooltips */
 [data-testid="stWidgetLabel"] p,
 [data-testid="stCaptionContainer"],
 [data-testid="stCaptionContainer"] p,
@@ -92,9 +96,7 @@ h5, h6 {
 }
 
 /* Buttons - regular, form-submit and popover triggers all need the same
-   treatment: form submit buttons and popover triggers use a different
-   testid than plain st.button() and were previously left on Streamlit's
-   default white background with inherited near-white text (invisible). */
+   treatment so none of them fall back to Streamlit's own default styling. */
 .stButton button,
 [data-testid="stFormSubmitButton"] button,
 [data-testid="stPopoverButton"] {
@@ -104,17 +106,17 @@ h5, h6 {
     background-color: var(--tc-bg-elevated);
     color: var(--tc-text);
     transition: all 0.2s ease-in-out;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 2px rgba(61, 57, 41, 0.06);
 }
 
 .stButton button:hover,
 [data-testid="stFormSubmitButton"] button:hover,
 [data-testid="stPopoverButton"]:hover {
     border-color: var(--tc-accent);
-    color: var(--tc-accent);
+    color: var(--tc-accent-hover);
     background-color: var(--tc-bg-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 10px rgba(61, 57, 41, 0.10);
 }
 
 .stButton button:active,
@@ -125,7 +127,7 @@ h5, h6 {
 
 .stButton button:disabled,
 .stButton button:disabled:hover {
-    opacity: 0.45;
+    opacity: 0.5;
     color: var(--tc-text-muted) !important;
     border-color: var(--tc-border) !important;
     background-color: var(--tc-bg-elevated) !important;
@@ -133,8 +135,24 @@ h5, h6 {
     box-shadow: none;
 }
 
+/* Primary-type buttons (e.g. "Add Task") get the terracotta treatment to
+   read as the clear call-to-action, matching Claude's own send/primary
+   button color. */
+[data-testid="stBaseButton-primary"] {
+    background-color: var(--tc-accent) !important;
+    border-color: var(--tc-accent) !important;
+    color: #FFFFFF !important;
+}
+
+[data-testid="stBaseButton-primary"]:hover {
+    background-color: var(--tc-accent-hover) !important;
+    border-color: var(--tc-accent-hover) !important;
+    color: #FFFFFF !important;
+}
+
 /* The dropdown card a popover opens (toolbar's New/Management/Reporting
-   menus) - rendered in a body-level portal, stayed white otherwise. */
+   menus) - rendered in a body-level portal, stayed on Streamlit's default
+   white/gray otherwise. */
 [data-testid="stPopoverBody"],
 [data-testid="stPopoverBody"] > div {
     background-color: var(--tc-bg-elevated) !important;
@@ -154,6 +172,13 @@ h5, h6 {
     color: var(--tc-text);
 }
 
+.stTextInput input:focus,
+.stNumberInput input:focus,
+.stTextArea textarea:focus {
+    border-color: var(--tc-accent) !important;
+    box-shadow: 0 0 0 1px var(--tc-accent) !important;
+}
+
 .stTextInput input::placeholder,
 .stTextArea textarea::placeholder {
     color: var(--tc-text-muted);
@@ -162,7 +187,7 @@ h5, h6 {
 
 [data-testid="stNumberInputStepDown"],
 [data-testid="stNumberInputStepUp"] {
-    background-color: var(--tc-bg-input) !important;
+    background-color: var(--tc-bg-hover) !important;
     border-color: var(--tc-border) !important;
     color: var(--tc-text) !important;
 }
@@ -170,9 +195,8 @@ h5, h6 {
 /* Select / date-input dropdown popups also render in a body-level portal
    via BaseWeb, so they need the same background rendered explicitly. The
    plain [data-baseweb="popover"] wrapper (and the unlabeled div directly
-   inside it) is what actually shows a white card behind the calendar/menu
-   content - the inner listbox/menu/calendar elements are already dark on
-   their own, but that only covered part of the card. */
+   inside it) is what shows a card behind the calendar/menu content - the
+   inner listbox/menu/calendar elements need their own override too. */
 [data-baseweb="popover"],
 [data-baseweb="popover"] > div,
 [data-baseweb="popover"] [role="listbox"],
@@ -187,12 +211,17 @@ h5, h6 {
     color: var(--tc-text) !important;
 }
 
+[data-baseweb="popover"] li[role="option"]:hover,
+[data-baseweb="menu"] li:hover {
+    background-color: var(--tc-bg-hover) !important;
+}
+
 /* The date-input calendar's month/year header bar and weekday-initials row
    keep Streamlit's default secondary-background grey regardless of theme;
-   [role="presentation"] reaches the weekday row, its sibling (same class)
-   is the header bar just above it. Out-of-month filler day cells render
-   their fill via a ::after pseudo-element rather than their own background,
-   so they need a separate override. */
+   [role="presentation"] reaches the weekday row, .st-c7 is the shared class
+   between it and the header bar just above it. Out-of-month filler day
+   cells render their fill via a ::after pseudo-element rather than their
+   own background, so they need a separate override. */
 [data-baseweb="calendar"] [role="presentation"],
 [data-baseweb="calendar"] .st-c7 {
     background-color: transparent !important;
@@ -200,11 +229,6 @@ h5, h6 {
 
 [data-baseweb="calendar"] [role="gridcell"]::after {
     background-color: transparent !important;
-}
-
-[data-baseweb="popover"] li[role="option"]:hover,
-[data-baseweb="menu"] li:hover {
-    background-color: var(--tc-bg-hover) !important;
 }
 
 /* Checkbox */
@@ -237,23 +261,24 @@ hr {
 [data-testid="stAlert"] {
     background-color: var(--tc-bg-elevated);
     border-radius: 8px;
+    border: 1px solid var(--tc-border);
 }
 
 /* Inline code and code blocks */
 code {
-    background-color: var(--tc-bg-elevated) !important;
+    background-color: var(--tc-bg-hover) !important;
     color: var(--tc-code-text) !important;
 }
 
 /* Report Box */
 .report-box {
-    background-color: #252526;
+    background-color: #FFFFFF;
     padding: 20px;
     border-radius: 12px;
     font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
     font-size: 0.9em;
     white-space: pre-wrap;
     border: 1px solid var(--tc-border);
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-    color: #d4d4d4;
+    box-shadow: inset 0 1px 3px rgba(61, 57, 41, 0.06);
+    color: var(--tc-text);
 }
