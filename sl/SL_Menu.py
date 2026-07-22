@@ -638,67 +638,92 @@ def view_task_planning():
                                 )
                                 st.rerun()
         else:
-            current_main = None
-            for t_idx, task in enumerate(tasks):
-                if task['main_project_name'] != current_main:
-                    current_main = task['main_project_name']
-                    st.subheader(current_main)
-                
-                col_task, col_start_btn, col_edit_btn, col_today_btn, col_done_btn = st.columns([10, 1, 1, 1, 1])
-                with col_task:
-                    name = task['task_name']
-                    status = task.get('status')
-                    is_done = status == 'done'
-                    is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
-                    display_name = f"{name} (done)" if is_done else name
-                    if is_active: display_name = f"**{display_name}**"
-                    due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
-                    today_info = " ⭐" if task.get('today') else ""
-                    recurring_info = " ↻" if task.get('recurring') else ""
-                    if is_active:
-                        bullet = "🔨"
-                    elif is_done:
-                        bullet = "✔"
-                    else:
-                        bullet = "-"
-                    st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{today_info}{recurring_info}", unsafe_allow_html=True)
-                with col_start_btn:
-                    if st.button("▶", key=f"start_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
-                        st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
-                        st.rerun()
-                with col_edit_btn:
-                    if st.button("✎", key=f"edit_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
-                        st.session_state.context['selected_main'] = task['main_project_name']
-                        st.session_state.context['selected_task'] = task['task_name']
-                        st.session_state.context['selected_task_id'] = task.get('id')
-                        st.session_state.context['return_to'] = 'task_planning'
-                        navigate_to('edit_task_form')
-                with col_today_btn:
-                    if st.button("★", key=f"today_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Today"), disabled=task.get('today', False)):
-                        st.session_state.tracker.update_task(
-                            task['main_project_name'],
-                            task['task_name'],
-                            today=not task.get('today', False),
-                            due_date=task.get('due_date'),
-                            recurring=task.get('recurring'),
-                            frequency=task.get('frequency'),
-                            userdefined_days=task.get('userdefined_days'),
-                            task_id=task.get('id'),
-                        )
-                        st.rerun()
-                with col_done_btn:
-                    if st.button("✓", key=f"done_task_planning_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
-                        st.session_state.tracker.update_task(
-                            task['main_project_name'],
-                            task['task_name'],
-                            status='done',
-                            due_date=task.get('due_date'),
-                            recurring=task.get('recurring'),
-                            frequency=task.get('frequency'),
-                            userdefined_days=task.get('userdefined_days'),
-                            task_id=task.get('id'),
-                        )
-                        st.rerun()
+            # Group tasks by main project and show each group inside a
+            # collapsible expander, so projects with many tasks don't crowd
+            # out the rest of the list - same pattern (and same reasoning)
+            # as view_today_tasks(): on_change="rerun" is required for
+            # st.expander to track its state in session_state at all, and
+            # that state is mirrored into a plain session-state dict because
+            # the expander's own (key-bound) state would otherwise reset to
+            # expanded every time this view is left (e.g. to edit a task)
+            # and returned to.
+            tasks_grouped = {}
+            for task in tasks:
+                tasks_grouped.setdefault(task['main_project_name'], []).append(task)
+
+            if "task_planning_expanded_projects" not in st.session_state:
+                st.session_state.task_planning_expanded_projects = {}
+
+            for main_proj_name, sub_tasks in tasks_grouped.items():
+                expander_key = f"task_planning_expander_{main_proj_name}"
+                is_expanded = st.session_state.task_planning_expanded_projects.get(main_proj_name, True)
+                with st.expander(f"{main_proj_name} ({len(sub_tasks)})", expanded=is_expanded, key=expander_key, on_change="rerun"):
+                    # The mirror-update in the `finally` below has to run even
+                    # when a button below calls st.rerun() (or navigate_to(),
+                    # which does the same) - that raises an exception to
+                    # unwind the script right here, which would otherwise
+                    # skip the mirror-update and snap this project's group
+                    # shut instead of leaving it open on the way to/from
+                    # editing a task.
+                    try:
+                        for t_idx, task in enumerate(sub_tasks):
+                            col_task, col_start_btn, col_edit_btn, col_today_btn, col_done_btn = st.columns([10, 1, 1, 1, 1])
+                            with col_task:
+                                name = task['task_name']
+                                status = task.get('status')
+                                is_done = status == 'done'
+                                is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
+                                display_name = f"{name} (done)" if is_done else name
+                                if is_active: display_name = f"**{display_name}**"
+                                due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
+                                today_info = " ⭐" if task.get('today') else ""
+                                recurring_info = " ↻" if task.get('recurring') else ""
+                                if is_active:
+                                    bullet = "🔨"
+                                elif is_done:
+                                    bullet = "✔"
+                                else:
+                                    bullet = "-"
+                                st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{today_info}{recurring_info}", unsafe_allow_html=True)
+                            with col_start_btn:
+                                if st.button("▶", key=f"start_task_planning_{main_proj_name}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
+                                    st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
+                                    st.rerun()
+                            with col_edit_btn:
+                                if st.button("✎", key=f"edit_task_planning_{main_proj_name}_{task['task_name']}_{t_idx}", help=_("Edit Task")):
+                                    st.session_state.context['selected_main'] = task['main_project_name']
+                                    st.session_state.context['selected_task'] = task['task_name']
+                                    st.session_state.context['selected_task_id'] = task.get('id')
+                                    st.session_state.context['return_to'] = 'task_planning'
+                                    navigate_to('edit_task_form')
+                            with col_today_btn:
+                                if st.button("★", key=f"today_task_planning_{main_proj_name}_{task['task_name']}_{t_idx}", help=_("Today"), disabled=task.get('today', False)):
+                                    st.session_state.tracker.update_task(
+                                        task['main_project_name'],
+                                        task['task_name'],
+                                        today=not task.get('today', False),
+                                        due_date=task.get('due_date'),
+                                        recurring=task.get('recurring'),
+                                        frequency=task.get('frequency'),
+                                        userdefined_days=task.get('userdefined_days'),
+                                        task_id=task.get('id'),
+                                    )
+                                    st.rerun()
+                            with col_done_btn:
+                                if st.button("✓", key=f"done_task_planning_{main_proj_name}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
+                                    st.session_state.tracker.update_task(
+                                        task['main_project_name'],
+                                        task['task_name'],
+                                        status='done',
+                                        due_date=task.get('due_date'),
+                                        recurring=task.get('recurring'),
+                                        frequency=task.get('frequency'),
+                                        userdefined_days=task.get('userdefined_days'),
+                                        task_id=task.get('id'),
+                                    )
+                                    st.rerun()
+                    finally:
+                        st.session_state.task_planning_expanded_projects[main_proj_name] = st.session_state[expander_key]
     else:
         st.info(_("No tasks found."))
         
