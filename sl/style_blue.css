@@ -1,9 +1,9 @@
 /* ==========================================================================
-   TimeControl - Claude Style
+   TimeControl - Blue Style
    ==========================================================================
-   Warm, editorial palette inspired by the Claude Desktop app: a soft cream
-   page background, a warm charcoal ink for text, and a terracotta/clay
-   accent for interactive elements, in place of the usual cool blues/grays.
+   Clean, professional palette inspired by Dlubal's own software (RFEM /
+   Dlubal CALC): a near-white page background, soft blue-gray card borders,
+   and a corporate blue accent for buttons, links and selection states.
 
    Custom properties live on :root (not .stApp) because several Streamlit
    components (popover panels, select/date dropdowns) render into a portal
@@ -12,17 +12,17 @@
    ========================================================================== */
 
 :root {
-    --tc-bg: #F5F4EE;
+    --tc-bg: #F7F9FC;
     --tc-bg-elevated: #FFFFFF;
     --tc-bg-input: #FFFFFF;
-    --tc-bg-hover: #ECE9DF;
-    --tc-text: #3D3929;
-    --tc-text-muted: #83817D;
-    --tc-border: #E0DCD0;
-    --tc-accent: #CC785C;
-    --tc-accent-hover: #B15E42;
-    --tc-icon-color: #6B6960;
-    --tc-code-text: #AF5A3F;
+    --tc-bg-hover: #EAF1FC;
+    --tc-text: #1E2A3A;
+    --tc-text-muted: #6B7686;
+    --tc-border: #E1E7F0;
+    --tc-accent: #2E6FE3;
+    --tc-accent-hover: #1E56C4;
+    --tc-icon-color: #55627A;
+    --tc-code-text: #2E6FE3;
 }
 
 /* Global Font & Background */
@@ -106,7 +106,7 @@ h5, h6 {
     background-color: var(--tc-bg-elevated);
     color: var(--tc-text);
     transition: all 0.2s ease-in-out;
-    box-shadow: 0 1px 2px rgba(61, 57, 41, 0.06);
+    box-shadow: 0 1px 2px rgba(30, 42, 58, 0.06);
 }
 
 .stButton button:hover,
@@ -116,7 +116,7 @@ h5, h6 {
     color: var(--tc-accent-hover);
     background-color: var(--tc-bg-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(61, 57, 41, 0.10);
+    box-shadow: 0 4px 10px rgba(30, 42, 58, 0.10);
 }
 
 .stButton button:active,
@@ -135,9 +135,8 @@ h5, h6 {
     box-shadow: none;
 }
 
-/* Primary-type buttons (e.g. "Add Task") get the terracotta treatment to
-   read as the clear call-to-action, matching Claude's own send/primary
-   button color. */
+/* Primary-type buttons (e.g. "Add Task") get a solid accent fill, matching
+   Dlubal CALC's own "New chat" / "Sign up" call-to-action buttons. */
 [data-testid="stBaseButton-primary"] {
     background-color: var(--tc-accent) !important;
     border-color: var(--tc-accent) !important;
@@ -288,6 +287,6 @@ code {
     font-size: 0.9em;
     white-space: pre-wrap;
     border: 1px solid var(--tc-border);
-    box-shadow: inset 0 1px 3px rgba(61, 57, 41, 0.06);
+    box-shadow: inset 0 1px 3px rgba(30, 42, 58, 0.06);
     color: var(--tc-text);
 }

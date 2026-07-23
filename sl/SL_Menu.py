@@ -20,6 +20,17 @@ try:
 except (ImportError, ModuleNotFoundError):
     UPDATE_MODULE_AVAILABLE = False
 
+try:
+    # Internal (not officially public) API, but it's the only way to tell a
+    # fragment's own run_every tick apart from an ordinary rerun - see the
+    # usage in _auto_refresh_on_external_changes() for why that distinction
+    # matters. Guarded so a future Streamlit release that moves/removes this
+    # degrades to the older, less precise timing-based heuristic instead of
+    # crashing the app outright.
+    from streamlit.runtime.scriptrunner_utils.script_run_context import get_script_run_ctx
+except ImportError:
+    get_script_run_ctx = None
+
 # --- Configuration & Setup ---
 CONFIG_FILE = 'config.json'
 SL_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -245,14 +256,6 @@ def navigate_to(menu_name):
     :param menu_name: The key of the menu to navigate to (must exist in menu_map).
     """
     st.session_state.menu = menu_name
-    # Counts as "just refreshed" so the auto-refresh fragment (see
-    # _auto_refresh_on_external_changes below) doesn't fire its own
-    # competing st.rerun() while this navigation's rerun is still being
-    # processed - otherwise that second rerun can win the race and abort
-    # this one before the newly selected menu ever gets rendered, making the
-    # click look like it did nothing (or, if the user then clicks again out
-    # of impatience, like the view jumped to the wrong place).
-    st.session_state["_last_auto_refresh"] = time.monotonic()
     st.rerun()
     
 def set_feedback(message, type='success'):
@@ -305,13 +308,36 @@ def _auto_refresh_on_external_changes():
     since an MCP client can be spawning that process independently of what
     this app's own config says, so there's no reliable way to know it isn't.
 
-    This function is invoked twice per cycle: once inline as a normal part
-    of every full script run (including the one it itself triggers below),
-    and once on its own every `run_every` seconds via the fragment's timer.
-    The timestamp check tells those two cases apart - without it, calling
-    st.rerun() unconditionally here would re-trigger itself instantly on
-    every single run and the app would never finish rendering.
+    This function is invoked two different ways: inline, as a normal part of
+    every full script run (a click anywhere in the app, navigate_to(), ...),
+    and separately, on its own, every `run_every` seconds via the fragment's
+    own timer. Only the second case should trigger a rerun here - Streamlit
+    runs a timer-triggered tick as a fragment-scoped rerun that calls only
+    this function's body and nothing else in the script (see
+    streamlit/runtime/scriptrunner/script_runner.py: a rerun with a non-empty
+    fragment_id_queue calls just the stored fragment closure instead of
+    exec()-ing the rest of the script), so escalating to a full st.rerun()
+    is genuinely needed there for the data reload and current view to
+    actually refresh. An inline call, by contrast, is already running as
+    part of a full script execution - calling st.rerun() there would abort
+    that very run before it reaches whatever code (a button's own handler,
+    say) triggered it in the first place, silently discarding that
+    interaction. That was a real, user-reported bug: clicks made after a few
+    seconds of idling (long enough to make this look like a timer tick by
+    elapsed time alone, which is what an earlier version of this function
+    compared against) would occasionally do nothing on the first try.
+    ctx.fragment_ids_this_run tells the two cases apart directly instead of
+    guessing from elapsed time.
     """
+    ctx = get_script_run_ctx() if get_script_run_ctx else None
+    if ctx is not None:
+        if ctx.fragment_ids_this_run:
+            st.rerun()
+        return
+
+    # Fallback if a future Streamlit release moves/removes the internal hook
+    # above: less precise (can still occasionally preempt a click that lands
+    # in the same ~4s window), but keeps the periodic refresh itself working.
     now = time.monotonic()
     last_refresh = st.session_state.get("_last_auto_refresh")
     st.session_state["_last_auto_refresh"] = now
