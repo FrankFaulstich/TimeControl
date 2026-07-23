@@ -339,98 +339,98 @@ def render_header(title, subtitle=None):
 
 # --- Views ---
 
-def view_main():
+def render_toolbar(return_to):
     """
-    Renders the main menu view.
-    """
-    render_header("Time Control", f"Version {st.session_state.tracker.get_version()}")
-    
-    current_work = st.session_state.tracker.get_current_work()
-    task_details = {}
-    is_done = False
-    if current_work:
-        all_tasks = st.session_state.tracker.list_tasks(main_project_name=current_work['main_project_name'], status_filter='all')
-        task_details = next((t for t in all_tasks if t['task_name'] == current_work['task_name']), {})
-        is_done = task_details.get('status') == 'done'
+    Renders the shared icon toolbar (New/Management/Today View/Task
+    Planning/E-Mail/Start/Info/Stop/Reporting/Settings), used at the top of
+    the main menu, task planning, and today's tasks views.
 
-    # --- Toolbar ---
+    :param return_to: The menu key to navigate back to once the user is
+        done with whatever the toolbar sends them to (closes a form, backs
+        out of Settings, ...). Passing the calling view's own key here is
+        what lets the toolbar be embedded in more than one view while still
+        returning each visitor to wherever they actually came from, instead
+        of always landing back on the main menu.
+    """
+    current_work = st.session_state.tracker.get_current_work()
+
     t_col_new, t_col_mgmt, t_col_today, t_col_planning, t_col_email, t_col_start, t_col_info, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2])
     with t_col_new:
         with st.popover("+", help=_("New"), key="toolbar_new_popover"):
             if st.button(_("New Project"), use_container_width=True):
-                st.session_state.context['return_to'] = 'main'
+                st.session_state.context['return_to'] = return_to
                 navigate_to('add_main_project')
             if st.button(_("New Task"), use_container_width=True):
-                st.session_state.context['return_to'] = 'main'
+                st.session_state.context['return_to'] = return_to
                 navigate_to('add_task')
 
     with t_col_mgmt:
         with st.popover("☷", help=_("Project & Task Management"), key="toolbar_mgmt_popover"):
             with st.expander(_("Main Project Management"), expanded=False):
                 if st.button(_("Add Project"), use_container_width=True, key="pop_mgmt_add_proj"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('add_main_project')
                 if st.button(_("List Projects"), use_container_width=True, key="pop_mgmt_list_proj"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('list_main_projects')
                 if st.button(_("Rename Project"), use_container_width=True, key="pop_mgmt_rename_proj"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('rename_main_project')
                 if st.button(_("Close Project"), use_container_width=True, key="pop_mgmt_close_proj"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('close_main_project')
                 if st.button(_("Re-open Project"), use_container_width=True, key="pop_mgmt_reopen_proj"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('reopen_main_project')
                 if st.button(_("Delete Project"), use_container_width=True, key="pop_mgmt_del_proj"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('delete_main_project')
                 if st.button(_("List Inactive Projects"), use_container_width=True, key="pop_mgmt_list_inact_proj"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('list_inactive_main')
                 if st.button(_("Demote Project to Task"), use_container_width=True, key="pop_mgmt_demote_proj"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('demote_main_project')
                 if st.button(_("List Completed Projects"), use_container_width=True, key="pop_mgmt_list_comp_proj"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('list_completed_main')
 
             with st.expander(_("Task Management"), expanded=False):
                 if st.button(_("Add Task"), use_container_width=True, key="pop_t_mgmt_add"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('add_task')
                 if st.button(_("List Tasks"), use_container_width=True, key="pop_t_mgmt_list"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('list_tasks')
                 if st.button(_("Rename Task"), use_container_width=True, key="pop_t_mgmt_rename"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('rename_task')
                 if st.button(_("Close Task"), use_container_width=True, key="pop_t_mgmt_close"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('close_task')
                 if st.button(_("Re-open Task"), use_container_width=True, key="pop_t_mgmt_reopen"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('reopen_task')
                 if st.button(_("Delete Task"), use_container_width=True, key="pop_t_mgmt_del"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('delete_task')
                 if st.button(_("Move Task"), use_container_width=True, key="pop_t_mgmt_move"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('move_task')
                 if st.button(_("List Inactive Tasks"), use_container_width=True, key="pop_t_mgmt_list_inact"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('list_inactive_tasks')
                 if st.button(_("List All Closed Tasks"), use_container_width=True, key="pop_t_mgmt_list_closed"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('list_closed_tasks')
                 if st.button(_("Edit Task"), use_container_width=True, key="pop_task_mgmt_edit_task"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('edit_task')
                 if st.button(_("Delete All Closed Tasks"), use_container_width=True, key="pop_t_mgmt_del_all"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('delete_all_closed_tasks')
                 if st.button(_("Promote Task to Project"), use_container_width=True, key="pop_t_mgmt_promote"):
-                    st.session_state.context['return_to'] = 'main'
+                    st.session_state.context['return_to'] = return_to
                     navigate_to('promote_task_to_project')
 
     with t_col_today:
@@ -447,10 +447,12 @@ def view_main():
 
     with t_col_start:
         if st.button("▶", help=_("Start work on task"), key="toolbar_start_btn"):
+            st.session_state.context['return_to'] = return_to
             navigate_to('start_work')
 
     with t_col_info:
         if st.button("i", help=_("Show current work"), key="toolbar_info_btn"):
+            st.session_state.context['return_to'] = return_to
             navigate_to('show_current_work')
 
     with t_col_stop:
@@ -465,28 +467,45 @@ def view_main():
         with st.popover("▥", help=_("Reporting"), key="toolbar_report_popover"):
             if st.button(_("Daily Report (Today)"), use_container_width=True, key="pop_report_today"):
                 report = st.session_state.tracker.generate_daily_report()
-                st.session_state.context['return_to'] = 'main'
+                st.session_state.context['return_to'] = return_to
                 st.session_state.context['report'] = report
                 navigate_to('view_report')
             if st.button(_("Daily Report (Specific Day)"), use_container_width=True, key="pop_report_spec"):
-                st.session_state.context['return_to'] = 'main'
+                st.session_state.context['return_to'] = return_to
                 navigate_to('report_specific_day')
             if st.button(_("Date Range Report"), use_container_width=True, key="pop_report_range"):
-                st.session_state.context['return_to'] = 'main'
+                st.session_state.context['return_to'] = return_to
                 navigate_to('report_date_range')
             if st.button(_("Detailed Task Report"), use_container_width=True, key="pop_report_det_task"):
-                st.session_state.context['return_to'] = 'main'
+                st.session_state.context['return_to'] = return_to
                 navigate_to('report_detailed_task')
             if st.button(_("Detailed Project Report"), use_container_width=True, key="pop_report_det_proj"):
-                st.session_state.context['return_to'] = 'main'
+                st.session_state.context['return_to'] = return_to
                 navigate_to('report_detailed_main')
             if st.button(_("Detailed Daily Report"), use_container_width=True, key="pop_report_det_daily"):
-                st.session_state.context['return_to'] = 'main'
+                st.session_state.context['return_to'] = return_to
                 navigate_to('report_detailed_daily')
 
     with t_col_settings:
         if st.button("⚙", help=_("Settings"), key="toolbar_settings_btn"):
+            st.session_state.context['return_to'] = return_to
             navigate_to('settings')
+
+def view_main():
+    """
+    Renders the main menu view.
+    """
+    render_header("Time Control", f"Version {st.session_state.tracker.get_version()}")
+
+    current_work = st.session_state.tracker.get_current_work()
+    task_details = {}
+    is_done = False
+    if current_work:
+        all_tasks = st.session_state.tracker.list_tasks(main_project_name=current_work['main_project_name'], status_filter='all')
+        task_details = next((t for t in all_tasks if t['task_name'] == current_work['task_name']), {})
+        is_done = task_details.get('status') == 'done'
+
+    render_toolbar('main')
 
     col_info, col_done, col_edit = st.columns([10, 1, 1])
     with col_info:
@@ -527,6 +546,7 @@ def view_task_planning():
     Renders the task planning view, showing all tasks that are not closed.
     """
     render_header(_("Task Planning"))
+    render_toolbar('task_planning')
     # Icon action buttons are styled globally by render_icon_button_css().
 
     filter_options = [
@@ -738,6 +758,7 @@ def view_today_tasks():
     Renders the view showing all tasks marked as 'today' and not closed.
     """
     render_header(_("Today's Tasks"))
+    render_toolbar('today_view')
 
     # Icon action buttons are styled globally by render_icon_button_css().
 
@@ -1405,8 +1426,8 @@ def view_settings():
 
     st.divider()
 
-    if st.button(_("Back to Main Menu"), use_container_width=True):
-        navigate_to('main')
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to(st.session_state.context.get('return_to', 'main'))
 
 # --- Action Views (Forms) ---
 
@@ -2378,44 +2399,45 @@ def view_start_work():
     Renders the form to start work on a task.
     """
     render_header(_("Start Work on Task"))
-    
+    return_to = st.session_state.context.get('return_to', 'main')
+
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not projects:
         st.info(_("No open projects found. Please add one first."))
         if st.button(_("Back"), use_container_width=True):
-            navigate_to('main')
+            navigate_to(return_to)
         return
 
     options = [p['main_project_name'] for p in projects]
     selected_main = st.selectbox(_("Select Project"), options)
-    
+
     tasks = st.session_state.tracker.list_tasks(main_project_name=selected_main, status_filter='open')
     if not tasks:
         st.info(_("No open tasks to start work on in '{name}'.").format(name=selected_main))
         if st.button(_("Back"), use_container_width=True):
-            navigate_to('main')
+            navigate_to(return_to)
         return
 
     with st.form("start_work_form"):
         selected_idx = st.selectbox(
-            _("Select Task"), 
-            range(len(tasks)), 
+            _("Select Task"),
+            range(len(tasks)),
             format_func=lambda i: f"{tasks[i]['task_name']}{' (done)' if tasks[i].get('status') == 'done' else ''}{' ↻' if tasks[i].get('recurring') else ''}"
         )
         submitted = st.form_submit_button(_("Start Work"), use_container_width=True)
-        
+
         if submitted:
             selected_task_name = tasks[selected_idx]['task_name']
             selected_task_id = tasks[selected_idx].get('id')
             if st.session_state.tracker.start_work(selected_main, task_name=selected_task_name, task_id=selected_task_id):
                 set_feedback(_("Work started on '{task_name}' in project '{main_name}'.").format(task_name=selected_task_name, main_name=selected_main))
-                navigate_to('main')
+                navigate_to(return_to)
                 st.rerun()
             else:
                 st.error(_("Error starting work."))
 
     if st.button(_("Cancel"), use_container_width=True):
-        navigate_to('main')
+        navigate_to(return_to)
 
 def view_show_current_work():
     """
@@ -2435,8 +2457,9 @@ def view_show_current_work():
         st.markdown(f"**{_('Duration')}:** {int(hours):02}:{int(minutes):02}:{int(seconds):02}")
     else:
         st.info(_("No active work session."))
-    
-    if st.button(_("Back"), use_container_width=True): navigate_to('main')
+
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to(st.session_state.context.get('return_to', 'main'))
 
 def view_report_specific_day():
     """
