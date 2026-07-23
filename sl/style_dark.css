@@ -202,6 +202,16 @@ h5, h6 {
     background-color: transparent !important;
 }
 
+/* The selected day's own indicator (a circular ::after ring BaseWeb pairs
+   with white text) shares that same pseudo-element with the out-of-month
+   filler cells above, so it lost its fill too. Text still happens to read
+   fine here since this theme's regular day text is already light-on-dark,
+   but give the selected day its own solid, on-brand circle too rather than
+   relying on that coincidence. */
+[data-baseweb="calendar"] .st-cj::after {
+    background-color: var(--tc-accent) !important;
+}
+
 [data-baseweb="popover"] li[role="option"]:hover,
 [data-baseweb="menu"] li:hover {
     background-color: var(--tc-bg-hover) !important;
