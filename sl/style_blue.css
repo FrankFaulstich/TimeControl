@@ -234,8 +234,12 @@ h5, h6 {
    with white text) shares that same pseudo-element with the out-of-month
    filler cells above, so it lost its fill too - leaving white-on-transparent
    text that's invisible against this theme's light background. Restore a
-   solid, on-brand circle behind just the selected day. */
-[data-baseweb="calendar"] .st-cj::after {
+   solid, on-brand circle behind just the selected day.
+   Matched via aria-label (BaseWeb prefixes it with "Selected" only for that
+   one cell) rather than a class name: Streamlit/emotion assigns those
+   classes by render order, so the exact class standing for "selected" here
+   can differ from page to page - it is not a stable hook. */
+[data-baseweb="calendar"] [aria-label^="Selected"]::after {
     background-color: var(--tc-accent) !important;
 }
 

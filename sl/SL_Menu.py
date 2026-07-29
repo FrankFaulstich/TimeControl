@@ -155,6 +155,20 @@ def render_icon_button_css():
             row-gap: 0 !important;
         }}
 
+        /* Adds breathing room above the toolbar itself. Deliberately its own
+           rule rather than folded into the one above: that one's selector
+           (:has st-key-toolbar_new_popover) never actually matches anything
+           - st.popover()'s key= doesn't get reflected as a "st-key-*" class
+           in this Streamlit version (same root cause worked around in
+           button_selectors above) - so touching it would newly activate its
+           existing align-items/column-gap rules too, changing more than
+           just spacing. st-key-toolbar_today_btn is a plain st.button, whose
+           key correctly does become a class, so it reliably identifies the
+           same toolbar row without that side effect. */
+        [data-testid="stHorizontalBlock"]:has([class*="st-key-toolbar_today_btn"]) {{
+            margin-top: 1rem !important;
+        }}
+
         [data-testid="column"]:has([class*="st-key-toolbar_"]),
         [data-testid="column"]:has([class*="st-key-main_done_button"]),
         [data-testid="column"]:has([class*="st-key-main_edit_button"]),
