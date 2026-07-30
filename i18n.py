@@ -4,6 +4,14 @@ import os
 
 CONFIG_FILE = 'config.json'
 
+# File-relative (not cwd-relative, unlike CONFIG_FILE above): a PyInstaller-
+# frozen build extracts this module and the locale/ directory together into
+# a temporary bundle folder whose path has nothing to do with the process's
+# cwd (that's reserved for config.json/data.json instead - see
+# TimeTrackerSL_GUI.py's _app_root()), so resolving 'locale' against cwd
+# would silently fail to find any translation there.
+_LOCALE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'locale')
+
 def _initialize_translator():
     """
     Reads config, sets up gettext, and returns the translation function.
@@ -35,7 +43,7 @@ def _initialize_translator():
         return lambda s: s
 
     try:
-        translation = gettext.translation('timetracker', localedir='locale', languages=[lang], fallback=True)
+        translation = gettext.translation('timetracker', localedir=_LOCALE_DIR, languages=[lang], fallback=True)
         return translation.gettext
     except FileNotFoundError:
         return gettext.gettext
