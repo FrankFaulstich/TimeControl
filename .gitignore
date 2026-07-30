@@ -4,6 +4,10 @@ __pycache__/
 
 data.json
 
+# PyInstaller build output (see TimeControl.spec)
+/build/
+/dist/
+
 # Sphinx documentation build output
 /docs/_build/
 .DS_Store

@@ -21,6 +21,62 @@ except ImportError:
 CONFIG_FILE = 'config.json'
 ICON_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sl', 'icon.png')
 
+
+def _is_frozen():
+    """Whether this is running as a PyInstaller-bundled executable."""
+    return getattr(sys, 'frozen', False)
+
+
+def _app_root():
+    """
+    Directory config.json/data.json should be read from and written to.
+
+    In a normal source checkout this is simply this file's own directory -
+    today's implicit assumption everywhere in this app, since every
+    relative path to these two files already resolves against the
+    process's cwd, which is the repo root whenever this script is launched
+    the usual way. A PyInstaller-frozen build has no such checkout: this
+    script and its bundled resources (sl/, locale/) live inside a temporary
+    extraction folder that's recreated (and wiped) on every run, so
+    config.json/data.json have to live next to the actual .exe instead, or
+    the user's tasks would reset every time they start the app.
+    """
+    if _is_frozen():
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def _run_streamlit_subprocess(port, headless):
+    """
+    Runs Streamlit in-process for sl/SL_Menu.py.
+
+    Only used when this exe is re-invoked with the '--tc-streamlit-subprocess'
+    flag (see start_streamlit_server() below) - a frozen build has no
+    separate Python interpreter or 'streamlit' command to hand to
+    subprocess.Popen, only this one .exe, so it re-launches itself with this
+    flag instead and takes this path rather than the normal GUI flow. A
+    non-frozen run is unaffected: it still spawns 'python -m streamlit run'
+    as a real subprocess, same as before.
+    """
+    # Streamlit defaults global.developmentMode to True unless its own
+    # config.py's __file__ path contains "site-packages"/"dist-packages" -
+    # true for a normal pip install, but never true for a PyInstaller-frozen
+    # bundle (its modules live inside an archive, not a real site-packages
+    # directory). Left alone, that misdetection makes Streamlit itself
+    # reject the --server.port flag below with "server.port does not work
+    # when global.developmentMode is true." Overriding it via this env var
+    # (Streamlit's own documented STREAMLIT_<SECTION>_<OPTION> convention)
+    # is the one override that's read before that check runs, regardless of
+    # how the config option would otherwise resolve.
+    os.environ['STREAMLIT_GLOBAL_DEVELOPMENT_MODE'] = 'false'
+    from streamlit.web import cli as stcli
+    base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    sys.argv = [
+        'streamlit', 'run', os.path.join(base_dir, 'sl', 'SL_Menu.py'),
+        '--server.port', port, '--server.headless', headless,
+    ]
+    stcli.main()
+
 def _set_macos_dock_icon():
     """
     Replaces the Dock icon shown while this app runs.
@@ -159,8 +215,15 @@ def start_streamlit_server():
     # Determine headless mode based on webview availability
     headless_mode = "true"
 
-    # Use sys.executable to ensure the same python environment is used
-    cmd = [sys.executable, "-m", "streamlit", "run", os.path.join("sl", "SL_Menu.py"), "--server.port", str(port), "--server.headless", headless_mode]
+    # Use sys.executable to ensure the same python environment is used. A
+    # frozen build has no separate interpreter/script to point at here -
+    # sys.executable IS this .exe - so it re-invokes itself with a sentinel
+    # flag instead (handled at the top of __main__ below) rather than
+    # "python -m streamlit run ...".
+    if _is_frozen():
+        cmd = [sys.executable, '--tc-streamlit-subprocess', str(port), headless_mode]
+    else:
+        cmd = [sys.executable, "-m", "streamlit", "run", os.path.join("sl", "SL_Menu.py"), "--server.port", str(port), "--server.headless", headless_mode]
 
     process = subprocess.Popen(cmd)
 
@@ -172,7 +235,10 @@ def start_streamlit_server():
     mcp_process = None
     if mcp_server_enabled and mcp_transport != 'stdio':
         print(f"Starting TimeControl MCP server on port {mcp_port}...")
-        mcp_process = subprocess.Popen([sys.executable, "TimeTrackerMCP_Server.py"])
+        if _is_frozen():
+            mcp_process = subprocess.Popen([sys.executable, '--tc-mcp-subprocess'])
+        else:
+            mcp_process = subprocess.Popen([sys.executable, "TimeTrackerMCP_Server.py"])
 
     def stop_mcp_server():
         if mcp_process and mcp_process.poll() is None:
@@ -241,7 +307,28 @@ def start_streamlit_server():
             stop_mcp_server()
 
 if __name__ == '__main__':
-    if UPDATE_AVAILABLE and os.path.exists("update.zip"):
+    # Sentinel re-launches: see start_streamlit_server()'s cmd construction
+    # and _run_streamlit_subprocess()'s docstring above for why a frozen
+    # build needs this instead of a plain subprocess invocation. When
+    # present, this process IS that subprocess - run just that and exit,
+    # skipping the normal GUI flow below entirely.
+    if len(sys.argv) > 1 and sys.argv[1] == '--tc-streamlit-subprocess':
+        _run_streamlit_subprocess(sys.argv[2], sys.argv[3])
+        sys.exit(0)
+    if len(sys.argv) > 1 and sys.argv[1] == '--tc-mcp-subprocess':
+        import TimeTrackerMCP_Server
+        TimeTrackerMCP_Server.main()
+        sys.exit(0)
+
+    if _is_frozen():
+        os.chdir(_app_root())
+
+    # The update mechanism downloads and unpacks a source-code zip over the
+    # existing .py files (see update.py) - meaningless for a frozen build,
+    # which has no loose source files to overwrite and would not pick up
+    # the change anyway. Skip it entirely rather than have it silently do
+    # nothing (or write stray files next to the .exe).
+    if UPDATE_AVAILABLE and not _is_frozen() and os.path.exists("update.zip"):
         print("Update found. Installing...")
         install_update()
         print("Restarting application...")
@@ -251,8 +338,8 @@ if __name__ == '__main__':
     tt.initialize_dependencies()
 
     start_streamlit_server()
-    
-    if UPDATE_AVAILABLE:
+
+    if UPDATE_AVAILABLE and not _is_frozen():
         print("Checking for updates...")
         try:
             is_update, unused_version, url = check_for_updates(tt.get_version())
