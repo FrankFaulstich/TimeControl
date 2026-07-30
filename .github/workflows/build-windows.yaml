@@ -37,7 +37,65 @@ jobs:
       - name: Build executable
         run: pyinstaller TimeControl.spec --noconfirm
 
+      # Runs the actual built .exe (in its own throwaway directory, so the
+      # config.json/data.json it creates never end up inside dist/ - the
+      # only thing the steps below publish) and confirms Streamlit comes up
+      # on the configured port. This is deliberately the extent of it:
+      # pywebview's window itself (WebView2 rendering) isn't reliably
+      # checkable on a CI runner the way it is on a real Windows desktop, so
+      # asserting on that here would risk failing builds over a CI-sandbox
+      # quirk rather than an actual problem for users. Checking that
+      # Streamlit itself starts is still the check that matters most: it's
+      # exactly what would have caught the frozen-build-only bug found
+      # while first setting this up (Streamlit misdetecting a PyInstaller
+      # bundle as "development mode" and refusing --server.port).
+      - name: Smoke test executable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $testDir = Join-Path $env:RUNNER_TEMP "tc-smoke-test"
+          New-Item -ItemType Directory -Path $testDir -Force | Out-Null
+          Copy-Item "dist/TimeControl.exe" (Join-Path $testDir "TimeControl.exe")
+
+          Push-Location $testDir
+          $proc = Start-Process -FilePath ".\TimeControl.exe" -PassThru
+          $serverResponded = $false
+          try {
+            for ($i = 0; $i -lt 30; $i++) {
+              Start-Sleep -Seconds 1
+              if ($proc.HasExited) {
+                Write-Host "Process exited early with code $($proc.ExitCode)"
+                break
+              }
+              try {
+                $resp = Invoke-WebRequest -Uri "http://localhost:8501" -UseBasicParsing -TimeoutSec 2
+                if ($resp.StatusCode -eq 200) { $serverResponded = $true; break }
+              } catch { }
+            }
+          } finally {
+            Get-Process -Name "TimeControl" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          }
+
+          $configCreated = Test-Path (Join-Path $testDir "config.json")
+          $dataCreated = Test-Path (Join-Path $testDir "data.json")
+          Pop-Location
+
+          if (-not $serverResponded) {
+            Write-Error "Streamlit server never responded on http://localhost:8501 within the timeout."
+            exit 1
+          }
+          if (-not $configCreated) {
+            Write-Error "config.json was not created next to the executable."
+            exit 1
+          }
+          if (-not $dataCreated) {
+            Write-Error "data.json was not created next to the executable."
+            exit 1
+          }
+          Write-Host "Smoke test passed: Streamlit responded and config.json/data.json were created next to the executable."
+
       - name: Upload build artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: TimeControl-windows-exe
