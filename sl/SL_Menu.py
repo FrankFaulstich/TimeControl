@@ -475,14 +475,17 @@ def render_toolbar(return_to):
 
     with t_col_today:
         if st.button("★", help=_("Today View"), key="toolbar_today_btn"):
+            st.session_state.context['return_to'] = return_to
             navigate_to('today_view')
 
     with t_col_planning:
         if st.button("▣", help=_("Task Planning"), key="toolbar_planning_btn"):
+            st.session_state.context['return_to'] = return_to
             navigate_to('task_planning')
 
     with t_col_email:
         if st.button("@", help=_("E-Mail Task Assignment"), key="toolbar_email_btn"):
+            st.session_state.context['return_to'] = return_to
             navigate_to('email_assignment')
 
     with t_col_start:
@@ -789,9 +792,9 @@ def view_task_planning():
                         st.session_state.task_planning_expanded_projects[main_proj_name] = st.session_state[expander_key]
     else:
         st.info(_("No tasks found."))
-        
+
     if st.button(_("Back"), use_container_width=True):
-        navigate_to('main')
+        navigate_to(st.session_state.context.get('return_to', 'main'))
 
 def view_today_tasks():
     """
@@ -907,7 +910,7 @@ def view_today_tasks():
         st.info(_("No tasks for today."))
 
     if st.button(_("Back"), use_container_width=True):
-        navigate_to('main')
+        navigate_to(st.session_state.context.get('return_to', 'main'))
 
 def view_email_assignment():
     """
@@ -1060,7 +1063,7 @@ def view_email_assignment():
     if st.button(_("Back"), use_container_width=True):
         if 'email_fetched' in st.session_state: del st.session_state.email_fetched
         if 'email_task_total' in st.session_state: del st.session_state.email_task_total
-        navigate_to('main')
+        navigate_to(st.session_state.context.get('return_to', 'main'))
 
 def view_project_management():
     """
