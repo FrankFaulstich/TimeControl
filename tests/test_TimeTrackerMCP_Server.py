@@ -395,7 +395,19 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
         with patch.object(self.mcp_server, '_STDIO_MODE', False), \
              patch.object(self.mcp_server, 'mcp') as mock_mcp:
             self.mcp_server.main()
-        mock_mcp.run.assert_called_once_with(transport="streamable-http")
+        # v1's FastMCP already has host/port/streamable_http_path fixed from
+        # its construction (so run() takes no equivalent kwargs there), while
+        # v2's MCPServer moved them onto run() instead - see
+        # TimeTrackerMCP_Server.py's main() for the same branch this mirrors.
+        if self.mcp_server.MCP_MAJOR_VERSION == 1:
+            mock_mcp.run.assert_called_once_with(transport="streamable-http")
+        else:
+            mock_mcp.run.assert_called_once_with(
+                transport="streamable-http",
+                host=self.mcp_server._MCP_HOST,
+                port=self.mcp_server._MCP_PORT,
+                streamable_http_path=self.mcp_server._MCP_STREAMABLE_HTTP_PATH,
+            )
 
     def test_main_runs_stdio_transport_when_configured(self):
         with patch.object(self.mcp_server, '_STDIO_MODE', True), \
