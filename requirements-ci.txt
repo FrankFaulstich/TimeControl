@@ -8,6 +8,7 @@ lxml
 zeep
 fastapi
 uvicorn
-# mcp 2.0 renamed/moved FastMCP (mcp.server.fastmcp.FastMCP -> mcp.server.mcpserver.MCPServer)
-# with an incompatible constructor, breaking TimeTrackerMCP_Server.py; pinned until it's migrated.
-mcp<2.0; python_version >= "3.10"
+# TimeTrackerMCP_Server.py supports both mcp 1.x (FastMCP) and 2.x (MCPServer)
+# via a version-detecting import - see its top-of-file comment - so no upper
+# bound is needed here anymore.
+mcp; python_version >= "3.10"

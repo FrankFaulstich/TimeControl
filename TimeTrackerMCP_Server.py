@@ -5,12 +5,32 @@ from datetime import datetime
 
 # Attempt to import the MCP SDK. This is the standard library for building
 # Model Context Protocol servers in Python.
+#
+# mcp 2.0 (July 2026) renamed/moved the main server class - FastMCP
+# (mcp.server.fastmcp.FastMCP) became MCPServer (mcp.server.mcpserver.MCPServer)
+# - with no backwards-compatible import shim, as part of adding support for
+# the new stateless MCP protocol revision finalized 2026-07-28. For our
+# purposes the two are close enough to bridge directly rather than pin to
+# the older v1.x line forever: @mcp.tool() has the same signature in both,
+# and stdio - what Claude Desktop actually uses to launch this script - needs
+# no version-specific handling either way (see MCP_MAJOR_VERSION's other use
+# below for the one place that does differ). Trying both import paths here,
+# instead of pinning, also means this script keeps working unmodified in
+# whichever mcp major version happens to be installed wherever it actually
+# runs - our own requirements.txt/requirements-ci.txt, or an end user's own
+# system Python that Claude Desktop's stdio config points at directly - not
+# just the one this repo happens to pin at any given time.
 try:
-    from mcp.server.fastmcp import FastMCP
+    from mcp.server.fastmcp import FastMCP as _MCPServerClass
+    MCP_MAJOR_VERSION = 1
 except ImportError:
-    print("Error: The required library is not installed.", file=sys.stderr)
-    print("Please run: pip install mcp", file=sys.stderr)
-    sys.exit(1)
+    try:
+        from mcp.server.mcpserver import MCPServer as _MCPServerClass
+        MCP_MAJOR_VERSION = 2
+    except ImportError:
+        print("Error: The required library is not installed.", file=sys.stderr)
+        print("Please run: pip install mcp", file=sys.stderr)
+        sys.exit(1)
 
 # Import of TimeTracker logic
 # We add the current directory to the path so that tt.TimeTracker can be found
@@ -47,10 +67,23 @@ def load_config():
     return {}
 
 
-# The port has to be known before the FastMCP instance (and its decorators
-# below) are created, so the config is read once at import time here.
+# The host/port/path have to be known before the server instance (and its
+# decorators below) are created, so the config is read once at import time
+# here. v1's FastMCP takes host/port/streamable_http_path directly as
+# constructor kwargs; v2's MCPServer moved those onto run() instead (see
+# main() below), since they're specific to the streamable-http transport,
+# not the server itself - stdio (and sse) don't use them at all. The values
+# themselves match FastMCP's own previous defaults, so this changes nothing
+# for existing v1 installs; it just makes them explicit so v2 can reuse them.
 _config = load_config()
-mcp = FastMCP("TimeControl", port=_config.get('mcp_port', 8700))
+_MCP_HOST = '127.0.0.1'
+_MCP_PORT = _config.get('mcp_port', 8700)
+_MCP_STREAMABLE_HTTP_PATH = '/mcp'
+
+if MCP_MAJOR_VERSION == 1:
+    mcp = _MCPServerClass("TimeControl", host=_MCP_HOST, port=_MCP_PORT, streamable_http_path=_MCP_STREAMABLE_HTTP_PATH)
+else:
+    mcp = _MCPServerClass("TimeControl")
 
 # stdio uses stdout as the JSON-RPC message channel itself, so nothing else
 # may write to it - unlike the HTTP transport, where stray console output is
@@ -551,8 +584,16 @@ def main():
         # and reads its stdout directly.
         mcp.run(transport="stdio")
     else:
-        print(f"Starting TimeControl MCP server on http://{mcp.settings.host}:{mcp.settings.port}{mcp.settings.streamable_http_path} ...")
-        mcp.run(transport="streamable-http")
+        print(f"Starting TimeControl MCP server on http://{_MCP_HOST}:{_MCP_PORT}{_MCP_STREAMABLE_HTTP_PATH} ...")
+        if MCP_MAJOR_VERSION == 1:
+            # host/port/streamable_http_path are already fixed on the
+            # instance from its construction above; run() itself takes no
+            # equivalent kwargs for this transport in v1.
+            mcp.run(transport="streamable-http")
+        else:
+            # v2 moved these from the constructor onto run() instead (see
+            # the comment where mcp is constructed above).
+            mcp.run(transport="streamable-http", host=_MCP_HOST, port=_MCP_PORT, streamable_http_path=_MCP_STREAMABLE_HTTP_PATH)
 
 
 if __name__ == '__main__':
