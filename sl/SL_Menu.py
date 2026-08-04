@@ -659,13 +659,14 @@ def view_task_planning():
                             if is_active: display_name = f"**{display_name}**"
                             today_info = " ⭐" if task.get('today') else ""
                             recurring_info = " ↻" if task.get('recurring') else ""
+                            priority_info = f" 🔺{task.get('priority', 0)}" if task.get('priority', 0) > 0 else ""
                             if is_active:
                                 bullet = "🔨"
                             elif is_done:
                                 bullet = "✔"
                             else:
                                 bullet = "-"
-                            st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> **{task['main_project_name']}**: {display_name}{today_info}{recurring_info}", unsafe_allow_html=True)
+                            st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> **{task['main_project_name']}**: {display_name}{today_info}{recurring_info}{priority_info}", unsafe_allow_html=True)
                         with col_start_btn:
                             if st.button("▶", key=f"start_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or task.get('status') == 'done'):
                                 st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -744,13 +745,14 @@ def view_task_planning():
                                 due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
                                 today_info = " ⭐" if task.get('today') else ""
                                 recurring_info = " ↻" if task.get('recurring') else ""
+                                priority_info = f" 🔺{task.get('priority', 0)}" if task.get('priority', 0) > 0 else ""
                                 if is_active:
                                     bullet = "🔨"
                                 elif is_done:
                                     bullet = "✔"
                                 else:
                                     bullet = "-"
-                                st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{today_info}{recurring_info}", unsafe_allow_html=True)
+                                st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{today_info}{recurring_info}{priority_info}", unsafe_allow_html=True)
                             with col_start_btn:
                                 if st.button("▶", key=f"start_task_planning_{main_proj_name}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                                     st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -826,6 +828,19 @@ def view_today_tasks():
         key="today_show_only_open",
     )
     st.session_state.today_show_only_open_value = show_only_open
+
+    # Same session-state-mirroring reasoning as today_show_only_open_value
+    # above: a plain checkbox key would forget its value across a trip to
+    # the edit-task form and back.
+    if "today_sort_by_priority_value" not in st.session_state:
+        st.session_state.today_sort_by_priority_value = False
+    sort_by_priority = st.checkbox(
+        _("Sort by priority"),
+        value=st.session_state.today_sort_by_priority_value,
+        key="today_sort_by_priority",
+    )
+    st.session_state.today_sort_by_priority_value = sort_by_priority
+
     today_tasks = [t for t in today_tasks_all if t.get('status') != 'done'] if show_only_open else today_tasks_all
 
     if today_tasks:
@@ -836,7 +851,15 @@ def view_today_tasks():
             if main_proj not in today_tasks_grouped:
                 today_tasks_grouped[main_proj] = []
             today_tasks_grouped[main_proj].append(task)
-        
+
+        if sort_by_priority:
+            # Sorted within each project group rather than flattened across
+            # all of them, so the existing per-project grouping/expanders
+            # stay intact - a stable sort keeps same-priority tasks in their
+            # original relative order.
+            for tasks_in_group in today_tasks_grouped.values():
+                tasks_in_group.sort(key=lambda t: t.get('priority', 0), reverse=True)
+
         # Each project's tasks are shown inside a collapsible expander so
         # projects with many tasks don't crowd out the rest of the list.
         # on_change="rerun" is required for st.expander to track its state in
@@ -861,7 +884,7 @@ def view_today_tasks():
                 # of leaving it open on the way to/from editing a task.
                 try:
                     for t_idx, task in enumerate(sub_tasks): # Iterate through tasks in the group
-                        col_task, col_start_btn, col_edit_btn, col_done_btn = st.columns([10, 1, 1, 1])
+                        col_task, col_priority, col_start_btn, col_edit_btn, col_done_btn = st.columns([7, 2, 1, 1, 1])
                         with col_task:
                             name = task['task_name']
                             status = task.get('status')
@@ -871,13 +894,33 @@ def view_today_tasks():
                             if is_active: display_name = f"**{display_name}**"
                             due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
                             recurring_info = " ↻" if task.get('recurring') else ""
+                            priority_info = f" 🔺{task.get('priority', 0)}" if task.get('priority', 0) > 0 else ""
                             if is_active:
                                 bullet = "🔨"
                             elif is_done:
                                 bullet = "✔"
                             else:
                                 bullet = "-"
-                            st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{recurring_info}", unsafe_allow_html=True)
+                            st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{recurring_info}{priority_info}", unsafe_allow_html=True)
+                        with col_priority:
+                            new_priority = st.number_input(
+                                _("Priority"), min_value=0, max_value=9,
+                                value=task.get('priority', 0), step=1,
+                                key=f"today_priority_{task['main_project_name']}_{task['task_name']}_{t_idx}",
+                                label_visibility="collapsed", help=_("0 (lowest) to 9 (highest)"),
+                            )
+                            if new_priority != task.get('priority', 0):
+                                st.session_state.tracker.update_task(
+                                    task['main_project_name'],
+                                    task['task_name'],
+                                    due_date=task.get('due_date'),
+                                    recurring=task.get('recurring'),
+                                    frequency=task.get('frequency'),
+                                    userdefined_days=task.get('userdefined_days'),
+                                    priority=new_priority,
+                                    task_id=task.get('id'),
+                                )
+                                st.rerun()
                         with col_start_btn:
                             if st.button("▶", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                                 st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -1901,7 +1944,8 @@ def view_list_tasks():
             status_text = f"({_('closed')})" if t['status'] == 'closed' else ""
             display_name = f"{name} (done)" if t['status'] == 'done' else name
             recurring_info = " ↻" if t.get('recurring') else ""
-            st.markdown(f"- {display_name} {status_text}{recurring_info}")
+            priority_info = f" 🔺{t.get('priority', 0)}" if t.get('priority', 0) > 0 else ""
+            st.markdown(f"- {display_name} {status_text}{recurring_info}{priority_info}")
     else:
         st.info(_("No tasks found for '{name}'.").format(name=selected_main))
         
@@ -2186,7 +2230,7 @@ def view_add_task_form():
     if "new_task_note" not in st.session_state:
         st.session_state.new_task_note = ""
     
-    col_date, col_today, col_rec = st.columns([2, 1, 1])
+    col_date, col_today, col_rec, col_prio = st.columns([2, 1, 1, 1])
     with col_date:
         due_date = st.date_input(_("Due date"), value=datetime.now().date(), format="YYYY-MM-DD")
     with col_today:
@@ -2195,6 +2239,8 @@ def view_add_task_form():
     with col_rec:
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
         is_recurring = st.checkbox(_("Recurring"))
+    with col_prio:
+        priority = st.number_input(_("Priority"), min_value=0, max_value=9, value=0, step=1, help=_("0 (lowest) to 9 (highest)"))
 
     validation_error = is_recurring and not due_date
     if validation_error:
@@ -2240,14 +2286,15 @@ def view_add_task_form():
             elif not name:
                 st.error(_("Please enter a name."))
             elif st.session_state.tracker.add_task(
-                main_project, 
-                name, 
-                due_date.isoformat() if due_date else None, 
-                today, 
+                main_project,
+                name,
+                due_date.isoformat() if due_date else None,
+                today,
                 st.session_state.new_task_note,
                 recurring=is_recurring,
                 frequency=final_freq,
-                userdefined_days=ud_days
+                userdefined_days=ud_days,
+                priority=priority
             ):
                 set_feedback(_("Task '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
                 if "new_task_note" in st.session_state: del st.session_state.new_task_note
@@ -2357,13 +2404,15 @@ def view_edit_task_form():
             st.session_state.edit_due_date = None
             st.rerun()
 
-    col_today, col_done, col_rec = st.columns(3)
+    col_today, col_done, col_rec, col_prio = st.columns(4)
     with col_today:
         is_today = st.checkbox(_("Today"), value=task_details.get('today', False))
     with col_done:
         is_done = st.checkbox(_("Done"), value=(task_details.get('status') == 'done'))
     with col_rec:
         is_recurring = st.checkbox(_("Recurring"), value=task_details.get('recurring', False))
+    with col_prio:
+        priority = st.number_input(_("Priority"), min_value=0, max_value=9, value=task_details.get('priority', 0), step=1, help=_("0 (lowest) to 9 (highest)"))
 
     validation_error = is_recurring and not st.session_state.edit_due_date
     if validation_error:
@@ -2410,16 +2459,17 @@ def view_edit_task_form():
                 new_status = 'done' if is_done else 'open'
                 
                 if st.session_state.tracker.update_task(
-                    main_project, 
-                    task_name, 
-                    new_name, 
-                    final_due, 
-                    is_today, 
-                    st.session_state.edit_task_note, 
+                    main_project,
+                    task_name,
+                    new_name,
+                    final_due,
+                    is_today,
+                    st.session_state.edit_task_note,
                     new_status,
                     recurring=is_recurring,
                     frequency=final_freq,
                     userdefined_days=ud_days,
+                    priority=priority,
                     task_id=task_id
                 ):
                     set_feedback(_("Task updated successfully."))

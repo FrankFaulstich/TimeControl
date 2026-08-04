@@ -146,16 +146,29 @@ class TestTimeTrackerREST_Server(unittest.TestCase):
         })
         self.assertEqual(r.status_code, 200)
         self.mock_tracker.add_task.assert_called_once_with(
-            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1
+            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 0
         )
         self.assertEqual(r.json(), {"success": True})
+
+    def test_add_task_with_priority(self):
+        self.mock_tracker.add_task.return_value = True
+        r = self.client.post("/projects/Main/tasks", json={"task_name": "Sub", "priority": 9})
+        self.assertEqual(r.status_code, 200)
+        self.mock_tracker.add_task.assert_called_once_with(
+            "Main", "Sub", None, False, "", False, "daily", 1, 9
+        )
+
+    def test_add_task_priority_out_of_range_rejected(self):
+        r = self.client.post("/projects/Main/tasks", json={"task_name": "Sub", "priority": 10})
+        self.assertEqual(r.status_code, 422)
+        self.mock_tracker.add_task.assert_not_called()
 
     def test_list_tasks(self):
         self.mock_tracker.list_tasks.return_value = [
             {
                 'id': 1, 'main_project_name': 'Main', 'task_name': 'Sub 1', 'status': 'open',
                 'due_date': None, 'today': False, 'note': '', 'recurring': False,
-                'frequency': 'daily', 'userdefined_days': 1,
+                'frequency': 'daily', 'userdefined_days': 1, 'priority': 0,
             }
         ]
         r = self.client.get("/tasks", params={"main_project_name": "Main", "status_filter": "open"})
@@ -227,9 +240,22 @@ class TestTimeTrackerREST_Server(unittest.TestCase):
         })
         self.assertEqual(r.status_code, 200)
         self.mock_tracker.update_task.assert_called_once_with(
-            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, task_id=None
+            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, None, task_id=None
         )
         self.assertEqual(r.json(), {"success": True})
+
+    def test_update_task_priority(self):
+        self.mock_tracker.update_task.return_value = True
+        r = self.client.patch("/projects/Main/tasks/Old", json={"priority": 3})
+        self.assertEqual(r.status_code, 200)
+        self.mock_tracker.update_task.assert_called_once_with(
+            "Main", "Old", None, None, None, None, None, None, None, None, 3, task_id=None
+        )
+
+    def test_update_task_priority_out_of_range_rejected(self):
+        r = self.client.patch("/projects/Main/tasks/Old", json={"priority": -1})
+        self.assertEqual(r.status_code, 422)
+        self.mock_tracker.update_task.assert_not_called()
 
     def test_move_task(self):
         self.mock_tracker.move_task.return_value = (True, "Moved successfully")

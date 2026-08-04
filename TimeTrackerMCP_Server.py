@@ -236,6 +236,7 @@ def add_task(
     recurring: bool = False,
     frequency: str = "daily",
     userdefined_days: int = 1,
+    priority: int = 0,
 ) -> str:
     """
     Creates a new task inside an existing main project.
@@ -251,7 +252,11 @@ def add_task(
     :param recurring: Whether the task repeats after it's marked done.
     :param frequency: 'daily', 'business_days', 'weekly', 'monthly', or 'userdefined'. Only used if recurring is true.
     :param userdefined_days: Number of days between occurrences. Only used if frequency is 'userdefined'.
+    :param priority: Priority from 0 (lowest, default) to 9 (highest).
     """
+    if not (0 <= priority <= 9):
+        return "Error: priority must be between 0 and 9."
+
     tracker = get_tracker()
     existing_project_names = [p['main_project_name'] for p in tracker.list_main_projects(status_filter='all')]
     if main_project_name not in existing_project_names:
@@ -270,6 +275,7 @@ def add_task(
         recurring=recurring,
         frequency=frequency,
         userdefined_days=userdefined_days,
+        priority=priority,
     )
     return f"Task '{task_name}' created in project '{main_project_name}'."
 
@@ -369,6 +375,7 @@ def update_task(
     recurring: bool | None = None,
     frequency: str | None = None,
     userdefined_days: int | None = None,
+    priority: int | None = None,
 ) -> str:
     """
     Updates one or more properties of an existing task in one call. Only the
@@ -384,7 +391,11 @@ def update_task(
     :param recurring: Whether the task repeats after it's marked done.
     :param frequency: 'daily', 'business_days', 'weekly', 'monthly', or 'userdefined'.
     :param userdefined_days: Number of days between occurrences, for 'userdefined' frequency.
+    :param priority: Priority from 0 (lowest) to 9 (highest). Omit to keep the current one.
     """
+    if priority is not None and not (0 <= priority <= 9):
+        return "Error: priority must be between 0 and 9."
+
     tracker = get_tracker()
     tasks = tracker.list_tasks(main_project_name=main_project_name, status_filter='all')
     current_task = next((t for t in tasks if t['task_name'] == task_name), None)
@@ -413,6 +424,7 @@ def update_task(
         recurring=recurring,
         frequency=frequency,
         userdefined_days=userdefined_days,
+        priority=priority,
         task_id=current_task.get('id'),
     )
     if success:

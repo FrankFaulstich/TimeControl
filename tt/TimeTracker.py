@@ -38,7 +38,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.27"
+    VERSION = "3.28"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -201,7 +201,10 @@ class TimeTracker:
                 if "userdefined_days" not in task:
                     task["userdefined_days"] = 1
                     data_changed = True
-                
+                if "priority" not in task:
+                    task["priority"] = 0
+                    data_changed = True
+
                 # Assign an integer ID if missing or not an integer (e.g. legacy GUID)
                 task_id = task.get("id")
                 if task_id is None or not isinstance(task_id, int):
@@ -464,7 +467,7 @@ class TimeTracker:
             return True
         return False
 
-    def add_task(self, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1):
+    def add_task(self, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1, priority=0):
         """
         Adds a new task to a specified main project.
 
@@ -481,6 +484,8 @@ class TimeTracker:
         :param recurring: Whether the task is recurring.
         :param frequency: Freq (daily, on all business days, weekly, monthly, userdefined).
         :param userdefined_days: Number of days for userdefined frequency.
+        :param priority: Priority from 0 (lowest, default) to 9 (highest).
+        :type priority: int
         :return: True if the task was added successfully, otherwise False (if main project not found).
         :rtype: bool
         """
@@ -496,7 +501,8 @@ class TimeTracker:
                 "note": note,
                 "recurring": recurring,
                 "frequency": frequency,
-                "userdefined_days": userdefined_days
+                "userdefined_days": userdefined_days,
+                "priority": priority
             }
             self.data["next_id"] += 1
             project["tasks"].append(new_task)
@@ -584,7 +590,8 @@ class TimeTracker:
                     "note": task.get("note", ""),
                     "recurring": task.get("recurring", False),
                     "frequency": task.get("frequency", "daily"),
-                    "userdefined_days": task.get("userdefined_days", 1)
+                    "userdefined_days": task.get("userdefined_days", 1),
+                    "priority": task.get("priority", 0)
                 })
         return results
 
@@ -735,7 +742,7 @@ class TimeTracker:
                 return True
         return False
 
-    def update_task(self, main_project_name, old_task_name, new_task_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, task_id=None):
+    def update_task(self, main_project_name, old_task_name, new_task_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, priority=None, task_id=None):
         """
         Updates a task's properties.
 
@@ -749,6 +756,7 @@ class TimeTracker:
         :param recurring: Recurring status (optional, bool).
         :param frequency: Frequency (optional, str).
         :param userdefined_days: Days for userdefined frequency (optional, int).
+        :param priority: Priority from 0 (lowest) to 9 (highest) (optional, int).
         :param task_id: Unique ID of the task (optional).
         :return: True if successful.
         """
@@ -759,47 +767,50 @@ class TimeTracker:
                 # Handle recurring task generation
                 is_completing = (status == self.STATUS_DONE and task.get("status") != self.STATUS_DONE)
                 is_recurring = recurring if recurring is not None else task.get("recurring", False)
-                
+
                 if is_completing and is_recurring:
-                    self._create_next_recurring_instance(project, task, due_date, recurring, frequency, userdefined_days, note)
+                    self._create_next_recurring_instance(project, task, due_date, recurring, frequency, userdefined_days, note, priority)
 
                 if new_task_name:
                     task["task_name"] = new_task_name
-                
+
                 # Update due_date (always update to what's provided)
                 task["due_date"] = due_date
-                
+
                 # Update today status if provided
                 if today is not None:
                     task["today"] = today
-                
+
                 # Update note if provided
                 if note is not None:
                     task["note"] = note
-                
+
                 # Update status if provided
                 if status is not None:
                     task["status"] = status
-                
+
                 if recurring is not None:
                     task["recurring"] = recurring
                 if frequency is not None:
                     task["frequency"] = frequency
                 if userdefined_days is not None:
                     task["userdefined_days"] = userdefined_days
-                
+                if priority is not None:
+                    task["priority"] = priority
+
                 self._save_data()
                 return True
         return False
 
-    def _create_next_recurring_instance(self, project, task, due_date_param, recurring_param, freq_param, ud_days_param, note_param=None):
+    def _create_next_recurring_instance(self, project, task, due_date_param, recurring_param, freq_param, ud_days_param, note_param=None, priority_param=None):
         freq = freq_param if freq_param is not None else task.get("frequency", "daily")
         ud_days = ud_days_param if ud_days_param is not None else task.get("userdefined_days", 1)
         base_due = due_date_param if due_date_param is not None else task.get("due_date")
         note = note_param if note_param is not None else task.get("note", "")
-        
+        priority = priority_param if priority_param is not None else task.get("priority", 0)
+
         next_due = self._calculate_next_due_date(base_due, freq, ud_days)
-        
+
         new_task = {
             "id": self.data["next_id"],
             "task_name": task["task_name"],
@@ -810,7 +821,8 @@ class TimeTracker:
             "note": note,
             "recurring": True,
             "frequency": freq,
-            "userdefined_days": ud_days
+            "userdefined_days": ud_days,
+            "priority": priority
         }
         self.data["next_id"] += 1
         project["tasks"].append(new_task)

@@ -61,9 +61,25 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
         result = self.mcp_server.add_task("Acme", "Write docs")
         self.mock_tracker.add_task.assert_called_once_with(
             "Acme", "Write docs", due_date=None, today=False, note="",
-            recurring=False, frequency="daily", userdefined_days=1,
+            recurring=False, frequency="daily", userdefined_days=1, priority=0,
         )
         self.assertIn("created", result)
+
+    def test_add_task_with_priority(self):
+        self.mock_tracker.list_main_projects.return_value = [{"main_project_name": "Acme", "status": "open"}]
+        self.mock_tracker.list_tasks.return_value = []
+        result = self.mcp_server.add_task("Acme", "Write docs", priority=9)
+        self.mock_tracker.add_task.assert_called_once_with(
+            "Acme", "Write docs", due_date=None, today=False, note="",
+            recurring=False, frequency="daily", userdefined_days=1, priority=9,
+        )
+        self.assertIn("created", result)
+
+    def test_add_task_priority_out_of_range(self):
+        result = self.mcp_server.add_task("Acme", "Write docs", priority=10)
+        self.mock_tracker.add_task.assert_not_called()
+        self.assertIn("Error", result)
+        self.assertIn("priority", result)
 
     def test_add_task_missing_project(self):
         self.mock_tracker.list_main_projects.return_value = []
@@ -280,9 +296,28 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
             "Acme", "Write docs",
             new_task_name=None, due_date="2026-02-01", today=None,
             note="Updated note", status=None, recurring=None,
-            frequency=None, userdefined_days=None, task_id=1,
+            frequency=None, userdefined_days=None, priority=None, task_id=1,
         )
         self.assertIn("updated", result)
+
+    def test_update_task_priority(self):
+        self.mock_tracker.list_tasks.return_value = [{"id": 1, "task_name": "Write docs"}]
+        self.mock_tracker.update_task.return_value = True
+
+        result = self.mcp_server.update_task("Acme", "Write docs", priority=4)
+
+        _args, kwargs = self.mock_tracker.update_task.call_args
+        self.assertEqual(kwargs["priority"], 4)
+        self.assertIn("updated", result)
+
+    def test_update_task_priority_out_of_range(self):
+        self.mock_tracker.list_tasks.return_value = [{"id": 1, "task_name": "Write docs"}]
+
+        result = self.mcp_server.update_task("Acme", "Write docs", priority=-1)
+
+        self.mock_tracker.update_task.assert_not_called()
+        self.assertIn("Error", result)
+        self.assertIn("priority", result)
 
     def test_update_task_clear_due_date(self):
         self.mock_tracker.list_tasks.return_value = [

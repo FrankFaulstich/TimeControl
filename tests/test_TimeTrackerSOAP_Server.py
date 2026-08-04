@@ -67,7 +67,17 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
             self.ctx, "Main", "Sub", "2025-12-24", True, "Note"
         )
         self.mock_tracker.add_task.assert_called_with(
-            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1
+            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 0
+        )
+        self.assertTrue(result)
+
+    def test_add_task_with_priority(self):
+        self.mock_tracker.add_task.return_value = True
+        result = self.soap_server.TimeControlService.add_task(
+            self.ctx, "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 9
+        )
+        self.mock_tracker.add_task.assert_called_with(
+            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 9
         )
         self.assertTrue(result)
 
@@ -118,7 +128,23 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
             self.ctx, "Main", "Old", "New", "2025-01-01", True, "Note", "done"
         )
         self.mock_tracker.update_task.assert_called_with(
-            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None
+            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, priority=None
+        )
+        self.assertTrue(result)
+
+    def test_update_task_with_priority(self):
+        """
+        priority is appended after task_id in the @rpc signature (not
+        grouped with the other content fields before it), so existing
+        positional callers that already pass task_id aren't shifted - see
+        TimeTrackerSOAP_Server.py's update_task comment for why.
+        """
+        self.mock_tracker.update_task.return_value = True
+        result = self.soap_server.TimeControlService.update_task(
+            self.ctx, "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, 7, 4
+        )
+        self.mock_tracker.update_task.assert_called_with(
+            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, priority=4, task_id=7
         )
         self.assertTrue(result)
 
