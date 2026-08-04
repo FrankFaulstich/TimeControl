@@ -8,7 +8,7 @@ from typing import List, Optional
 # REST interface, the same way spyne is used for the SOAP interface.
 try:
     from fastapi import Depends, FastAPI, HTTPException
-    from pydantic import BaseModel
+    from pydantic import BaseModel, Field
     import uvicorn
 except ImportError:
     print("Fehler: Die benötigten Bibliotheken sind nicht installiert.")
@@ -47,6 +47,7 @@ class Task(BaseModel):
     recurring: bool
     frequency: str
     userdefined_days: int
+    priority: int
 
 
 class InactiveProject(BaseModel):
@@ -102,6 +103,7 @@ class AddTaskRequest(BaseModel):
     recurring: bool = False
     frequency: str = "daily"
     userdefined_days: int = 1
+    priority: int = Field(default=0, ge=0, le=9)
 
 
 class UpdateTaskRequest(BaseModel):
@@ -113,6 +115,7 @@ class UpdateTaskRequest(BaseModel):
     recurring: Optional[bool] = None
     frequency: Optional[str] = None
     userdefined_days: Optional[int] = None
+    priority: Optional[int] = Field(default=None, ge=0, le=9)
 
 
 class MoveTaskRequest(BaseModel):
@@ -222,6 +225,7 @@ def add_task(main_project_name: str, body: AddTaskRequest, tracker: TimeTracker 
         body.recurring,
         body.frequency,
         body.userdefined_days,
+        body.priority,
     )
     return SuccessResult(success=created)
 
@@ -288,6 +292,7 @@ def update_task(main_project_name: str, task_name: str, body: UpdateTaskRequest,
         body.recurring,
         body.frequency,
         body.userdefined_days,
+        body.priority,
         task_id=task_id,
     )
     return SuccessResult(success=updated)

@@ -111,6 +111,9 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(task.get("note"), "")
         self.assertIn("id", task)
         self.assertIsInstance(task["id"], int)
+        # priority is the lowest (0) by default, same as an old task that
+        # predates the field entirely.
+        self.assertEqual(task.get("priority"), 0)
 
     def test_format_duration(self):
         """Tests the _format_duration helper method."""
@@ -295,26 +298,41 @@ class TestTimeTracker(unittest.TestCase):
         """Tests adding a task with due_date, today, and note."""
         self.tracker.add_main_project("Main")
         self.tracker.add_task("Main", "Task", due_date="2025-12-31", today=True, note="Test Note")
-        
+
         sub = self.tracker.list_tasks("Main")[0]
         self.assertEqual(sub["due_date"], "2025-12-31")
         self.assertEqual(sub["today"], True)
         self.assertEqual(sub["note"], "Test Note")
 
+    def test_add_task_default_priority_is_zero(self):
+        """A task added without an explicit priority defaults to 0 (the lowest)."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_task("Main", "Task")
+        sub = self.tracker.list_tasks("Main")[0]
+        self.assertEqual(sub["priority"], 0)
+
+    def test_add_task_with_priority(self):
+        """Tests adding a task with an explicit priority."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_task("Main", "Task", priority=9)
+        sub = self.tracker.list_tasks("Main")[0]
+        self.assertEqual(sub["priority"], 9)
+
     def test_update_task_success(self):
         """Tests updating all new task properties."""
         self.tracker.add_main_project("Main")
         self.tracker.add_task("Main", "OldName")
-        
+
         success = self.tracker.update_task(
-            "Main", "OldName", 
+            "Main", "OldName",
             new_task_name="NewName",
             due_date="2025-01-01",
             today=True,
             note="Updated Note",
-            status="done"
+            status="done",
+            priority=5
         )
-        
+
         self.assertTrue(success)
         sub = self.tracker.list_tasks("Main", status_filter='all')[0]
         self.assertEqual(sub["task_name"], "NewName")
@@ -322,6 +340,17 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(sub["today"], True)
         self.assertEqual(sub["note"], "Updated Note")
         self.assertEqual(sub["status"], "done")
+        self.assertEqual(sub["priority"], 5)
+
+    def test_update_task_priority_unchanged_when_omitted(self):
+        """Omitting priority in update_task() must leave the existing value alone."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_task("Main", "Task", priority=7)
+
+        self.tracker.update_task("Main", "Task", note="Just a note change")
+
+        sub = self.tracker.list_tasks("Main")[0]
+        self.assertEqual(sub["priority"], 7)
 
     def test_recurring_task_new_instance_today_flag(self):
         """Tests that a new instance of a recurring task is created with today=False."""
@@ -358,6 +387,17 @@ class TestTimeTracker(unittest.TestCase):
         
         # The NEW task MUST have the updated note
         self.assertEqual(open_task["note"], "Updated note content")
+
+    def test_recurring_task_new_instance_inherits_priority(self):
+        """A new instance of a recurring task carries over the previous instance's priority."""
+        self.tracker.add_main_project("Recurring Priority Test")
+        self.tracker.add_task("Recurring Priority Test", "Daily Task", recurring=True, priority=8)
+
+        self.tracker.update_task("Recurring Priority Test", "Daily Task", status="done")
+
+        tasks = self.tracker.list_tasks("Recurring Priority Test", status_filter='all')
+        open_task = next(t for t in tasks if t["status"] == "open")
+        self.assertEqual(open_task["priority"], 8)
 
     def test_list_tasks_done_status(self):
         """Tests that 'done' tasks are included when filtering for 'open'."""
