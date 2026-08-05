@@ -256,6 +256,34 @@ def render_icon_button_css():
         [class*="st-key-today_priority_"] [data-testid="stNumberInputContainer"] {{
             width: fit-content !important;
         }}
+
+        /* Its label is collapsed (see above), so there is nothing left to
+           tell the user what this field is - restore that as a plain hover
+           tooltip. A native <input> can't take a ::after (it's a replaced
+           element), so it's attached to the surrounding stNumberInput wrapper
+           instead (not stNumberInputContainer - that one has overflow:hidden
+           from Streamlit itself, which clips a ::after positioned above it
+           via bottom:100%). :hover still fires whenever the pointer is over
+           the input or the steppers, since the wrapper's box surrounds both. */
+        [class*="st-key-today_priority_"] [data-testid="stNumberInput"] {{
+            position: relative !important;
+        }}
+        [class*="st-key-today_priority_"] [data-testid="stNumberInput"]:hover::after {{
+            content: "{_("Priority")}";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 4px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+        }}
         </style>
     """, unsafe_allow_html=True)
 
