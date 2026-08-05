@@ -222,6 +222,40 @@ def render_icon_button_css():
             margin: 0 !important;
             padding: 0 !important;
         }}
+
+        /* The inline priority spinner in the today_view task list (see
+           view_today_tasks()) only ever holds a single digit (0-9) - narrow
+           its number field down from the default width so the +/- steppers
+           it needs (which only render at all once their column has enough
+           width - too narrow and Streamlit silently falls back to a bare,
+           stretched-to-fill input with no steppers) don't end up surrounded
+           by unnecessary empty space. The visible gray field is actually
+           BaseWeb's [data-baseweb="input"]/"base-input" wrapper around the
+           <input> - narrowing just the <input> itself leaves that wrapper
+           (and its background) at the old width, so both need the same rule.
+        */
+        [class*="st-key-today_priority_"] input[type="number"],
+        [class*="st-key-today_priority_"] [data-baseweb="input"],
+        [class*="st-key-today_priority_"] [data-baseweb="base-input"] {{
+            width: 2.2rem !important;
+            min-width: 2.2rem !important;
+            flex: 0 0 2.2rem !important;
+        }}
+
+        [class*="st-key-today_priority_"] input[type="number"] {{
+            padding-left: 0.3rem !important;
+            padding-right: 0.3rem !important;
+            text-align: center !important;
+        }}
+
+        /* The column itself stays wide enough to make Streamlit render the
+           +/- steppers at all (see the comment above) - without this, the
+           now-narrower input/steppers cluster above would otherwise be left
+           stranded inside that unchanged, wider container, showing as a
+           dangling empty (but still bordered) box after the "+" button. */
+        [class*="st-key-today_priority_"] [data-testid="stNumberInputContainer"] {{
+            width: fit-content !important;
+        }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -884,7 +918,7 @@ def view_today_tasks():
                 # of leaving it open on the way to/from editing a task.
                 try:
                     for t_idx, task in enumerate(sub_tasks): # Iterate through tasks in the group
-                        col_task, col_priority, col_start_btn, col_edit_btn, col_done_btn = st.columns([7, 2, 1, 1, 1])
+                        col_task, col_priority, col_start_btn, col_edit_btn, col_done_btn = st.columns([7, 3, 1, 1, 1])
                         with col_task:
                             name = task['task_name']
                             status = task.get('status')
