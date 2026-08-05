@@ -1183,14 +1183,17 @@ class TimeTracker:
         Sub-projects with no time entries are also ignored.
         Closed tasks are excluded, but 'done' tasks are included since they
         may still need to be closed.
+        Tasks due today or in the future are excluded, since they are still
+        actively scheduled rather than abandoned.
 
         :param inactive_weeks: The number of weeks defining the inactivity threshold.
         :type inactive_weeks: int
-        :return: A list of dictionaries, each containing 'main_project', 'task_name', 
+        :return: A list of dictionaries, each containing 'main_project', 'task_name',
                  and the 'last_activity' timestamp (formatted).
         :rtype: list[dict]
         """
         cutoff_date = datetime.now() - timedelta(weeks=inactive_weeks)
+        today_str = date.today().isoformat()
         inactive_projects = []
 
         for project in self.data["projects"]:
@@ -1200,7 +1203,7 @@ class TimeTracker:
                 if not task.get("time_entries"):
                     # Ignore sub-projects with no entries
                     continue
-                
+
                 # Check if the task is currently running (active)
                 last_entry = task["time_entries"][-1]
                 if "end_time" not in last_entry:
@@ -1209,6 +1212,11 @@ class TimeTracker:
                 # Exclude closed tasks, but keep 'done' tasks (they may still need closing).
                 # This check is now after the 'running' check to correctly ignore running projects regardless of status.
                 if task.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED:
+                    continue
+
+                # Exclude tasks due today or in the future - they are still scheduled.
+                due_date = task.get("due_date")
+                if due_date and due_date >= today_str:
                     continue
 
                 latest_timestamp = None
