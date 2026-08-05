@@ -34,7 +34,8 @@
           "frequency": "daily",
           "userdefined_days": 1,
           "task_name": "Sub Test 1",
-          "id": 1
+          "id": 1,
+          "priority": 0
         }
       ]
     },
@@ -57,7 +58,8 @@
           "frequency": "daily",
           "userdefined_days": 1,
           "task_name": "Sub Test 2",
-          "id": 2
+          "id": 2,
+          "priority": 0
         }
       ]
     },
