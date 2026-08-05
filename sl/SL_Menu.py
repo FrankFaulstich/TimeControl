@@ -15,7 +15,7 @@ from tt.TimeTracker import TimeTracker
 from i18n import _
 
 try:
-    from update import restore_previous_version
+    from update import restore_previous_version, check_for_updates, apply_update
     UPDATE_MODULE_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
     UPDATE_MODULE_AVAILABLE = False
@@ -303,6 +303,16 @@ if 'tracker' not in st.session_state:
     st.session_state.tracker = TimeTracker()
     st.session_state.tracker.initialize_dependencies()
     st.session_state.tracker.set_today_flag_for_due_tasks() # Set 'today' flag for tasks due today
+
+    # One check per session, not per rerun (Streamlit reruns this whole
+    # script on every click) - a frozen build has no loose source files for
+    # the update mechanism to overwrite (see update.py/TimeTrackerSL_GUI.py),
+    # so there's nothing to offer there.
+    st.session_state.update_check = {'available': False}
+    if UPDATE_MODULE_AVAILABLE and not getattr(sys, 'frozen', False):
+        is_available, new_version, url = check_for_updates(st.session_state.tracker.get_version())
+        if is_available:
+            st.session_state.update_check = {'available': True, 'version': new_version, 'url': url}
 else:
     # Reload from disk on every rerun (i.e. on every click/navigation), so
     # changes made by another process sharing the same data file - the SOAP
@@ -430,11 +440,23 @@ def _auto_refresh_on_external_changes():
 
 def render_header(title, subtitle=None):
     """
-    Renders the standard header for a view, including title, optional subtitle, and feedback messages.
+    Renders the standard header for a view: the app version (always, at the
+    very top, above the title), the view's title, an optional subtitle
+    below it, and any pending feedback message.
 
     :param title: The main title of the view.
     :param subtitle: An optional subtitle.
     """
+    st.caption(_("Version {version}").format(version=st.session_state.tracker.get_version()))
+    update_check = st.session_state.get('update_check', {})
+    if update_check.get('available'):
+        col_update_msg, col_update_btn = st.columns([10, 1])
+        with col_update_msg:
+            st.info(_("A new version ({version}) is available.").format(version=update_check['version']))
+        with col_update_btn:
+            if st.button("⟳", help=_("Restart and install the update"), key="update_restart_btn"):
+                with st.spinner(_("Downloading and installing update...")):
+                    apply_update(update_check['url'])
     st.title(title)
     if subtitle:
         st.caption(subtitle)
