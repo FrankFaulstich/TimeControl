@@ -84,6 +84,20 @@ def download_update(url):
             os.remove(UPDATE_ZIP_FILE) # Clean up partial download
         return False
 
+def apply_update(url):
+    """
+    Downloads (if not already downloaded) and installs the given update,
+    then restarts the application in-place to run the new version.
+
+    :param url: The download URL for the update, as returned by check_for_updates().
+    """
+    if not os.path.exists(UPDATE_ZIP_FILE):
+        if not download_update(url):
+            return
+    install_update()
+    print(_("Restarting application to apply the update..."))
+    os.execv(sys.executable, ['python'] + sys.argv)
+
 def install_update():
     """
     Installs the downloaded update by extracting the zip file and overwriting old files.
