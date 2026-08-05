@@ -987,16 +987,41 @@ class TestTimeTracker(unittest.TestCase):
         })
         self.tracker.data["projects"][4]["tasks"][0]["status"] = self.tracker.STATUS_CLOSED
 
+        # P6: inactive for 5 weeks but due today -> should NOT be listed (still scheduled).
+        self._create_mock_project_with_task("P6_DueToday", "T6_DueToday")
+        self.tracker.data["projects"][5]["tasks"][0]["time_entries"].append({
+            "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
+            "end_time": (now - timedelta(weeks=5)).isoformat()
+        })
+        self.tracker.data["projects"][5]["tasks"][0]["due_date"] = date.today().isoformat()
+
+        # P7: inactive for 5 weeks but due in the future -> should NOT be listed (still scheduled).
+        self._create_mock_project_with_task("P7_DueFuture", "T7_DueFuture")
+        self.tracker.data["projects"][6]["tasks"][0]["time_entries"].append({
+            "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
+            "end_time": (now - timedelta(weeks=5)).isoformat()
+        })
+        self.tracker.data["projects"][6]["tasks"][0]["due_date"] = (date.today() + timedelta(days=7)).isoformat()
+
+        # P8: inactive for 5 weeks and overdue (due date in the past) -> SHOULD still be listed.
+        self._create_mock_project_with_task("P8_Overdue", "T8_Overdue")
+        self.tracker.data["projects"][7]["tasks"][0]["time_entries"].append({
+            "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
+            "end_time": (now - timedelta(weeks=5)).isoformat()
+        })
+        self.tracker.data["projects"][7]["tasks"][0]["due_date"] = (date.today() - timedelta(days=1)).isoformat()
+
         # Save to ensure data consistency
         self.tracker._save_data()
 
         # Test with 4 weeks inactivity threshold
         inactive_list = self.tracker.list_inactive_tasks(inactive_weeks=4)
 
-        # Expectation: P2_Inactive (open) and P4_Done ('done') should be listed;
-        # P5_Closed ('closed') must stay excluded.
+        # Expectation: P2_Inactive (open), P4_Done ('done') and P8_Overdue should be listed;
+        # P5_Closed ('closed') must stay excluded, as must P6_DueToday and P7_DueFuture
+        # since they are still actively scheduled (due date today or in the future).
         task_names = {item['task_name'] for item in inactive_list}
-        self.assertEqual(task_names, {"T2_Old", "T4_Done"})
+        self.assertEqual(task_names, {"T2_Old", "T4_Done", "T8_Overdue"})
 
         # Test with 6 weeks inactivity threshold (should be empty)
         inactive_list_6w = self.tracker.list_inactive_tasks(inactive_weeks=6)
