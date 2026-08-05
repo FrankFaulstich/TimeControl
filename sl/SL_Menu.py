@@ -252,9 +252,15 @@ def render_icon_button_css():
            +/- steppers at all (see the comment above) - without this, the
            now-narrower input/steppers cluster above would otherwise be left
            stranded inside that unchanged, wider container, showing as a
-           dangling empty (but still bordered) box after the "+" button. */
+           dangling empty (but still bordered) box after the "+" button.
+           margin-left: auto then pushes that now fit-content-width box to
+           the right edge of its (still wide) column, right up against the
+           start/edit/done buttons next to it - giving it the same gap to
+           its neighbor as those buttons have to each other, instead of
+           sitting stranded on the left with a large empty gap after it. */
         [class*="st-key-today_priority_"] [data-testid="stNumberInputContainer"] {{
             width: fit-content !important;
+            margin-left: auto !important;
         }}
 
         /* Its label is collapsed (see above), so there is nothing left to
@@ -314,7 +320,7 @@ else:
         pass
 
 if 'menu' not in st.session_state:
-    st.session_state.menu = 'main'
+    st.session_state.menu = 'today_view'
 
 if 'feedback' not in st.session_state:
     st.session_state.feedback = None
@@ -596,56 +602,6 @@ def render_toolbar(return_to):
             st.session_state.context['return_to'] = return_to
             navigate_to('settings')
 
-def view_main():
-    """
-    Renders the main menu view.
-    """
-    render_header("Time Control", f"Version {st.session_state.tracker.get_version()}")
-
-    current_work = st.session_state.tracker.get_current_work()
-    task_details = {}
-    is_done = False
-    if current_work:
-        all_tasks = st.session_state.tracker.list_tasks(main_project_name=current_work['main_project_name'], status_filter='all')
-        task_details = next((t for t in all_tasks if t['task_name'] == current_work['task_name']), {})
-        is_done = task_details.get('status') == 'done'
-
-    render_toolbar('main')
-
-    col_info, col_done, col_edit = st.columns([10, 1, 1])
-    with col_info:
-        if current_work:
-            display_name = f"{current_work['task_name']} (done)" if is_done else current_work['task_name']
-            st.info(f"**{_('Current Active Work')}:** {display_name} ({current_work['main_project_name']})")
-        else:
-            st.info(_("No active work session."))
-            
-    with col_done:
-        if st.button("✓", help=_("Done"), disabled=not current_work or is_done, key="main_done_button"):
-            st.session_state.tracker.update_task(
-                current_work['main_project_name'],
-                current_work['task_name'],
-                status='done',
-                due_date=task_details.get('due_date'),
-                recurring=task_details.get('recurring'),
-                frequency=task_details.get('frequency'),
-                userdefined_days=task_details.get('userdefined_days'),
-                task_id=task_details.get('id'),
-            )
-            st.rerun()
-
-    with col_edit:
-        if st.button("✎", help=_("Edit current task"), disabled=not current_work, key="main_edit_button"):
-            st.session_state.context['selected_main'] = current_work['main_project_name']
-            st.session_state.context['selected_task'] = current_work['task_name']
-            st.session_state.context['return_to'] = 'main'
-            navigate_to('edit_task_form')
-
-    st.divider()
-    
-    if st.button(_("Exit"), use_container_width=True):
-        os._exit(0)
-
 def view_task_planning():
     """
     Renders the task planning view, showing all tasks that are not closed.
@@ -858,11 +814,15 @@ def view_task_planning():
         st.info(_("No tasks found."))
 
     if st.button(_("Back"), use_container_width=True):
-        navigate_to(st.session_state.context.get('return_to', 'main'))
+        navigate_to(st.session_state.context.get('return_to', 'today_view'))
 
 def view_today_tasks():
     """
     Renders the view showing all tasks marked as 'today' and not closed.
+    This is also the app's default/home view (see menu_map/return_to
+    fallbacks below), so it additionally shows the currently active work
+    session (with quick done/edit actions) and the app's Exit button -
+    both formerly the responsibility of a separate main-menu view.
     """
     render_header(_("Today's Tasks"))
     render_toolbar('today_view')
@@ -871,7 +831,45 @@ def view_today_tasks():
 
     st.session_state.tracker.cleanup_overdue_today_tasks()
     current_work = st.session_state.tracker.get_current_work()
-    
+
+    task_details = {}
+    is_done = False
+    if current_work:
+        all_tasks = st.session_state.tracker.list_tasks(main_project_name=current_work['main_project_name'], status_filter='all')
+        task_details = next((t for t in all_tasks if t['task_name'] == current_work['task_name']), {})
+        is_done = task_details.get('status') == 'done'
+
+    col_info, col_done, col_edit = st.columns([10, 1, 1])
+    with col_info:
+        if current_work:
+            display_name = f"{current_work['task_name']} (done)" if is_done else current_work['task_name']
+            st.info(f"**{_('Current Active Work')}:** {display_name} ({current_work['main_project_name']})")
+        else:
+            st.info(_("No active work session."))
+
+    with col_done:
+        if st.button("✓", help=_("Done"), disabled=not current_work or is_done, key="main_done_button"):
+            st.session_state.tracker.update_task(
+                current_work['main_project_name'],
+                current_work['task_name'],
+                status='done',
+                due_date=task_details.get('due_date'),
+                recurring=task_details.get('recurring'),
+                frequency=task_details.get('frequency'),
+                userdefined_days=task_details.get('userdefined_days'),
+                task_id=task_details.get('id'),
+            )
+            st.rerun()
+
+    with col_edit:
+        if st.button("✎", help=_("Edit current task"), disabled=not current_work, key="main_edit_button"):
+            st.session_state.context['selected_main'] = current_work['main_project_name']
+            st.session_state.context['selected_task'] = current_work['task_name']
+            st.session_state.context['return_to'] = 'today_view'
+            navigate_to('edit_task_form')
+
+    st.divider()
+
     # Here we show tasks that are explicitly marked as 'today' (⭐)
     all_open = st.session_state.tracker.list_tasks(status_filter='open')
     today_tasks_all = [t for t in all_open if t.get('today')]
@@ -1014,8 +1012,10 @@ def view_today_tasks():
     else:
         st.info(_("No tasks for today."))
 
-    if st.button(_("Back"), use_container_width=True):
-        navigate_to(st.session_state.context.get('return_to', 'main'))
+    st.divider()
+
+    if st.button(_("Exit"), use_container_width=True):
+        os._exit(0)
 
 def view_email_assignment():
     """
@@ -1168,7 +1168,7 @@ def view_email_assignment():
     if st.button(_("Back"), use_container_width=True):
         if 'email_fetched' in st.session_state: del st.session_state.email_fetched
         if 'email_task_total' in st.session_state: del st.session_state.email_task_total
-        navigate_to(st.session_state.context.get('return_to', 'main'))
+        navigate_to(st.session_state.context.get('return_to', 'today_view'))
 
 def view_project_management():
     """
@@ -1183,8 +1183,8 @@ def view_project_management():
     
     st.divider()
     
-    if st.button(_("Back to Main Menu"), use_container_width=True):
-        navigate_to('main')
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('today_view')
 
 def view_main_project_mgmt():
     """
@@ -1304,8 +1304,8 @@ def view_reporting():
     
     st.divider()
     
-    if st.button(_("Back to Main Menu"), use_container_width=True):
-        navigate_to('main')
+    if st.button(_("Back"), use_container_width=True):
+        navigate_to('today_view')
 
 def view_settings():
     """
@@ -1575,7 +1575,7 @@ def view_settings():
     st.divider()
 
     if st.button(_("Back"), use_container_width=True):
-        navigate_to(st.session_state.context.get('return_to', 'main'))
+        navigate_to(st.session_state.context.get('return_to', 'today_view'))
 
 # --- Action Views (Forms) ---
 
@@ -2554,7 +2554,7 @@ def view_start_work():
     Renders the form to start work on a task.
     """
     render_header(_("Start Work on Task"))
-    return_to = st.session_state.context.get('return_to', 'main')
+    return_to = st.session_state.context.get('return_to', 'today_view')
 
     projects = st.session_state.tracker.list_main_projects(status_filter='open')
     if not projects:
@@ -2614,7 +2614,7 @@ def view_show_current_work():
         st.info(_("No active work session."))
 
     if st.button(_("Back"), use_container_width=True):
-        navigate_to(st.session_state.context.get('return_to', 'main'))
+        navigate_to(st.session_state.context.get('return_to', 'today_view'))
 
 def view_report_specific_day():
     """
@@ -2826,14 +2826,13 @@ def view_generic_placeholder(title):
         elif 'main_project' in st.session_state.menu: navigate_to('main_project_mgmt')
         elif 'report' in st.session_state.menu: navigate_to('reporting')
         elif 'settings' in st.session_state.menu: navigate_to('settings')
-        else: navigate_to('main')
+        else: navigate_to('today_view')
 
 # --- Main Router ---
 
 menu_map = {
-    'main': view_main,
     'task_planning': view_task_planning,
-    'today_view': view_today_tasks, # New view for today's tasks
+    'today_view': view_today_tasks, # Default/home view - see view_today_tasks()
     'email_assignment': view_email_assignment,
     'project_management': view_project_management,
     'main_project_mgmt': view_main_project_mgmt,
@@ -2890,11 +2889,12 @@ menu_map = {
 #   triggered while the browser tab is backgrounded (and its timers
 #   throttled) can still surface as the field reverting to its last-saved
 #   value once the tab reconnects.
-# - 'main', because its toolbar's New/Management/Reporting menus are plain
-#   st.popover()s: unlike st.expander, popover has no `expanded=`-style
-#   parameter to keep it programmatically open across a rerun, so a
-#   background rerun while one is open always closes it under the user's
-#   cursor - visibly "jumping" back to the collapsed toolbar mid-browse.
+# - 'today_view', the default/home view, because its toolbar's
+#   New/Management/Reporting menus are plain st.popover()s: unlike
+#   st.expander, popover has no `expanded=`-style parameter to keep it
+#   programmatically open across a rerun, so a background rerun while one
+#   is open always closes it under the user's cursor - visibly "jumping"
+#   back to the collapsed toolbar mid-browse.
 # Neither exclusion affects whether the MCP server can still write to
 # data.json in the meantime, only how quickly the GUI's own display picks
 # that up, so skipping the refresh here is safe: leaving the view (by
@@ -2902,7 +2902,7 @@ menu_map = {
 # immediate rerun anyway, which then shows whatever changed while it was
 # suppressed.
 _MENUS_TO_SKIP_AUTOREFRESH = {
-    'main', 'email_assignment', 'settings', 'add_main_project',
+    'today_view', 'email_assignment', 'settings', 'add_main_project',
     'rename_main_project', 'list_inactive_main', 'add_task_form',
     'edit_task_form', 'rename_task', 'list_inactive_tasks',
 }
@@ -2916,7 +2916,7 @@ if st.session_state.menu in menu_map:
 else:
     st.error(f"Menu '{st.session_state.menu}' not found.")
     if st.button("Reset"):
-        navigate_to('main')
+        navigate_to('today_view')
         st.rerun()
 
 # --- Sidebar Footer ---
