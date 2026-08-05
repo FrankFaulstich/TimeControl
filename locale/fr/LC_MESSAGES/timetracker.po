@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-18 12:24+0200\n"
+"POT-Creation-Date: 2026-08-05 09:08+0200\n"
 "PO-Revision-Date: 2026-01-01 15:00+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: French\n"
@@ -119,8 +119,8 @@ msgstr ""
 "\n"
 "--- Liste des projets principaux ---"
 
-#: TimeTrackerCLI.py:76 TimeTrackerCLI.py:313 sl/SL_Menu.py:1251
-#: sl/SL_Menu.py:1315
+#: TimeTrackerCLI.py:76 TimeTrackerCLI.py:313 sl/SL_Menu.py:1880
+#: sl/SL_Menu.py:1944
 msgid "closed"
 msgstr "fermé"
 
@@ -163,10 +163,9 @@ msgid "Main project '{old_name}' successfully renamed to '{new_name}'."
 msgstr ""
 "Le projet principal '{old_name}' a été renommé avec succès en '{new_name}'."
 
-#: TimeTrackerCLI.py:101 sl/SL_Menu.py:1288
+#: TimeTrackerCLI.py:101 sl/SL_Menu.py:1917
 #, python-brace-format
-msgid ""
-"Error: Could not rename. The new name '{new_name}' might already exist."
+msgid "Error: Could not rename. The new name '{new_name}' might already exist."
 msgstr ""
 "Erreur : Impossible de renommer. Le nouveau nom '{new_name}' existe peut-"
 "être déjà."
@@ -291,8 +290,7 @@ msgstr "    Dernière activité : {date}"
 #, python-brace-format
 msgid "No main-projects found inactive for more than {weeks} weeks."
 msgstr ""
-"Aucun projet principal n'a été trouvé inactif pendant plus "
-"de{weeks}semaines."
+"Aucun projet principal n'a été trouvé inactif pendant plus de{weeks}semaines."
 
 #: TimeTrackerCLI.py:191 TimeTrackerCLI.py:534
 msgid "Invalid input. Please enter a valid number for weeks."
@@ -464,22 +462,22 @@ msgid "Select the main project whose tasks you want to list:"
 msgstr ""
 "Sélectionnez le projet principal dont vous souhaitez lister les tâches :"
 
-#: TimeTrackerCLI.py:305 sl/SL_Menu.py:1312
+#: TimeTrackerCLI.py:305 sl/SL_Menu.py:1941
 #, python-brace-format
 msgid "Tasks for '{name}':"
 msgstr "Tâches pour '{name}' :"
 
-#: TimeTrackerCLI.py:308 sl/SL_Menu.py:524 sl/SL_Menu.py:615
+#: TimeTrackerCLI.py:308 sl/SL_Menu.py:745 sl/SL_Menu.py:895
 msgid "Due"
 msgstr "Due"
 
-#: TimeTrackerCLI.py:309 sl/SL_Menu.py:409 sl/SL_Menu.py:419 sl/SL_Menu.py:484
-#: sl/SL_Menu.py:546 sl/SL_Menu.py:752 sl/SL_Menu.py:1608 sl/SL_Menu.py:1776
+#: TimeTrackerCLI.py:309 sl/SL_Menu.py:596 sl/SL_Menu.py:616 sl/SL_Menu.py:682
+#: sl/SL_Menu.py:768 sl/SL_Menu.py:1077 sl/SL_Menu.py:2238 sl/SL_Menu.py:2409
 msgid "Today"
 msgstr "Aujourd'hui"
 
-#: TimeTrackerCLI.py:317 TimeTrackerCLI.py:861 sl/SL_Menu.py:1320
-#: sl/SL_Menu.py:2281
+#: TimeTrackerCLI.py:317 TimeTrackerCLI.py:861 sl/SL_Menu.py:1950
+#: sl/SL_Menu.py:2642
 #, python-brace-format
 msgid "No tasks found for '{name}'."
 msgstr "Aucune tâche trouvée pour '{name}'."
@@ -518,15 +516,15 @@ msgstr "Sélectionnez une tâche parmi '{name}' à renommer :"
 msgid "Enter the number of the task: "
 msgstr "Entrez le numéro de la tâche :"
 
-#: TimeTrackerCLI.py:352 sl/SL_Menu.py:1363
+#: TimeTrackerCLI.py:352 sl/SL_Menu.py:1993
 #, python-brace-format
 msgid "Task '{old_name}' renamed to '{new_name}'."
 msgstr "Tâche '{old_name}' renommée en '{new_name}'."
 
 #: TimeTrackerCLI.py:354
 msgid ""
-"Error: Could not rename. The new name might already exist or the project was"
-" not found."
+"Error: Could not rename. The new name might already exist or the project was "
+"not found."
 msgstr ""
 "Erreur : Impossible de renommer. Le nouveau nom existe peut-être déjà ou le "
 "projet n'a pas été trouvé."
@@ -555,7 +553,7 @@ msgid "Task '{task_name}' in '{main_name}' has been closed."
 msgstr "La tâche «{task_name}» dans «{main_name}» a été fermée."
 
 #: TimeTrackerCLI.py:389 TimeTrackerCLI.py:424 TimeTrackerCLI.py:460
-#: sl/SL_Menu.py:950 sl/SL_Menu.py:995 sl/SL_Menu.py:1041
+#: sl/SL_Menu.py:1579 sl/SL_Menu.py:1624 sl/SL_Menu.py:1670
 msgid "Error: Main project or task not found."
 msgstr "Erreur : projet ou tâche principal introuvable."
 
@@ -693,10 +691,11 @@ msgstr ""
 msgid "    Task: {name}"
 msgstr "Tâche : {name}"
 
-#: TimeTrackerCLI.py:531 sl/SL_Menu.py:1123
+#: TimeTrackerCLI.py:531 sl/SL_Menu.py:1752
 #, python-brace-format
 msgid "No tasks found inactive for more than {weeks} weeks."
-msgstr "Aucune tâche n'a été trouvée inactive pendant plus de {weeks} semaines."
+msgstr ""
+"Aucune tâche n'a été trouvée inactive pendant plus de {weeks} semaines."
 
 #: TimeTrackerCLI.py:537
 msgid ""
@@ -706,7 +705,7 @@ msgstr ""
 "\n"
 "--- Liste de toutes les tâches fermées ---"
 
-#: TimeTrackerCLI.py:543 sl/SL_Menu.py:1148 sl/SL_Menu.py:1171
+#: TimeTrackerCLI.py:543 sl/SL_Menu.py:1777 sl/SL_Menu.py:1800
 msgid "No closed tasks found."
 msgstr "Aucune tâche fermée trouvée."
 
@@ -720,8 +719,7 @@ msgstr ""
 
 #: TimeTrackerCLI.py:548
 msgid "Are you sure you want to delete ALL closed tasks? (y/n): "
-msgstr ""
-"Êtes-vous sûr de vouloir supprimer TOUTES les tâches fermées ? (o/n) :"
+msgstr "Êtes-vous sûr de vouloir supprimer TOUTES les tâches fermées ? (o/n) :"
 
 #: TimeTrackerCLI.py:551
 #, python-brace-format
@@ -766,9 +764,9 @@ msgstr ""
 "\n"
 "--- Modifier la tâche ---"
 
-#: TimeTrackerCLI.py:596 sl/SL_Menu.py:918 sl/SL_Menu.py:963
-#: sl/SL_Menu.py:1008 sl/SL_Menu.py:1054 sl/SL_Menu.py:1203 sl/SL_Menu.py:1333
-#: sl/SL_Menu.py:1492 sl/SL_Menu.py:1682
+#: TimeTrackerCLI.py:596 sl/SL_Menu.py:1547 sl/SL_Menu.py:1592
+#: sl/SL_Menu.py:1637 sl/SL_Menu.py:1683 sl/SL_Menu.py:1832 sl/SL_Menu.py:1963
+#: sl/SL_Menu.py:2122 sl/SL_Menu.py:2315
 msgid "No open projects found."
 msgstr "Aucun projet ouvert trouvé."
 
@@ -820,7 +818,7 @@ msgstr ""
 "Cette tâche est-elle terminée ? (actuel :{current}, o/n, appuyez sur Entrée "
 "pour conserver) :"
 
-#: TimeTrackerCLI.py:639 sl/SL_Menu.py:1839
+#: TimeTrackerCLI.py:639 sl/SL_Menu.py:2475
 msgid "Task updated successfully."
 msgstr "Tâche mise à jour avec succès."
 
@@ -844,24 +842,23 @@ msgstr ""
 "\n"
 "--- Paramètres ---"
 
-#: TimeTrackerCLI.py:654 sl/SL_Menu.py:875
+#: TimeTrackerCLI.py:654
 msgid "1. Change Language"
 msgstr "1. Changer de langue"
 
-#: TimeTrackerCLI.py:655 sl/SL_Menu.py:876
+#: TimeTrackerCLI.py:655
 msgid "2. Restore Previous Version"
 msgstr "2. Restaurer la version précédente"
 
-#: TimeTrackerCLI.py:656 sl/SL_Menu.py:877
+#: TimeTrackerCLI.py:656
 msgid "3. Change Data Storage Location"
 msgstr "3. Changer l'emplacement de stockage des données"
 
-#: TimeTrackerCLI.py:657 sl/SL_Menu.py:879
+#: TimeTrackerCLI.py:657
 msgid "4. Change Streamlit Port"
 msgstr "4. Changer le port Streamlit"
 
 #: TimeTrackerCLI.py:659 TimeTrackerCLI.py:698 TimeTrackerCLI.py:808
-#: sl/SL_Menu.py:886
 msgid "0. Back to Main Menu"
 msgstr "0. Retour au menu principal"
 
@@ -910,8 +907,8 @@ msgstr "Fichier de données actuel : {path}"
 #: TimeTrackerCLI.py:728
 msgid "Enter the new path for the data file (e.g., /path/to/my_data.json)."
 msgstr ""
-"Entrez le nouveau chemin pour le fichier de données (ex : "
-"/chemin/vers/mes_donnees.json)."
+"Entrez le nouveau chemin pour le fichier de données (ex : /chemin/vers/"
+"mes_donnees.json)."
 
 #: TimeTrackerCLI.py:729
 msgid "Leave empty to cancel."
@@ -921,7 +918,7 @@ msgstr "Laisser vide pour annuler."
 msgid "New Path: "
 msgstr "Nouveau chemin : "
 
-#: TimeTrackerCLI.py:738 sl/SL_Menu.py:1979
+#: TimeTrackerCLI.py:738 sl/SL_Menu.py:1334
 #, python-brace-format
 msgid "Error: The directory '{dir}' does not exist."
 msgstr "Erreur : Le répertoire '{dir}' n'existe pas."
@@ -933,19 +930,19 @@ msgstr "Emplacement de stockage mis à jour."
 #: TimeTrackerCLI.py:756
 msgid "Do you want to move the existing data to the new location? (y/n): "
 msgstr ""
-"Voulez-vous déplacer les données existantes vers le nouvel emplacement ? "
-"(o/n) : "
+"Voulez-vous déplacer les données existantes vers le nouvel emplacement ? (o/"
+"n) : "
 
-#: TimeTrackerCLI.py:760 sl/SL_Menu.py:1990
+#: TimeTrackerCLI.py:760 sl/SL_Menu.py:1344
 msgid "Data moved successfully."
 msgstr "Données déplacées avec succès."
 
-#: TimeTrackerCLI.py:762 sl/SL_Menu.py:1992
+#: TimeTrackerCLI.py:762 sl/SL_Menu.py:1346
 #, python-brace-format
 msgid "Error moving data: {error}"
 msgstr "Erreur lors du déplacement des données : {error}"
 
-#: TimeTrackerCLI.py:764 tt/TimeTracker.py:117
+#: TimeTrackerCLI.py:764 tt/TimeTracker.py:119
 msgid "Please restart the application for the changes to take effect."
 msgstr ""
 "Veuillez redémarrer l'application pour que les changements prennent effet."
@@ -1053,7 +1050,7 @@ msgstr "Entrez la date de début (AAAA-MM-JJ) : "
 msgid "Enter the end date (YYYY-MM-DD): "
 msgstr "Entrez la date de fin (AAAA-MM-JJ) : "
 
-#: TimeTrackerCLI.py:837 sl/SL_Menu.py:2232
+#: TimeTrackerCLI.py:837 sl/SL_Menu.py:2593
 msgid "Error: The start date cannot be after the end date."
 msgstr ""
 "Erreur : La date de début ne peut pas être postérieure à la date de fin."
@@ -1066,8 +1063,8 @@ msgstr ""
 "\n"
 "--- Rapport détaillé de tâche ---"
 
-#: TimeTrackerCLI.py:847 TimeTrackerCLI.py:880 sl/SL_Menu.py:1254
-#: sl/SL_Menu.py:1301 sl/SL_Menu.py:1440 sl/SL_Menu.py:2250 sl/SL_Menu.py:2309
+#: TimeTrackerCLI.py:847 TimeTrackerCLI.py:880 sl/SL_Menu.py:1883
+#: sl/SL_Menu.py:1930 sl/SL_Menu.py:2070 sl/SL_Menu.py:2611 sl/SL_Menu.py:2670
 msgid "No projects found."
 msgstr "Aucun projet trouvé."
 
@@ -1138,8 +1135,7 @@ msgstr "L'application redémarre pour terminer la mise à jour..."
 #: TimeTrackerCLI.py:931
 msgid "Update installation skipped. The application will start normally."
 msgstr ""
-"Installation de la mise à jour ignorée. L'application démarrera "
-"normallement."
+"Installation de la mise à jour ignorée. L'application démarrera normallement."
 
 #: TimeTrackerCLI.py:933
 msgid ""
@@ -1214,12 +1210,12 @@ msgstr ""
 msgid "Select a task from '{name}':"
 msgstr "Sélectionnez une tâche de '{name}' :"
 
-#: TimeTrackerCLI.py:987 sl/SL_Menu.py:1889
+#: TimeTrackerCLI.py:987 sl/SL_Menu.py:2526
 #, python-brace-format
 msgid "Work started on '{task_name}' in project '{main_name}'."
 msgstr "Travail commencé sur '{task_name}' dans le projet '{main_name}'."
 
-#: TimeTrackerCLI.py:989 sl/SL_Menu.py:1893
+#: TimeTrackerCLI.py:989 sl/SL_Menu.py:2530
 msgid "Error starting work."
 msgstr "Erreur lors du démarrage du travail."
 
@@ -1255,7 +1251,7 @@ msgstr "  Démarré à :   {date}"
 msgid "  Duration:     {duration}"
 msgstr "  Durée :     {duration}"
 
-#: TimeTrackerCLI.py:1012 sl/SL_Menu.py:373 sl/SL_Menu.py:1915
+#: TimeTrackerCLI.py:1012 sl/SL_Menu.py:559 sl/SL_Menu.py:2552
 msgid "No active work session."
 msgstr "Aucune session de travail active."
 
@@ -1267,11 +1263,11 @@ msgstr ""
 "\n"
 "--- Arrêter le travail ---"
 
-#: TimeTrackerCLI.py:1018 sl/SL_Menu.py:341
+#: TimeTrackerCLI.py:1018 sl/SL_Menu.py:504
 msgid "Work session stopped successfully."
 msgstr "Session de travail arrêtée avec succès."
 
-#: TimeTrackerCLI.py:1020 sl/SL_Menu.py:343
+#: TimeTrackerCLI.py:1020 sl/SL_Menu.py:506
 msgid "No active work session to stop."
 msgstr "Aucune session de travail active à arrêter."
 
@@ -1286,6 +1282,1314 @@ msgstr ""
 #: TimeTrackerCLI.py:1038
 msgid "Exiting application. Goodbye!"
 msgstr "Fermeture de l'application. Au revoir !"
+
+#: sl/SL_Menu.py:399
+msgid "New"
+msgstr "Nouveau"
+
+#: sl/SL_Menu.py:400
+msgid "New Project"
+msgstr "Nouveau projet"
+
+#: sl/SL_Menu.py:403
+msgid "New Task"
+msgstr "Nouvelle tâche"
+
+#: sl/SL_Menu.py:408
+msgid "Project & Task Management"
+msgstr "Gestion des projets et des tâches"
+
+#: sl/SL_Menu.py:409 sl/SL_Menu.py:1117
+msgid "Main Project Management"
+msgstr "Gestion du projet principal"
+
+#: sl/SL_Menu.py:410 sl/SL_Menu.py:1133 sl/SL_Menu.py:1528
+msgid "Add Project"
+msgstr "Ajouter un projet"
+
+#: sl/SL_Menu.py:413 sl/SL_Menu.py:1136 sl/SL_Menu.py:1876
+msgid "List Projects"
+msgstr "Liste des projets"
+
+#: sl/SL_Menu.py:416 sl/SL_Menu.py:1139 sl/SL_Menu.py:1891
+msgid "Rename Project"
+msgstr "Renommer le projet"
+
+#: sl/SL_Menu.py:419 sl/SL_Menu.py:1142 sl/SL_Menu.py:2006 sl/SL_Menu.py:2019
+msgid "Close Project"
+msgstr "Fermer le projet"
+
+#: sl/SL_Menu.py:422 sl/SL_Menu.py:1145 sl/SL_Menu.py:2036 sl/SL_Menu.py:2049
+msgid "Re-open Project"
+msgstr "Rouvrir le projet"
+
+#: sl/SL_Menu.py:425 sl/SL_Menu.py:1148 sl/SL_Menu.py:2066 sl/SL_Menu.py:2080
+msgid "Delete Project"
+msgstr "Supprimer le projet"
+
+#: sl/SL_Menu.py:428 sl/SL_Menu.py:1151 sl/SL_Menu.py:2097
+msgid "List Inactive Projects"
+msgstr "Liste des projets inactifs"
+
+#: sl/SL_Menu.py:431 sl/SL_Menu.py:1154
+msgid "Demote Project to Task"
+msgstr "Rétrograder le projet en tâche"
+
+#: sl/SL_Menu.py:434 sl/SL_Menu.py:1157 sl/SL_Menu.py:2159
+msgid "List Completed Projects"
+msgstr "Liste des projets terminés"
+
+#: sl/SL_Menu.py:438 sl/SL_Menu.py:1119 sl/SL_Menu.py:1170
+msgid "Task Management"
+msgstr "Gestion des tâches"
+
+#: sl/SL_Menu.py:439 sl/SL_Menu.py:1172 sl/SL_Menu.py:2177 sl/SL_Menu.py:2208
+#: sl/SL_Menu.py:2283
+msgid "Add Task"
+msgstr "Ajouter une tâche"
+
+#: sl/SL_Menu.py:442 sl/SL_Menu.py:1175 sl/SL_Menu.py:1926
+msgid "List Tasks"
+msgstr "Liste des tâches"
+
+#: sl/SL_Menu.py:445 sl/SL_Menu.py:1178 sl/SL_Menu.py:1959
+msgid "Rename Task"
+msgstr "Renommer la tâche"
+
+#: sl/SL_Menu.py:448 sl/SL_Menu.py:1181 sl/SL_Menu.py:1543 sl/SL_Menu.py:1569
+#: sl/SL_Menu.py:1748
+msgid "Close Task"
+msgstr "Fermer la tâche"
+
+#: sl/SL_Menu.py:451 sl/SL_Menu.py:1184 sl/SL_Menu.py:1588 sl/SL_Menu.py:1614
+msgid "Re-open Task"
+msgstr "Rouvrir la tâche"
+
+#: sl/SL_Menu.py:454 sl/SL_Menu.py:1187 sl/SL_Menu.py:1633 sl/SL_Menu.py:1660
+msgid "Delete Task"
+msgstr "Supprimer la tâche"
+
+#: sl/SL_Menu.py:457 sl/SL_Menu.py:1190 sl/SL_Menu.py:1679 sl/SL_Menu.py:1715
+msgid "Move Task"
+msgstr "Déplacer la tâche"
+
+#: sl/SL_Menu.py:460 sl/SL_Menu.py:1193 sl/SL_Menu.py:1734
+msgid "List Inactive Tasks"
+msgstr "Liste des tâches inactives"
+
+#: sl/SL_Menu.py:463 sl/SL_Menu.py:1196 sl/SL_Menu.py:1761
+msgid "List All Closed Tasks"
+msgstr "Liste de toutes les tâches fermées"
+
+#: sl/SL_Menu.py:466 sl/SL_Menu.py:675 sl/SL_Menu.py:761 sl/SL_Menu.py:929
+#: sl/SL_Menu.py:1199 sl/SL_Menu.py:2311 sl/SL_Menu.py:2331 sl/SL_Menu.py:2366
+msgid "Edit Task"
+msgstr "Modifier la tâche"
+
+#: sl/SL_Menu.py:469 sl/SL_Menu.py:1202 sl/SL_Menu.py:1786
+msgid "Delete All Closed Tasks"
+msgstr "Supprimer toutes les tâches fermées"
+
+#: sl/SL_Menu.py:472 sl/SL_Menu.py:1205 sl/SL_Menu.py:1828
+msgid "Promote Task to Project"
+msgstr "Promouvoir la tâche en projet"
+
+#: sl/SL_Menu.py:477
+msgid "Today View"
+msgstr "Vue du jour"
+
+#: sl/SL_Menu.py:482 sl/SL_Menu.py:591
+msgid "Task Planning"
+msgstr "Planification des tâches"
+
+#: sl/SL_Menu.py:487 sl/SL_Menu.py:962
+msgid "E-Mail Task Assignment"
+msgstr "Attribution des tâches par e-mail"
+
+#: sl/SL_Menu.py:492 sl/SL_Menu.py:671 sl/SL_Menu.py:757 sl/SL_Menu.py:925
+msgid "Start work on task"
+msgstr "Démarrer le travail sur la tâche"
+
+#: sl/SL_Menu.py:497
+msgid "Show current work"
+msgstr "Afficher le travail en cours"
+
+#: sl/SL_Menu.py:502
+msgid "Stop current work"
+msgstr "Arrêter le travail en cours"
+
+#: sl/SL_Menu.py:510 sl/SL_Menu.py:1218
+msgid "Reporting"
+msgstr "Rapports"
+
+#: sl/SL_Menu.py:511 sl/SL_Menu.py:1221
+msgid "Daily Report (Today)"
+msgstr "Rapport quotidien (aujourd'hui)"
+
+#: sl/SL_Menu.py:516 sl/SL_Menu.py:1227 sl/SL_Menu.py:2561
+msgid "Daily Report (Specific Day)"
+msgstr "Rapport journalier (Jour spécifique)"
+
+#: sl/SL_Menu.py:519 sl/SL_Menu.py:1230 sl/SL_Menu.py:2580
+msgid "Date Range Report"
+msgstr "Rapport par plage de dates"
+
+#: sl/SL_Menu.py:522 sl/SL_Menu.py:1233 sl/SL_Menu.py:2607 sl/SL_Menu.py:2638
+msgid "Detailed Task Report"
+msgstr "Rapport détaillé de tâche"
+
+#: sl/SL_Menu.py:525 sl/SL_Menu.py:1236 sl/SL_Menu.py:2666
+msgid "Detailed Project Report"
+msgstr "Rapport détaillé de projet"
+
+#: sl/SL_Menu.py:528 sl/SL_Menu.py:1239 sl/SL_Menu.py:2693
+msgid "Detailed Daily Report"
+msgstr "Rapport journalier détaillé"
+
+#: sl/SL_Menu.py:533 sl/SL_Menu.py:1256
+msgid "Settings"
+msgstr "Paramètres"
+
+#: sl/SL_Menu.py:557 sl/SL_Menu.py:2539
+msgid "Current Active Work"
+msgstr "Travail actif en cours"
+
+#: sl/SL_Menu.py:562 sl/SL_Menu.py:695 sl/SL_Menu.py:781 sl/SL_Menu.py:936
+#: sl/SL_Menu.py:2411
+msgid "Done"
+msgstr "Terminé"
+
+#: sl/SL_Menu.py:576
+msgid "Edit current task"
+msgstr "Modifier la tâche actuelle"
+
+#: sl/SL_Menu.py:584
+msgid "Exit"
+msgstr "Quitter"
+
+#: sl/SL_Menu.py:597 sl/SL_Menu.py:617
+msgid "Tomorrow"
+msgstr "Demain"
+
+#: sl/SL_Menu.py:598 sl/SL_Menu.py:618
+msgid "Weekly overview"
+msgstr "Aperçu hebdomadaire"
+
+#: sl/SL_Menu.py:599 sl/SL_Menu.py:619
+msgid "Overdue tasks"
+msgstr "Tâches en retard"
+
+#: sl/SL_Menu.py:600 sl/SL_Menu.py:620
+msgid "Unplanned tasks"
+msgstr "Tâches non planifiées"
+
+#: sl/SL_Menu.py:601
+msgid "All"
+msgstr "Tous"
+
+#: sl/SL_Menu.py:608
+msgid "Filter"
+msgstr "Filtrer"
+
+#: sl/SL_Menu.py:627
+msgid "Tasks"
+msgstr "Tâches"
+
+#: sl/SL_Menu.py:634 tt/TimeTracker.py:1471 tt/TimeTracker.py:1569
+msgid "Friday"
+msgstr "Vendredi"
+
+#: sl/SL_Menu.py:634 tt/TimeTracker.py:1471 tt/TimeTracker.py:1569
+msgid "Monday"
+msgstr "Lundi"
+
+#: sl/SL_Menu.py:634 tt/TimeTracker.py:1471 tt/TimeTracker.py:1569
+msgid "Saturday"
+msgstr "Samedi"
+
+#: sl/SL_Menu.py:634 tt/TimeTracker.py:1471 tt/TimeTracker.py:1569
+msgid "Sunday"
+msgstr "Dimanche"
+
+#: sl/SL_Menu.py:634 tt/TimeTracker.py:1471 tt/TimeTracker.py:1569
+msgid "Thursday"
+msgstr "Jeudi"
+
+#: sl/SL_Menu.py:634 tt/TimeTracker.py:1471 tt/TimeTracker.py:1569
+msgid "Tuesday"
+msgstr "Mardi"
+
+#: sl/SL_Menu.py:634 tt/TimeTracker.py:1471 tt/TimeTracker.py:1569
+msgid "Wednesday"
+msgstr "Mercredi"
+
+#: sl/SL_Menu.py:796
+msgid "No tasks found."
+msgstr "Aucune tâche trouvée."
+
+#: sl/SL_Menu.py:798 sl/SL_Menu.py:955 sl/SL_Menu.py:1106 sl/SL_Menu.py:1163
+#: sl/SL_Menu.py:1211 sl/SL_Menu.py:1515 sl/SL_Menu.py:1548 sl/SL_Menu.py:1559
+#: sl/SL_Menu.py:1593 sl/SL_Menu.py:1604 sl/SL_Menu.py:1638 sl/SL_Menu.py:1649
+#: sl/SL_Menu.py:1684 sl/SL_Menu.py:1695 sl/SL_Menu.py:1703 sl/SL_Menu.py:1754
+#: sl/SL_Menu.py:1779 sl/SL_Menu.py:1801 sl/SL_Menu.py:1833 sl/SL_Menu.py:1844
+#: sl/SL_Menu.py:1884 sl/SL_Menu.py:1896 sl/SL_Menu.py:1931 sl/SL_Menu.py:1952
+#: sl/SL_Menu.py:1964 sl/SL_Menu.py:1975 sl/SL_Menu.py:2011 sl/SL_Menu.py:2041
+#: sl/SL_Menu.py:2071 sl/SL_Menu.py:2111 sl/SL_Menu.py:2123 sl/SL_Menu.py:2170
+#: sl/SL_Menu.py:2182 sl/SL_Menu.py:2316 sl/SL_Menu.py:2335 sl/SL_Menu.py:2348
+#: sl/SL_Menu.py:2363 sl/SL_Menu.py:2500 sl/SL_Menu.py:2510 sl/SL_Menu.py:2554
+#: sl/SL_Menu.py:2573 sl/SL_Menu.py:2600 sl/SL_Menu.py:2612 sl/SL_Menu.py:2624
+#: sl/SL_Menu.py:2643 sl/SL_Menu.py:2659 sl/SL_Menu.py:2671 sl/SL_Menu.py:2686
+#: sl/SL_Menu.py:2705 sl/SL_Menu.py:2746 sl/SL_Menu.py:2761
+msgid "Back"
+msgstr "Retour"
+
+#: sl/SL_Menu.py:805
+msgid "Today's Tasks"
+msgstr "Tâches du jour"
+
+#: sl/SL_Menu.py:826
+msgid "Show only open tasks"
+msgstr "Afficher uniquement les tâches ouvertes"
+
+#: sl/SL_Menu.py:838
+msgid "Sort by priority"
+msgstr "Trier par priorité"
+
+#: sl/SL_Menu.py:907 sl/SL_Menu.py:2243 sl/SL_Menu.py:2415
+msgid "Priority"
+msgstr "Priorité"
+
+#: sl/SL_Menu.py:910 sl/SL_Menu.py:2243 sl/SL_Menu.py:2415
+msgid "0 (lowest) to 9 (highest)"
+msgstr "0 (la plus basse) à 9 (la plus élevée)"
+
+#: sl/SL_Menu.py:951
+msgid "No open tasks for today."
+msgstr "Aucune tâche ouverte pour aujourd'hui."
+
+#: sl/SL_Menu.py:953
+msgid "No tasks for today."
+msgstr "Aucune tâche pour aujourd'hui."
+
+#: sl/SL_Menu.py:968
+msgid "Fetching emails..."
+msgstr "Récupération des e-mails..."
+
+#: sl/SL_Menu.py:971
+#, python-brace-format
+msgid "Error fetching emails: {error}"
+msgstr "Erreur lors de la récupération des e-mails : {error}"
+
+#: sl/SL_Menu.py:974
+#, python-brace-format
+msgid "{count} new tasks created from emails."
+msgstr "{count} nouvelles tâches créées à partir des e-mails."
+
+#: sl/SL_Menu.py:976
+msgid "No new emails found."
+msgstr "Aucun nouvel e-mail trouvé."
+
+#: sl/SL_Menu.py:1001
+#, python-brace-format
+msgid "{remaining} of {total} emails still to process"
+msgstr "{remaining} e-mails sur {total} restants à traiter"
+
+#: sl/SL_Menu.py:1005
+msgid "No unassigned email tasks available."
+msgstr "Aucune tâche par e-mail non attribuée disponible."
+
+#: sl/SL_Menu.py:1017
+msgid "Assign Project"
+msgstr "Attribuer un projet"
+
+#: sl/SL_Menu.py:1028
+msgid "Are you sure you want to delete this task?"
+msgstr "Êtes-vous sûr de vouloir supprimer cette tâche ?"
+
+#: sl/SL_Menu.py:1031
+msgid "Yes, delete"
+msgstr "Oui, supprimer"
+
+#: sl/SL_Menu.py:1036
+msgid "No, cancel"
+msgstr "Non, annuler"
+
+#: sl/SL_Menu.py:1043
+msgid "Delete"
+msgstr "Supprimer"
+
+#: sl/SL_Menu.py:1047
+msgid "Edit Details"
+msgstr "Modifier les détails"
+
+#: sl/SL_Menu.py:1055 sl/SL_Menu.py:2395
+msgid "Task Name"
+msgstr "Nom de la tâche"
+
+#: sl/SL_Menu.py:1064 sl/SL_Menu.py:2399
+msgid "Due Date"
+msgstr "Date d'échéance"
+
+#: sl/SL_Menu.py:1072 sl/SL_Menu.py:2403
+msgid "Clear"
+msgstr "Effacer"
+
+#: sl/SL_Menu.py:1079 sl/SL_Menu.py:2271 sl/SL_Menu.py:2444
+msgid "Notes (Markdown)"
+msgstr "Aucun temps suivi entre le {start_date} et le {end_date}."
+
+#: sl/SL_Menu.py:1098
+msgid "Task details updated successfully."
+msgstr "Détails de la tâche mis à jour avec succès."
+
+#: sl/SL_Menu.py:1104
+msgid "Error updating task details."
+msgstr "Erreur lors de la mise à jour des détails de la tâche."
+
+#: sl/SL_Menu.py:1115 sl/SL_Menu.py:1131
+msgid "Project Management"
+msgstr "Gestion de projet"
+
+#: sl/SL_Menu.py:1124 sl/SL_Menu.py:1245
+msgid "Back to Main Menu"
+msgstr "Retour au menu principal"
+
+#: sl/SL_Menu.py:1259
+msgid "Change Language"
+msgstr "1. Changer de langue"
+
+#: sl/SL_Menu.py:1277
+msgid "Select Language"
+msgstr "Sélectionner la langue"
+
+#: sl/SL_Menu.py:1278 sl/SL_Menu.py:1318 sl/SL_Menu.py:1359 sl/SL_Menu.py:1372
+#: sl/SL_Menu.py:1392 sl/SL_Menu.py:1426 sl/SL_Menu.py:1449 sl/SL_Menu.py:1504
+msgid "Save"
+msgstr "Enregistrer"
+
+#: sl/SL_Menu.py:1284
+msgid ""
+"Language changed. Please restart the application for the changes to take "
+"effect."
+msgstr ""
+"Langue changée. Veuillez redémarrer l'application pour que les changements "
+"prennent effet."
+
+#: sl/SL_Menu.py:1287
+msgid "Restore Previous Version"
+msgstr "Restaurer la version précédente"
+
+#: sl/SL_Menu.py:1290
+msgid "The 'update' module is not available. This feature is disabled."
+msgstr ""
+"Le module 'mise à jour' n'est pas disponible. Cette fonctionnalité est "
+"désactivée."
+
+#: sl/SL_Menu.py:1292
+#, python-brace-format
+msgid "No previous version backup '{filename}' found."
+msgstr "Aucune sauvegarde de la version précédente '{filename}' trouvée."
+
+#: sl/SL_Menu.py:1294
+msgid ""
+"This will restore the application to the previously backed-up version. The "
+"application will then restart. You may need to manually refresh your browser "
+"if it does not reconnect automatically."
+msgstr ""
+"Ceci restaurera l'application à la version sauvegardée précédemment. "
+"L'application redémarrera ensuite. Vous devrez peut-être actualiser "
+"manuellement votre navigateur s'il ne se reconnecte pas automatiquement."
+
+#: sl/SL_Menu.py:1295
+msgid "Restore and Restart"
+msgstr "Restaurer et redémarrer"
+
+#: sl/SL_Menu.py:1296
+msgid "Restoring and restarting..."
+msgstr "Restauration et redémarrage..."
+
+#: sl/SL_Menu.py:1299
+msgid "Restore complete. Please restart the application."
+msgstr "Restauration terminée. Veuillez redémarrer l'application."
+
+#: sl/SL_Menu.py:1301
+msgid "Change Data Storage Location"
+msgstr "Changer l'emplacement de stockage des données"
+
+#: sl/SL_Menu.py:1303
+msgid "Current data file"
+msgstr "Fichier de données actuel"
+
+#: sl/SL_Menu.py:1306
+msgid "New Path for data file"
+msgstr "Nouveau chemin pour le fichier de données"
+
+#: sl/SL_Menu.py:1312
+msgid "Move existing data to the new location"
+msgstr "Déplacer les données existantes vers le nouvel emplacement"
+
+#: sl/SL_Menu.py:1315
+msgid ""
+"If unchecked, the old data file will remain, and a new empty one might be "
+"created at the new location on restart."
+msgstr ""
+"Si décoché, l'ancien fichier de données restera, et un nouveau fichier vide "
+"pourrait être créé au nouvel emplacement au redémarrage."
+
+#: sl/SL_Menu.py:1322
+msgid "Please enter a new path."
+msgstr "Veuillez entrer un nouveau chemin."
+
+#: sl/SL_Menu.py:1330
+msgid ""
+"Error: For security, the data file must be located within the application "
+"directory."
+msgstr ""
+"Erreur : Pour des raisons de sécurité, le fichier de données doit être situé "
+"dans le répertoire de l'application."
+
+#: sl/SL_Menu.py:1339
+msgid ""
+"Storage location updated. Please restart the application for the changes to "
+"take effect."
+msgstr ""
+"Emplacement de stockage mis à jour. Veuillez redémarrer l'application pour "
+"que les changements prennent effet."
+
+#: sl/SL_Menu.py:1353
+msgid "Report Format"
+msgstr "Format du rapport"
+
+#: sl/SL_Menu.py:1358
+msgid "Select Format"
+msgstr "Sélectionnez le format"
+
+#: sl/SL_Menu.py:1363
+msgid "Report format updated."
+msgstr "Format de rapport mis à jour."
+
+#: sl/SL_Menu.py:1366
+msgid "Streamlit Port Settings"
+msgstr "Paramètres du port Streamlit"
+
+#: sl/SL_Menu.py:1368
+msgid "Current Streamlit Port"
+msgstr "Port Streamlit actuel"
+
+#: sl/SL_Menu.py:1371
+msgid "New Port"
+msgstr "Nouveau port"
+
+#: sl/SL_Menu.py:1376
+#, python-brace-format
+msgid "Port updated to {port}. Please restart Streamlit."
+msgstr "Port mis à jour vers {port}. Veuillez redémarrer Streamlit."
+
+#: sl/SL_Menu.py:1379
+msgid "Email Settings"
+msgstr "Paramètres de messagerie"
+
+#: sl/SL_Menu.py:1385
+msgid "Enable email import"
+msgstr "Activer l'importation d'e-mails"
+
+#: sl/SL_Menu.py:1386
+msgid "IMAP Server"
+msgstr "Serveur IMAP"
+
+#: sl/SL_Menu.py:1387
+msgid "Port"
+msgstr "Port"
+
+#: sl/SL_Menu.py:1388
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+#: sl/SL_Menu.py:1389
+msgid "Password"
+msgstr "Mot de passe"
+
+#: sl/SL_Menu.py:1390
+msgid "Use SSL"
+msgstr "Utiliser SSL"
+
+#: sl/SL_Menu.py:1403
+msgid "Email settings saved."
+msgstr "Paramètres de messagerie enregistrés."
+
+#: sl/SL_Menu.py:1406
+msgid "Change CSS Style"
+msgstr "Changer le style CSS"
+
+#: sl/SL_Menu.py:1408
+msgid "Current CSS file"
+msgstr "Fichier CSS actuel"
+
+#: sl/SL_Menu.py:1425
+msgid "Select CSS File"
+msgstr "Sélectionner le fichier CSS"
+
+#: sl/SL_Menu.py:1431
+msgid ""
+"CSS style updated. Please restart the application for the changes to take "
+"effect."
+msgstr ""
+"Style CSS mis à jour. Veuillez redémarrer l'application pour que les "
+"changements prennent effet."
+
+#: sl/SL_Menu.py:1434
+msgid "Change View Mode"
+msgstr "Changer le mode d'affichage"
+
+#: sl/SL_Menu.py:1438
+msgid "App Window (Webview)"
+msgstr "Fenêtre d'application (Webview)"
+
+#: sl/SL_Menu.py:1438
+msgid "System Browser"
+msgstr "Navigateur système"
+
+#: sl/SL_Menu.py:1448
+msgid "Select View Mode"
+msgstr "Sélectionner le mode d'affichage"
+
+#: sl/SL_Menu.py:1455
+msgid ""
+"View mode updated. Please restart the application for the changes to take "
+"effect."
+msgstr ""
+"Mode d'affichage mis à jour. Veuillez redémarrer l'application pour que les "
+"changements prennent effet."
+
+#: sl/SL_Menu.py:1458
+msgid "MCP Server Settings"
+msgstr "Paramètres du serveur MCP"
+
+#: sl/SL_Menu.py:1460
+msgid "HTTP (Streamable HTTP)"
+msgstr "HTTP (Streamable HTTP)"
+
+#: sl/SL_Menu.py:1461
+msgid "stdio (recommended for Claude Desktop)"
+msgstr "stdio (recommandé pour Claude Desktop)"
+
+#: sl/SL_Menu.py:1475
+msgid "Transport"
+msgstr "Transport"
+
+#: sl/SL_Menu.py:1486
+msgid "Enable MCP server"
+msgstr "Activer le serveur MCP"
+
+#: sl/SL_Menu.py:1489
+msgid ""
+"Not used with stdio - the MCP client starts and stops the server itself."
+msgstr "Non utilisé avec stdio - le client MCP démarre et arrête lui-même le serveur."
+
+#: sl/SL_Menu.py:1492
+msgid "Port (HTTP only)"
+msgstr "Port (HTTP uniquement)"
+
+#: sl/SL_Menu.py:1499
+msgid ""
+"With stdio, the app does not start the MCP server itself - the MCP client "
+"(e.g. Claude Desktop) launches it directly, and the port is ignored."
+msgstr "Avec stdio, l'application ne démarre pas elle-même le serveur MCP - le client MCP (par ex. Claude Desktop) le lance directement, et le port est ignoré."
+
+#: sl/SL_Menu.py:1510
+msgid ""
+"MCP server settings saved. Please restart the application for the changes to "
+"take effect."
+msgstr "Paramètres du serveur MCP enregistrés. Veuillez redémarrer l'application pour que les changements prennent effet."
+
+#: sl/SL_Menu.py:1524
+msgid "Add New Project"
+msgstr "Ajouter un nouveau projet"
+
+#: sl/SL_Menu.py:1527
+msgid "Name of the project"
+msgstr "Nom du projet"
+
+#: sl/SL_Menu.py:1531
+#, python-brace-format
+msgid "Project '{name}' added."
+msgstr "Projet '{name}' ajouté."
+
+#: sl/SL_Menu.py:1535 sl/SL_Menu.py:1581 sl/SL_Menu.py:1626 sl/SL_Menu.py:1672
+#: sl/SL_Menu.py:1727 sl/SL_Menu.py:1821 sl/SL_Menu.py:1869 sl/SL_Menu.py:1919
+#: sl/SL_Menu.py:1999 sl/SL_Menu.py:2029 sl/SL_Menu.py:2059 sl/SL_Menu.py:2090
+#: sl/SL_Menu.py:2152 sl/SL_Menu.py:2192 sl/SL_Menu.py:2304 sl/SL_Menu.py:2323
+#: sl/SL_Menu.py:2484 sl/SL_Menu.py:2532
+msgid "Cancel"
+msgstr "Annuler"
+
+#: sl/SL_Menu.py:1553 sl/SL_Menu.py:1598 sl/SL_Menu.py:1643 sl/SL_Menu.py:1838
+#: sl/SL_Menu.py:1901 sl/SL_Menu.py:1936 sl/SL_Menu.py:1969 sl/SL_Menu.py:2018
+#: sl/SL_Menu.py:2048 sl/SL_Menu.py:2078 sl/SL_Menu.py:2505 sl/SL_Menu.py:2617
+#: sl/SL_Menu.py:2678
+msgid "Select Project"
+msgstr "Sélectionner le projet"
+
+#: sl/SL_Menu.py:1558
+#, python-brace-format
+msgid "No open tasks to close in '{name}'."
+msgstr "Aucune tâche ouverte à fermer dans '{name}'."
+
+#: sl/SL_Menu.py:1565 sl/SL_Menu.py:1610 sl/SL_Menu.py:1655 sl/SL_Menu.py:1709
+#: sl/SL_Menu.py:1850 sl/SL_Menu.py:1979 sl/SL_Menu.py:2338 sl/SL_Menu.py:2516
+#: sl/SL_Menu.py:2648
+msgid "Select Task"
+msgstr "Sélectionner une tâche"
+
+#: sl/SL_Menu.py:1575
+#, python-brace-format
+msgid "Task '{sub_name}' in '{main_name}' has been closed."
+msgstr "La tâche '{sub_name}' dans '{main_name}' a été fermée."
+
+#: sl/SL_Menu.py:1603
+#, python-brace-format
+msgid "No closed tasks to reopen in '{name}'."
+msgstr "Aucune tâche fermée à rouvrir dans '{name}'."
+
+#: sl/SL_Menu.py:1620
+#, python-brace-format
+msgid "Task '{sub_name}' in '{main_name}' has been reopened."
+msgstr "La tâche '{sub_name}' dans '{main_name}' a été rouverte."
+
+#: sl/SL_Menu.py:1648
+#, python-brace-format
+msgid "No open tasks to delete in '{name}'."
+msgstr "Aucune tâche ouverte à supprimer dans '{name}'."
+
+#: sl/SL_Menu.py:1659
+msgid "This action cannot be undone."
+msgstr "Cette action ne peut pas être annulée."
+
+#: sl/SL_Menu.py:1666
+#, python-brace-format
+msgid "Task '{sub_name}' deleted from '{main_name}'."
+msgstr "Tâche '{sub_name}' supprimée de '{main_name}'."
+
+#: sl/SL_Menu.py:1689
+msgid "Select Source Project"
+msgstr "Sélectionnez le projet source"
+
+#: sl/SL_Menu.py:1694
+#, python-brace-format
+msgid "No tasks found in '{name}'."
+msgstr "Aucune tâche trouvée dans '{name}'."
+
+#: sl/SL_Menu.py:1702
+msgid "No other projects available to move to."
+msgstr "Aucun autre projet disponible vers lequel migrer."
+
+#: sl/SL_Menu.py:1713 sl/SL_Menu.py:2138
+msgid "Select Target Project"
+msgstr "Sélectionnez le projet cible"
+
+#: sl/SL_Menu.py:1721
+#, python-brace-format
+msgid "Task '{sub}' moved from '{src}' to '{dst}'."
+msgstr "La tâche «{sub}» a été déplacée de «{src}» à «{dst}»."
+
+#: sl/SL_Menu.py:1725
+msgid "Error: Could not move task."
+msgstr "Erreur : impossible de déplacer la tâche."
+
+#: sl/SL_Menu.py:1736 sl/SL_Menu.py:2099
+msgid "Weeks of inactivity"
+msgstr "Semaines d'inactivité"
+
+#: sl/SL_Menu.py:1741
+#, python-brace-format
+msgid "Inactive Tasks (> {weeks} weeks):"
+msgstr "Tâches inactives (> {weeks} semaines) :"
+
+#: sl/SL_Menu.py:1746 sl/SL_Menu.py:2107
+msgid "Last Activity"
+msgstr "Dernière activité"
+
+#: sl/SL_Menu.py:1805
+#, python-brace-format
+msgid ""
+"Are you sure you want to delete {count} closed tasks? This action cannot be "
+"undone."
+msgstr ""
+"Êtes-vous sûr de vouloir supprimer{count}tâches fermées ? Cette action ne "
+"peut pas être annulée."
+
+#: sl/SL_Menu.py:1807
+msgid "Show projects to delete"
+msgstr "Afficher les projets à supprimer"
+
+#: sl/SL_Menu.py:1811
+msgid "Delete All"
+msgstr "Supprimer tout"
+
+#: sl/SL_Menu.py:1817
+#, python-brace-format
+msgid "Successfully deleted {count} tasks."
+msgstr "Tâches {count} supprimées avec succès."
+
+#: sl/SL_Menu.py:1843
+#, python-brace-format
+msgid "No open tasks to promote in '{name}'."
+msgstr "Aucune tâche ouverte à promouvoir dans '{name}'."
+
+#: sl/SL_Menu.py:1854
+msgid ""
+"This will create a new Project with the task's name and move all time "
+"entries to a 'General' task within it."
+msgstr ""
+"Cela créera un nouveau projet avec le nom de la tâche et déplacera toutes "
+"les entrées de temps vers une tâche « Générale » à l'intérieur de celui-ci."
+
+#: sl/SL_Menu.py:1856
+msgid "Promote to Project"
+msgstr "Promouvoir vers le projet"
+
+#: sl/SL_Menu.py:1895
+msgid "No open projects to rename."
+msgstr "Aucun projet ouvert à renommer."
+
+#: sl/SL_Menu.py:1904 sl/SL_Menu.py:1984
+msgid "New Name"
+msgstr "Nouveau nom"
+
+#: sl/SL_Menu.py:1905 sl/SL_Menu.py:1985
+msgid "Rename"
+msgstr "Renommer"
+
+#: sl/SL_Menu.py:1909 sl/SL_Menu.py:1989
+msgid "Please enter a new name."
+msgstr "Veuillez saisir un nouveau nom."
+
+#: sl/SL_Menu.py:1911 sl/SL_Menu.py:1991
+msgid "New name is the same as the old name."
+msgstr "Le nouveau nom est le même que l'ancien nom."
+
+#: sl/SL_Menu.py:1913
+#, python-brace-format
+msgid "Project '{old_name}' successfully renamed to '{new_name}'."
+msgstr "Le projet '{old_name}' a été renommé en '{new_name}' avec succès."
+
+#: sl/SL_Menu.py:1974
+#, python-brace-format
+msgid "No open tasks to rename in '{name}'."
+msgstr "Aucune tâche ouverte à renommer dans '{name}'."
+
+#: sl/SL_Menu.py:1997
+msgid "Error: Could not rename. The new name might already exist."
+msgstr "Erreur : impossible de renommer. Le nouveau nom existe peut-être déjà."
+
+#: sl/SL_Menu.py:2010
+msgid "No open projects to close."
+msgstr "Aucun projet ouvert à fermer."
+
+#: sl/SL_Menu.py:2023
+#, python-brace-format
+msgid "Project '{name}' has been closed."
+msgstr "Le projet '{name}' a été clôturé."
+
+#: sl/SL_Menu.py:2027 sl/SL_Menu.py:2057 sl/SL_Menu.py:2088
+msgid "Error: Project not found."
+msgstr "Erreur : projet introuvable."
+
+#: sl/SL_Menu.py:2040
+msgid "No closed projects to reopen."
+msgstr "Aucun projet fermé à rouvrir."
+
+#: sl/SL_Menu.py:2053
+#, python-brace-format
+msgid "Project '{name}' has been reopened."
+msgstr "Le projet '{name}' a été rouvert."
+
+#: sl/SL_Menu.py:2079
+msgid ""
+"This action cannot be undone. All associated tasks and time entries will be "
+"deleted."
+msgstr ""
+"Cette action ne peut pas être annulée. Toutes les tâches et entrées de temps "
+"associées seront supprimées."
+
+#: sl/SL_Menu.py:2084
+#, python-brace-format
+msgid "Project '{name}' has been deleted."
+msgstr "Le projet '{name}' a été supprimé."
+
+#: sl/SL_Menu.py:2104
+#, python-brace-format
+msgid "Inactive Projects (> {weeks} weeks):"
+msgstr "Projets inactifs (> {weeks} semaines) :"
+
+#: sl/SL_Menu.py:2109
+#, python-brace-format
+msgid "No projects found inactive for more than {weeks} weeks."
+msgstr "Aucun projet trouvé inactif pendant plus de {weeks} semaines."
+
+#: sl/SL_Menu.py:2118 sl/SL_Menu.py:2141
+msgid "Demote Project"
+msgstr "Rétrograder le projet"
+
+#: sl/SL_Menu.py:2130
+msgid "Select Project to Demote"
+msgstr "Sélectionner le projet à rétrograder"
+
+#: sl/SL_Menu.py:2136
+msgid "No other projects available to demote into."
+msgstr "Aucun autre projet disponible pour rétrograder."
+
+#: sl/SL_Menu.py:2139
+#, python-brace-format
+msgid "This will convert '{src}' into a task of '{dst}'."
+msgstr "Cela convertira '{src}' en une tâche de '{dst}'."
+
+#: sl/SL_Menu.py:2164
+msgid "Projects with only closed or no tasks:"
+msgstr "Projets avec uniquement des tâches fermées ou aucune tâche :"
+
+#: sl/SL_Menu.py:2168
+msgid "No completed projects found."
+msgstr "Aucun projet terminé trouvé."
+
+#: sl/SL_Menu.py:2177 sl/SL_Menu.py:2311 sl/SL_Menu.py:2607
+msgid "Step 1: Select Project"
+msgstr "Étape 1 : Sélectionner le projet"
+
+#: sl/SL_Menu.py:2181 sl/SL_Menu.py:2499
+msgid "No open projects found. Please add one first."
+msgstr "Aucun projet ouvert trouvé. Veuillez d'abord en ajouter un."
+
+#: sl/SL_Menu.py:2186 sl/SL_Menu.py:2318 sl/SL_Menu.py:2547
+msgid "Project"
+msgstr "Projet"
+
+#: sl/SL_Menu.py:2188 sl/SL_Menu.py:2319 sl/SL_Menu.py:2343 sl/SL_Menu.py:2619
+msgid "Next"
+msgstr "Suivant"
+
+#: sl/SL_Menu.py:2203 sl/SL_Menu.py:2633
+msgid "No project selected. Please start again."
+msgstr "Aucun projet sélectionné. S'il vous plaît, recommencez."
+
+#: sl/SL_Menu.py:2208
+msgid "To Project:"
+msgstr "Au projet :"
+
+#: sl/SL_Menu.py:2229
+msgid "Name of the new task"
+msgstr "Nom de la nouvelle tâche"
+
+#: sl/SL_Menu.py:2235
+msgid "Due date"
+msgstr "Date d'échéance"
+
+#: sl/SL_Menu.py:2241 sl/SL_Menu.py:2413
+msgid "Recurring"
+msgstr "Récurrent"
+
+#: sl/SL_Menu.py:2257 sl/SL_Menu.py:2428
+msgid "daily"
+msgstr "quotidien"
+
+#: sl/SL_Menu.py:2257 sl/SL_Menu.py:2428
+msgid "monthly"
+msgstr "mensuel"
+
+#: sl/SL_Menu.py:2257 sl/SL_Menu.py:2428
+msgid "on all business days"
+msgstr "tous les jours ouvrables"
+
+#: sl/SL_Menu.py:2257 sl/SL_Menu.py:2428
+msgid "userdefined"
+msgstr "# Rapport de temps journalier : {date}"
+
+#: sl/SL_Menu.py:2257 sl/SL_Menu.py:2428
+msgid "weekly"
+msgstr "hebdomadaire"
+
+#: sl/SL_Menu.py:2261 sl/SL_Menu.py:2437
+msgid "Frequency"
+msgstr "Fréquence"
+
+#: sl/SL_Menu.py:2265 sl/SL_Menu.py:2440
+msgid "Days"
+msgstr "Aucun temps suivi pour le {date}."
+
+#: sl/SL_Menu.py:2269 sl/SL_Menu.py:2442
+msgid "Edit"
+msgstr "Modifier"
+
+#: sl/SL_Menu.py:2269 sl/SL_Menu.py:2442
+msgid "Preview"
+msgstr "Aperçu"
+
+#: sl/SL_Menu.py:2274 sl/SL_Menu.py:2447
+msgid "No notes provided."
+msgstr "Aucune note fournie."
+
+#: sl/SL_Menu.py:2279 sl/SL_Menu.py:2452
+msgid "A due date is required for recurring tasks."
+msgstr "Une date d'échéance est requise pour les tâches récurrentes."
+
+#: sl/SL_Menu.py:2287
+msgid "Please enter a name."
+msgstr "Veuillez entrer un nom."
+
+#: sl/SL_Menu.py:2299
+#, python-brace-format
+msgid "Task '{sub_name}' added to '{main_name}'."
+msgstr "Tâche '{sub_name}' ajoutée à '{main_name}'."
+
+#: sl/SL_Menu.py:2331 sl/SL_Menu.py:2638
+msgid "Step 2: Select Task from"
+msgstr "Étape 2 : Sélectionner la tâche de"
+
+#: sl/SL_Menu.py:2334
+msgid "No open tasks found."
+msgstr "Aucune tâche ouverte trouvée."
+
+#: sl/SL_Menu.py:2362
+msgid "Task not found."
+msgstr "Tâche non trouvée."
+
+#: sl/SL_Menu.py:2456
+msgid "Save Changes"
+msgstr "Enregistrer les modifications"
+
+#: sl/SL_Menu.py:2481
+msgid "Error: Could not update task."
+msgstr "Erreur : Impossible de mettre à jour la tâche."
+
+#: sl/SL_Menu.py:2494
+msgid "Start Work on Task"
+msgstr "Démarrer le travail sur la tâche"
+
+#: sl/SL_Menu.py:2509
+#, python-brace-format
+msgid "No open tasks to start work on in '{name}'."
+msgstr ""
+"Aucune tâche ouverte sur laquelle commencer à travailler dans '{name}'."
+
+#: sl/SL_Menu.py:2520
+msgid "Start Work"
+msgstr "Démarrer le travail"
+
+#: sl/SL_Menu.py:2548
+msgid "Task"
+msgstr "Tâche"
+
+#: sl/SL_Menu.py:2549
+msgid "Started at"
+msgstr "Démarré à"
+
+#: sl/SL_Menu.py:2550 tt/TimeTracker.py:1446
+msgid "Duration"
+msgstr "Durée"
+
+#: sl/SL_Menu.py:2564 sl/SL_Menu.py:2696
+msgid "Select Date"
+msgstr "Sélectionner la date"
+
+#: sl/SL_Menu.py:2565 sl/SL_Menu.py:2589 sl/SL_Menu.py:2653 sl/SL_Menu.py:2679
+#: sl/SL_Menu.py:2697
+msgid "Generate Report"
+msgstr "Générer le rapport"
+
+#: sl/SL_Menu.py:2585
+msgid "Start Date"
+msgstr "Date de début"
+
+#: sl/SL_Menu.py:2587
+msgid "End Date"
+msgstr "Date de fin"
+
+#: sl/SL_Menu.py:2712
+msgid "Report Result"
+msgstr "Résultat du rapport"
+
+#: sl/SL_Menu.py:2741
+msgid "Export Report"
+msgstr "Rapport d'exportation"
+
+#: tt/TimeTracker.py:91
+#, python-brace-format
+msgid "Warning: Could not read {file}. Error: {error}"
+msgstr "Avertissement : Impossible de lire {file}. Erreur : {error}"
+
+#: tt/TimeTracker.py:107
+msgid "Some required packages are missing. Attempting to install them..."
+msgstr "Certains paquets requis sont manquants. Tentative d'installation..."
+
+#: tt/TimeTracker.py:110
+#, python-brace-format
+msgid "Installing {package}..."
+msgstr "Installation de {package}..."
+
+#: tt/TimeTracker.py:114
+#, python-brace-format
+msgid "Failed to install {package}. Continuing without it."
+msgstr "Échec de l'installation de {package}. Continuer sans cela."
+
+#: tt/TimeTracker.py:118
+msgid ""
+"\n"
+"Dependencies installed successfully."
+msgstr ""
+"\n"
+"Dépendances installées avec succès."
+
+#: tt/TimeTracker.py:122
+#, python-brace-format
+msgid ""
+"\n"
+"Warning: Some dependencies could not be installed: {packages}"
+msgstr ""
+"\n"
+"Attention : Certaines dépendances n'ont pas pu être installées :{packages}"
+
+#: tt/TimeTracker.py:124
+#, python-brace-format
+msgid "An unexpected error occurred during dependency check: {error}"
+msgstr ""
+"Une erreur inattendue s'est produite lors de la vérification des "
+"dépendances : {error}"
+
+#: tt/TimeTracker.py:251
+msgid "Info: Report content has been copied to the clipboard."
+msgstr "Info : Le contenu du rapport a été copié dans le presse-papiers."
+
+#: tt/TimeTracker.py:253
+#, python-brace-format
+msgid "Warning: Could not copy to clipboard. Error: {error}"
+msgstr ""
+"Avertissement : Impossible de copier dans le presse-papiers. Erreur : {error}"
+
+#: tt/TimeTracker.py:255
+msgid ""
+"Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip "
+"install pyperclip`)."
+msgstr ""
+"Avertissement : Impossible de copier dans le presse-papiers. Veuillez "
+"installer 'pyperclip' (`pip install pyperclip`)."
+
+#: tt/TimeTracker.py:275
+#, python-brace-format
+msgid "{hours} hours ({dlp} DLP)"
+msgstr "{hours} heures ({dlp} DLP)"
+
+#: tt/TimeTracker.py:877 tt/TimeTracker.py:917
+#, python-brace-format
+msgid "Source main project '{name}' not found."
+msgstr "Source du projet principal '{name}' introuvable."
+
+#: tt/TimeTracker.py:879
+#, python-brace-format
+msgid "Destination main project '{name}' not found."
+msgstr "Projet principal de destination «{name}» introuvable."
+
+#: tt/TimeTracker.py:891
+#, python-brace-format
+msgid "Task '{task_name}' moved successfully."
+msgstr "La tâche '{task_name}' a été déplacée avec succès."
+
+#: tt/TimeTracker.py:892 tt/TimeTracker.py:927 tt/TimeTracker.py:1408
+#, python-brace-format
+msgid "Task '{task_name}' not found in '{main_name}'."
+msgstr "La tâche '{task_name}' n'a pas été trouvée dans '{main_name}'."
+
+#: tt/TimeTracker.py:911
+#, python-brace-format
+msgid "A main project named '{name}' already exists."
+msgstr "Un projet principal nommé «{name}» existe déjà."
+
+#: tt/TimeTracker.py:936
+msgid "General"
+msgstr "Général"
+
+#: tt/TimeTracker.py:940
+#, python-brace-format
+msgid "Task '{task_name}' was promoted to a new main project."
+msgstr "La tâche '{task_name}' a été promue en nouveau projet principal."
+
+#: tt/TimeTracker.py:967
+#, python-brace-format
+msgid "Main project to demote '{name}' not found."
+msgstr "Projet principal à rétrograder '{name}' introuvable."
+
+#: tt/TimeTracker.py:969
+#, python-brace-format
+msgid "New parent main project '{name}' not found."
+msgstr "Nouveau projet principal parent '{name}' introuvable."
+
+#: tt/TimeTracker.py:994
+#, python-brace-format
+msgid ""
+"Main project '{demoted_name}' was demoted to a sub-project under "
+"'{parent_name}'."
+msgstr ""
+"Le projet principal «{demoted_name}» a été rétrogradé au rang de sous-projet "
+"sous «{parent_name}»."
+
+#: tt/TimeTracker.py:1076
+msgid "Email import is not enabled."
+msgstr "L'importation d'e-mails n'est pas activée."
+
+#: tt/TimeTracker.py:1085
+msgid "Email settings are incomplete."
+msgstr "Les paramètres de messagerie sont incomplets."
+
+#: tt/TimeTracker.py:1098
+msgid "Error searching emails."
+msgstr "Erreur lors de la recherche d'e-mails."
+
+#: tt/TimeTracker.py:1113
+msgid "No Subject"
+msgstr "Aucun sujet"
+
+#: tt/TimeTracker.py:1173
+msgid "Unknown Task"
+msgstr "Tâche inconnue"
+
+#: tt/TimeTracker.py:1365
+#, python-brace-format
+msgid "- {name}: {hours} hours"
+msgstr "- {name}: {hours} heures"
+
+#: tt/TimeTracker.py:1373
+#, python-brace-format
+msgid "## {name} ({hours} hours)\n"
+msgstr "## {name} ({hours} heures)\n"
+
+#: tt/TimeTracker.py:1382
+#, python-brace-format
+msgid "# Daily Time Report: {date}\n"
+msgstr "# Rapport de temps journalier : {date}\n"
+
+#: tt/TimeTracker.py:1383
+#, python-brace-format
+msgid ""
+"\n"
+"**Total Daily Time: {hours} hours**"
+msgstr ""
+"\n"
+"**Durée quotidienne totale :{hours}heures**"
+
+#: tt/TimeTracker.py:1387 tt/TimeTracker.py:1700
+#, python-brace-format
+msgid "No time tracked for {date}."
+msgstr "Aucun temps suivi pour le {date}."
+
+#: tt/TimeTracker.py:1404 tt/TimeTracker.py:1499
+#, python-brace-format
+msgid "Main project '{name}' not found."
+msgstr "Projet principal «{name}» introuvable."
+
+#: tt/TimeTracker.py:1412
+#, python-brace-format
+msgid "No time entries found for task '{task_name}'."
+msgstr "Aucune entrée de temps trouvée pour la tâche '{task_name}'."
+
+#: tt/TimeTracker.py:1445 tt/TimeTracker.py:1675
+msgid "now"
+msgstr "maintenant"
+
+#: tt/TimeTracker.py:1450
+#, python-brace-format
+msgid "# Detailed Report for Task: {name}"
+msgstr "# Rapport détaillé pour la tâche : {name}"
+
+#: tt/TimeTracker.py:1451
+#, python-brace-format
+msgid "Part of Main Project: {name}"
+msgstr "Fait partie du projet principal : {name}"
+
+#: tt/TimeTracker.py:1454
+msgid "Active (currently running)"
+msgstr "Actif (en cours)"
+
+#: tt/TimeTracker.py:1454 tt/TimeTracker.py:1551
+msgid "Inactive"
+msgstr "Inactif"
+
+#: tt/TimeTracker.py:1455 tt/TimeTracker.py:1552
+msgid "Status"
+msgstr "Statut"
+
+#: tt/TimeTracker.py:1457 tt/TimeTracker.py:1554
+msgid "First entry"
+msgstr "Première entrée"
+
+#: tt/TimeTracker.py:1459 tt/TimeTracker.py:1556
+msgid "Last activity"
+msgstr "Dernière activité"
+
+#: tt/TimeTracker.py:1461 tt/TimeTracker.py:1558
+msgid "Total recorded time"
+msgstr "Temps total enregistré"
+
+#: tt/TimeTracker.py:1462 tt/TimeTracker.py:1560
+msgid "Total work sessions"
+msgstr "Nombre total de sessions de travail"
+
+#: tt/TimeTracker.py:1466 tt/TimeTracker.py:1564
+msgid "Average session duration"
+msgstr "Durée moyenne des sessions"
+
+#: tt/TimeTracker.py:1469 tt/TimeTracker.py:1567
+msgid "Weekday Distribution"
+msgstr "Répartition par jour de la semaine"
+
+#: tt/TimeTracker.py:1479
+msgid "Daily Breakdown"
+msgstr "Répartition journalière"
+
+#: tt/TimeTracker.py:1548
+#, python-brace-format
+msgid "# Detailed Report for Main Project: {name}"
+msgstr "# Rapport détaillé pour le projet principal : {name}"
+
+#: tt/TimeTracker.py:1551
+#, python-brace-format
+msgid "Active (working on '{task_name}')"
+msgstr "Actif (travail sur '{task_name}')"
+
+#: tt/TimeTracker.py:1559
+msgid "Number of tasks"
+msgstr "Nombre de tâches"
+
+#: tt/TimeTracker.py:1578
+msgid "Task Breakdown"
+msgstr "Répartition par tâche"
+
+#: tt/TimeTracker.py:1587
+#, python-brace-format
+msgid "{num_sessions} sessions"
+msgstr "{num_sessions} sessions"
+
+#: tt/TimeTracker.py:1640
+#, python-brace-format
+msgid "# Time Report: {start_date} to {end_date}\n"
+msgstr "# Rapport de temps : du {start_date} au {end_date}\n"
+
+#: tt/TimeTracker.py:1641
+#, python-brace-format
+msgid ""
+"\n"
+"**Total Time in Period: {total_time}**"
+msgstr ""
+"\n"
+"**Temps total sur la période : {total_time}**"
+
+#: tt/TimeTracker.py:1645
+#, python-brace-format
+msgid "No time tracked between {start_date} and {end_date}."
+msgstr "Aucun temps suivi entre le {start_date} et le {end_date}."
+
+#: tt/TimeTracker.py:1661
+#, python-brace-format
+msgid "# Detailed Daily Report: {date}"
+msgstr "# Rapport journalier détaillé : {date}"
 
 #: update.py:35
 msgid ""
@@ -1415,1271 +2719,14 @@ msgstr "Vérification des mises à jour..."
 msgid "No updates available."
 msgstr "Aucune mise à jour disponible."
 
-#: tt/TimeTracker.py:90
-#, python-brace-format
-msgid "Warning: Could not read {file}. Error: {error}"
-msgstr "Avertissement : Impossible de lire {file}. Erreur : {error}"
-
-#: tt/TimeTracker.py:105
-msgid "Some required packages are missing. Attempting to install them..."
-msgstr "Certains paquets requis sont manquants. Tentative d'installation..."
-
-#: tt/TimeTracker.py:108
-#, python-brace-format
-msgid "Installing {package}..."
-msgstr "Installation de {package}..."
-
-#: tt/TimeTracker.py:112
-#, python-brace-format
-msgid "Failed to install {package}. Continuing without it."
-msgstr "Échec de l'installation de {package}. Continuer sans cela."
-
-#: tt/TimeTracker.py:116
-msgid ""
-"\n"
-"Dependencies installed successfully."
-msgstr ""
-"\n"
-"Dépendances installées avec succès."
-
-#: tt/TimeTracker.py:120
-#, python-brace-format
-msgid ""
-"\n"
-"Warning: Some dependencies could not be installed: {packages}"
-msgstr ""
-"\n"
-"Attention : Certaines dépendances n'ont pas pu être installées :{packages}"
-
-#: tt/TimeTracker.py:122
-#, python-brace-format
-msgid "An unexpected error occurred during dependency check: {error}"
-msgstr ""
-"Une erreur inattendue s'est produite lors de la vérification des dépendances"
-" : {error}"
-
-#: tt/TimeTracker.py:229
-msgid "Info: Report content has been copied to the clipboard."
-msgstr "Info : Le contenu du rapport a été copié dans le presse-papiers."
-
-#: tt/TimeTracker.py:231
-#, python-brace-format
-msgid "Warning: Could not copy to clipboard. Error: {error}"
-msgstr ""
-"Avertissement : Impossible de copier dans le presse-papiers. Erreur : "
-"{error}"
-
-#: tt/TimeTracker.py:233
-msgid ""
-"Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip "
-"install pyperclip`)."
-msgstr ""
-"Avertissement : Impossible de copier dans le presse-papiers. Veuillez "
-"installer 'pyperclip' (`pip install pyperclip`)."
-
-#: tt/TimeTracker.py:253
-#, python-brace-format
-msgid "{hours} hours ({dlp} DLP)"
-msgstr "{hours} heures ({dlp} DLP)"
-
-#: tt/TimeTracker.py:846 tt/TimeTracker.py:886
-#, python-brace-format
-msgid "Source main project '{name}' not found."
-msgstr "Source du projet principal '{name}' introuvable."
-
-#: tt/TimeTracker.py:848
-#, python-brace-format
-msgid "Destination main project '{name}' not found."
-msgstr "Projet principal de destination «{name}» introuvable."
-
-#: tt/TimeTracker.py:860
-#, python-brace-format
-msgid "Task '{task_name}' moved successfully."
-msgstr "La tâche '{task_name}' a été déplacée avec succès."
-
-#: tt/TimeTracker.py:861 tt/TimeTracker.py:896 tt/TimeTracker.py:1373
-#, python-brace-format
-msgid "Task '{task_name}' not found in '{main_name}'."
-msgstr "La tâche '{task_name}' n'a pas été trouvée dans '{main_name}'."
-
-#: tt/TimeTracker.py:880
-#, python-brace-format
-msgid "A main project named '{name}' already exists."
-msgstr "Un projet principal nommé «{name}» existe déjà."
-
-#: tt/TimeTracker.py:905
-msgid "General"
-msgstr "Général"
-
-#: tt/TimeTracker.py:909
-#, python-brace-format
-msgid "Task '{task_name}' was promoted to a new main project."
-msgstr "La tâche '{task_name}' a été promue en nouveau projet principal."
-
-#: tt/TimeTracker.py:936
-#, python-brace-format
-msgid "Main project to demote '{name}' not found."
-msgstr "Projet principal à rétrograder '{name}' introuvable."
-
-#: tt/TimeTracker.py:938
-#, python-brace-format
-msgid "New parent main project '{name}' not found."
-msgstr "Nouveau projet principal parent '{name}' introuvable."
-
-#: tt/TimeTracker.py:963
-#, python-brace-format
-msgid ""
-"Main project '{demoted_name}' was demoted to a sub-project under "
-"'{parent_name}'."
-msgstr ""
-"Le projet principal «{demoted_name}» a été rétrogradé au rang de sous-projet"
-" sous «{parent_name}»."
-
-#: tt/TimeTracker.py:1042
-msgid "Email import is not enabled."
-msgstr "L'importation d'e-mails n'est pas activée."
-
-#: tt/TimeTracker.py:1051
-msgid "Email settings are incomplete."
-msgstr "Les paramètres de messagerie sont incomplets."
-
-#: tt/TimeTracker.py:1064
-msgid "Error searching emails."
-msgstr "Erreur lors de la recherche d'e-mails."
-
-#: tt/TimeTracker.py:1079
-msgid "No Subject"
-msgstr "Aucun sujet"
-
-#: tt/TimeTracker.py:1139
-msgid "Unknown Task"
-msgstr "Tâche inconnue"
-
-#: tt/TimeTracker.py:1330
-#, python-brace-format
-msgid "- {name}: {hours} hours"
-msgstr "- {name}: {hours} heures"
-
-#: tt/TimeTracker.py:1338
-#, python-brace-format
-msgid "## {name} ({hours} hours)\n"
-msgstr "## {name} ({hours} heures)\n"
-
-#: tt/TimeTracker.py:1347
-#, python-brace-format
-msgid "# Daily Time Report: {date}\n"
-msgstr "# Rapport de temps journalier : {date}\n"
-
-#: tt/TimeTracker.py:1348
-#, python-brace-format
-msgid ""
-"\n"
-"**Total Daily Time: {hours} hours**"
-msgstr ""
-"\n"
-"**Durée quotidienne totale :{hours}heures**"
-
-#: tt/TimeTracker.py:1352 tt/TimeTracker.py:1665
-#, python-brace-format
-msgid "No time tracked for {date}."
-msgstr "Aucun temps suivi pour le {date}."
-
-#: tt/TimeTracker.py:1369 tt/TimeTracker.py:1464
-#, python-brace-format
-msgid "Main project '{name}' not found."
-msgstr "Projet principal «{name}» introuvable."
-
-#: tt/TimeTracker.py:1377
-#, python-brace-format
-msgid "No time entries found for task '{task_name}'."
-msgstr "Aucune entrée de temps trouvée pour la tâche '{task_name}'."
-
-#: tt/TimeTracker.py:1410 tt/TimeTracker.py:1640
-msgid "now"
-msgstr "maintenant"
-
-#: tt/TimeTracker.py:1411 sl/SL_Menu.py:1913
-msgid "Duration"
-msgstr "Durée"
-
-#: tt/TimeTracker.py:1415
-#, python-brace-format
-msgid "# Detailed Report for Task: {name}"
-msgstr "# Rapport détaillé pour la tâche : {name}"
-
-#: tt/TimeTracker.py:1416
-#, python-brace-format
-msgid "Part of Main Project: {name}"
-msgstr "Fait partie du projet principal : {name}"
-
-#: tt/TimeTracker.py:1419
-msgid "Active (currently running)"
-msgstr "Actif (en cours)"
-
-#: tt/TimeTracker.py:1419 tt/TimeTracker.py:1516
-msgid "Inactive"
-msgstr "Inactif"
-
-#: tt/TimeTracker.py:1420 tt/TimeTracker.py:1517
-msgid "Status"
-msgstr "Statut"
-
-#: tt/TimeTracker.py:1422 tt/TimeTracker.py:1519
-msgid "First entry"
-msgstr "Première entrée"
-
-#: tt/TimeTracker.py:1424 tt/TimeTracker.py:1521
-msgid "Last activity"
-msgstr "Dernière activité"
-
-#: tt/TimeTracker.py:1426 tt/TimeTracker.py:1523
-msgid "Total recorded time"
-msgstr "Temps total enregistré"
-
-#: tt/TimeTracker.py:1427 tt/TimeTracker.py:1525
-msgid "Total work sessions"
-msgstr "Nombre total de sessions de travail"
-
-#: tt/TimeTracker.py:1431 tt/TimeTracker.py:1529
-msgid "Average session duration"
-msgstr "Durée moyenne des sessions"
-
-#: tt/TimeTracker.py:1434 tt/TimeTracker.py:1532
-msgid "Weekday Distribution"
-msgstr "Répartition par jour de la semaine"
-
-#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
-msgid "Monday"
-msgstr "Lundi"
-
-#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
-msgid "Tuesday"
-msgstr "Mardi"
-
-#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
-msgid "Wednesday"
-msgstr "Mercredi"
-
-#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
-msgid "Thursday"
-msgstr "Jeudi"
-
-#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
-msgid "Friday"
-msgstr "Vendredi"
-
-#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
-msgid "Saturday"
-msgstr "Samedi"
-
-#: tt/TimeTracker.py:1436 tt/TimeTracker.py:1534 sl/SL_Menu.py:437
-msgid "Sunday"
-msgstr "Dimanche"
-
-#: tt/TimeTracker.py:1444
-msgid "Daily Breakdown"
-msgstr "Répartition journalière"
-
-#: tt/TimeTracker.py:1513
-#, python-brace-format
-msgid "# Detailed Report for Main Project: {name}"
-msgstr "# Rapport détaillé pour le projet principal : {name}"
-
-#: tt/TimeTracker.py:1516
-#, python-brace-format
-msgid "Active (working on '{task_name}')"
-msgstr "Actif (travail sur '{task_name}')"
-
-#: tt/TimeTracker.py:1524
-msgid "Number of tasks"
-msgstr "Nombre de tâches"
-
-#: tt/TimeTracker.py:1543
-msgid "Task Breakdown"
-msgstr "Répartition par tâche"
-
-#: tt/TimeTracker.py:1552
-#, python-brace-format
-msgid "{num_sessions} sessions"
-msgstr "{num_sessions} sessions"
-
-#: tt/TimeTracker.py:1605
-#, python-brace-format
-msgid "# Time Report: {start_date} to {end_date}\n"
-msgstr "# Rapport de temps : du {start_date} au {end_date}\n"
-
-#: tt/TimeTracker.py:1606
-#, python-brace-format
-msgid ""
-"\n"
-"**Total Time in Period: {total_time}**"
-msgstr ""
-"\n"
-"**Temps total sur la période : {total_time}**"
-
-#: tt/TimeTracker.py:1610
-#, python-brace-format
-msgid "No time tracked between {start_date} and {end_date}."
-msgstr "Aucun temps suivi entre le {start_date} et le {end_date}."
-
-#: tt/TimeTracker.py:1626
-#, python-brace-format
-msgid "# Detailed Daily Report: {date}"
-msgstr "# Rapport journalier détaillé : {date}"
-
-#: sl/SL_Menu.py:277
-msgid "New"
-msgstr "Nouveau"
-
-#: sl/SL_Menu.py:278
-msgid "New Project"
-msgstr "Nouveau projet"
-
-#: sl/SL_Menu.py:281
-msgid "New Task"
-msgstr "Nouvelle tâche"
-
-#: sl/SL_Menu.py:286
-msgid "Project & Task Management"
-msgstr "Gestion des projets et des tâches"
-
-#: sl/SL_Menu.py:287 sl/SL_Menu.py:785
-msgid "Main Project Management"
-msgstr "Gestion du projet principal"
-
-#: sl/SL_Menu.py:288 sl/SL_Menu.py:801 sl/SL_Menu.py:899
-msgid "Add Project"
-msgstr "Ajouter un projet"
-
-#: sl/SL_Menu.py:291 sl/SL_Menu.py:804 sl/SL_Menu.py:1247
-msgid "List Projects"
-msgstr "Liste des projets"
-
-#: sl/SL_Menu.py:292 sl/SL_Menu.py:805 sl/SL_Menu.py:1262
-msgid "Rename Project"
-msgstr "Renommer le projet"
-
-#: sl/SL_Menu.py:293 sl/SL_Menu.py:806 sl/SL_Menu.py:1376 sl/SL_Menu.py:1389
-msgid "Close Project"
-msgstr "Fermer le projet"
-
-#: sl/SL_Menu.py:294 sl/SL_Menu.py:807 sl/SL_Menu.py:1406 sl/SL_Menu.py:1419
-msgid "Re-open Project"
-msgstr "Rouvrir le projet"
-
-#: sl/SL_Menu.py:295 sl/SL_Menu.py:808 sl/SL_Menu.py:1436 sl/SL_Menu.py:1450
-msgid "Delete Project"
-msgstr "Supprimer le projet"
-
-#: sl/SL_Menu.py:296 sl/SL_Menu.py:809 sl/SL_Menu.py:1467
-msgid "List Inactive Projects"
-msgstr "Liste des projets inactifs"
-
-#: sl/SL_Menu.py:297 sl/SL_Menu.py:810
-msgid "Demote Project to Task"
-msgstr "Rétrograder le projet en tâche"
-
-#: sl/SL_Menu.py:298 sl/SL_Menu.py:811 sl/SL_Menu.py:1529
-msgid "List Completed Projects"
-msgstr "Liste des projets terminés"
-
-#: sl/SL_Menu.py:300 sl/SL_Menu.py:787 sl/SL_Menu.py:822
-msgid "Task Management"
-msgstr "Gestion des tâches"
-
-#: sl/SL_Menu.py:301 sl/SL_Menu.py:824 sl/SL_Menu.py:1547 sl/SL_Menu.py:1578
-#: sl/SL_Menu.py:1651
-msgid "Add Task"
-msgstr "Ajouter une tâche"
-
-#: sl/SL_Menu.py:304 sl/SL_Menu.py:827 sl/SL_Menu.py:1297
-msgid "List Tasks"
-msgstr "Liste des tâches"
-
-#: sl/SL_Menu.py:305 sl/SL_Menu.py:828 sl/SL_Menu.py:1329
-msgid "Rename Task"
-msgstr "Renommer la tâche"
-
-#: sl/SL_Menu.py:306 sl/SL_Menu.py:829 sl/SL_Menu.py:914 sl/SL_Menu.py:940
-#: sl/SL_Menu.py:1119
-msgid "Close Task"
-msgstr "Fermer la tâche"
-
-#: sl/SL_Menu.py:307 sl/SL_Menu.py:830 sl/SL_Menu.py:959 sl/SL_Menu.py:985
-msgid "Re-open Task"
-msgstr "Rouvrir la tâche"
-
-#: sl/SL_Menu.py:308 sl/SL_Menu.py:831 sl/SL_Menu.py:1004 sl/SL_Menu.py:1031
-msgid "Delete Task"
-msgstr "Supprimer la tâche"
-
-#: sl/SL_Menu.py:309 sl/SL_Menu.py:832 sl/SL_Menu.py:1050 sl/SL_Menu.py:1086
-msgid "Move Task"
-msgstr "Déplacer la tâche"
-
-#: sl/SL_Menu.py:310 sl/SL_Menu.py:833 sl/SL_Menu.py:1105
-msgid "List Inactive Tasks"
-msgstr "Liste des tâches inactives"
-
-#: sl/SL_Menu.py:311 sl/SL_Menu.py:834 sl/SL_Menu.py:1132
-msgid "List All Closed Tasks"
-msgstr "Liste de toutes les tâches fermées"
-
-#: sl/SL_Menu.py:312 sl/SL_Menu.py:477 sl/SL_Menu.py:539 sl/SL_Menu.py:629
-#: sl/SL_Menu.py:835 sl/SL_Menu.py:1678 sl/SL_Menu.py:1698 sl/SL_Menu.py:1733
-msgid "Edit Task"
-msgstr "Modifier la tâche"
-
-#: sl/SL_Menu.py:315 sl/SL_Menu.py:838 sl/SL_Menu.py:1157
-msgid "Delete All Closed Tasks"
-msgstr "Supprimer toutes les tâches fermées"
-
-#: sl/SL_Menu.py:316 sl/SL_Menu.py:839 sl/SL_Menu.py:1199
-msgid "Promote Task to Project"
-msgstr "Promouvoir la tâche en projet"
-
-#: sl/SL_Menu.py:319
-msgid "Today View"
-msgstr "Vue du jour"
-
-#: sl/SL_Menu.py:323 sl/SL_Menu.py:405
-msgid "Task Planning"
-msgstr "Planification des tâches"
-
-#: sl/SL_Menu.py:327 sl/SL_Menu.py:660
-msgid "E-Mail Task Assignment"
-msgstr "Attribution des tâches par e-mail"
-
-#: sl/SL_Menu.py:331 sl/SL_Menu.py:473 sl/SL_Menu.py:535 sl/SL_Menu.py:625
-msgid "Start work on task"
-msgstr "Démarrer le travail sur la tâche"
-
-#: sl/SL_Menu.py:335
-msgid "Show current work"
-msgstr "Afficher le travail en cours"
-
-#: sl/SL_Menu.py:339
-msgid "Stop current work"
-msgstr "Arrêter le travail en cours"
-
-#: sl/SL_Menu.py:347 sl/SL_Menu.py:850
-msgid "Reporting"
-msgstr "Rapports"
-
-#: sl/SL_Menu.py:348 sl/SL_Menu.py:853
-msgid "Daily Report (Today)"
-msgstr "Rapport quotidien (aujourd'hui)"
-
-#: sl/SL_Menu.py:352 sl/SL_Menu.py:858 sl/SL_Menu.py:2200
-msgid "Daily Report (Specific Day)"
-msgstr "Rapport journalier (Jour spécifique)"
-
-#: sl/SL_Menu.py:354 sl/SL_Menu.py:859 sl/SL_Menu.py:2219
-msgid "Date Range Report"
-msgstr "Rapport par plage de dates"
-
-#: sl/SL_Menu.py:356 sl/SL_Menu.py:860 sl/SL_Menu.py:2246 sl/SL_Menu.py:2277
-msgid "Detailed Task Report"
-msgstr "Rapport détaillé de tâche"
-
-#: sl/SL_Menu.py:358 sl/SL_Menu.py:861 sl/SL_Menu.py:2305
-msgid "Detailed Project Report"
-msgstr "Rapport détaillé de projet"
-
-#: sl/SL_Menu.py:360 sl/SL_Menu.py:862 sl/SL_Menu.py:2332
-msgid "Detailed Daily Report"
-msgstr "Rapport journalier détaillé"
-
-#: sl/SL_Menu.py:364 sl/SL_Menu.py:873
-msgid "Settings"
-msgstr "Paramètres"
-
-#: sl/SL_Menu.py:371 sl/SL_Menu.py:1902
-msgid "Current Active Work"
-msgstr "Travail actif en cours"
-
-#: sl/SL_Menu.py:376 sl/SL_Menu.py:497 sl/SL_Menu.py:559 sl/SL_Menu.py:636
-#: sl/SL_Menu.py:1778
-msgid "Done"
-msgstr "Terminé"
-
-#: sl/SL_Menu.py:390
-msgid "Edit current task"
-msgstr "Modifier la tâche actuelle"
-
-#: sl/SL_Menu.py:398
-msgid "Exit"
-msgstr "Quitter"
-
-#: sl/SL_Menu.py:410 sl/SL_Menu.py:420
-msgid "Tomorrow"
-msgstr "Demain"
-
-#: sl/SL_Menu.py:411 sl/SL_Menu.py:421
-msgid "Weekly overview"
-msgstr "Aperçu hebdomadaire"
-
-#: sl/SL_Menu.py:412 sl/SL_Menu.py:422
-msgid "Overdue tasks"
-msgstr "Tâches en retard"
-
-#: sl/SL_Menu.py:413 sl/SL_Menu.py:423
-msgid "Unplanned tasks"
-msgstr "Tâches non planifiées"
-
-#: sl/SL_Menu.py:414
-msgid "All"
-msgstr "Tous"
-
-#: sl/SL_Menu.py:416
-msgid "Filter"
-msgstr "Filtrer"
-
-#: sl/SL_Menu.py:430
-msgid "Tasks"
-msgstr "Tâches"
-
-#: sl/SL_Menu.py:572
-msgid "No tasks found."
-msgstr "Aucune tâche trouvée."
-
-#: sl/SL_Menu.py:574 sl/SL_Menu.py:653 sl/SL_Menu.py:775 sl/SL_Menu.py:815
-#: sl/SL_Menu.py:843 sl/SL_Menu.py:919 sl/SL_Menu.py:930 sl/SL_Menu.py:964
-#: sl/SL_Menu.py:975 sl/SL_Menu.py:1009 sl/SL_Menu.py:1020 sl/SL_Menu.py:1055
-#: sl/SL_Menu.py:1066 sl/SL_Menu.py:1074 sl/SL_Menu.py:1125 sl/SL_Menu.py:1150
-#: sl/SL_Menu.py:1172 sl/SL_Menu.py:1204 sl/SL_Menu.py:1215 sl/SL_Menu.py:1255
-#: sl/SL_Menu.py:1267 sl/SL_Menu.py:1302 sl/SL_Menu.py:1322 sl/SL_Menu.py:1334
-#: sl/SL_Menu.py:1345 sl/SL_Menu.py:1381 sl/SL_Menu.py:1411 sl/SL_Menu.py:1441
-#: sl/SL_Menu.py:1481 sl/SL_Menu.py:1493 sl/SL_Menu.py:1540 sl/SL_Menu.py:1552
-#: sl/SL_Menu.py:1683 sl/SL_Menu.py:1702 sl/SL_Menu.py:1715 sl/SL_Menu.py:1730
-#: sl/SL_Menu.py:1863 sl/SL_Menu.py:1873 sl/SL_Menu.py:1917 sl/SL_Menu.py:2102
-#: sl/SL_Menu.py:2107 sl/SL_Menu.py:2212 sl/SL_Menu.py:2239 sl/SL_Menu.py:2251
-#: sl/SL_Menu.py:2263 sl/SL_Menu.py:2282 sl/SL_Menu.py:2298 sl/SL_Menu.py:2310
-#: sl/SL_Menu.py:2325 sl/SL_Menu.py:2344 sl/SL_Menu.py:2385 sl/SL_Menu.py:2400
-msgid "Back"
-msgstr "Retour"
-
-#: sl/SL_Menu.py:581
-msgid "Today's Tasks"
-msgstr "Tâches du jour"
-
-#: sl/SL_Menu.py:592
-msgid "Show only open tasks"
-msgstr "Afficher uniquement les tâches ouvertes"
-
-#: sl/SL_Menu.py:649
-msgid "No open tasks for today."
-msgstr "Aucune tâche ouverte pour aujourd'hui."
-
-#: sl/SL_Menu.py:651
-msgid "No tasks for today."
-msgstr "Aucune tâche pour aujourd'hui."
-
-#: sl/SL_Menu.py:666
-msgid "Fetching emails..."
-msgstr "Récupération des e-mails..."
-
-#: sl/SL_Menu.py:669
-#, python-brace-format
-msgid "Error fetching emails: {error}"
-msgstr "Erreur lors de la récupération des e-mails : {error}"
-
-#: sl/SL_Menu.py:672
-#, python-brace-format
-msgid "{count} new tasks created from emails."
-msgstr "{count} nouvelles tâches créées à partir des e-mails."
-
-#: sl/SL_Menu.py:674
-msgid "No new emails found."
-msgstr "Aucun nouvel e-mail trouvé."
-
-#: sl/SL_Menu.py:741
-#, python-brace-format
-msgid "{remaining} of {total} emails still to process"
-msgstr "{remaining} e-mails sur {total} restants à traiter"
-
-#: sl/SL_Menu.py:680
-msgid "No unassigned email tasks available."
-msgstr "Aucune tâche par e-mail non attribuée disponible."
-
-#: sl/SL_Menu.py:692
-msgid "Assign Project"
-msgstr "Attribuer un projet"
-
-#: sl/SL_Menu.py:703
-msgid "Are you sure you want to delete this task?"
-msgstr "Êtes-vous sûr de vouloir supprimer cette tâche ?"
-
-#: sl/SL_Menu.py:706
-msgid "Yes, delete"
-msgstr "Oui, supprimer"
-
-#: sl/SL_Menu.py:711
-msgid "No, cancel"
-msgstr "Non, annuler"
-
-#: sl/SL_Menu.py:718
-msgid "Delete"
-msgstr "Supprimer"
-
-#: sl/SL_Menu.py:722
-msgid "Edit Details"
-msgstr "Modifier les détails"
-
-#: sl/SL_Menu.py:730 sl/SL_Menu.py:1762
-msgid "Task Name"
-msgstr "Nom de la tâche"
-
-#: sl/SL_Menu.py:739 sl/SL_Menu.py:1766
-msgid "Due Date"
-msgstr "Date d'échéance"
-
-#: sl/SL_Menu.py:747 sl/SL_Menu.py:1770
-msgid "Clear"
-msgstr "Effacer"
-
-#: sl/SL_Menu.py:754 sl/SL_Menu.py:1639 sl/SL_Menu.py:1809
-msgid "Notes (Markdown)"
-msgstr "Aucun temps suivi entre le {start_date} et le {end_date}."
-
-#: sl/SL_Menu.py:756 sl/SL_Menu.py:1821
-msgid "Save Changes"
-msgstr "Enregistrer les modifications"
-
-#: sl/SL_Menu.py:767
-msgid "Task details updated successfully."
-msgstr "Détails de la tâche mis à jour avec succès."
-
-#: sl/SL_Menu.py:773
-msgid "Error updating task details."
-msgstr "Erreur lors de la mise à jour des détails de la tâche."
-
-#: sl/SL_Menu.py:783 sl/SL_Menu.py:799
-msgid "Project Management"
-msgstr "Gestion de projet"
-
-#: sl/SL_Menu.py:792 sl/SL_Menu.py:866
-msgid "Back to Main Menu"
-msgstr "Retour au menu principal"
-
-#: sl/SL_Menu.py:878 sl/SL_Menu.py:2005
-msgid "Report Format"
-msgstr "Format du rapport"
-
-#: sl/SL_Menu.py:880 sl/SL_Menu.py:2164
-msgid "Email Settings"
-msgstr "Paramètres de messagerie"
-
-#: sl/SL_Menu.py:881 sl/SL_Menu.py:2025
-msgid "Change CSS Style"
-msgstr "Changer le style CSS"
-
-#: sl/SL_Menu.py:882 sl/SL_Menu.py:2063
-msgid "Change View Mode"
-msgstr "Changer le mode d'affichage"
-
-#: sl/SL_Menu.py:895
-msgid "Add New Project"
-msgstr "Ajouter un nouveau projet"
-
-#: sl/SL_Menu.py:898
-msgid "Name of the project"
-msgstr "Nom du projet"
-
-#: sl/SL_Menu.py:902
-#, python-brace-format
-msgid "Project '{name}' added."
-msgstr "Projet '{name}' ajouté."
-
-#: sl/SL_Menu.py:906 sl/SL_Menu.py:952 sl/SL_Menu.py:997 sl/SL_Menu.py:1043
-#: sl/SL_Menu.py:1098 sl/SL_Menu.py:1192 sl/SL_Menu.py:1240 sl/SL_Menu.py:1290
-#: sl/SL_Menu.py:1369 sl/SL_Menu.py:1399 sl/SL_Menu.py:1429 sl/SL_Menu.py:1460
-#: sl/SL_Menu.py:1522 sl/SL_Menu.py:1562 sl/SL_Menu.py:1671 sl/SL_Menu.py:1690
-#: sl/SL_Menu.py:1848 sl/SL_Menu.py:1895 sl/SL_Menu.py:1939 sl/SL_Menu.py:2000
-#: sl/SL_Menu.py:2019 sl/SL_Menu.py:2056 sl/SL_Menu.py:2089 sl/SL_Menu.py:2157
-#: sl/SL_Menu.py:2193
-msgid "Cancel"
-msgstr "Annuler"
-
-#: sl/SL_Menu.py:924 sl/SL_Menu.py:969 sl/SL_Menu.py:1014 sl/SL_Menu.py:1209
-#: sl/SL_Menu.py:1272 sl/SL_Menu.py:1307 sl/SL_Menu.py:1339 sl/SL_Menu.py:1388
-#: sl/SL_Menu.py:1418 sl/SL_Menu.py:1448 sl/SL_Menu.py:1868 sl/SL_Menu.py:2256
-#: sl/SL_Menu.py:2317
-msgid "Select Project"
-msgstr "Sélectionner le projet"
-
-#: sl/SL_Menu.py:929
-#, python-brace-format
-msgid "No open tasks to close in '{name}'."
-msgstr "Aucune tâche ouverte à fermer dans '{name}'."
-
-#: sl/SL_Menu.py:936 sl/SL_Menu.py:981 sl/SL_Menu.py:1026 sl/SL_Menu.py:1080
-#: sl/SL_Menu.py:1221 sl/SL_Menu.py:1349 sl/SL_Menu.py:1705 sl/SL_Menu.py:1879
-#: sl/SL_Menu.py:2287
-msgid "Select Task"
-msgstr "Sélectionner une tâche"
-
-#: sl/SL_Menu.py:946
-#, python-brace-format
-msgid "Task '{sub_name}' in '{main_name}' has been closed."
-msgstr "La tâche '{sub_name}' dans '{main_name}' a été fermée."
-
-#: sl/SL_Menu.py:974
-#, python-brace-format
-msgid "No closed tasks to reopen in '{name}'."
-msgstr "Aucune tâche fermée à rouvrir dans '{name}'."
-
-#: sl/SL_Menu.py:991
-#, python-brace-format
-msgid "Task '{sub_name}' in '{main_name}' has been reopened."
-msgstr "La tâche '{sub_name}' dans '{main_name}' a été rouverte."
-
-#: sl/SL_Menu.py:1019
-#, python-brace-format
-msgid "No open tasks to delete in '{name}'."
-msgstr "Aucune tâche ouverte à supprimer dans '{name}'."
-
-#: sl/SL_Menu.py:1030
-msgid "This action cannot be undone."
-msgstr "Cette action ne peut pas être annulée."
-
-#: sl/SL_Menu.py:1037
-#, python-brace-format
-msgid "Task '{sub_name}' deleted from '{main_name}'."
-msgstr "Tâche '{sub_name}' supprimée de '{main_name}'."
-
-#: sl/SL_Menu.py:1060
-msgid "Select Source Project"
-msgstr "Sélectionnez le projet source"
-
-#: sl/SL_Menu.py:1065
-#, python-brace-format
-msgid "No tasks found in '{name}'."
-msgstr "Aucune tâche trouvée dans '{name}'."
-
-#: sl/SL_Menu.py:1073
-msgid "No other projects available to move to."
-msgstr "Aucun autre projet disponible vers lequel migrer."
-
-#: sl/SL_Menu.py:1084 sl/SL_Menu.py:1508
-msgid "Select Target Project"
-msgstr "Sélectionnez le projet cible"
-
-#: sl/SL_Menu.py:1092
-#, python-brace-format
-msgid "Task '{sub}' moved from '{src}' to '{dst}'."
-msgstr "La tâche «{sub}» a été déplacée de «{src}» à «{dst}»."
-
-#: sl/SL_Menu.py:1096
-msgid "Error: Could not move task."
-msgstr "Erreur : impossible de déplacer la tâche."
-
-#: sl/SL_Menu.py:1107 sl/SL_Menu.py:1469
-msgid "Weeks of inactivity"
-msgstr "Semaines d'inactivité"
-
-#: sl/SL_Menu.py:1112
-#, python-brace-format
-msgid "Inactive Tasks (> {weeks} weeks):"
-msgstr "Tâches inactives (> {weeks} semaines) :"
-
-#: sl/SL_Menu.py:1117 sl/SL_Menu.py:1477
-msgid "Last Activity"
-msgstr "Dernière activité"
-
-#: sl/SL_Menu.py:1176
-#, python-brace-format
-msgid ""
-"Are you sure you want to delete {count} closed tasks? This action cannot be "
-"undone."
-msgstr ""
-"Êtes-vous sûr de vouloir supprimer{count}tâches fermées ? Cette action ne "
-"peut pas être annulée."
-
-#: sl/SL_Menu.py:1178
-msgid "Show projects to delete"
-msgstr "Afficher les projets à supprimer"
-
-#: sl/SL_Menu.py:1182
-msgid "Delete All"
-msgstr "Supprimer tout"
-
-#: sl/SL_Menu.py:1188
-#, python-brace-format
-msgid "Successfully deleted {count} tasks."
-msgstr "Tâches {count} supprimées avec succès."
-
-#: sl/SL_Menu.py:1214
-#, python-brace-format
-msgid "No open tasks to promote in '{name}'."
-msgstr "Aucune tâche ouverte à promouvoir dans '{name}'."
-
-#: sl/SL_Menu.py:1225
-msgid ""
-"This will create a new Project with the task's name and move all time "
-"entries to a 'General' task within it."
-msgstr ""
-"Cela créera un nouveau projet avec le nom de la tâche et déplacera toutes "
-"les entrées de temps vers une tâche « Générale » à l'intérieur de celui-ci."
-
-#: sl/SL_Menu.py:1227
-msgid "Promote to Project"
-msgstr "Promouvoir vers le projet"
-
-#: sl/SL_Menu.py:1266
-msgid "No open projects to rename."
-msgstr "Aucun projet ouvert à renommer."
-
-#: sl/SL_Menu.py:1275 sl/SL_Menu.py:1354
-msgid "New Name"
-msgstr "Nouveau nom"
-
-#: sl/SL_Menu.py:1276 sl/SL_Menu.py:1355
-msgid "Rename"
-msgstr "Renommer"
-
-#: sl/SL_Menu.py:1280 sl/SL_Menu.py:1359
-msgid "Please enter a new name."
-msgstr "Veuillez saisir un nouveau nom."
-
-#: sl/SL_Menu.py:1282 sl/SL_Menu.py:1361
-msgid "New name is the same as the old name."
-msgstr "Le nouveau nom est le même que l'ancien nom."
-
-#: sl/SL_Menu.py:1284
-#, python-brace-format
-msgid "Project '{old_name}' successfully renamed to '{new_name}'."
-msgstr "Le projet '{old_name}' a été renommé en '{new_name}' avec succès."
-
-#: sl/SL_Menu.py:1344
-#, python-brace-format
-msgid "No open tasks to rename in '{name}'."
-msgstr "Aucune tâche ouverte à renommer dans '{name}'."
-
-#: sl/SL_Menu.py:1367
-msgid "Error: Could not rename. The new name might already exist."
-msgstr ""
-"Erreur : impossible de renommer. Le nouveau nom existe peut-être déjà."
-
-#: sl/SL_Menu.py:1380
-msgid "No open projects to close."
-msgstr "Aucun projet ouvert à fermer."
-
-#: sl/SL_Menu.py:1393
-#, python-brace-format
-msgid "Project '{name}' has been closed."
-msgstr "Le projet '{name}' a été clôturé."
-
-#: sl/SL_Menu.py:1397 sl/SL_Menu.py:1427 sl/SL_Menu.py:1458
-msgid "Error: Project not found."
-msgstr "Erreur : projet introuvable."
-
-#: sl/SL_Menu.py:1410
-msgid "No closed projects to reopen."
-msgstr "Aucun projet fermé à rouvrir."
-
-#: sl/SL_Menu.py:1423
-#, python-brace-format
-msgid "Project '{name}' has been reopened."
-msgstr "Le projet '{name}' a été rouvert."
-
-#: sl/SL_Menu.py:1449
-msgid ""
-"This action cannot be undone. All associated tasks and time entries will be "
-"deleted."
-msgstr ""
-"Cette action ne peut pas être annulée. Toutes les tâches et entrées de temps"
-" associées seront supprimées."
-
-#: sl/SL_Menu.py:1454
-#, python-brace-format
-msgid "Project '{name}' has been deleted."
-msgstr "Le projet '{name}' a été supprimé."
-
-#: sl/SL_Menu.py:1474
-#, python-brace-format
-msgid "Inactive Projects (> {weeks} weeks):"
-msgstr "Projets inactifs (> {weeks} semaines) :"
-
-#: sl/SL_Menu.py:1479
-#, python-brace-format
-msgid "No projects found inactive for more than {weeks} weeks."
-msgstr "Aucun projet trouvé inactif pendant plus de {weeks} semaines."
-
-#: sl/SL_Menu.py:1488 sl/SL_Menu.py:1511
-msgid "Demote Project"
-msgstr "Rétrograder le projet"
-
-#: sl/SL_Menu.py:1500
-msgid "Select Project to Demote"
-msgstr "Sélectionner le projet à rétrograder"
-
-#: sl/SL_Menu.py:1506
-msgid "No other projects available to demote into."
-msgstr "Aucun autre projet disponible pour rétrograder."
-
-#: sl/SL_Menu.py:1509
-#, python-brace-format
-msgid "This will convert '{src}' into a task of '{dst}'."
-msgstr "Cela convertira '{src}' en une tâche de '{dst}'."
-
-#: sl/SL_Menu.py:1534
-msgid "Projects with only closed or no tasks:"
-msgstr "Projets avec uniquement des tâches fermées ou aucune tâche :"
-
-#: sl/SL_Menu.py:1538
-msgid "No completed projects found."
-msgstr "Aucun projet terminé trouvé."
-
-#: sl/SL_Menu.py:1547 sl/SL_Menu.py:1678 sl/SL_Menu.py:2246
-msgid "Step 1: Select Project"
-msgstr "Étape 1 : Sélectionner le projet"
-
-#: sl/SL_Menu.py:1551 sl/SL_Menu.py:1862
-msgid "No open projects found. Please add one first."
-msgstr "Aucun projet ouvert trouvé. Veuillez d'abord en ajouter un."
-
-#: sl/SL_Menu.py:1556 sl/SL_Menu.py:1685 sl/SL_Menu.py:1910
-msgid "Project"
-msgstr "Projet"
-
-#: sl/SL_Menu.py:1558 sl/SL_Menu.py:1686 sl/SL_Menu.py:1710 sl/SL_Menu.py:2258
-msgid "Next"
-msgstr "Suivant"
-
-#: sl/SL_Menu.py:1573 sl/SL_Menu.py:2272
-msgid "No project selected. Please start again."
-msgstr "Aucun projet sélectionné. S'il vous plaît, recommencez."
-
-#: sl/SL_Menu.py:1578
-msgid "To Project:"
-msgstr "Au projet :"
-
-#: sl/SL_Menu.py:1599
-msgid "Name of the new task"
-msgstr "Nom de la nouvelle tâche"
-
-#: sl/SL_Menu.py:1605
-msgid "Due date"
-msgstr "Date d'échéance"
-
-#: sl/SL_Menu.py:1611 sl/SL_Menu.py:1780
-msgid "Recurring"
-msgstr "Récurrent"
-
-#: sl/SL_Menu.py:1625 sl/SL_Menu.py:1793
-msgid "daily"
-msgstr "quotidien"
-
-#: sl/SL_Menu.py:1625 sl/SL_Menu.py:1793
-msgid "on all business days"
-msgstr "tous les jours ouvrables"
-
-#: sl/SL_Menu.py:1625 sl/SL_Menu.py:1793
-msgid "weekly"
-msgstr "hebdomadaire"
-
-#: sl/SL_Menu.py:1625 sl/SL_Menu.py:1793
-msgid "monthly"
-msgstr "mensuel"
-
-#: sl/SL_Menu.py:1625 sl/SL_Menu.py:1793
-msgid "userdefined"
-msgstr "# Rapport de temps journalier : {date}"
-
-#: sl/SL_Menu.py:1629 sl/SL_Menu.py:1802
-msgid "Frequency"
-msgstr "Fréquence"
-
-#: sl/SL_Menu.py:1633 sl/SL_Menu.py:1805
-msgid "Days"
-msgstr "Aucun temps suivi pour le {date}."
-
-#: sl/SL_Menu.py:1637 sl/SL_Menu.py:1807
-msgid "Edit"
-msgstr "Modifier"
-
-#: sl/SL_Menu.py:1637 sl/SL_Menu.py:1807
-msgid "Preview"
-msgstr "Aperçu"
-
-#: sl/SL_Menu.py:1642 sl/SL_Menu.py:1812
-msgid "No notes provided."
-msgstr "Aucune note fournie."
-
-#: sl/SL_Menu.py:1647 sl/SL_Menu.py:1817
-msgid "A due date is required for recurring tasks."
-msgstr "Une date d'échéance est requise pour les tâches récurrentes."
-
-#: sl/SL_Menu.py:1655
-msgid "Please enter a name."
-msgstr "Veuillez entrer un nom."
-
-#: sl/SL_Menu.py:1666
-#, python-brace-format
-msgid "Task '{sub_name}' added to '{main_name}'."
-msgstr "Tâche '{sub_name}' ajoutée à '{main_name}'."
-
-#: sl/SL_Menu.py:1698 sl/SL_Menu.py:2277
-msgid "Step 2: Select Task from"
-msgstr "Étape 2 : Sélectionner la tâche de"
-
-#: sl/SL_Menu.py:1701
-msgid "No open tasks found."
-msgstr "Aucune tâche ouverte trouvée."
-
-#: sl/SL_Menu.py:1729
-msgid "Task not found."
-msgstr "Tâche non trouvée."
-
-#: sl/SL_Menu.py:1845
-msgid "Error: Could not update task."
-msgstr "Erreur : Impossible de mettre à jour la tâche."
-
-#: sl/SL_Menu.py:1858
-msgid "Start Work on Task"
-msgstr "Démarrer le travail sur la tâche"
-
-#: sl/SL_Menu.py:1872
-#, python-brace-format
-msgid "No open tasks to start work on in '{name}'."
-msgstr ""
-"Aucune tâche ouverte sur laquelle commencer à travailler dans '{name}'."
-
-#: sl/SL_Menu.py:1883
-msgid "Start Work"
-msgstr "Démarrer le travail"
-
-#: sl/SL_Menu.py:1911
-msgid "Task"
-msgstr "Tâche"
-
-#: sl/SL_Menu.py:1912
-msgid "Started at"
-msgstr "Démarré à"
-
-#: sl/SL_Menu.py:1923
-msgid "Streamlit Port Settings"
-msgstr "Paramètres du port Streamlit"
-
-#: sl/SL_Menu.py:1927
-msgid "Current Streamlit Port"
-msgstr "Port Streamlit actuel"
-
-#: sl/SL_Menu.py:1930
-msgid "New Port"
-msgstr "Nouveau port"
-
-#: sl/SL_Menu.py:1931 sl/SL_Menu.py:1963 sl/SL_Menu.py:2012 sl/SL_Menu.py:2047
-#: sl/SL_Menu.py:2079 sl/SL_Menu.py:2146 sl/SL_Menu.py:2178
-msgid "Save"
-msgstr "Enregistrer"
-
-#: sl/SL_Menu.py:1935
-#, python-brace-format
-msgid "Port updated to {port}. Please restart Streamlit."
-msgstr "Port mis à jour vers {port}. Veuillez redémarrer Streamlit."
-
-#: sl/SL_Menu.py:1945
-msgid "Change Data Storage Location"
-msgstr "Changer l'emplacement de stockage des données"
-
-#: sl/SL_Menu.py:1948
-msgid "Current data file"
-msgstr "Fichier de données actuel"
-
-#: sl/SL_Menu.py:1951
-msgid "New Path for data file"
-msgstr "Nouveau chemin pour le fichier de données"
-
-#: sl/SL_Menu.py:1957
-msgid "Move existing data to the new location"
-msgstr "Déplacer les données existantes vers le nouvel emplacement"
-
-#: sl/SL_Menu.py:1960
-msgid ""
-"If unchecked, the old data file will remain, and a new empty one might be "
-"created at the new location on restart."
-msgstr ""
-"Si décoché, l'ancien fichier de données restera, et un nouveau fichier vide "
-"pourrait être créé au nouvel emplacement au redémarrage."
-
-#: sl/SL_Menu.py:1967
-msgid "Please enter a new path."
-msgstr "Veuillez entrer un nouveau chemin."
-
-#: sl/SL_Menu.py:1975
-msgid ""
-"Error: For security, the data file must be located within the application "
-"directory."
-msgstr ""
-"Erreur : Pour des raisons de sécurité, le fichier de données doit être situé"
-" dans le répertoire de l'application."
-
-#: sl/SL_Menu.py:1985
-msgid ""
-"Storage location updated. Please restart the application for the changes to "
-"take effect."
-msgstr ""
-"Emplacement de stockage mis à jour. Veuillez redémarrer l'application pour "
-"que les changements prennent effet."
-
-#: sl/SL_Menu.py:2011
-msgid "Select Format"
-msgstr "Sélectionnez le format"
-
-#: sl/SL_Menu.py:2016
-msgid "Report format updated."
-msgstr "Format de rapport mis à jour."
-
-#: sl/SL_Menu.py:2029
-msgid "Current CSS file"
-msgstr "Fichier CSS actuel"
-
-#: sl/SL_Menu.py:2046
-msgid "Select CSS File"
-msgstr "Sélectionner le fichier CSS"
-
-#: sl/SL_Menu.py:2052
-msgid ""
-"CSS style updated. Please restart the application for the changes to take "
-"effect."
-msgstr ""
-"Style CSS mis à jour. Veuillez redémarrer l'application pour que les "
-"changements prennent effet."
-
-#: sl/SL_Menu.py:2068
-msgid "App Window (Webview)"
-msgstr "Fenêtre d'application (Webview)"
-
-#: sl/SL_Menu.py:2068
-msgid "System Browser"
-msgstr "Navigateur système"
-
-#: sl/SL_Menu.py:2078
-msgid "Select View Mode"
-msgstr "Sélectionner le mode d'affichage"
-
-#: sl/SL_Menu.py:2085
-msgid ""
-"View mode updated. Please restart the application for the changes to take "
-"effect."
-msgstr ""
-"Mode d'affichage mis à jour. Veuillez redémarrer l'application pour que les "
-"changements prennent effet."
-
-#: sl/SL_Menu.py:2096
-msgid "Restore Previous Version"
-msgstr "Restaurer la version précédente"
-
-#: sl/SL_Menu.py:2101
-msgid "The 'update' module is not available. This feature is disabled."
-msgstr ""
-"Le module 'mise à jour' n'est pas disponible. Cette fonctionnalité est "
-"désactivée."
-
-#: sl/SL_Menu.py:2106
-#, python-brace-format
-msgid "No previous version backup '{filename}' found."
-msgstr "Aucune sauvegarde de la version précédente '{filename}' trouvée."
-
-#: sl/SL_Menu.py:2110
-msgid ""
-"This will restore the application to the previously backed-up version. The "
-"application will then restart. You may need to manually refresh your browser"
-" if it does not reconnect automatically."
-msgstr ""
-"Ceci restaurera l'application à la version sauvegardée précédemment. "
-"L'application redémarrera ensuite. Vous devrez peut-être actualiser "
-"manuellement votre navigateur s'il ne se reconnecte pas automatiquement."
-
-#: sl/SL_Menu.py:2112
-msgid "Restore and Restart"
-msgstr "Restaurer et redémarrer"
-
-#: sl/SL_Menu.py:2113
-msgid "Restoring and restarting..."
-msgstr "Restauration et redémarrage..."
-
-#: sl/SL_Menu.py:2116
-msgid "Restore complete. Please restart the application."
-msgstr "Restauration terminée. Veuillez redémarrer l'application."
-
-#: sl/SL_Menu.py:2122
-msgid "Change Language"
-msgstr "1. Changer de langue"
-
-#: sl/SL_Menu.py:2145
-msgid "Select Language"
-msgstr "Sélectionner la langue"
-
-#: sl/SL_Menu.py:2153
-msgid ""
-"Language changed. Please restart the application for the changes to take "
-"effect."
-msgstr ""
-"Langue changée. Veuillez redémarrer l'application pour que les changements "
-"prennent effet."
-
-#: sl/SL_Menu.py:2171
-msgid "Enable email import"
-msgstr "Activer l'importation d'e-mails"
-
-#: sl/SL_Menu.py:2172
-msgid "IMAP Server"
-msgstr "Serveur IMAP"
-
-#: sl/SL_Menu.py:2173
-msgid "Port"
-msgstr "Port"
-
-#: sl/SL_Menu.py:2174
-msgid "Username"
-msgstr "Nom d'utilisateur"
-
-#: sl/SL_Menu.py:2175
-msgid "Password"
-msgstr "Mot de passe"
-
-#: sl/SL_Menu.py:2176
-msgid "Use SSL"
-msgstr "Utiliser SSL"
-
-#: sl/SL_Menu.py:2189
-msgid "Email settings saved."
-msgstr "Paramètres de messagerie enregistrés."
-
-#: sl/SL_Menu.py:2203 sl/SL_Menu.py:2335
-msgid "Select Date"
-msgstr "Sélectionner la date"
-
-#: sl/SL_Menu.py:2204 sl/SL_Menu.py:2228 sl/SL_Menu.py:2292 sl/SL_Menu.py:2318
-#: sl/SL_Menu.py:2336
-msgid "Generate Report"
-msgstr "Générer le rapport"
-
-#: sl/SL_Menu.py:2224
-msgid "Start Date"
-msgstr "Date de début"
-
-#: sl/SL_Menu.py:2226
-msgid "End Date"
-msgstr "Date de fin"
-
-#: sl/SL_Menu.py:2351
-msgid "Report Result"
-msgstr "Résultat du rapport"
-
-#: sl/SL_Menu.py:2380
-msgid "Export Report"
-msgstr "Rapport d'exportation"
-
 #~ msgid ""
 #~ "\n"
-#~ "Error: Failed to install dependencies. Please install them manually using: pip install -r {requirements_path}"
+#~ "Error: Failed to install dependencies. Please install them manually "
+#~ "using: pip install -r {requirements_path}"
 #~ msgstr ""
 #~ "\n"
-#~ "Erreur : Échec de l'installation des dépendances. Veuillez les installer manuellement avec : pip install -r {requirements_path}"
+#~ "Erreur : Échec de l'installation des dépendances. Veuillez les installer "
+#~ "manuellement avec : pip install -r {requirements_path}"
 
 #~ msgid "open"
 #~ msgstr "ouvert"
@@ -2806,7 +2853,8 @@ msgstr "Rapport d'exportation"
 #~ msgid "  Project: {name}"
 #~ msgstr "  Projet : {name}"
 
-#~ msgid "This feature is available in the CLI. GUI implementation coming soon."
+#~ msgid ""
+#~ "This feature is available in the CLI. GUI implementation coming soon."
 #~ msgstr ""
 #~ "Cette fonctionnalité est disponible en CLI. L'implémentation GUI arrive "
 #~ "bientôt."
