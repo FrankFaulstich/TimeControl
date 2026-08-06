@@ -290,6 +290,18 @@ def render_icon_button_css():
             z-index: 1000;
             pointer-events: none;
         }}
+
+        /* st.divider()'s <hr> defaults to a large 32px top/bottom margin -
+           between the today_view's current-work box and the task list
+           below it, that reads as a much bigger gap than the one above it
+           (toolbar to current-work box, which is just Streamlit's normal
+           ~1rem inter-element spacing). These offsets (found empirically -
+           the container this <hr> sits in contributes its own spacing on
+           top of the <hr>'s own margin, unevenly) bring both sides down to
+           that same ~16px gap instead of dwarfing it. */
+        [class*="st-key-today_view_work_divider"] hr {{
+            margin: -8px 0 9px 0 !important;
+        }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -890,7 +902,8 @@ def view_today_tasks():
             st.session_state.context['return_to'] = 'today_view'
             navigate_to('edit_task_form')
 
-    st.divider()
+    with st.container(key="today_view_work_divider"):
+        st.divider()
 
     # Here we show tasks that are explicitly marked as 'today' (⭐)
     all_open = st.session_state.tracker.list_tasks(status_filter='open')
@@ -902,26 +915,29 @@ def view_today_tasks():
     # "forget" its value on returning to this view. Persisting the value in a
     # plain, non-widget-bound key survives that gap for the rest of the
     # session, while still starting fresh (False) on the next app start.
-    if "today_show_only_open_value" not in st.session_state:
-        st.session_state.today_show_only_open_value = False
-    show_only_open = st.checkbox(
-        _("Show only open tasks"),
-        value=st.session_state.today_show_only_open_value,
-        key="today_show_only_open",
-    )
-    st.session_state.today_show_only_open_value = show_only_open
+    col_show_only_open, col_sort_by_priority = st.columns(2)
+    with col_show_only_open:
+        if "today_show_only_open_value" not in st.session_state:
+            st.session_state.today_show_only_open_value = False
+        show_only_open = st.checkbox(
+            _("Show only open tasks"),
+            value=st.session_state.today_show_only_open_value,
+            key="today_show_only_open",
+        )
+        st.session_state.today_show_only_open_value = show_only_open
 
-    # Same session-state-mirroring reasoning as today_show_only_open_value
-    # above: a plain checkbox key would forget its value across a trip to
-    # the edit-task form and back.
-    if "today_sort_by_priority_value" not in st.session_state:
-        st.session_state.today_sort_by_priority_value = False
-    sort_by_priority = st.checkbox(
-        _("Sort by priority"),
-        value=st.session_state.today_sort_by_priority_value,
-        key="today_sort_by_priority",
-    )
-    st.session_state.today_sort_by_priority_value = sort_by_priority
+    with col_sort_by_priority:
+        # Same session-state-mirroring reasoning as today_show_only_open_value
+        # above: a plain checkbox key would forget its value across a trip to
+        # the edit-task form and back.
+        if "today_sort_by_priority_value" not in st.session_state:
+            st.session_state.today_sort_by_priority_value = False
+        sort_by_priority = st.checkbox(
+            _("Sort by priority"),
+            value=st.session_state.today_sort_by_priority_value,
+            key="today_sort_by_priority",
+        )
+        st.session_state.today_sort_by_priority_value = sort_by_priority
 
     today_tasks = [t for t in today_tasks_all if t.get('status') != 'done'] if show_only_open else today_tasks_all
 
