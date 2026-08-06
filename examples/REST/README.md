@@ -60,7 +60,7 @@ generating another report).
 
 ## Writing your own client
 
-All of the operations exposed via the GUI and CLI are available as REST
+All of the operations exposed via the GUI are available as REST
 endpoints on `TimeTrackerREST_Server.py` — project and task management,
 reporting, and more. The interactive documentation at
 `http://localhost:8800/docs` (Swagger UI) lists every endpoint together
