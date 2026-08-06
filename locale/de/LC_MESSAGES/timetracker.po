@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-05 18:15+0200\n"
+"POT-Creation-Date: 2026-08-06 10:27+0200\n"
 "PO-Revision-Date: 2025-10-30 12:00+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: German\n"
@@ -16,1670 +16,426 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: TimeTrackerCLI.py:25
-msgid ""
-"\n"
-"--- Project Management ---"
-msgstr ""
-"\n"
-"--- Projektverwaltung ---"
-
-#: TimeTrackerCLI.py:26
-msgid "1. Main Project Management"
-msgstr "1. Hauptprojektmanagement"
-
-#: TimeTrackerCLI.py:27
-msgid "2. Task Management"
-msgstr "2. Aufgabenmanagement"
-
-#: TimeTrackerCLI.py:29
-msgid "0.  Back to Main Menu"
-msgstr "0.  Zurück zum Hauptmenü"
-
-#: TimeTrackerCLI.py:32 TimeTrackerCLI.py:60 TimeTrackerCLI.py:257
-#: TimeTrackerCLI.py:662 TimeTrackerCLI.py:701 TimeTrackerCLI.py:811
-#: TimeTrackerCLI.py:953
-msgid "Choice: "
-msgstr "Auswahl: "
-
-#: TimeTrackerCLI.py:41
-msgid "Invalid choice. Please enter a number from 0 to 2."
-msgstr "Ungültige Auswahl. Bitte geben Sie eine Zahl zwischen 0 und 2 ein."
-
-#: TimeTrackerCLI.py:46
-msgid ""
-"\n"
-"--- Main Project Management ---"
-msgstr ""
-"\n"
-"--- Hauptprojektverwaltung ---"
-
-#: TimeTrackerCLI.py:47
-msgid "1.  Add Main Project"
-msgstr "1. Hauptprojekt hinzufügen"
-
-#: TimeTrackerCLI.py:48
-msgid "2.  List Main Projects"
-msgstr "2. Hauptprojekte auflisten"
-
-#: TimeTrackerCLI.py:49
-msgid "3.  Rename Main Project"
-msgstr "3. Hauptprojekt umbenennen"
-
-#: TimeTrackerCLI.py:50
-msgid "4.  Close Main Project"
-msgstr "4. Hauptprojekt schließen"
-
-#: TimeTrackerCLI.py:51
-msgid "5.  Re-open Main Project"
-msgstr "5. Hauptprojekt"
-
-#: TimeTrackerCLI.py:52
-msgid "6.  Delete Main Project"
-msgstr "erneut öffnen 6. Hauptprojekt löschen"
-
-#: TimeTrackerCLI.py:53
-msgid "7.  List Inactive Main Projects"
-msgstr "7. Inaktive Hauptprojekte auflisten"
-
-#: TimeTrackerCLI.py:54
-msgid "8.  Demote Main-Project to Sub-Project"
-msgstr "8. Herabstufen Hauptprojekt zu Unterprojekt"
-
-#: TimeTrackerCLI.py:55
-msgid "9.  List Completed Main Projects"
-msgstr "9. Liste abgeschlossener Hauptprojekte"
-
-#: TimeTrackerCLI.py:57 TimeTrackerCLI.py:254
-msgid "0.  Back"
-msgstr "0. Zurück"
-
-#: TimeTrackerCLI.py:64
-msgid ""
-"\n"
-"--- Add New Main Project ---"
-msgstr ""
-"\n"
-"--- Neues Hauptprojekt hinzufügen ---"
-
-#: TimeTrackerCLI.py:65
-msgid "Name of the main project: "
-msgstr "Name des Hauptprojekts:"
-
-#: TimeTrackerCLI.py:67
-#, python-brace-format
-msgid "Main project '{name}' added."
-msgstr "Hauptprojekt '{name}' hinzugefügt."
-
-#: TimeTrackerCLI.py:70
-msgid ""
-"\n"
-"--- List Main Projects ---"
-msgstr ""
-"\n"
-"--- Hauptprojekte auflisten ---"
-
-#: TimeTrackerCLI.py:76 TimeTrackerCLI.py:313 sl/SL_Menu.py:1964
-#: sl/SL_Menu.py:2028
-msgid "closed"
-msgstr "geschlossen"
-
-#: TimeTrackerCLI.py:79
-msgid "No main projects found."
-msgstr "Keine Hauptprojekte gefunden."
-
-#: TimeTrackerCLI.py:82
-msgid ""
-"\n"
-"--- Rename Main Project ---"
-msgstr ""
-"\n"
-"--- Hauptprojekt umbenennen ---"
-
-#: TimeTrackerCLI.py:85
-msgid "No main projects to rename."
-msgstr "Keine Hauptprojekte zum Umbenennen."
-
-#: TimeTrackerCLI.py:88
-msgid "Select an open main project to rename:"
-msgstr "Wählen Sie ein geöffnetes Hauptprojekt zum Umbenennen aus:"
-
-#: TimeTrackerCLI.py:93 TimeTrackerCLI.py:117 TimeTrackerCLI.py:139
-#: TimeTrackerCLI.py:162 TimeTrackerCLI.py:272 TimeTrackerCLI.py:301
-#: TimeTrackerCLI.py:333 TimeTrackerCLI.py:370 TimeTrackerCLI.py:405
-#: TimeTrackerCLI.py:441 TimeTrackerCLI.py:568 TimeTrackerCLI.py:604
-#: TimeTrackerCLI.py:855 TimeTrackerCLI.py:888 TimeTrackerCLI.py:969
-msgid "Enter the number of the main project: "
-msgstr "Geben Sie die Nummer des Hauptprojekts ein:"
-
-#: TimeTrackerCLI.py:96 TimeTrackerCLI.py:349
-#, python-brace-format
-msgid "Enter the new name for '{name}': "
-msgstr "Gib den neuen Namen für '{name}' ein: "
-
-#: TimeTrackerCLI.py:99
-#, python-brace-format
-msgid "Main project '{old_name}' successfully renamed to '{new_name}'."
-msgstr "Hauptprojekt „{old_name}“ wurde erfolgreich in „{new_name}“ umbenannt."
-
-#: TimeTrackerCLI.py:101 sl/SL_Menu.py:2001
-#, python-brace-format
-msgid "Error: Could not rename. The new name '{new_name}' might already exist."
-msgstr ""
-"Fehler: Umbenennung fehlgeschlagen. Der neue Name '{new_name}' existiert "
-"möglicherweise bereits."
-
-#: TimeTrackerCLI.py:103 TimeTrackerCLI.py:125 TimeTrackerCLI.py:147
-#: TimeTrackerCLI.py:169 TimeTrackerCLI.py:221 TimeTrackerCLI.py:287
-#: TimeTrackerCLI.py:319 TimeTrackerCLI.py:356 TimeTrackerCLI.py:391
-#: TimeTrackerCLI.py:426 TimeTrackerCLI.py:463 TimeTrackerCLI.py:510
-#: TimeTrackerCLI.py:589 TimeTrackerCLI.py:794 TimeTrackerCLI.py:875
-#: TimeTrackerCLI.py:894 TimeTrackerCLI.py:992
-msgid "Invalid input. Please enter a valid number."
-msgstr "Ungültige Eingabe. Bitte eine gültige Zahl eingeben."
-
-#: TimeTrackerCLI.py:106
-msgid ""
-"\n"
-"--- Close Main Project ---"
-msgstr ""
-"\n"
-"--- Hauptprojekt schließen ---"
-
-#: TimeTrackerCLI.py:109
-msgid "No open main projects to close."
-msgstr "Keine offenen Hauptprojekte zum Schließen."
-
-#: TimeTrackerCLI.py:112
-msgid "Select a main project to close:"
-msgstr "Wählen Sie ein Hauptprojekt zum Schließen aus:"
-
-#: TimeTrackerCLI.py:121
-#, python-brace-format
-msgid "Main project '{name}' has been closed."
-msgstr "Das Hauptprojekt „{name}“ wurde geschlossen."
-
-#: TimeTrackerCLI.py:123 TimeTrackerCLI.py:145
-msgid "Error: Main project not found."
-msgstr "Fehler: Hauptprojekt nicht gefunden."
-
-#: TimeTrackerCLI.py:128
-msgid ""
-"\n"
-"--- Re-open Main Project ---"
-msgstr ""
-"\n"
-"--- Hauptprojekt erneut öffnen ---"
-
-#: TimeTrackerCLI.py:131
-msgid "No closed main projects to reopen."
-msgstr "Keine geschlossenen Hauptprojekte zur Wiedereröffnung."
-
-#: TimeTrackerCLI.py:134
-msgid "Select a main project to reopen:"
-msgstr "Wählen Sie ein Hauptprojekt zum erneuten Öffnen aus:"
-
-#: TimeTrackerCLI.py:143
-#, python-brace-format
-msgid "Main project '{name}' has been reopened."
-msgstr "Das Hauptprojekt „{name}“ wurde erneut geöffnet."
-
-#: TimeTrackerCLI.py:150
-msgid ""
-"\n"
-"--- Delete Main Project ---"
-msgstr ""
-"\n"
-"--- Hauptprojekt löschen ---"
-
-#: TimeTrackerCLI.py:153
-msgid "No main projects to delete."
-msgstr "Keine Hauptprojekte zum Löschen."
-
-#: TimeTrackerCLI.py:156
-msgid "Select a main project to delete:"
-msgstr "Wählen Sie ein Hauptprojekt zum Löschen aus:"
-
-#: TimeTrackerCLI.py:165
-#, python-brace-format
-msgid "Main project '{name}' deleted."
-msgstr "Hauptprojekt „{name}“ gelöscht."
-
-#: TimeTrackerCLI.py:167 TimeTrackerCLI.py:285
-#, python-brace-format
-msgid "Error: Main project '{name}' not found."
-msgstr "Fehler: Hauptprojekt „{name}“ nicht gefunden."
-
-#: TimeTrackerCLI.py:172
-msgid ""
-"\n"
-"--- List Inactive Main-Projects ---"
-msgstr ""
-"\n"
-"--- Inaktive Hauptprojekte auflisten ---"
-
-#: TimeTrackerCLI.py:174
-msgid "Enter the number of weeks without activity (e.g., 8): "
-msgstr "Anzahl der Wochen ohne Aktivität eingeben (z.B. 8): "
-
-#: TimeTrackerCLI.py:176 TimeTrackerCLI.py:518
-msgid "Please enter a positive number."
-msgstr "Bitte eine positive Zahl eingeben."
-
-#: TimeTrackerCLI.py:182
-#, python-brace-format
-msgid ""
-"\n"
-"Inactive Main-Projects (>{weeks} weeks):"
-msgstr ""
-"\n"
-"Inaktive Hauptprojekte (>{weeks}Wochen):"
-
-#: TimeTrackerCLI.py:184 TimeTrackerCLI.py:526
-#, python-brace-format
-msgid "  - Main Project: {name}"
-msgstr "- Hauptprojekt: {name}"
-
-#: TimeTrackerCLI.py:185 TimeTrackerCLI.py:528
-#, python-brace-format
-msgid "    Last Activity: {date}"
-msgstr "    Letzte Aktivität: {date}"
-
-#: TimeTrackerCLI.py:188
-#, python-brace-format
-msgid "No main-projects found inactive for more than {weeks} weeks."
-msgstr ""
-"Es wurden keine Hauptprojekte gefunden, die länger als{weeks}Wochen inaktiv "
-"waren."
-
-#: TimeTrackerCLI.py:191 TimeTrackerCLI.py:534
-msgid "Invalid input. Please enter a valid number for weeks."
-msgstr "Ungültige Eingabe. Bitte eine gültige Zahl für Wochen eingeben."
-
-#: TimeTrackerCLI.py:194
-msgid ""
-"\n"
-"--- Demote Main-Project to Sub-Project ---"
-msgstr ""
-"\n"
-"--- Hauptprojekt zum Unterprojekt herabstufen ---"
-
-#: TimeTrackerCLI.py:197
-msgid "You need at least two open main projects for this operation."
-msgstr "Für diesen Vorgang benötigen Sie mindestens zwei offene Hauptprojekte."
-
-#: TimeTrackerCLI.py:202
-msgid "Select the main project to demote:"
-msgstr "Wählen Sie das Hauptprojekt aus, das herabgestuft werden soll:"
-
-#: TimeTrackerCLI.py:205
-msgid "Enter the number of the project to demote: "
-msgstr "Gib die Nummer des herabzustufenden Projekts ein: "
-
-#: TimeTrackerCLI.py:209
-msgid ""
-"\n"
-"Select the new parent main project:"
-msgstr ""
-"\n"
-"Wählen Sie das neue übergeordnete Hauptprojekt aus:"
-
-#: TimeTrackerCLI.py:213
-msgid "Enter the number of the new parent project: "
-msgstr "Gib die Nummer des neuen übergeordneten Projekts ein: "
-
-#: TimeTrackerCLI.py:224
-msgid ""
-"\n"
-"--- List Completed Main Projects ---"
-msgstr ""
-"\n"
-"--- Abgeschlossene Hauptprojekte auflisten ---"
-
-#: TimeTrackerCLI.py:227
-msgid "Main projects with only closed or no sub-projects:"
-msgstr "Hauptprojekte mit nur abgeschlossenen oder keinen Unterprojekten:"
-
-#: TimeTrackerCLI.py:231
-msgid "No completed main projects found."
-msgstr "Keine abgeschlossenen Hauptprojekte gefunden."
-
-#: TimeTrackerCLI.py:235
-msgid "Invalid choice. Please enter a number from 0 to 9."
-msgstr "Ungültige Auswahl. Bitte geben Sie eine Zahl von 0 bis 9 ein."
-
-#: TimeTrackerCLI.py:240
-msgid ""
-"\n"
-"--- Task Management ---"
-msgstr ""
-"\n"
-"--- Aufgabenverwaltung ---"
-
-#: TimeTrackerCLI.py:241
-msgid "1.  Add Task"
-msgstr "1. Aufgabe hinzufügen"
-
-#: TimeTrackerCLI.py:242
-msgid "2.  List Tasks"
-msgstr "2. Aufgaben auflisten"
-
-#: TimeTrackerCLI.py:243
-msgid "3.  Rename Task"
-msgstr "3. Aufgabe umbenennen"
-
-#: TimeTrackerCLI.py:244
-msgid "4.  Close Task"
-msgstr "4. Aufgabe schließen"
-
-#: TimeTrackerCLI.py:245
-msgid "5.  Re-open Task"
-msgstr "5. Aufgabe erneut öffnen"
-
-#: TimeTrackerCLI.py:246
-msgid "6.  Delete Task"
-msgstr "6. Aufgabe löschen"
-
-#: TimeTrackerCLI.py:247
-msgid "7.  Move Task"
-msgstr "7. Aufgabe verschieben"
-
-#: TimeTrackerCLI.py:248
-msgid "8.  List Inactive Tasks"
-msgstr "8. Inaktive Aufgaben auflisten"
-
-#: TimeTrackerCLI.py:249
-msgid "9.  List All Closed Tasks"
-msgstr "9. Alle geschlossenen Aufgaben auflisten"
-
-#: TimeTrackerCLI.py:250
-msgid "10. Delete All Closed Tasks"
-msgstr "10. Alle geschlossenen Aufgaben löschen"
-
-#: TimeTrackerCLI.py:251
-msgid "11. Promote Task to Main-Project"
-msgstr "11. Aufgabe zum Hauptprojekt hochstufen"
-
-#: TimeTrackerCLI.py:252
-msgid "12. Edit Task (Name & Due Date)"
-msgstr "12. Aufgabe bearbeiten (Name und Fälligkeitsdatum)"
-
-#: TimeTrackerCLI.py:261
-msgid ""
-"\n"
-"--- Add New Task ---"
-msgstr ""
-"\n"
-"--- Neue Aufgabe hinzufügen ---"
-
-#: TimeTrackerCLI.py:264 TimeTrackerCLI.py:960
-msgid "No open main projects found. Please add one first."
-msgstr ""
-"Keine offenen Hauptprojekte gefunden. Bitte fügen Sie zuerst eines hinzu."
-
-#: TimeTrackerCLI.py:267
-msgid "Select a main project to add a task to:"
-msgstr ""
-"Wählen Sie ein Hauptprojekt aus, dem Sie eine Aufgabe hinzufügen möchten:"
-
-#: TimeTrackerCLI.py:275
-msgid "Name of the new task: "
-msgstr "Name der neuen Aufgabe: "
-
-#: TimeTrackerCLI.py:276
-msgid "Due date (YYYY-MM-DD, press Enter to skip): "
-msgstr ""
-"Fälligkeitsdatum (JJJJ-MM-TT, zum Überspringen die Eingabetaste drücken):"
-
-#: TimeTrackerCLI.py:278
-msgid "Add to 'Today' list? (y/n, default n): "
-msgstr "Zur „Heute“-Liste hinzufügen? (j/n, Standard n):"
-
-#: TimeTrackerCLI.py:280
-msgid "Note (Markdown supported): "
-msgstr "Hinweis (Markdown unterstützt):"
-
-#: TimeTrackerCLI.py:283
-#, python-brace-format
-msgid "Task '{task_name}' added."
-msgstr "Aufgabe „{task_name}“ hinzugefügt."
-
-#: TimeTrackerCLI.py:290
-msgid ""
-"\n"
-"--- List Tasks ---"
-msgstr ""
-"\n"
-"--- Aufgaben auflisten ---"
-
-#: TimeTrackerCLI.py:293
-msgid "No main projects found. Cannot list tasks."
-msgstr ""
-"Keine Hauptprojekte gefunden. Aufgaben können nicht aufgelistet werden."
-
-#: TimeTrackerCLI.py:296
-msgid "Select the main project whose tasks you want to list:"
-msgstr ""
-"Wählen Sie das Hauptprojekt aus, dessen Aufgaben Sie auflisten möchten:"
-
-#: TimeTrackerCLI.py:305 sl/SL_Menu.py:2025
-#, python-brace-format
-msgid "Tasks for '{name}':"
-msgstr "Aufgaben für '{name}':"
-
-#: TimeTrackerCLI.py:308 sl/SL_Menu.py:785 sl/SL_Menu.py:977
-msgid "Due"
-msgstr "Fällig"
-
-#: TimeTrackerCLI.py:309 sl/SL_Menu.py:636 sl/SL_Menu.py:656 sl/SL_Menu.py:722
-#: sl/SL_Menu.py:808 sl/SL_Menu.py:1161 sl/SL_Menu.py:2322 sl/SL_Menu.py:2493
-msgid "Today"
-msgstr "Heute"
-
-#: TimeTrackerCLI.py:317 TimeTrackerCLI.py:861 sl/SL_Menu.py:2034
-#: sl/SL_Menu.py:2726
-#, python-brace-format
-msgid "No tasks found for '{name}'."
-msgstr "Keine Aufgaben für '{name}' gefunden."
-
-#: TimeTrackerCLI.py:322
-msgid ""
-"\n"
-"--- Rename Task ---"
-msgstr ""
-"\n"
-"--- Aufgabe umbenennen ---"
-
-#: TimeTrackerCLI.py:325 TimeTrackerCLI.py:362 TimeTrackerCLI.py:397
-#: TimeTrackerCLI.py:432 TimeTrackerCLI.py:560
-msgid "No open main projects found."
-msgstr "Keine offenen Hauptprojekte gefunden."
-
-#: TimeTrackerCLI.py:328 TimeTrackerCLI.py:365 TimeTrackerCLI.py:400
-#: TimeTrackerCLI.py:435 TimeTrackerCLI.py:599 TimeTrackerCLI.py:852
-msgid "Select the main project:"
-msgstr "Wählen Sie das Hauptprojekt aus:"
-
-#: TimeTrackerCLI.py:338
-#, python-brace-format
-msgid "No tasks to rename for '{name}'."
-msgstr "Keine Aufgaben zum Umbenennen für '{name}' vorhanden."
-
-#: TimeTrackerCLI.py:341
-#, python-brace-format
-msgid "Select a task from '{name}' to rename:"
-msgstr "Wähle eine Aufgabe von '{name}' zum Umbenennen aus:"
-
-#: TimeTrackerCLI.py:345 TimeTrackerCLI.py:382 TimeTrackerCLI.py:417
-#: TimeTrackerCLI.py:453 TimeTrackerCLI.py:489 TimeTrackerCLI.py:580
-#: TimeTrackerCLI.py:867 TimeTrackerCLI.py:982
-msgid "Enter the number of the task: "
-msgstr "Gib die Nummer der Aufgabe ein: "
-
-#: TimeTrackerCLI.py:352 sl/SL_Menu.py:2077
-#, python-brace-format
-msgid "Task '{old_name}' renamed to '{new_name}'."
-msgstr "Aufgabe '{old_name}' in '{new_name}' umbenannt."
-
-#: TimeTrackerCLI.py:354
-msgid ""
-"Error: Could not rename. The new name might already exist or the project was "
-"not found."
-msgstr ""
-"Fehler: Umbenennung fehlgeschlagen. Der neue Name existiert möglicherweise "
-"bereits oder das Projekt wurde nicht gefunden."
-
-#: TimeTrackerCLI.py:359
-msgid ""
-"\n"
-"--- Close Task ---"
-msgstr ""
-"\n"
-"--- Aufgabe schließen ---"
-
-#: TimeTrackerCLI.py:375
-#, python-brace-format
-msgid "No open tasks to close for '{name}'."
-msgstr "Keine offenen Aufgaben zum Schließen für „{name}“."
-
-#: TimeTrackerCLI.py:378
-#, python-brace-format
-msgid "Select a task from '{name}' to close:"
-msgstr "Wählen Sie eine Aufgabe aus „{name}“ zum Schließen aus:"
-
-#: TimeTrackerCLI.py:387
-#, python-brace-format
-msgid "Task '{task_name}' in '{main_name}' has been closed."
-msgstr "Die Aufgabe „{task_name}“ in „{main_name}“ wurde geschlossen."
-
-#: TimeTrackerCLI.py:389 TimeTrackerCLI.py:424 TimeTrackerCLI.py:460
-#: sl/SL_Menu.py:1663 sl/SL_Menu.py:1708 sl/SL_Menu.py:1754
-msgid "Error: Main project or task not found."
-msgstr "Fehler: Hauptprojekt oder Hauptaufgabe nicht gefunden."
-
-#: TimeTrackerCLI.py:394
-msgid ""
-"\n"
-"--- Re-open Task ---"
-msgstr ""
-"\n"
-"--- Aufgabe erneut öffnen ---"
-
-#: TimeTrackerCLI.py:410
-#, python-brace-format
-msgid "No closed tasks to reopen for '{name}'."
-msgstr "Keine geschlossenen Aufgaben zum erneuten Öffnen für „{name}“."
-
-#: TimeTrackerCLI.py:413
-#, python-brace-format
-msgid "Select a task from '{name}' to reopen:"
-msgstr "Wählen Sie eine Aufgabe aus „{name}“ zum erneuten Öffnen aus:"
-
-#: TimeTrackerCLI.py:422
-#, python-brace-format
-msgid "Task '{task_name}' in '{main_name}' has been reopened."
-msgstr "Die Aufgabe „{task_name}“ in „{main_name}“ wurde erneut geöffnet."
-
-#: TimeTrackerCLI.py:429
-msgid ""
-"\n"
-"--- Delete Task ---"
-msgstr ""
-"\n"
-"--- Aufgabe löschen ---"
-
-#: TimeTrackerCLI.py:446
-#, python-brace-format
-msgid "No tasks to delete for '{name}'."
-msgstr "Keine Aufgaben zum Löschen für '{name}' vorhanden."
-
-#: TimeTrackerCLI.py:449
-#, python-brace-format
-msgid "Select a task from '{name}' to delete:"
-msgstr "Wähle eine Aufgabe von '{name}' zum Löschen aus:"
-
-#: TimeTrackerCLI.py:458
-#, python-brace-format
-msgid "Task '{task_name}' deleted from '{main_name}'."
-msgstr "Aufgabe '{task_name}' gelöscht aus '{main_name}'."
-
-#: TimeTrackerCLI.py:466
-msgid ""
-"\n"
-"--- Move Task ---"
-msgstr ""
-"\n"
-"--- Aufgabe verschieben ---"
-
-#: TimeTrackerCLI.py:469
-msgid "You need at least two open main projects to move a task."
-msgstr ""
-"Zum Verschieben einer Aufgabe benötigen Sie mindestens zwei offene "
-"Hauptprojekte."
-
-#: TimeTrackerCLI.py:474
-msgid "Select the source main project:"
-msgstr "Wählen Sie das Quellhauptprojekt aus:"
-
-#: TimeTrackerCLI.py:477
-msgid "Enter the number of the source main project: "
-msgstr "Geben Sie die Nummer des Quellhauptprojekts ein:"
-
-#: TimeTrackerCLI.py:483
-#, python-brace-format
-msgid "No tasks to move from '{name}'."
-msgstr "Keine Aufgaben zum Verschieben von „{name}“."
-
-#: TimeTrackerCLI.py:486
-#, python-brace-format
-msgid ""
-"\n"
-"Select a task from '{name}' to move:"
-msgstr ""
-"\n"
-"Wähle eine Aufgabe von '{name}' zum Verschieben aus:"
-
-#: TimeTrackerCLI.py:494
-msgid ""
-"\n"
-"Select the destination main project:"
-msgstr ""
-"\n"
-"Wählen Sie das Ziel-Hauptprojekt aus:"
-
-#: TimeTrackerCLI.py:499
-msgid "Enter the number of the destination main project: "
-msgstr "Geben Sie die Nummer des Zielhauptprojekts ein:"
-
-#: TimeTrackerCLI.py:505
-#, python-brace-format
-msgid ""
-"Successfully moved '{task_name}' from '{source_main_project}' to "
-"'{dest_main_project}'."
-msgstr ""
-"„{task_name}“ wurde erfolgreich von „{source_main_project}“ nach "
-"„{dest_main_project}“ verschoben."
-
-#: TimeTrackerCLI.py:507
-#, python-brace-format
-msgid "Error: {message}"
-msgstr "Fehler: {message}"
-
-#: TimeTrackerCLI.py:514
-msgid ""
-"\n"
-"--- List Inactive Tasks ---"
-msgstr ""
-"\n"
-"--- Inaktive Aufgaben auflisten ---"
-
-#: TimeTrackerCLI.py:516
-msgid "Enter the number of weeks without activity (e.g., 4): "
-msgstr "Anzahl der Wochen ohne Aktivität eingeben (z.B. 4): "
-
-#: TimeTrackerCLI.py:524
-#, python-brace-format
-msgid ""
-"\n"
-"Inactive Tasks (>{weeks} weeks):"
-msgstr ""
-"\n"
-"Inaktive Aufgaben (>{weeks} Wochen):"
-
-#: TimeTrackerCLI.py:527
-#, python-brace-format
-msgid "    Task: {name}"
-msgstr "    Aufgabe: {name}"
-
-#: TimeTrackerCLI.py:531 sl/SL_Menu.py:1836
-#, python-brace-format
-msgid "No tasks found inactive for more than {weeks} weeks."
-msgstr ""
-"Es wurden keine Aufgaben gefunden, die länger als{weeks}Wochen inaktiv waren."
-
-#: TimeTrackerCLI.py:537
-msgid ""
-"\n"
-"--- List All Closed Tasks ---"
-msgstr ""
-"\n"
-"--- Alle geschlossenen Aufgaben auflisten ---"
-
-#: TimeTrackerCLI.py:543 sl/SL_Menu.py:1861 sl/SL_Menu.py:1884
-msgid "No closed tasks found."
-msgstr "Keine geschlossenen Aufgaben gefunden."
-
-#: TimeTrackerCLI.py:547
-msgid ""
-"\n"
-"--- Delete All Closed Tasks ---"
-msgstr ""
-"\n"
-"--- Alle geschlossenen Aufgaben löschen ---"
-
-#: TimeTrackerCLI.py:548
-msgid "Are you sure you want to delete ALL closed tasks? (y/n): "
-msgstr ""
-"Bist du sicher, dass du ALLE geschlossenen Aufgaben löschen möchtest? (j/n): "
-
-#: TimeTrackerCLI.py:551
-#, python-brace-format
-msgid "{count} closed tasks were deleted."
-msgstr "{count} geschlossene Aufgaben wurden gelöscht."
-
-#: TimeTrackerCLI.py:553
-msgid "Operation cancelled."
-msgstr "Vorgang abgebrochen."
-
-#: TimeTrackerCLI.py:557
-msgid ""
-"\n"
-"--- Promote Task to Main-Project ---"
-msgstr ""
-"\n"
-"--- Aufgabe zum Hauptprojekt hochstufen ---"
-
-#: TimeTrackerCLI.py:565
-msgid "Select the main project containing the task to promote:"
-msgstr ""
-"Wählen Sie das Hauptprojekt aus, das die hochzustufende Aufgabe enthält:"
-
-#: TimeTrackerCLI.py:574
-#, python-brace-format
-msgid "No tasks to promote in '{name}'."
-msgstr "Keine zu befördernden Aufgaben in '{name}'."
-
-#: TimeTrackerCLI.py:577
-#, python-brace-format
-msgid ""
-"\n"
-"Select a task from '{name}' to promote:"
-msgstr ""
-"\n"
-"Wähle eine Aufgabe von '{name}' zum Befördern aus:"
-
-#: TimeTrackerCLI.py:593
-msgid ""
-"\n"
-"--- Edit Task ---"
-msgstr ""
-"\n"
-"--- Aufgabe bearbeiten ---"
-
-#: TimeTrackerCLI.py:596 sl/SL_Menu.py:1631 sl/SL_Menu.py:1676
-#: sl/SL_Menu.py:1721 sl/SL_Menu.py:1767 sl/SL_Menu.py:1916 sl/SL_Menu.py:2047
-#: sl/SL_Menu.py:2206 sl/SL_Menu.py:2399
-msgid "No open projects found."
-msgstr "Keine offenen Projekte gefunden."
-
-#: TimeTrackerCLI.py:609
-#, python-brace-format
-msgid "No open tasks in '{name}'."
-msgstr "Keine offenen Aufgaben in „{name}“."
-
-#: TimeTrackerCLI.py:612
-msgid "Select a task to edit:"
-msgstr "Wählen Sie eine Aufgabe zum Bearbeiten aus:"
-
-#: TimeTrackerCLI.py:616
-msgid "Enter the number: "
-msgstr "Geben Sie die Nummer ein:"
-
-#: TimeTrackerCLI.py:623
-#, python-brace-format
-msgid "New name (press Enter to keep '{name}'): "
-msgstr "Neuer Name (drücken Sie die Eingabetaste, um „{name}“ beizubehalten):"
-
-#: TimeTrackerCLI.py:624
-#, python-brace-format
-msgid "New due date (YYYY-MM-DD, current: '{due}', enter '-' to clear): "
-msgstr ""
-"Neues Fälligkeitsdatum (JJJJ-MM-TT, aktuell: „{due}“, zum Löschen „-“ "
-"eingeben):"
-
-#: TimeTrackerCLI.py:627
-#, python-brace-format
-msgid "Is this for today? (current: {current}, y/n, press Enter to keep): "
-msgstr ""
-"Ist das für heute? (aktuell:{current}, j/n, drücken Sie die Eingabetaste, um "
-"beizubehalten):"
-
-#: TimeTrackerCLI.py:630
-#, python-brace-format
-msgid "Current Note: {note}"
-msgstr "Aktuelle Notiz: {note}"
-
-#: TimeTrackerCLI.py:631
-msgid "New note (press Enter to keep current): "
-msgstr ""
-"Neue Notiz (drücken Sie die Eingabetaste, um auf dem neuesten Stand zu "
-"bleiben):"
-
-#: TimeTrackerCLI.py:635
-#, python-brace-format
-msgid "Is this task done? (current: {current}, y/n, press Enter to keep): "
-msgstr ""
-"Ist diese Aufgabe erledigt? (aktuell:{current}, j/n, drücken Sie die "
-"Eingabetaste, um beizubehalten):"
-
-#: TimeTrackerCLI.py:639 sl/SL_Menu.py:2559
-msgid "Task updated successfully."
-msgstr "Aufgabe erfolgreich aktualisiert."
-
-#: TimeTrackerCLI.py:641
-msgid "Error updating task."
-msgstr "Fehler beim Aktualisieren der Aufgabe."
-
-#: TimeTrackerCLI.py:643
-msgid "Invalid input."
-msgstr "Ungültige Eingabe."
-
-#: TimeTrackerCLI.py:648
-msgid "Invalid choice. Please enter a number from 0 to 11."
-msgstr "Ungültige Auswahl. Bitte geben Sie eine Zahl zwischen 0 und 11 ein."
-
-#: TimeTrackerCLI.py:653
-msgid ""
-"\n"
-"--- Settings ---"
-msgstr ""
-"\n"
-"--- Einstellungen ---"
-
-#: TimeTrackerCLI.py:654
-msgid "1. Change Language"
-msgstr "1. Sprache ändern"
-
-#: TimeTrackerCLI.py:655
-msgid "2. Restore Previous Version"
-msgstr "2. Vorherige Version wiederherstellen"
-
-#: TimeTrackerCLI.py:656
-msgid "3. Change Data Storage Location"
-msgstr "3. Speicherort der Daten ändern"
-
-#: TimeTrackerCLI.py:657
-msgid "4. Change Streamlit Port"
-msgstr "4. Streamlit-Port ändern"
-
-#: TimeTrackerCLI.py:659 TimeTrackerCLI.py:698 TimeTrackerCLI.py:808
-msgid "0. Back to Main Menu"
-msgstr "0. Zurück zum Hauptmenü"
-
-#: TimeTrackerCLI.py:682
-msgid "Invalid choice. Please enter a number from 0 to 4."
-msgstr "Ungültige Auswahl. Bitte geben Sie eine Zahl von 0 bis 4 ein."
-
-#: TimeTrackerCLI.py:687
-msgid ""
-"\n"
-"--- Language Settings ---"
-msgstr ""
-"\n"
-"--- Spracheinstellungen ---"
-
-#: TimeTrackerCLI.py:692
-msgid "No additional languages found."
-msgstr "Keine zusätzlichen Sprachen gefunden."
-
-#: TimeTrackerCLI.py:716
-#, python-brace-format
-msgid "Language changed to '{lang}'. Please restart the application."
-msgstr "Sprache auf '{lang}' geändert. Bitte die Anwendung neu starten."
-
-#: TimeTrackerCLI.py:719
-msgid "Invalid choice."
-msgstr "Ungültige Auswahl."
-
-#: TimeTrackerCLI.py:721
-msgid "Invalid input. Please enter a number."
-msgstr "Ungültige Eingabe. Bitte eine Zahl eingeben."
-
-#: TimeTrackerCLI.py:725
-msgid ""
-"\n"
-"--- Data Storage Settings ---"
-msgstr ""
-"\n"
-"--- Datenspeicher-Einstellungen ---"
-
-#: TimeTrackerCLI.py:726
-#, python-brace-format
-msgid "Current data file: {path}"
-msgstr "Aktuelle Datendatei: {path}"
-
-#: TimeTrackerCLI.py:728
-msgid "Enter the new path for the data file (e.g., /path/to/my_data.json)."
-msgstr ""
-"Gib den neuen Pfad für die Datendatei ein (z.B. /pfad/zu/meine_daten.json)."
-
-#: TimeTrackerCLI.py:729
-msgid "Leave empty to cancel."
-msgstr "Leer lassen zum Abbrechen."
-
-#: TimeTrackerCLI.py:730
-msgid "New Path: "
-msgstr "Neuer Pfad: "
-
-#: TimeTrackerCLI.py:738 sl/SL_Menu.py:1418
-#, python-brace-format
-msgid "Error: The directory '{dir}' does not exist."
-msgstr "Fehler: Das Verzeichnis '{dir}' existiert nicht."
-
-#: TimeTrackerCLI.py:752
-msgid "Storage location updated."
-msgstr "Speicherort aktualisiert."
-
-#: TimeTrackerCLI.py:756
-msgid "Do you want to move the existing data to the new location? (y/n): "
-msgstr ""
-"Möchtest du die vorhandenen Daten an den neuen Ort verschieben? (j/n): "
-
-#: TimeTrackerCLI.py:760 sl/SL_Menu.py:1428
-msgid "Data moved successfully."
-msgstr "Daten erfolgreich verschoben."
-
-#: TimeTrackerCLI.py:762 sl/SL_Menu.py:1430
-#, python-brace-format
-msgid "Error moving data: {error}"
-msgstr "Fehler beim Verschieben der Daten: {error}"
-
-#: TimeTrackerCLI.py:764 tt/TimeTracker.py:119
-msgid "Please restart the application for the changes to take effect."
-msgstr "Bitte starte die Anwendung neu, damit die Änderungen wirksam werden."
-
-#: TimeTrackerCLI.py:767
-#, python-brace-format
-msgid "Error updating configuration: {error}"
-msgstr "Fehler beim Aktualisieren der Konfiguration: {error}"
-
-#: TimeTrackerCLI.py:771
-msgid ""
-"\n"
-"--- Streamlit Port Settings ---"
-msgstr ""
-"\n"
-"--- Streamlit-Port-Einstellungen ---"
-
-#: TimeTrackerCLI.py:781
-#, python-brace-format
-msgid "Current Streamlit Port: {port}"
-msgstr "Aktueller Streamlit-Port: {port}"
-
-#: TimeTrackerCLI.py:783
-msgid "Enter new port (or press Enter to keep current): "
-msgstr "Neuen Port eingeben (oder Enter drücken, um aktuellen beizubehalten): "
-
-#: TimeTrackerCLI.py:792
-#, python-brace-format
-msgid ""
-"Port updated to {port}. Please restart Streamlit for changes to take effect."
-msgstr ""
-"Port auf {port} aktualisiert. Bitte Streamlit neu starten, damit die "
-"Änderungen wirksam werden."
-
-#: TimeTrackerCLI.py:800
-msgid ""
-"\n"
-"--- Reporting ---"
-msgstr ""
-"\n"
-"--- Berichterstattung ---"
-
-#: TimeTrackerCLI.py:801
-msgid "1. Daily Report (Today)"
-msgstr "1. Tagesbericht (Heute)"
-
-#: TimeTrackerCLI.py:802
-msgid "2. Daily Report (Specific Day)"
-msgstr "2. Tagesbericht (Bestimmter Tag)"
-
-#: TimeTrackerCLI.py:803
-msgid "3. Date Range Report"
-msgstr "3. Zeitraum-Bericht"
-
-#: TimeTrackerCLI.py:804
-msgid "4. Detailed Task Report"
-msgstr "4. Detaillierter Aufgaben-Bericht"
-
-#: TimeTrackerCLI.py:805
-msgid "5. Detailed Main-Project Report"
-msgstr "5. Detaillierter Hauptprojektbericht"
-
-#: TimeTrackerCLI.py:806
-msgid "6. Detailed Daily Report"
-msgstr "6. Detaillierter Tagesbericht"
-
-#: TimeTrackerCLI.py:815
-msgid ""
-"\n"
-"--- Generate Daily Report (Today) ---"
-msgstr ""
-"\n"
-"--- Tagesbericht (Heute) erstellen ---"
-
-#: TimeTrackerCLI.py:820
-msgid ""
-"\n"
-"--- Generate Daily Report for a specific Day ---"
-msgstr ""
-"\n"
-"--- Tagesbericht für einen bestimmten Tag erstellen ---"
-
-#: TimeTrackerCLI.py:821
-msgid "Enter the date (YYYY-MM-DD): "
-msgstr "Datum eingeben (JJJJ-MM-TT): "
-
-#: TimeTrackerCLI.py:827 TimeTrackerCLI.py:842 TimeTrackerCLI.py:903
-msgid "Invalid date format. Please use YYYY-MM-DD."
-msgstr "Ungültiges Datumsformat. Bitte JJJJ-MM-TT verwenden."
-
-#: TimeTrackerCLI.py:830
-msgid ""
-"\n"
-"--- Generate Report for a Date Range ---"
-msgstr ""
-"\n"
-"--- Zeitraum-Bericht erstellen ---"
-
-#: TimeTrackerCLI.py:831
-msgid "Enter the start date (YYYY-MM-DD): "
-msgstr "Startdatum eingeben (JJJJ-MM-TT): "
-
-#: TimeTrackerCLI.py:832
-msgid "Enter the end date (YYYY-MM-DD): "
-msgstr "Enddatum eingeben (JJJJ-MM-TT): "
-
-#: TimeTrackerCLI.py:837 sl/SL_Menu.py:2677
-msgid "Error: The start date cannot be after the end date."
-msgstr "Fehler: Das Startdatum darf nicht nach dem Enddatum liegen."
-
-#: TimeTrackerCLI.py:844
-msgid ""
-"\n"
-"--- Detailed Task Report ---"
-msgstr ""
-"\n"
-"--- Detaillierter Aufgaben-Bericht ---"
-
-#: TimeTrackerCLI.py:847 TimeTrackerCLI.py:880 sl/SL_Menu.py:1967
-#: sl/SL_Menu.py:2014 sl/SL_Menu.py:2154 sl/SL_Menu.py:2695 sl/SL_Menu.py:2754
-msgid "No projects found."
-msgstr "Keine Projekte gefunden."
-
-#: TimeTrackerCLI.py:864
-msgid ""
-"\n"
-"Select the task for the report:"
-msgstr ""
-"\n"
-"Wähle die Aufgabe für den Bericht aus:"
-
-#: TimeTrackerCLI.py:877
-msgid ""
-"\n"
-"--- Detailed Main-Project Report ---"
-msgstr ""
-"\n"
-"--- Detaillierter Hauptprojektbericht ---"
-
-#: TimeTrackerCLI.py:885
-msgid "Select the main project for the report:"
-msgstr "Wählen Sie das Hauptprojekt für den Bericht aus:"
-
-#: TimeTrackerCLI.py:896
-msgid ""
-"\n"
-"--- Detailed Daily Report ---"
-msgstr ""
-"\n"
-"--- Detaillierter Tagesbericht ---"
-
-#: TimeTrackerCLI.py:897
-msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
-msgstr "Datum eingeben (JJJJ-MM-TT) oder Enter für heute drücken: "
-
-#: TimeTrackerCLI.py:911 TimeTrackerCLI.py:1042
-msgid "Invalid choice. Please enter a number from 0 to 6."
-msgstr "Ungültige Auswahl. Bitte eine Zahl von 0 bis 6 eingeben."
-
-#: TimeTrackerCLI.py:919
-msgid ""
-"\n"
-"--- Update Available ---"
-msgstr ""
-"\n"
-"--- Update verfügbar ---"
-
-#: TimeTrackerCLI.py:920
-msgid "A downloaded update is ready to be installed."
-msgstr "Ein heruntergeladenes Update ist zur Installation bereit."
-
-#: TimeTrackerCLI.py:921
-msgid "0. Skip update for now"
-msgstr "0. Update vorerst überspringen"
-
-#: TimeTrackerCLI.py:922
-msgid "1. Install update now"
-msgstr "1. Update jetzt installieren"
-
-#: TimeTrackerCLI.py:923
-msgid "Enter your choice (0 or 1): "
-msgstr "Auswahl eingeben (0 oder 1): "
-
-#: TimeTrackerCLI.py:927
-msgid "Application is restarting to complete the update..."
-msgstr "Anwendung wird neu gestartet, um das Update abzuschließen..."
-
-#: TimeTrackerCLI.py:931
-msgid "Update installation skipped. The application will start normally."
-msgstr "Update-Installation übersprungen. Die Anwendung wird normal gestartet."
-
-#: TimeTrackerCLI.py:933
-msgid ""
-"Invalid choice. Update installation skipped. The application will start "
-"normally."
-msgstr ""
-"Ungültige Auswahl. Update-Installation übersprungen. Die Anwendung wird "
-"normal gestartet."
-
-#: TimeTrackerCLI.py:940
-#, python-brace-format
-msgid ""
-"\n"
-"=== Time Control {version} ==="
-msgstr ""
-"\n"
-"=== Time Control {version} ==="
-
-#: TimeTrackerCLI.py:941
-msgid "--- Main Menu ---"
-msgstr "--- Hauptmenü ---"
-
-#: TimeTrackerCLI.py:942
-msgid "1. Start work on task"
-msgstr "1. Arbeit an Aufgabe beginnen"
-
-#: TimeTrackerCLI.py:943
-msgid "2. Show current work"
-msgstr "2. Aktuelle Arbeit anzeigen"
-
-#: TimeTrackerCLI.py:944
-msgid "3. Stop current work"
-msgstr "3. Aktuelle Arbeit beenden"
-
-#: TimeTrackerCLI.py:946
-msgid "4. Handle projects and tasks"
-msgstr "4. Projekte und Aufgaben verwalten"
-
-#: TimeTrackerCLI.py:947
-msgid "5. Reporting"
-msgstr "5. Berichterstattung"
-
-#: TimeTrackerCLI.py:948
-msgid "6. Settings"
-msgstr "6. Einstellungen"
-
-#: TimeTrackerCLI.py:950
-msgid "0. Exit"
-msgstr "0. Beenden"
-
-#: TimeTrackerCLI.py:957
-msgid ""
-"\n"
-"--- Start Work on a Task ---"
-msgstr ""
-"\n"
-"--- Arbeit an einer Aufgabe beginnen ---"
-
-#: TimeTrackerCLI.py:963
-msgid "Select a main project:"
-msgstr "Wählen Sie ein Hauptprojekt aus:"
-
-#: TimeTrackerCLI.py:974
-#, python-brace-format
-msgid "No open tasks found for '{name}' to start work on."
-msgstr ""
-"Für „{name}“ wurden keine offenen Aufgaben gefunden, an denen mit der Arbeit "
-"begonnen werden kann."
-
-#: TimeTrackerCLI.py:977
-#, python-brace-format
-msgid "Select a task from '{name}':"
-msgstr "Wähle eine Aufgabe von '{name}' aus:"
-
-#: TimeTrackerCLI.py:987 sl/SL_Menu.py:2610
-#, python-brace-format
-msgid "Work started on '{task_name}' in project '{main_name}'."
-msgstr "Arbeit an '{task_name}' im Projekt '{main_name}' begonnen."
-
-#: TimeTrackerCLI.py:989 sl/SL_Menu.py:2614
-msgid "Error starting work."
-msgstr "Fehler beim Starten der Arbeit."
-
-#: TimeTrackerCLI.py:996
-msgid ""
-"\n"
-"--- Current Active Work ---"
-msgstr ""
-"\n"
-"--- Aktuell laufende Arbeit ---"
-
-#: TimeTrackerCLI.py:1006
-msgid "You are currently working on:"
-msgstr "Du arbeitest gerade an:"
-
-#: TimeTrackerCLI.py:1007
-#, python-brace-format
-msgid "  Main Project: {name}"
-msgstr "Hauptprojekt: {name}"
-
-#: TimeTrackerCLI.py:1008
-#, python-brace-format
-msgid "  Task:         {name}"
-msgstr "Aufgabe: {name}"
-
-#: TimeTrackerCLI.py:1009
-#, python-brace-format
-msgid "  Started at:   {date}"
-msgstr "  Begonnen um:   {date}"
-
-#: TimeTrackerCLI.py:1010
-#, python-brace-format
-msgid "  Duration:     {duration}"
-msgstr "  Dauer:        {duration}"
-
-#: TimeTrackerCLI.py:1012 sl/SL_Menu.py:870 sl/SL_Menu.py:2636
-msgid "No active work session."
-msgstr "Keine aktive Arbeitssitzung."
-
-#: TimeTrackerCLI.py:1016
-msgid ""
-"\n"
-"--- Stop Work ---"
-msgstr ""
-"\n"
-"--- Arbeit beenden ---"
-
-#: TimeTrackerCLI.py:1018 sl/SL_Menu.py:594
-msgid "Work session stopped successfully."
-msgstr "Arbeitssitzung erfolgreich beendet."
-
-#: TimeTrackerCLI.py:1020 sl/SL_Menu.py:596
-msgid "No active work session to stop."
-msgstr "Keine aktive Arbeitssitzung zum Beenden."
-
-#: TimeTrackerCLI.py:1034
-msgid ""
-"\n"
-"Checking for updates..."
-msgstr ""
-"\n"
-"Prüfe auf Updates..."
-
-#: TimeTrackerCLI.py:1038
-msgid "Exiting application. Goodbye!"
-msgstr "Anwendung wird beendet. Auf Wiedersehen!"
-
-#: sl/SL_Menu.py:278 sl/SL_Menu.py:989 sl/SL_Menu.py:2327 sl/SL_Menu.py:2499
+#: sl/SL_Menu.py:278 sl/SL_Menu.py:1005 sl/SL_Menu.py:2343 sl/SL_Menu.py:2515
 msgid "Priority"
 msgstr "Priorität"
 
-#: sl/SL_Menu.py:450
+#: sl/SL_Menu.py:462
 #, python-brace-format
 msgid "Version {version}"
 msgstr "Version {version}"
 
-#: sl/SL_Menu.py:455 update.py:49
+#: sl/SL_Menu.py:467 update.py:49
 #, python-brace-format
 msgid "A new version ({version}) is available."
 msgstr "Eine neue Version ({version}) ist verfügbar."
 
-#: sl/SL_Menu.py:457
+#: sl/SL_Menu.py:469
 msgid "Restart and install the update"
 msgstr "Neu starten und Update installieren"
 
-#: sl/SL_Menu.py:458
+#: sl/SL_Menu.py:470
 msgid "Downloading and installing update..."
 msgstr "Update wird heruntergeladen und installiert..."
 
-#: sl/SL_Menu.py:489
+#: sl/SL_Menu.py:501
 msgid "New"
 msgstr "Neu"
 
-#: sl/SL_Menu.py:490
+#: sl/SL_Menu.py:502
 msgid "New Project"
 msgstr "Neues Projekt"
 
-#: sl/SL_Menu.py:493
+#: sl/SL_Menu.py:505
 msgid "New Task"
 msgstr "Neue Aufgabe"
 
-#: sl/SL_Menu.py:498
+#: sl/SL_Menu.py:510
 msgid "Project & Task Management"
 msgstr "Projekt- und Aufgabenverwaltung"
 
-#: sl/SL_Menu.py:499 sl/SL_Menu.py:1201
+#: sl/SL_Menu.py:511 sl/SL_Menu.py:1217
 msgid "Main Project Management"
 msgstr "Hauptprojektverwaltung"
 
-#: sl/SL_Menu.py:500 sl/SL_Menu.py:1217 sl/SL_Menu.py:1612
+#: sl/SL_Menu.py:512 sl/SL_Menu.py:1233 sl/SL_Menu.py:1628
 msgid "Add Project"
 msgstr "Projekt hinzufügen"
 
-#: sl/SL_Menu.py:503 sl/SL_Menu.py:1220 sl/SL_Menu.py:1960
+#: sl/SL_Menu.py:515 sl/SL_Menu.py:1236 sl/SL_Menu.py:1976
 msgid "List Projects"
 msgstr "Projekte auflisten"
 
-#: sl/SL_Menu.py:506 sl/SL_Menu.py:1223 sl/SL_Menu.py:1975
+#: sl/SL_Menu.py:518 sl/SL_Menu.py:1239 sl/SL_Menu.py:1991
 msgid "Rename Project"
 msgstr "Projekt umbenennen"
 
-#: sl/SL_Menu.py:509 sl/SL_Menu.py:1226 sl/SL_Menu.py:2090 sl/SL_Menu.py:2103
+#: sl/SL_Menu.py:521 sl/SL_Menu.py:1242 sl/SL_Menu.py:2106 sl/SL_Menu.py:2119
 msgid "Close Project"
 msgstr "Projekt schließen"
 
-#: sl/SL_Menu.py:512 sl/SL_Menu.py:1229 sl/SL_Menu.py:2120 sl/SL_Menu.py:2133
+#: sl/SL_Menu.py:524 sl/SL_Menu.py:1245 sl/SL_Menu.py:2136 sl/SL_Menu.py:2149
 msgid "Re-open Project"
 msgstr "Projekt wieder öffnen"
 
-#: sl/SL_Menu.py:515 sl/SL_Menu.py:1232 sl/SL_Menu.py:2150 sl/SL_Menu.py:2164
+#: sl/SL_Menu.py:527 sl/SL_Menu.py:1248 sl/SL_Menu.py:2166 sl/SL_Menu.py:2180
 msgid "Delete Project"
 msgstr "Projekt löschen"
 
-#: sl/SL_Menu.py:518 sl/SL_Menu.py:1235 sl/SL_Menu.py:2181
+#: sl/SL_Menu.py:530 sl/SL_Menu.py:1251 sl/SL_Menu.py:2197
 msgid "List Inactive Projects"
 msgstr "Inaktive Projekte auflisten"
 
-#: sl/SL_Menu.py:521 sl/SL_Menu.py:1238
+#: sl/SL_Menu.py:533 sl/SL_Menu.py:1254
 msgid "Demote Project to Task"
 msgstr "Projekt zu Aufgabe herabstufen"
 
-#: sl/SL_Menu.py:524 sl/SL_Menu.py:1241 sl/SL_Menu.py:2243
+#: sl/SL_Menu.py:536 sl/SL_Menu.py:1257 sl/SL_Menu.py:2259
 msgid "List Completed Projects"
 msgstr "Abgeschlossene Projekte auflisten"
 
-#: sl/SL_Menu.py:528 sl/SL_Menu.py:1203 sl/SL_Menu.py:1254
+#: sl/SL_Menu.py:540 sl/SL_Menu.py:1219 sl/SL_Menu.py:1270
 msgid "Task Management"
 msgstr "Aufgabenverwaltung"
 
-#: sl/SL_Menu.py:529 sl/SL_Menu.py:1256 sl/SL_Menu.py:2261 sl/SL_Menu.py:2292
-#: sl/SL_Menu.py:2367
+#: sl/SL_Menu.py:541 sl/SL_Menu.py:1272 sl/SL_Menu.py:2277 sl/SL_Menu.py:2308
+#: sl/SL_Menu.py:2383
 msgid "Add Task"
 msgstr "Aufgabe hinzufügen"
 
-#: sl/SL_Menu.py:532 sl/SL_Menu.py:1259 sl/SL_Menu.py:2010
+#: sl/SL_Menu.py:544 sl/SL_Menu.py:1275 sl/SL_Menu.py:2026
 msgid "List Tasks"
 msgstr "Aufgaben auflisten"
 
-#: sl/SL_Menu.py:535 sl/SL_Menu.py:1262 sl/SL_Menu.py:2043
+#: sl/SL_Menu.py:547 sl/SL_Menu.py:1278 sl/SL_Menu.py:2059
 msgid "Rename Task"
 msgstr "Aufgabe umbenennen"
 
-#: sl/SL_Menu.py:538 sl/SL_Menu.py:1265 sl/SL_Menu.py:1627 sl/SL_Menu.py:1653
-#: sl/SL_Menu.py:1832
+#: sl/SL_Menu.py:550 sl/SL_Menu.py:1281 sl/SL_Menu.py:1643 sl/SL_Menu.py:1669
+#: sl/SL_Menu.py:1848
 msgid "Close Task"
 msgstr "Aufgabe schließen"
 
-#: sl/SL_Menu.py:541 sl/SL_Menu.py:1268 sl/SL_Menu.py:1672 sl/SL_Menu.py:1698
+#: sl/SL_Menu.py:553 sl/SL_Menu.py:1284 sl/SL_Menu.py:1688 sl/SL_Menu.py:1714
 msgid "Re-open Task"
 msgstr "Aufgabe erneut öffnen"
 
-#: sl/SL_Menu.py:544 sl/SL_Menu.py:1271 sl/SL_Menu.py:1717 sl/SL_Menu.py:1744
+#: sl/SL_Menu.py:556 sl/SL_Menu.py:1287 sl/SL_Menu.py:1733 sl/SL_Menu.py:1760
 msgid "Delete Task"
 msgstr "Aufgabe löschen"
 
-#: sl/SL_Menu.py:547 sl/SL_Menu.py:1274 sl/SL_Menu.py:1763 sl/SL_Menu.py:1799
+#: sl/SL_Menu.py:559 sl/SL_Menu.py:1290 sl/SL_Menu.py:1779 sl/SL_Menu.py:1815
 msgid "Move Task"
 msgstr "Aufgabe verschieben"
 
-#: sl/SL_Menu.py:550 sl/SL_Menu.py:1277 sl/SL_Menu.py:1818
+#: sl/SL_Menu.py:562 sl/SL_Menu.py:1293 sl/SL_Menu.py:1834
 msgid "List Inactive Tasks"
 msgstr "Inaktive Aufgaben auflisten"
 
-#: sl/SL_Menu.py:553 sl/SL_Menu.py:1280 sl/SL_Menu.py:1845
+#: sl/SL_Menu.py:565 sl/SL_Menu.py:1296 sl/SL_Menu.py:1861
 msgid "List All Closed Tasks"
 msgstr "Alle geschlossenen Aufgaben auflisten"
 
-#: sl/SL_Menu.py:556 sl/SL_Menu.py:715 sl/SL_Menu.py:801 sl/SL_Menu.py:1011
-#: sl/SL_Menu.py:1283 sl/SL_Menu.py:2395 sl/SL_Menu.py:2415 sl/SL_Menu.py:2450
+#: sl/SL_Menu.py:568 sl/SL_Menu.py:727 sl/SL_Menu.py:813 sl/SL_Menu.py:1027
+#: sl/SL_Menu.py:1299 sl/SL_Menu.py:2411 sl/SL_Menu.py:2431 sl/SL_Menu.py:2466
 msgid "Edit Task"
 msgstr "Aufgabe bearbeiten"
 
-#: sl/SL_Menu.py:559 sl/SL_Menu.py:1286 sl/SL_Menu.py:1870
+#: sl/SL_Menu.py:571 sl/SL_Menu.py:1302 sl/SL_Menu.py:1886
 msgid "Delete All Closed Tasks"
 msgstr "Alle geschlossenen Aufgaben löschen"
 
-#: sl/SL_Menu.py:562 sl/SL_Menu.py:1289 sl/SL_Menu.py:1912
+#: sl/SL_Menu.py:574 sl/SL_Menu.py:1305 sl/SL_Menu.py:1928
 msgid "Promote Task to Project"
 msgstr "Aufgabe zum Projekt hochstufen"
 
-#: sl/SL_Menu.py:567
+#: sl/SL_Menu.py:579
 msgid "Today View"
 msgstr "Heute-Ansicht"
 
-#: sl/SL_Menu.py:572 sl/SL_Menu.py:631
+#: sl/SL_Menu.py:584 sl/SL_Menu.py:643
 msgid "Task Planning"
 msgstr "Aufgabenplanung"
 
-#: sl/SL_Menu.py:577 sl/SL_Menu.py:1046
+#: sl/SL_Menu.py:589 sl/SL_Menu.py:1062
 msgid "E-Mail Task Assignment"
 msgstr "Zuordnung von E-Mail-Tasks"
 
-#: sl/SL_Menu.py:582 sl/SL_Menu.py:711 sl/SL_Menu.py:797 sl/SL_Menu.py:1007
+#: sl/SL_Menu.py:594 sl/SL_Menu.py:723 sl/SL_Menu.py:809 sl/SL_Menu.py:1023
 msgid "Start work on task"
 msgstr "Arbeit an Aufgabe beginnen"
 
-#: sl/SL_Menu.py:587
+#: sl/SL_Menu.py:599
 msgid "Show current work"
 msgstr "Aktuelle Arbeit anzeigen"
 
-#: sl/SL_Menu.py:592
+#: sl/SL_Menu.py:604
 msgid "Stop current work"
 msgstr "Aktuelle Arbeit beenden"
 
-#: sl/SL_Menu.py:600 sl/SL_Menu.py:1302
+#: sl/SL_Menu.py:606
+msgid "Work session stopped successfully."
+msgstr "Arbeitssitzung erfolgreich beendet."
+
+#: sl/SL_Menu.py:608
+msgid "No active work session to stop."
+msgstr "Keine aktive Arbeitssitzung zum Beenden."
+
+#: sl/SL_Menu.py:612 sl/SL_Menu.py:1318
 msgid "Reporting"
 msgstr "Berichterstattung"
 
-#: sl/SL_Menu.py:601 sl/SL_Menu.py:1305
+#: sl/SL_Menu.py:613 sl/SL_Menu.py:1321
 msgid "Daily Report (Today)"
 msgstr "Tagesbericht (Heute)"
 
-#: sl/SL_Menu.py:606 sl/SL_Menu.py:1311 sl/SL_Menu.py:2645
+#: sl/SL_Menu.py:618 sl/SL_Menu.py:1327 sl/SL_Menu.py:2661
 msgid "Daily Report (Specific Day)"
 msgstr "Tagesbericht (Bestimmter Tag)"
 
-#: sl/SL_Menu.py:609 sl/SL_Menu.py:1314 sl/SL_Menu.py:2664
+#: sl/SL_Menu.py:621 sl/SL_Menu.py:1330 sl/SL_Menu.py:2680
 msgid "Date Range Report"
 msgstr "Zeitraum-Bericht"
 
-#: sl/SL_Menu.py:612 sl/SL_Menu.py:1317 sl/SL_Menu.py:2691 sl/SL_Menu.py:2722
+#: sl/SL_Menu.py:624 sl/SL_Menu.py:1333 sl/SL_Menu.py:2707 sl/SL_Menu.py:2738
 msgid "Detailed Task Report"
 msgstr "Detaillierter Aufgaben-Bericht"
 
-#: sl/SL_Menu.py:615 sl/SL_Menu.py:1320 sl/SL_Menu.py:2750
+#: sl/SL_Menu.py:627 sl/SL_Menu.py:1336 sl/SL_Menu.py:2766
 msgid "Detailed Project Report"
 msgstr "Detaillierter Projekt-Bericht"
 
-#: sl/SL_Menu.py:618 sl/SL_Menu.py:1323 sl/SL_Menu.py:2777
+#: sl/SL_Menu.py:630 sl/SL_Menu.py:1339 sl/SL_Menu.py:2793
 msgid "Detailed Daily Report"
 msgstr "Detaillierter Tagesbericht"
 
-#: sl/SL_Menu.py:623 sl/SL_Menu.py:1340
+#: sl/SL_Menu.py:635 sl/SL_Menu.py:1356
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: sl/SL_Menu.py:637 sl/SL_Menu.py:657
+#: sl/SL_Menu.py:648 sl/SL_Menu.py:668 sl/SL_Menu.py:734 sl/SL_Menu.py:820
+#: sl/SL_Menu.py:1177 sl/SL_Menu.py:2338 sl/SL_Menu.py:2509
+msgid "Today"
+msgstr "Heute"
+
+#: sl/SL_Menu.py:649 sl/SL_Menu.py:669
 msgid "Tomorrow"
 msgstr "Morgen"
 
-#: sl/SL_Menu.py:638 sl/SL_Menu.py:658
+#: sl/SL_Menu.py:650 sl/SL_Menu.py:670
 msgid "Weekly overview"
 msgstr "Wochenübersicht"
 
-#: sl/SL_Menu.py:639 sl/SL_Menu.py:659
+#: sl/SL_Menu.py:651 sl/SL_Menu.py:671
 msgid "Overdue tasks"
 msgstr "Überfällige Aufgaben"
 
-#: sl/SL_Menu.py:640 sl/SL_Menu.py:660
+#: sl/SL_Menu.py:652 sl/SL_Menu.py:672
 msgid "Unplanned tasks"
 msgstr "Ungeplante Aufgaben"
 
-#: sl/SL_Menu.py:641
+#: sl/SL_Menu.py:653
 msgid "All"
 msgstr "Alle"
 
-#: sl/SL_Menu.py:648
+#: sl/SL_Menu.py:660
 msgid "Filter"
 msgstr "Filter"
 
-#: sl/SL_Menu.py:667
+#: sl/SL_Menu.py:679
 msgid "Tasks"
 msgstr "Aufgaben"
 
-#: sl/SL_Menu.py:674 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
+#: sl/SL_Menu.py:686 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
 msgid "Friday"
 msgstr "Freitag"
 
-#: sl/SL_Menu.py:674 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
+#: sl/SL_Menu.py:686 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
 msgid "Monday"
 msgstr "Montag"
 
-#: sl/SL_Menu.py:674 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
+#: sl/SL_Menu.py:686 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
 msgid "Saturday"
 msgstr "Samstag"
 
-#: sl/SL_Menu.py:674 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
+#: sl/SL_Menu.py:686 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
 msgid "Sunday"
 msgstr "Sonntag"
 
-#: sl/SL_Menu.py:674 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
+#: sl/SL_Menu.py:686 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
 msgid "Thursday"
 msgstr "Donnerstag"
 
-#: sl/SL_Menu.py:674 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
+#: sl/SL_Menu.py:686 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
 msgid "Tuesday"
 msgstr "Dienstag"
 
-#: sl/SL_Menu.py:674 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
+#: sl/SL_Menu.py:686 tt/TimeTracker.py:1479 tt/TimeTracker.py:1577
 msgid "Wednesday"
 msgstr "Mittwoch"
 
-#: sl/SL_Menu.py:735 sl/SL_Menu.py:821 sl/SL_Menu.py:873 sl/SL_Menu.py:1018
-#: sl/SL_Menu.py:2495
+#: sl/SL_Menu.py:747 sl/SL_Menu.py:833 sl/SL_Menu.py:885 sl/SL_Menu.py:1034
+#: sl/SL_Menu.py:2511
 msgid "Done"
 msgstr "Erledigt"
 
-#: sl/SL_Menu.py:836
+#: sl/SL_Menu.py:797 sl/SL_Menu.py:993
+msgid "Due"
+msgstr "Fällig"
+
+#: sl/SL_Menu.py:848
 msgid "No tasks found."
 msgstr "Keine Aufgaben gefunden."
 
-#: sl/SL_Menu.py:838 sl/SL_Menu.py:1190 sl/SL_Menu.py:1208 sl/SL_Menu.py:1247
-#: sl/SL_Menu.py:1295 sl/SL_Menu.py:1329 sl/SL_Menu.py:1599 sl/SL_Menu.py:1632
-#: sl/SL_Menu.py:1643 sl/SL_Menu.py:1677 sl/SL_Menu.py:1688 sl/SL_Menu.py:1722
-#: sl/SL_Menu.py:1733 sl/SL_Menu.py:1768 sl/SL_Menu.py:1779 sl/SL_Menu.py:1787
-#: sl/SL_Menu.py:1838 sl/SL_Menu.py:1863 sl/SL_Menu.py:1885 sl/SL_Menu.py:1917
-#: sl/SL_Menu.py:1928 sl/SL_Menu.py:1968 sl/SL_Menu.py:1980 sl/SL_Menu.py:2015
-#: sl/SL_Menu.py:2036 sl/SL_Menu.py:2048 sl/SL_Menu.py:2059 sl/SL_Menu.py:2095
-#: sl/SL_Menu.py:2125 sl/SL_Menu.py:2155 sl/SL_Menu.py:2195 sl/SL_Menu.py:2207
-#: sl/SL_Menu.py:2254 sl/SL_Menu.py:2266 sl/SL_Menu.py:2400 sl/SL_Menu.py:2419
-#: sl/SL_Menu.py:2432 sl/SL_Menu.py:2447 sl/SL_Menu.py:2584 sl/SL_Menu.py:2594
-#: sl/SL_Menu.py:2638 sl/SL_Menu.py:2657 sl/SL_Menu.py:2684 sl/SL_Menu.py:2696
-#: sl/SL_Menu.py:2708 sl/SL_Menu.py:2727 sl/SL_Menu.py:2743 sl/SL_Menu.py:2755
-#: sl/SL_Menu.py:2770 sl/SL_Menu.py:2789 sl/SL_Menu.py:2830 sl/SL_Menu.py:2845
+#: sl/SL_Menu.py:850 sl/SL_Menu.py:1206 sl/SL_Menu.py:1224 sl/SL_Menu.py:1263
+#: sl/SL_Menu.py:1311 sl/SL_Menu.py:1345 sl/SL_Menu.py:1615 sl/SL_Menu.py:1648
+#: sl/SL_Menu.py:1659 sl/SL_Menu.py:1693 sl/SL_Menu.py:1704 sl/SL_Menu.py:1738
+#: sl/SL_Menu.py:1749 sl/SL_Menu.py:1784 sl/SL_Menu.py:1795 sl/SL_Menu.py:1803
+#: sl/SL_Menu.py:1854 sl/SL_Menu.py:1879 sl/SL_Menu.py:1901 sl/SL_Menu.py:1933
+#: sl/SL_Menu.py:1944 sl/SL_Menu.py:1984 sl/SL_Menu.py:1996 sl/SL_Menu.py:2031
+#: sl/SL_Menu.py:2052 sl/SL_Menu.py:2064 sl/SL_Menu.py:2075 sl/SL_Menu.py:2111
+#: sl/SL_Menu.py:2141 sl/SL_Menu.py:2171 sl/SL_Menu.py:2211 sl/SL_Menu.py:2223
+#: sl/SL_Menu.py:2270 sl/SL_Menu.py:2282 sl/SL_Menu.py:2416 sl/SL_Menu.py:2435
+#: sl/SL_Menu.py:2448 sl/SL_Menu.py:2463 sl/SL_Menu.py:2600 sl/SL_Menu.py:2610
+#: sl/SL_Menu.py:2654 sl/SL_Menu.py:2673 sl/SL_Menu.py:2700 sl/SL_Menu.py:2712
+#: sl/SL_Menu.py:2724 sl/SL_Menu.py:2743 sl/SL_Menu.py:2759 sl/SL_Menu.py:2771
+#: sl/SL_Menu.py:2786 sl/SL_Menu.py:2805 sl/SL_Menu.py:2846
 msgid "Back"
 msgstr "Zurück"
 
-#: sl/SL_Menu.py:849
+#: sl/SL_Menu.py:861
 msgid "Today's Tasks"
 msgstr "Heutige Aufgaben"
 
-#: sl/SL_Menu.py:868 sl/SL_Menu.py:2623
+#: sl/SL_Menu.py:880 sl/SL_Menu.py:2639
 msgid "Current Active Work"
 msgstr "Aktuell laufende Arbeit"
 
-#: sl/SL_Menu.py:887
+#: sl/SL_Menu.py:882 sl/SL_Menu.py:2652
+msgid "No active work session."
+msgstr "Keine aktive Arbeitssitzung."
+
+#: sl/SL_Menu.py:899
 msgid "Edit current task"
 msgstr "Aktuellen Task bearbeiten"
 
-#: sl/SL_Menu.py:908
+#: sl/SL_Menu.py:923
 msgid "Show only open tasks"
 msgstr "Nur offene Aufgaben anzeigen"
 
-#: sl/SL_Menu.py:920
+#: sl/SL_Menu.py:936
 msgid "Sort by priority"
 msgstr "Nach Priorität sortieren"
 
-#: sl/SL_Menu.py:992 sl/SL_Menu.py:2327 sl/SL_Menu.py:2499
+#: sl/SL_Menu.py:1008 sl/SL_Menu.py:2343 sl/SL_Menu.py:2515
 msgid "0 (lowest) to 9 (highest)"
 msgstr "0 (niedrigste) bis 9 (höchste)"
 
-#: sl/SL_Menu.py:1033
+#: sl/SL_Menu.py:1049
 msgid "No open tasks for today."
 msgstr "Keine offenen Aufgaben für heute."
 
-#: sl/SL_Menu.py:1035
+#: sl/SL_Menu.py:1051
 msgid "No tasks for today."
 msgstr "Keine Aufgaben für heute."
 
-#: sl/SL_Menu.py:1039
+#: sl/SL_Menu.py:1055
 msgid "Exit"
 msgstr "Beenden"
 
-#: sl/SL_Menu.py:1052
+#: sl/SL_Menu.py:1068
 msgid "Fetching emails..."
 msgstr "E-Mails werden abgerufen..."
 
-#: sl/SL_Menu.py:1055
+#: sl/SL_Menu.py:1071
 #, python-brace-format
 msgid "Error fetching emails: {error}"
 msgstr "Fehler beim E-Mail-Abruf: {error}"
 
-#: sl/SL_Menu.py:1058
+#: sl/SL_Menu.py:1074
 #, python-brace-format
 msgid "{count} new tasks created from emails."
 msgstr "{count} neue Aufgaben aus E-Mails erstellt."
 
-#: sl/SL_Menu.py:1060
+#: sl/SL_Menu.py:1076
 msgid "No new emails found."
 msgstr "Keine neuen E-Mails gefunden."
 
-#: sl/SL_Menu.py:1085
+#: sl/SL_Menu.py:1101
 #, python-brace-format
 msgid "{remaining} of {total} emails still to process"
 msgstr "{remaining} von {total} E-Mails noch zu bearbeiten"
 
-#: sl/SL_Menu.py:1089
+#: sl/SL_Menu.py:1105
 msgid "No unassigned email tasks available."
 msgstr "Keine nicht zugeordneten E-Mail-Tasks vorhanden."
 
-#: sl/SL_Menu.py:1101
+#: sl/SL_Menu.py:1117
 msgid "Assign Project"
 msgstr "Projekt zuordnen"
 
-#: sl/SL_Menu.py:1112
+#: sl/SL_Menu.py:1128
 msgid "Are you sure you want to delete this task?"
 msgstr "Sind Sie sicher, dass Sie diese Aufgabe löschen möchten?"
 
-#: sl/SL_Menu.py:1115
+#: sl/SL_Menu.py:1131
 msgid "Yes, delete"
 msgstr "Ja, löschen"
 
-#: sl/SL_Menu.py:1120
+#: sl/SL_Menu.py:1136
 msgid "No, cancel"
 msgstr "Nein, abbrechen"
 
-#: sl/SL_Menu.py:1127
+#: sl/SL_Menu.py:1143
 msgid "Delete"
 msgstr "Löschen"
 
-#: sl/SL_Menu.py:1131
+#: sl/SL_Menu.py:1147
 msgid "Edit Details"
 msgstr "Details bearbeiten"
 
-#: sl/SL_Menu.py:1139 sl/SL_Menu.py:2479
+#: sl/SL_Menu.py:1155 sl/SL_Menu.py:2495
 msgid "Task Name"
 msgstr "Aufgabenname"
 
-#: sl/SL_Menu.py:1148 sl/SL_Menu.py:2483
+#: sl/SL_Menu.py:1164 sl/SL_Menu.py:2499
 msgid "Due Date"
 msgstr "Fälligkeitsdatum"
 
-#: sl/SL_Menu.py:1156 sl/SL_Menu.py:2487
+#: sl/SL_Menu.py:1172 sl/SL_Menu.py:2503
 msgid "Clear"
 msgstr "Löschen"
 
-#: sl/SL_Menu.py:1163 sl/SL_Menu.py:2355 sl/SL_Menu.py:2528
+#: sl/SL_Menu.py:1179 sl/SL_Menu.py:2371 sl/SL_Menu.py:2544
 msgid "Notes (Markdown)"
 msgstr "Notizen (Markdown)"
 
-#: sl/SL_Menu.py:1182
+#: sl/SL_Menu.py:1198
 msgid "Task details updated successfully."
 msgstr "Aufgabendetails erfolgreich aktualisiert."
 
-#: sl/SL_Menu.py:1188
+#: sl/SL_Menu.py:1204
 msgid "Error updating task details."
 msgstr "Fehler beim Aktualisieren der Aufgabendetails."
 
-#: sl/SL_Menu.py:1199 sl/SL_Menu.py:1215
+#: sl/SL_Menu.py:1215 sl/SL_Menu.py:1231
 msgid "Project Management"
 msgstr "Projektverwaltung"
 
-#: sl/SL_Menu.py:1343
+#: sl/SL_Menu.py:1359
 msgid "Change Language"
 msgstr "Sprache ändern"
 
-#: sl/SL_Menu.py:1361
+#: sl/SL_Menu.py:1377
 msgid "Select Language"
 msgstr "Sprache auswählen"
 
-#: sl/SL_Menu.py:1362 sl/SL_Menu.py:1402 sl/SL_Menu.py:1443 sl/SL_Menu.py:1456
-#: sl/SL_Menu.py:1476 sl/SL_Menu.py:1510 sl/SL_Menu.py:1533 sl/SL_Menu.py:1588
+#: sl/SL_Menu.py:1378 sl/SL_Menu.py:1418 sl/SL_Menu.py:1459 sl/SL_Menu.py:1472
+#: sl/SL_Menu.py:1492 sl/SL_Menu.py:1526 sl/SL_Menu.py:1549 sl/SL_Menu.py:1604
 msgid "Save"
 msgstr "Speichern"
 
-#: sl/SL_Menu.py:1368
+#: sl/SL_Menu.py:1384
 msgid ""
 "Language changed. Please restart the application for the changes to take "
 "effect."
@@ -1687,21 +443,21 @@ msgstr ""
 "Sprache geändert. Bitte starten Sie die Anwendung neu, damit die Änderungen "
 "wirksam werden."
 
-#: sl/SL_Menu.py:1371
+#: sl/SL_Menu.py:1387
 msgid "Restore Previous Version"
 msgstr "Vorherige Version wiederherstellen"
 
-#: sl/SL_Menu.py:1374
+#: sl/SL_Menu.py:1390
 msgid "The 'update' module is not available. This feature is disabled."
 msgstr ""
 "Das Modul „Update“ ist nicht verfügbar. Diese Funktion ist deaktiviert."
 
-#: sl/SL_Menu.py:1376
+#: sl/SL_Menu.py:1392
 #, python-brace-format
 msgid "No previous version backup '{filename}' found."
 msgstr "Keine Sicherung der vorherigen Version „{filename}“ gefunden."
 
-#: sl/SL_Menu.py:1378
+#: sl/SL_Menu.py:1394
 msgid ""
 "This will restore the application to the previously backed-up version. The "
 "application will then restart. You may need to manually refresh your browser "
@@ -1712,35 +468,35 @@ msgstr ""
 "müssen Sie Ihren Browser manuell aktualisieren, wenn die Verbindung nicht "
 "automatisch wiederhergestellt wird."
 
-#: sl/SL_Menu.py:1379
+#: sl/SL_Menu.py:1395
 msgid "Restore and Restart"
 msgstr "Wiederherstellen und neu starten"
 
-#: sl/SL_Menu.py:1380
+#: sl/SL_Menu.py:1396
 msgid "Restoring and restarting..."
 msgstr "Wiederherstellung und Neustart..."
 
-#: sl/SL_Menu.py:1383
+#: sl/SL_Menu.py:1399
 msgid "Restore complete. Please restart the application."
 msgstr "Wiederherstellung abgeschlossen. Bitte starten Sie die Anwendung neu."
 
-#: sl/SL_Menu.py:1385
+#: sl/SL_Menu.py:1401
 msgid "Change Data Storage Location"
 msgstr "Speicherort der Daten ändern"
 
-#: sl/SL_Menu.py:1387
+#: sl/SL_Menu.py:1403
 msgid "Current data file"
 msgstr "Aktuelle Datendatei"
 
-#: sl/SL_Menu.py:1390
+#: sl/SL_Menu.py:1406
 msgid "New Path for data file"
 msgstr "Neuer Pfad für Datendatei"
 
-#: sl/SL_Menu.py:1396
+#: sl/SL_Menu.py:1412
 msgid "Move existing data to the new location"
 msgstr "Vorhandene Daten an den neuen Speicherort verschieben"
 
-#: sl/SL_Menu.py:1399
+#: sl/SL_Menu.py:1415
 msgid ""
 "If unchecked, the old data file will remain, and a new empty one might be "
 "created at the new location on restart."
@@ -1749,11 +505,11 @@ msgstr ""
 "beim Neustart wird möglicherweise eine neue leere Datei am neuen Speicherort "
 "erstellt."
 
-#: sl/SL_Menu.py:1406
+#: sl/SL_Menu.py:1422
 msgid "Please enter a new path."
 msgstr "Bitte geben Sie einen neuen Pfad ein."
 
-#: sl/SL_Menu.py:1414
+#: sl/SL_Menu.py:1430
 msgid ""
 "Error: For security, the data file must be located within the application "
 "directory."
@@ -1761,7 +517,12 @@ msgstr ""
 "Fehler: Aus Sicherheitsgründen muss sich die Datendatei im "
 "Anwendungsverzeichnis befinden."
 
-#: sl/SL_Menu.py:1423
+#: sl/SL_Menu.py:1434
+#, python-brace-format
+msgid "Error: The directory '{dir}' does not exist."
+msgstr "Fehler: Das Verzeichnis '{dir}' existiert nicht."
+
+#: sl/SL_Menu.py:1439
 msgid ""
 "Storage location updated. Please restart the application for the changes to "
 "take effect."
@@ -1769,103 +530,112 @@ msgstr ""
 "Speicherort aktualisiert. Bitte starten Sie die Anwendung neu, damit die "
 "Änderungen wirksam werden."
 
-#: sl/SL_Menu.py:1437
+#: sl/SL_Menu.py:1444
+msgid "Data moved successfully."
+msgstr "Daten erfolgreich verschoben."
+
+#: sl/SL_Menu.py:1446
+#, python-brace-format
+msgid "Error moving data: {error}"
+msgstr "Fehler beim Verschieben der Daten: {error}"
+
+#: sl/SL_Menu.py:1453
 msgid "Report Format"
 msgstr "Berichtsformat"
 
-#: sl/SL_Menu.py:1442
+#: sl/SL_Menu.py:1458
 msgid "Select Format"
 msgstr "Format auswählen"
 
-#: sl/SL_Menu.py:1447
+#: sl/SL_Menu.py:1463
 msgid "Report format updated."
 msgstr "Berichtsformat aktualisiert."
 
-#: sl/SL_Menu.py:1450
+#: sl/SL_Menu.py:1466
 msgid "Streamlit Port Settings"
 msgstr "Streamlit-Port-Einstellungen"
 
-#: sl/SL_Menu.py:1452
+#: sl/SL_Menu.py:1468
 msgid "Current Streamlit Port"
 msgstr "Aktueller Streamlit-Port"
 
-#: sl/SL_Menu.py:1455
+#: sl/SL_Menu.py:1471
 msgid "New Port"
 msgstr "Neuer Port"
 
-#: sl/SL_Menu.py:1460
+#: sl/SL_Menu.py:1476
 #, python-brace-format
 msgid "Port updated to {port}. Please restart Streamlit."
 msgstr "Port aktualisiert auf {port}. Bitte starten Sie Streamlit neu."
 
-#: sl/SL_Menu.py:1463
+#: sl/SL_Menu.py:1479
 msgid "Email Settings"
 msgstr "E-Mail-Einstellungen"
 
-#: sl/SL_Menu.py:1469
+#: sl/SL_Menu.py:1485
 msgid "Enable email import"
 msgstr "E-Mail-Import aktivieren"
 
-#: sl/SL_Menu.py:1470
+#: sl/SL_Menu.py:1486
 msgid "IMAP Server"
 msgstr "IMAP-Server"
 
-#: sl/SL_Menu.py:1471
+#: sl/SL_Menu.py:1487
 msgid "Port"
 msgstr "Port"
 
-#: sl/SL_Menu.py:1472
+#: sl/SL_Menu.py:1488
 msgid "Username"
 msgstr "Benutzername"
 
-#: sl/SL_Menu.py:1473
+#: sl/SL_Menu.py:1489
 msgid "Password"
 msgstr "Passwort"
 
-#: sl/SL_Menu.py:1474
+#: sl/SL_Menu.py:1490
 msgid "Use SSL"
 msgstr "SSL verwenden"
 
-#: sl/SL_Menu.py:1487
+#: sl/SL_Menu.py:1503
 msgid "Email settings saved."
 msgstr "E-Mail-Einstellungen gespeichert."
 
-#: sl/SL_Menu.py:1490
+#: sl/SL_Menu.py:1506
 msgid "Change CSS Style"
 msgstr "CSS-Stil ändern"
 
-#: sl/SL_Menu.py:1492
+#: sl/SL_Menu.py:1508
 msgid "Current CSS file"
 msgstr "Aktuelle CSS-Datei"
 
-#: sl/SL_Menu.py:1509
+#: sl/SL_Menu.py:1525
 msgid "Select CSS File"
 msgstr "CSS-Datei auswählen"
 
-#: sl/SL_Menu.py:1515
+#: sl/SL_Menu.py:1531
 msgid ""
 "CSS style updated. Please restart the application for the changes to take "
 "effect."
 msgstr ""
 "CSS-Stil aktualisiert. Bitte die Anwendung für die Änderungen neu starten."
 
-#: sl/SL_Menu.py:1518
+#: sl/SL_Menu.py:1534
 msgid "Change View Mode"
 msgstr "Anzeigemodus ändern"
 
-#: sl/SL_Menu.py:1522
+#: sl/SL_Menu.py:1538
 msgid "App Window (Webview)"
 msgstr "App-Fenster (Webview)"
 
-#: sl/SL_Menu.py:1522
+#: sl/SL_Menu.py:1538
 msgid "System Browser"
 msgstr "System-Browser"
 
-#: sl/SL_Menu.py:1532
+#: sl/SL_Menu.py:1548
 msgid "Select View Mode"
 msgstr "Anzeigemodus auswählen"
 
-#: sl/SL_Menu.py:1539
+#: sl/SL_Menu.py:1555
 msgid ""
 "View mode updated. Please restart the application for the changes to take "
 "effect."
@@ -1873,38 +643,38 @@ msgstr ""
 "Anzeigemodus aktualisiert. Bitte die Anwendung für die Änderungen neu "
 "starten."
 
-#: sl/SL_Menu.py:1542
+#: sl/SL_Menu.py:1558
 msgid "MCP Server Settings"
 msgstr "MCP-Server-Einstellungen"
 
-#: sl/SL_Menu.py:1544
+#: sl/SL_Menu.py:1560
 msgid "HTTP (Streamable HTTP)"
 msgstr "HTTP (Streamable HTTP)"
 
-#: sl/SL_Menu.py:1545
+#: sl/SL_Menu.py:1561
 msgid "stdio (recommended for Claude Desktop)"
 msgstr "stdio (empfohlen für Claude Desktop)"
 
-#: sl/SL_Menu.py:1559
+#: sl/SL_Menu.py:1575
 msgid "Transport"
 msgstr "Transport"
 
-#: sl/SL_Menu.py:1570
+#: sl/SL_Menu.py:1586
 msgid "Enable MCP server"
 msgstr "MCP-Server aktivieren"
 
-#: sl/SL_Menu.py:1573
+#: sl/SL_Menu.py:1589
 msgid ""
 "Not used with stdio - the MCP client starts and stops the server itself."
 msgstr ""
 "Wird bei stdio nicht verwendet – der MCP-Client startet und stoppt den "
 "Server selbst."
 
-#: sl/SL_Menu.py:1576
+#: sl/SL_Menu.py:1592
 msgid "Port (HTTP only)"
 msgstr "Port (nur HTTP)"
 
-#: sl/SL_Menu.py:1583
+#: sl/SL_Menu.py:1599
 msgid ""
 "With stdio, the app does not start the MCP server itself - the MCP client "
 "(e.g. Claude Desktop) launches it directly, and the port is ignored."
@@ -1912,7 +682,7 @@ msgstr ""
 "Bei stdio startet die App den MCP-Server nicht selbst – der MCP-Client (z.B. "
 "Claude Desktop) startet ihn direkt, und der Port wird ignoriert."
 
-#: sl/SL_Menu.py:1594
+#: sl/SL_Menu.py:1610
 msgid ""
 "MCP server settings saved. Please restart the application for the changes to "
 "take effect."
@@ -1920,114 +690,133 @@ msgstr ""
 "MCP-Server-Einstellungen gespeichert. Bitte starten Sie die Anwendung neu, "
 "damit die Änderungen wirksam werden."
 
-#: sl/SL_Menu.py:1608
+#: sl/SL_Menu.py:1624
 msgid "Add New Project"
 msgstr "Neues Projekt hinzufügen"
 
-#: sl/SL_Menu.py:1611
+#: sl/SL_Menu.py:1627
 msgid "Name of the project"
 msgstr "Name des Projekts"
 
-#: sl/SL_Menu.py:1615
+#: sl/SL_Menu.py:1631
 #, python-brace-format
 msgid "Project '{name}' added."
 msgstr "Projekt '{name}' hinzugefügt."
 
-#: sl/SL_Menu.py:1619 sl/SL_Menu.py:1665 sl/SL_Menu.py:1710 sl/SL_Menu.py:1756
-#: sl/SL_Menu.py:1811 sl/SL_Menu.py:1905 sl/SL_Menu.py:1953 sl/SL_Menu.py:2003
-#: sl/SL_Menu.py:2083 sl/SL_Menu.py:2113 sl/SL_Menu.py:2143 sl/SL_Menu.py:2174
-#: sl/SL_Menu.py:2236 sl/SL_Menu.py:2276 sl/SL_Menu.py:2388 sl/SL_Menu.py:2407
-#: sl/SL_Menu.py:2568 sl/SL_Menu.py:2616
+#: sl/SL_Menu.py:1635 sl/SL_Menu.py:1681 sl/SL_Menu.py:1726 sl/SL_Menu.py:1772
+#: sl/SL_Menu.py:1827 sl/SL_Menu.py:1921 sl/SL_Menu.py:1969 sl/SL_Menu.py:2019
+#: sl/SL_Menu.py:2099 sl/SL_Menu.py:2129 sl/SL_Menu.py:2159 sl/SL_Menu.py:2190
+#: sl/SL_Menu.py:2252 sl/SL_Menu.py:2292 sl/SL_Menu.py:2404 sl/SL_Menu.py:2423
+#: sl/SL_Menu.py:2584 sl/SL_Menu.py:2632
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: sl/SL_Menu.py:1637 sl/SL_Menu.py:1682 sl/SL_Menu.py:1727 sl/SL_Menu.py:1922
-#: sl/SL_Menu.py:1985 sl/SL_Menu.py:2020 sl/SL_Menu.py:2053 sl/SL_Menu.py:2102
-#: sl/SL_Menu.py:2132 sl/SL_Menu.py:2162 sl/SL_Menu.py:2589 sl/SL_Menu.py:2701
-#: sl/SL_Menu.py:2762
+#: sl/SL_Menu.py:1647 sl/SL_Menu.py:1692 sl/SL_Menu.py:1737 sl/SL_Menu.py:1783
+#: sl/SL_Menu.py:1932 sl/SL_Menu.py:2063 sl/SL_Menu.py:2222 sl/SL_Menu.py:2415
+msgid "No open projects found."
+msgstr "Keine offenen Projekte gefunden."
+
+#: sl/SL_Menu.py:1653 sl/SL_Menu.py:1698 sl/SL_Menu.py:1743 sl/SL_Menu.py:1938
+#: sl/SL_Menu.py:2001 sl/SL_Menu.py:2036 sl/SL_Menu.py:2069 sl/SL_Menu.py:2118
+#: sl/SL_Menu.py:2148 sl/SL_Menu.py:2178 sl/SL_Menu.py:2605 sl/SL_Menu.py:2717
+#: sl/SL_Menu.py:2778
 msgid "Select Project"
 msgstr "Projekt auswählen"
 
-#: sl/SL_Menu.py:1642
+#: sl/SL_Menu.py:1658
 #, python-brace-format
 msgid "No open tasks to close in '{name}'."
 msgstr "Keine offenen Aufgaben zum Schließen in „{name}“."
 
-#: sl/SL_Menu.py:1649 sl/SL_Menu.py:1694 sl/SL_Menu.py:1739 sl/SL_Menu.py:1793
-#: sl/SL_Menu.py:1934 sl/SL_Menu.py:2063 sl/SL_Menu.py:2422 sl/SL_Menu.py:2600
-#: sl/SL_Menu.py:2732
+#: sl/SL_Menu.py:1665 sl/SL_Menu.py:1710 sl/SL_Menu.py:1755 sl/SL_Menu.py:1809
+#: sl/SL_Menu.py:1950 sl/SL_Menu.py:2079 sl/SL_Menu.py:2438 sl/SL_Menu.py:2616
+#: sl/SL_Menu.py:2748
 msgid "Select Task"
 msgstr "Aufgabe auswählen"
 
-#: sl/SL_Menu.py:1659
+#: sl/SL_Menu.py:1675
 #, python-brace-format
 msgid "Task '{sub_name}' in '{main_name}' has been closed."
 msgstr "Aufgabe „{sub_name}“ in „{main_name}“ wurde geschlossen."
 
-#: sl/SL_Menu.py:1687
+#: sl/SL_Menu.py:1679 sl/SL_Menu.py:1724 sl/SL_Menu.py:1770
+msgid "Error: Main project or task not found."
+msgstr "Fehler: Hauptprojekt oder Hauptaufgabe nicht gefunden."
+
+#: sl/SL_Menu.py:1703
 #, python-brace-format
 msgid "No closed tasks to reopen in '{name}'."
 msgstr "Keine geschlossenen Aufgaben zum erneuten Öffnen in „{name}“."
 
-#: sl/SL_Menu.py:1704
+#: sl/SL_Menu.py:1720
 #, python-brace-format
 msgid "Task '{sub_name}' in '{main_name}' has been reopened."
 msgstr "Aufgabe „{sub_name}“ in „{main_name}“ wurde erneut geöffnet."
 
-#: sl/SL_Menu.py:1732
+#: sl/SL_Menu.py:1748
 #, python-brace-format
 msgid "No open tasks to delete in '{name}'."
 msgstr "Keine offenen Aufgaben zum Löschen in „{name}“."
 
-#: sl/SL_Menu.py:1743
+#: sl/SL_Menu.py:1759
 msgid "This action cannot be undone."
 msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
 
-#: sl/SL_Menu.py:1750
+#: sl/SL_Menu.py:1766
 #, python-brace-format
 msgid "Task '{sub_name}' deleted from '{main_name}'."
 msgstr "Aufgabe '{sub_name}' von '{main_name}' gelöscht."
 
-#: sl/SL_Menu.py:1773
+#: sl/SL_Menu.py:1789
 msgid "Select Source Project"
 msgstr "Quellprojekt auswählen"
 
-#: sl/SL_Menu.py:1778
+#: sl/SL_Menu.py:1794
 #, python-brace-format
 msgid "No tasks found in '{name}'."
 msgstr "Keine Aufgaben in „{name}“ gefunden."
 
-#: sl/SL_Menu.py:1786
+#: sl/SL_Menu.py:1802
 msgid "No other projects available to move to."
 msgstr "Keine anderen Projekte zum Verschieben verfügbar."
 
-#: sl/SL_Menu.py:1797 sl/SL_Menu.py:2222
+#: sl/SL_Menu.py:1813 sl/SL_Menu.py:2238
 msgid "Select Target Project"
 msgstr "Zielprojekt auswählen"
 
-#: sl/SL_Menu.py:1805
+#: sl/SL_Menu.py:1821
 #, python-brace-format
 msgid "Task '{sub}' moved from '{src}' to '{dst}'."
 msgstr "Aufgabe „{sub}“ wurde von „{src}“ nach „{dst}“ verschoben."
 
-#: sl/SL_Menu.py:1809
+#: sl/SL_Menu.py:1825
 msgid "Error: Could not move task."
 msgstr "Fehler: Aufgabe konnte nicht verschoben werden."
 
-#: sl/SL_Menu.py:1820 sl/SL_Menu.py:2183
+#: sl/SL_Menu.py:1836 sl/SL_Menu.py:2199
 msgid "Weeks of inactivity"
 msgstr "Wochen der Inaktivität"
 
-#: sl/SL_Menu.py:1825
+#: sl/SL_Menu.py:1841
 #, python-brace-format
 msgid "Inactive Tasks (> {weeks} weeks):"
 msgstr "Inaktive Aufgaben (> {weeks} Wochen):"
 
-#: sl/SL_Menu.py:1830 sl/SL_Menu.py:2191
+#: sl/SL_Menu.py:1846 sl/SL_Menu.py:2207
 msgid "Last Activity"
 msgstr "Letzte Aktivität"
 
-#: sl/SL_Menu.py:1889
+#: sl/SL_Menu.py:1852
+#, python-brace-format
+msgid "No tasks found inactive for more than {weeks} weeks."
+msgstr ""
+"Es wurden keine Aufgaben gefunden, die länger als{weeks}Wochen inaktiv waren."
+
+#: sl/SL_Menu.py:1877 sl/SL_Menu.py:1900
+msgid "No closed tasks found."
+msgstr "Keine geschlossenen Aufgaben gefunden."
+
+#: sl/SL_Menu.py:1905
 #, python-brace-format
 msgid ""
 "Are you sure you want to delete {count} closed tasks? This action cannot be "
@@ -2036,25 +825,25 @@ msgstr ""
 "Sind Sie sicher, dass Sie{count}geschlossene Aufgaben löschen möchten? Diese "
 "Aktion kann nicht rückgängig gemacht werden."
 
-#: sl/SL_Menu.py:1891
+#: sl/SL_Menu.py:1907
 msgid "Show projects to delete"
 msgstr "Zu löschende Projekte anzeigen"
 
-#: sl/SL_Menu.py:1895
+#: sl/SL_Menu.py:1911
 msgid "Delete All"
 msgstr "Alle löschen"
 
-#: sl/SL_Menu.py:1901
+#: sl/SL_Menu.py:1917
 #, python-brace-format
 msgid "Successfully deleted {count} tasks."
 msgstr "{count} Aufgaben erfolgreich gelöscht."
 
-#: sl/SL_Menu.py:1927
+#: sl/SL_Menu.py:1943
 #, python-brace-format
 msgid "No open tasks to promote in '{name}'."
 msgstr "Keine offenen Aufgaben zum Heraufstufen in „{name}“."
 
-#: sl/SL_Menu.py:1938
+#: sl/SL_Menu.py:1954
 msgid ""
 "This will create a new Project with the task's name and move all time "
 "entries to a 'General' task within it."
@@ -2062,69 +851,100 @@ msgstr ""
 "Dadurch wird ein neues Projekt mit dem Namen der Aufgabe erstellt und alle "
 "Zeiteinträge in eine darin enthaltene „Allgemeine“ Aufgabe verschoben."
 
-#: sl/SL_Menu.py:1940
+#: sl/SL_Menu.py:1956
 msgid "Promote to Project"
 msgstr "Hochstufen zum Projekt"
 
-#: sl/SL_Menu.py:1979
+#: sl/SL_Menu.py:1980 sl/SL_Menu.py:2044
+msgid "closed"
+msgstr "geschlossen"
+
+#: sl/SL_Menu.py:1983 sl/SL_Menu.py:2030 sl/SL_Menu.py:2170 sl/SL_Menu.py:2711
+#: sl/SL_Menu.py:2770
+msgid "No projects found."
+msgstr "Keine Projekte gefunden."
+
+#: sl/SL_Menu.py:1995
 msgid "No open projects to rename."
 msgstr "Keine offenen Projekte zum Umbenennen."
 
-#: sl/SL_Menu.py:1988 sl/SL_Menu.py:2068
+#: sl/SL_Menu.py:2004 sl/SL_Menu.py:2084
 msgid "New Name"
 msgstr "Neuer Name"
 
-#: sl/SL_Menu.py:1989 sl/SL_Menu.py:2069
+#: sl/SL_Menu.py:2005 sl/SL_Menu.py:2085
 msgid "Rename"
 msgstr "Umbenennen"
 
-#: sl/SL_Menu.py:1993 sl/SL_Menu.py:2073
+#: sl/SL_Menu.py:2009 sl/SL_Menu.py:2089
 msgid "Please enter a new name."
 msgstr "Bitte geben Sie einen neuen Namen ein."
 
-#: sl/SL_Menu.py:1995 sl/SL_Menu.py:2075
+#: sl/SL_Menu.py:2011 sl/SL_Menu.py:2091
 msgid "New name is the same as the old name."
 msgstr "Neuer Name ist derselbe wie der alte Name."
 
-#: sl/SL_Menu.py:1997
+#: sl/SL_Menu.py:2013
 #, python-brace-format
 msgid "Project '{old_name}' successfully renamed to '{new_name}'."
 msgstr "Projekt '{old_name}' erfolgreich in '{new_name}' umbenannt."
 
-#: sl/SL_Menu.py:2058
+#: sl/SL_Menu.py:2017
+#, python-brace-format
+msgid "Error: Could not rename. The new name '{new_name}' might already exist."
+msgstr ""
+"Fehler: Umbenennung fehlgeschlagen. Der neue Name '{new_name}' existiert "
+"möglicherweise bereits."
+
+#: sl/SL_Menu.py:2041
+#, python-brace-format
+msgid "Tasks for '{name}':"
+msgstr "Aufgaben für '{name}':"
+
+#: sl/SL_Menu.py:2050 sl/SL_Menu.py:2742
+#, python-brace-format
+msgid "No tasks found for '{name}'."
+msgstr "Keine Aufgaben für '{name}' gefunden."
+
+#: sl/SL_Menu.py:2074
 #, python-brace-format
 msgid "No open tasks to rename in '{name}'."
 msgstr "Keine offenen Aufgaben zum Umbenennen in „{name}“."
 
-#: sl/SL_Menu.py:2081
+#: sl/SL_Menu.py:2093
+#, python-brace-format
+msgid "Task '{old_name}' renamed to '{new_name}'."
+msgstr "Aufgabe '{old_name}' in '{new_name}' umbenannt."
+
+#: sl/SL_Menu.py:2097
 msgid "Error: Could not rename. The new name might already exist."
 msgstr ""
 "Fehler: Umbenennen nicht möglich. Der neue Name ist möglicherweise bereits "
 "vorhanden."
 
-#: sl/SL_Menu.py:2094
+#: sl/SL_Menu.py:2110
 msgid "No open projects to close."
 msgstr "Keine offenen Projekte zum Schließen."
 
-#: sl/SL_Menu.py:2107
+#: sl/SL_Menu.py:2123
 #, python-brace-format
 msgid "Project '{name}' has been closed."
 msgstr "Das Projekt „{name}“ wurde geschlossen."
 
-#: sl/SL_Menu.py:2111 sl/SL_Menu.py:2141 sl/SL_Menu.py:2172
+#: sl/SL_Menu.py:2127 sl/SL_Menu.py:2157 sl/SL_Menu.py:2188
 msgid "Error: Project not found."
 msgstr "Fehler: Projekt nicht gefunden."
 
-#: sl/SL_Menu.py:2124
+#: sl/SL_Menu.py:2140
 msgid "No closed projects to reopen."
 msgstr "Keine geschlossenen Projekte zum erneuten Öffnen."
 
-#: sl/SL_Menu.py:2137
+#: sl/SL_Menu.py:2153
 #, python-brace-format
 msgid "Project '{name}' has been reopened."
 msgstr "Das Projekt „{name}“ wurde erneut geöffnet."
 
-#: sl/SL_Menu.py:2163
+#: sl/SL_Menu.py:2179
 msgid ""
 "This action cannot be undone. All associated tasks and time entries will be "
 "deleted."
@@ -2132,204 +952,221 @@ msgstr ""
 "Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Aufgaben "
 "und Zeiteinträge werden gelöscht."
 
-#: sl/SL_Menu.py:2168
+#: sl/SL_Menu.py:2184
 #, python-brace-format
 msgid "Project '{name}' has been deleted."
 msgstr "Projekt „{name}“ wurde gelöscht."
 
-#: sl/SL_Menu.py:2188
+#: sl/SL_Menu.py:2204
 #, python-brace-format
 msgid "Inactive Projects (> {weeks} weeks):"
 msgstr "Inaktive Projekte (> {weeks} Wochen):"
 
-#: sl/SL_Menu.py:2193
+#: sl/SL_Menu.py:2209
 #, python-brace-format
 msgid "No projects found inactive for more than {weeks} weeks."
 msgstr "Keine Projekte gefunden, die länger als {weeks} Wochen inaktiv waren."
 
-#: sl/SL_Menu.py:2202 sl/SL_Menu.py:2225
+#: sl/SL_Menu.py:2218 sl/SL_Menu.py:2241
 msgid "Demote Project"
 msgstr "Projekt herabstufen"
 
-#: sl/SL_Menu.py:2214
+#: sl/SL_Menu.py:2230
 msgid "Select Project to Demote"
 msgstr "Wählen Sie das Projekt zum Herabstufen aus."
 
-#: sl/SL_Menu.py:2220
+#: sl/SL_Menu.py:2236
 msgid "No other projects available to demote into."
 msgstr "Es sind keine anderen Projekte zum Herabstufen verfügbar."
 
-#: sl/SL_Menu.py:2223
+#: sl/SL_Menu.py:2239
 #, python-brace-format
 msgid "This will convert '{src}' into a task of '{dst}'."
 msgstr "Dadurch wird „{src}“ in eine Aufgabe von „{dst}“ umgewandelt."
 
-#: sl/SL_Menu.py:2248
+#: sl/SL_Menu.py:2264
 msgid "Projects with only closed or no tasks:"
 msgstr "Projekte mit nur abgeschlossenen oder keinen Aufgaben:"
 
-#: sl/SL_Menu.py:2252
+#: sl/SL_Menu.py:2268
 msgid "No completed projects found."
 msgstr "Keine abgeschlossenen Projekte gefunden."
 
-#: sl/SL_Menu.py:2261 sl/SL_Menu.py:2395 sl/SL_Menu.py:2691
+#: sl/SL_Menu.py:2277 sl/SL_Menu.py:2411 sl/SL_Menu.py:2707
 msgid "Step 1: Select Project"
 msgstr "Schritt 1: Projekt auswählen"
 
-#: sl/SL_Menu.py:2265 sl/SL_Menu.py:2583
+#: sl/SL_Menu.py:2281 sl/SL_Menu.py:2599
 msgid "No open projects found. Please add one first."
 msgstr "Keine offenen Projekte gefunden. Bitte fügen Sie zuerst eines hinzu."
 
-#: sl/SL_Menu.py:2270 sl/SL_Menu.py:2402 sl/SL_Menu.py:2631
+#: sl/SL_Menu.py:2286 sl/SL_Menu.py:2418 sl/SL_Menu.py:2647
 msgid "Project"
 msgstr "Projekt"
 
-#: sl/SL_Menu.py:2272 sl/SL_Menu.py:2403 sl/SL_Menu.py:2427 sl/SL_Menu.py:2703
+#: sl/SL_Menu.py:2288 sl/SL_Menu.py:2419 sl/SL_Menu.py:2443 sl/SL_Menu.py:2719
 msgid "Next"
 msgstr "Weiter"
 
-#: sl/SL_Menu.py:2287 sl/SL_Menu.py:2717
+#: sl/SL_Menu.py:2303 sl/SL_Menu.py:2733
 msgid "No project selected. Please start again."
 msgstr "Kein Projekt ausgewählt. Bitte beginnen Sie erneut."
 
-#: sl/SL_Menu.py:2292
+#: sl/SL_Menu.py:2308
 msgid "To Project:"
 msgstr "Zum Projekt:"
 
-#: sl/SL_Menu.py:2313
+#: sl/SL_Menu.py:2329
 msgid "Name of the new task"
 msgstr "Name der neuen Aufgabe"
 
-#: sl/SL_Menu.py:2319
+#: sl/SL_Menu.py:2335
 msgid "Due date"
 msgstr "Fälligkeitsdatum"
 
-#: sl/SL_Menu.py:2325 sl/SL_Menu.py:2497
+#: sl/SL_Menu.py:2341 sl/SL_Menu.py:2513
 msgid "Recurring"
 msgstr "Wiederkehrend"
 
-#: sl/SL_Menu.py:2341 sl/SL_Menu.py:2512
+#: sl/SL_Menu.py:2357 sl/SL_Menu.py:2528
 msgid "daily"
 msgstr "täglich"
 
-#: sl/SL_Menu.py:2341 sl/SL_Menu.py:2512
+#: sl/SL_Menu.py:2357 sl/SL_Menu.py:2528
 msgid "monthly"
 msgstr "monatlich"
 
-#: sl/SL_Menu.py:2341 sl/SL_Menu.py:2512
+#: sl/SL_Menu.py:2357 sl/SL_Menu.py:2528
 msgid "on all business days"
 msgstr "an allen Geschäftstagen"
 
-#: sl/SL_Menu.py:2341 sl/SL_Menu.py:2512
+#: sl/SL_Menu.py:2357 sl/SL_Menu.py:2528
 msgid "userdefined"
 msgstr "benutzerdefiniert"
 
-#: sl/SL_Menu.py:2341 sl/SL_Menu.py:2512
+#: sl/SL_Menu.py:2357 sl/SL_Menu.py:2528
 msgid "weekly"
 msgstr "wöchentlich"
 
-#: sl/SL_Menu.py:2345 sl/SL_Menu.py:2521
+#: sl/SL_Menu.py:2361 sl/SL_Menu.py:2537
 msgid "Frequency"
 msgstr "Häufigkeit"
 
-#: sl/SL_Menu.py:2349 sl/SL_Menu.py:2524
+#: sl/SL_Menu.py:2365 sl/SL_Menu.py:2540
 msgid "Days"
 msgstr "Tage"
 
-#: sl/SL_Menu.py:2353 sl/SL_Menu.py:2526
+#: sl/SL_Menu.py:2369 sl/SL_Menu.py:2542
 msgid "Edit"
 msgstr "Bearbeiten"
 
-#: sl/SL_Menu.py:2353 sl/SL_Menu.py:2526
+#: sl/SL_Menu.py:2369 sl/SL_Menu.py:2542
 msgid "Preview"
 msgstr "Vorschau"
 
-#: sl/SL_Menu.py:2358 sl/SL_Menu.py:2531
+#: sl/SL_Menu.py:2374 sl/SL_Menu.py:2547
 msgid "No notes provided."
 msgstr "Keine Notizen bereitgestellt."
 
-#: sl/SL_Menu.py:2363 sl/SL_Menu.py:2536
+#: sl/SL_Menu.py:2379 sl/SL_Menu.py:2552
 msgid "A due date is required for recurring tasks."
 msgstr "Für wiederkehrende Aufgaben ist ein Fälligkeitsdatum erforderlich."
 
-#: sl/SL_Menu.py:2371
+#: sl/SL_Menu.py:2387
 msgid "Please enter a name."
 msgstr "Bitte geben Sie einen Namen ein."
 
-#: sl/SL_Menu.py:2383
+#: sl/SL_Menu.py:2399
 #, python-brace-format
 msgid "Task '{sub_name}' added to '{main_name}'."
 msgstr "Aufgabe '{sub_name}' zu '{main_name}' hinzugefügt."
 
-#: sl/SL_Menu.py:2415 sl/SL_Menu.py:2722
+#: sl/SL_Menu.py:2431 sl/SL_Menu.py:2738
 msgid "Step 2: Select Task from"
 msgstr "Schritt 2: Aufgabe auswählen aus"
 
-#: sl/SL_Menu.py:2418
+#: sl/SL_Menu.py:2434
 msgid "No open tasks found."
 msgstr "Keine offenen Aufgaben gefunden."
 
-#: sl/SL_Menu.py:2446
+#: sl/SL_Menu.py:2462
 msgid "Task not found."
 msgstr "Aufgabe nicht gefunden."
 
-#: sl/SL_Menu.py:2540
+#: sl/SL_Menu.py:2556
 msgid "Save Changes"
 msgstr "Änderungen speichern"
 
-#: sl/SL_Menu.py:2565
+#: sl/SL_Menu.py:2575
+msgid "Task updated successfully."
+msgstr "Aufgabe erfolgreich aktualisiert."
+
+#: sl/SL_Menu.py:2581
 msgid "Error: Could not update task."
 msgstr "Fehler: Aufgabe konnte nicht aktualisiert werden."
 
-#: sl/SL_Menu.py:2578
+#: sl/SL_Menu.py:2594
 msgid "Start Work on Task"
 msgstr "Arbeit an Aufgabe beginnen"
 
-#: sl/SL_Menu.py:2593
+#: sl/SL_Menu.py:2609
 #, python-brace-format
 msgid "No open tasks to start work on in '{name}'."
 msgstr ""
 "Keine offenen Aufgaben, an denen in „{name}“ mit der Arbeit begonnen werden "
 "kann."
 
-#: sl/SL_Menu.py:2604
+#: sl/SL_Menu.py:2620
 msgid "Start Work"
 msgstr "Arbeit beginnen"
 
-#: sl/SL_Menu.py:2632
+#: sl/SL_Menu.py:2626
+#, python-brace-format
+msgid "Work started on '{task_name}' in project '{main_name}'."
+msgstr "Arbeit an '{task_name}' im Projekt '{main_name}' begonnen."
+
+#: sl/SL_Menu.py:2630
+msgid "Error starting work."
+msgstr "Fehler beim Starten der Arbeit."
+
+#: sl/SL_Menu.py:2648
 msgid "Task"
 msgstr "Aufgabe"
 
-#: sl/SL_Menu.py:2633
+#: sl/SL_Menu.py:2649
 msgid "Started at"
 msgstr "Gestartet um"
 
-#: sl/SL_Menu.py:2634 tt/TimeTracker.py:1454
+#: sl/SL_Menu.py:2650 tt/TimeTracker.py:1454
 msgid "Duration"
 msgstr "Dauer"
 
-#: sl/SL_Menu.py:2648 sl/SL_Menu.py:2780
+#: sl/SL_Menu.py:2664 sl/SL_Menu.py:2796
 msgid "Select Date"
 msgstr "Datum auswählen"
 
-#: sl/SL_Menu.py:2649 sl/SL_Menu.py:2673 sl/SL_Menu.py:2737 sl/SL_Menu.py:2763
-#: sl/SL_Menu.py:2781
+#: sl/SL_Menu.py:2665 sl/SL_Menu.py:2689 sl/SL_Menu.py:2753 sl/SL_Menu.py:2779
+#: sl/SL_Menu.py:2797
 msgid "Generate Report"
 msgstr "Bericht erstellen"
 
-#: sl/SL_Menu.py:2669
+#: sl/SL_Menu.py:2685
 msgid "Start Date"
 msgstr "Startdatum"
 
-#: sl/SL_Menu.py:2671
+#: sl/SL_Menu.py:2687
 msgid "End Date"
 msgstr "Enddatum"
 
-#: sl/SL_Menu.py:2796
+#: sl/SL_Menu.py:2693
+msgid "Error: The start date cannot be after the end date."
+msgstr "Fehler: Das Startdatum darf nicht nach dem Enddatum liegen."
+
+#: sl/SL_Menu.py:2812
 msgid "Report Result"
 msgstr "Berichtsergebnis"
 
-#: sl/SL_Menu.py:2825
+#: sl/SL_Menu.py:2841
 msgid "Export Report"
 msgstr "Bericht exportieren"
 
@@ -2360,6 +1197,10 @@ msgid ""
 msgstr ""
 "\n"
 "Abhängigkeiten erfolgreich installiert."
+
+#: tt/TimeTracker.py:119
+msgid "Please restart the application for the changes to take effect."
+msgstr "Bitte starte die Anwendung neu, damit die Änderungen wirksam werden."
 
 #: tt/TimeTracker.py:122
 #, python-brace-format
@@ -2735,6 +1576,939 @@ msgstr "Suche nach Updates..."
 #: update.py:236
 msgid "No updates available."
 msgstr "Keine Updates verfügbar."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Project Management ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Projektverwaltung ---"
+
+#~ msgid "1. Main Project Management"
+#~ msgstr "1. Hauptprojektmanagement"
+
+#~ msgid "2. Task Management"
+#~ msgstr "2. Aufgabenmanagement"
+
+#~ msgid "0.  Back to Main Menu"
+#~ msgstr "0.  Zurück zum Hauptmenü"
+
+#~ msgid "Choice: "
+#~ msgstr "Auswahl: "
+
+#~ msgid "Invalid choice. Please enter a number from 0 to 2."
+#~ msgstr "Ungültige Auswahl. Bitte geben Sie eine Zahl zwischen 0 und 2 ein."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Main Project Management ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Hauptprojektverwaltung ---"
+
+#~ msgid "1.  Add Main Project"
+#~ msgstr "1. Hauptprojekt hinzufügen"
+
+#~ msgid "2.  List Main Projects"
+#~ msgstr "2. Hauptprojekte auflisten"
+
+#~ msgid "3.  Rename Main Project"
+#~ msgstr "3. Hauptprojekt umbenennen"
+
+#~ msgid "4.  Close Main Project"
+#~ msgstr "4. Hauptprojekt schließen"
+
+#~ msgid "5.  Re-open Main Project"
+#~ msgstr "5. Hauptprojekt"
+
+#~ msgid "6.  Delete Main Project"
+#~ msgstr "erneut öffnen 6. Hauptprojekt löschen"
+
+#~ msgid "7.  List Inactive Main Projects"
+#~ msgstr "7. Inaktive Hauptprojekte auflisten"
+
+#~ msgid "8.  Demote Main-Project to Sub-Project"
+#~ msgstr "8. Herabstufen Hauptprojekt zu Unterprojekt"
+
+#~ msgid "9.  List Completed Main Projects"
+#~ msgstr "9. Liste abgeschlossener Hauptprojekte"
+
+#~ msgid "0.  Back"
+#~ msgstr "0. Zurück"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Add New Main Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Neues Hauptprojekt hinzufügen ---"
+
+#~ msgid "Name of the main project: "
+#~ msgstr "Name des Hauptprojekts:"
+
+#, python-brace-format
+#~ msgid "Main project '{name}' added."
+#~ msgstr "Hauptprojekt '{name}' hinzugefügt."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- List Main Projects ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Hauptprojekte auflisten ---"
+
+#~ msgid "No main projects found."
+#~ msgstr "Keine Hauptprojekte gefunden."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Rename Main Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Hauptprojekt umbenennen ---"
+
+#~ msgid "No main projects to rename."
+#~ msgstr "Keine Hauptprojekte zum Umbenennen."
+
+#~ msgid "Select an open main project to rename:"
+#~ msgstr "Wählen Sie ein geöffnetes Hauptprojekt zum Umbenennen aus:"
+
+#~ msgid "Enter the number of the main project: "
+#~ msgstr "Geben Sie die Nummer des Hauptprojekts ein:"
+
+#, python-brace-format
+#~ msgid "Enter the new name for '{name}': "
+#~ msgstr "Gib den neuen Namen für '{name}' ein: "
+
+#, python-brace-format
+#~ msgid "Main project '{old_name}' successfully renamed to '{new_name}'."
+#~ msgstr ""
+#~ "Hauptprojekt „{old_name}“ wurde erfolgreich in „{new_name}“ umbenannt."
+
+#~ msgid "Invalid input. Please enter a valid number."
+#~ msgstr "Ungültige Eingabe. Bitte eine gültige Zahl eingeben."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Close Main Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Hauptprojekt schließen ---"
+
+#~ msgid "No open main projects to close."
+#~ msgstr "Keine offenen Hauptprojekte zum Schließen."
+
+#~ msgid "Select a main project to close:"
+#~ msgstr "Wählen Sie ein Hauptprojekt zum Schließen aus:"
+
+#, python-brace-format
+#~ msgid "Main project '{name}' has been closed."
+#~ msgstr "Das Hauptprojekt „{name}“ wurde geschlossen."
+
+#~ msgid "Error: Main project not found."
+#~ msgstr "Fehler: Hauptprojekt nicht gefunden."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Re-open Main Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Hauptprojekt erneut öffnen ---"
+
+#~ msgid "No closed main projects to reopen."
+#~ msgstr "Keine geschlossenen Hauptprojekte zur Wiedereröffnung."
+
+#~ msgid "Select a main project to reopen:"
+#~ msgstr "Wählen Sie ein Hauptprojekt zum erneuten Öffnen aus:"
+
+#, python-brace-format
+#~ msgid "Main project '{name}' has been reopened."
+#~ msgstr "Das Hauptprojekt „{name}“ wurde erneut geöffnet."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Delete Main Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Hauptprojekt löschen ---"
+
+#~ msgid "No main projects to delete."
+#~ msgstr "Keine Hauptprojekte zum Löschen."
+
+#~ msgid "Select a main project to delete:"
+#~ msgstr "Wählen Sie ein Hauptprojekt zum Löschen aus:"
+
+#, python-brace-format
+#~ msgid "Main project '{name}' deleted."
+#~ msgstr "Hauptprojekt „{name}“ gelöscht."
+
+#, python-brace-format
+#~ msgid "Error: Main project '{name}' not found."
+#~ msgstr "Fehler: Hauptprojekt „{name}“ nicht gefunden."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- List Inactive Main-Projects ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Inaktive Hauptprojekte auflisten ---"
+
+#~ msgid "Enter the number of weeks without activity (e.g., 8): "
+#~ msgstr "Anzahl der Wochen ohne Aktivität eingeben (z.B. 8): "
+
+#~ msgid "Please enter a positive number."
+#~ msgstr "Bitte eine positive Zahl eingeben."
+
+#, python-brace-format
+#~ msgid ""
+#~ "\n"
+#~ "Inactive Main-Projects (>{weeks} weeks):"
+#~ msgstr ""
+#~ "\n"
+#~ "Inaktive Hauptprojekte (>{weeks}Wochen):"
+
+#, python-brace-format
+#~ msgid "  - Main Project: {name}"
+#~ msgstr "- Hauptprojekt: {name}"
+
+#, python-brace-format
+#~ msgid "    Last Activity: {date}"
+#~ msgstr "    Letzte Aktivität: {date}"
+
+#, python-brace-format
+#~ msgid "No main-projects found inactive for more than {weeks} weeks."
+#~ msgstr ""
+#~ "Es wurden keine Hauptprojekte gefunden, die länger als{weeks}Wochen "
+#~ "inaktiv waren."
+
+#~ msgid "Invalid input. Please enter a valid number for weeks."
+#~ msgstr "Ungültige Eingabe. Bitte eine gültige Zahl für Wochen eingeben."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Demote Main-Project to Sub-Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Hauptprojekt zum Unterprojekt herabstufen ---"
+
+#~ msgid "You need at least two open main projects for this operation."
+#~ msgstr ""
+#~ "Für diesen Vorgang benötigen Sie mindestens zwei offene Hauptprojekte."
+
+#~ msgid "Select the main project to demote:"
+#~ msgstr "Wählen Sie das Hauptprojekt aus, das herabgestuft werden soll:"
+
+#~ msgid "Enter the number of the project to demote: "
+#~ msgstr "Gib die Nummer des herabzustufenden Projekts ein: "
+
+#~ msgid ""
+#~ "\n"
+#~ "Select the new parent main project:"
+#~ msgstr ""
+#~ "\n"
+#~ "Wählen Sie das neue übergeordnete Hauptprojekt aus:"
+
+#~ msgid "Enter the number of the new parent project: "
+#~ msgstr "Gib die Nummer des neuen übergeordneten Projekts ein: "
+
+#~ msgid ""
+#~ "\n"
+#~ "--- List Completed Main Projects ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Abgeschlossene Hauptprojekte auflisten ---"
+
+#~ msgid "Main projects with only closed or no sub-projects:"
+#~ msgstr "Hauptprojekte mit nur abgeschlossenen oder keinen Unterprojekten:"
+
+#~ msgid "No completed main projects found."
+#~ msgstr "Keine abgeschlossenen Hauptprojekte gefunden."
+
+#~ msgid "Invalid choice. Please enter a number from 0 to 9."
+#~ msgstr "Ungültige Auswahl. Bitte geben Sie eine Zahl von 0 bis 9 ein."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Task Management ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Aufgabenverwaltung ---"
+
+#~ msgid "1.  Add Task"
+#~ msgstr "1. Aufgabe hinzufügen"
+
+#~ msgid "2.  List Tasks"
+#~ msgstr "2. Aufgaben auflisten"
+
+#~ msgid "3.  Rename Task"
+#~ msgstr "3. Aufgabe umbenennen"
+
+#~ msgid "4.  Close Task"
+#~ msgstr "4. Aufgabe schließen"
+
+#~ msgid "5.  Re-open Task"
+#~ msgstr "5. Aufgabe erneut öffnen"
+
+#~ msgid "6.  Delete Task"
+#~ msgstr "6. Aufgabe löschen"
+
+#~ msgid "7.  Move Task"
+#~ msgstr "7. Aufgabe verschieben"
+
+#~ msgid "8.  List Inactive Tasks"
+#~ msgstr "8. Inaktive Aufgaben auflisten"
+
+#~ msgid "9.  List All Closed Tasks"
+#~ msgstr "9. Alle geschlossenen Aufgaben auflisten"
+
+#~ msgid "10. Delete All Closed Tasks"
+#~ msgstr "10. Alle geschlossenen Aufgaben löschen"
+
+#~ msgid "11. Promote Task to Main-Project"
+#~ msgstr "11. Aufgabe zum Hauptprojekt hochstufen"
+
+#~ msgid "12. Edit Task (Name & Due Date)"
+#~ msgstr "12. Aufgabe bearbeiten (Name und Fälligkeitsdatum)"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Add New Task ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Neue Aufgabe hinzufügen ---"
+
+#~ msgid "No open main projects found. Please add one first."
+#~ msgstr ""
+#~ "Keine offenen Hauptprojekte gefunden. Bitte fügen Sie zuerst eines hinzu."
+
+#~ msgid "Select a main project to add a task to:"
+#~ msgstr ""
+#~ "Wählen Sie ein Hauptprojekt aus, dem Sie eine Aufgabe hinzufügen möchten:"
+
+#~ msgid "Name of the new task: "
+#~ msgstr "Name der neuen Aufgabe: "
+
+#~ msgid "Due date (YYYY-MM-DD, press Enter to skip): "
+#~ msgstr ""
+#~ "Fälligkeitsdatum (JJJJ-MM-TT, zum Überspringen die Eingabetaste drücken):"
+
+#~ msgid "Add to 'Today' list? (y/n, default n): "
+#~ msgstr "Zur „Heute“-Liste hinzufügen? (j/n, Standard n):"
+
+#~ msgid "Note (Markdown supported): "
+#~ msgstr "Hinweis (Markdown unterstützt):"
+
+#, python-brace-format
+#~ msgid "Task '{task_name}' added."
+#~ msgstr "Aufgabe „{task_name}“ hinzugefügt."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- List Tasks ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Aufgaben auflisten ---"
+
+#~ msgid "No main projects found. Cannot list tasks."
+#~ msgstr ""
+#~ "Keine Hauptprojekte gefunden. Aufgaben können nicht aufgelistet werden."
+
+#~ msgid "Select the main project whose tasks you want to list:"
+#~ msgstr ""
+#~ "Wählen Sie das Hauptprojekt aus, dessen Aufgaben Sie auflisten möchten:"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Rename Task ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Aufgabe umbenennen ---"
+
+#~ msgid "No open main projects found."
+#~ msgstr "Keine offenen Hauptprojekte gefunden."
+
+#~ msgid "Select the main project:"
+#~ msgstr "Wählen Sie das Hauptprojekt aus:"
+
+#, python-brace-format
+#~ msgid "No tasks to rename for '{name}'."
+#~ msgstr "Keine Aufgaben zum Umbenennen für '{name}' vorhanden."
+
+#, python-brace-format
+#~ msgid "Select a task from '{name}' to rename:"
+#~ msgstr "Wähle eine Aufgabe von '{name}' zum Umbenennen aus:"
+
+#~ msgid "Enter the number of the task: "
+#~ msgstr "Gib die Nummer der Aufgabe ein: "
+
+#~ msgid ""
+#~ "Error: Could not rename. The new name might already exist or the project "
+#~ "was not found."
+#~ msgstr ""
+#~ "Fehler: Umbenennung fehlgeschlagen. Der neue Name existiert "
+#~ "möglicherweise bereits oder das Projekt wurde nicht gefunden."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Close Task ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Aufgabe schließen ---"
+
+#, python-brace-format
+#~ msgid "No open tasks to close for '{name}'."
+#~ msgstr "Keine offenen Aufgaben zum Schließen für „{name}“."
+
+#, python-brace-format
+#~ msgid "Select a task from '{name}' to close:"
+#~ msgstr "Wählen Sie eine Aufgabe aus „{name}“ zum Schließen aus:"
+
+#, python-brace-format
+#~ msgid "Task '{task_name}' in '{main_name}' has been closed."
+#~ msgstr "Die Aufgabe „{task_name}“ in „{main_name}“ wurde geschlossen."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Re-open Task ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Aufgabe erneut öffnen ---"
+
+#, python-brace-format
+#~ msgid "No closed tasks to reopen for '{name}'."
+#~ msgstr "Keine geschlossenen Aufgaben zum erneuten Öffnen für „{name}“."
+
+#, python-brace-format
+#~ msgid "Select a task from '{name}' to reopen:"
+#~ msgstr "Wählen Sie eine Aufgabe aus „{name}“ zum erneuten Öffnen aus:"
+
+#, python-brace-format
+#~ msgid "Task '{task_name}' in '{main_name}' has been reopened."
+#~ msgstr "Die Aufgabe „{task_name}“ in „{main_name}“ wurde erneut geöffnet."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Delete Task ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Aufgabe löschen ---"
+
+#, python-brace-format
+#~ msgid "No tasks to delete for '{name}'."
+#~ msgstr "Keine Aufgaben zum Löschen für '{name}' vorhanden."
+
+#, python-brace-format
+#~ msgid "Select a task from '{name}' to delete:"
+#~ msgstr "Wähle eine Aufgabe von '{name}' zum Löschen aus:"
+
+#, python-brace-format
+#~ msgid "Task '{task_name}' deleted from '{main_name}'."
+#~ msgstr "Aufgabe '{task_name}' gelöscht aus '{main_name}'."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Move Task ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Aufgabe verschieben ---"
+
+#~ msgid "You need at least two open main projects to move a task."
+#~ msgstr ""
+#~ "Zum Verschieben einer Aufgabe benötigen Sie mindestens zwei offene "
+#~ "Hauptprojekte."
+
+#~ msgid "Select the source main project:"
+#~ msgstr "Wählen Sie das Quellhauptprojekt aus:"
+
+#~ msgid "Enter the number of the source main project: "
+#~ msgstr "Geben Sie die Nummer des Quellhauptprojekts ein:"
+
+#, python-brace-format
+#~ msgid "No tasks to move from '{name}'."
+#~ msgstr "Keine Aufgaben zum Verschieben von „{name}“."
+
+#, python-brace-format
+#~ msgid ""
+#~ "\n"
+#~ "Select a task from '{name}' to move:"
+#~ msgstr ""
+#~ "\n"
+#~ "Wähle eine Aufgabe von '{name}' zum Verschieben aus:"
+
+#~ msgid ""
+#~ "\n"
+#~ "Select the destination main project:"
+#~ msgstr ""
+#~ "\n"
+#~ "Wählen Sie das Ziel-Hauptprojekt aus:"
+
+#~ msgid "Enter the number of the destination main project: "
+#~ msgstr "Geben Sie die Nummer des Zielhauptprojekts ein:"
+
+#, python-brace-format
+#~ msgid ""
+#~ "Successfully moved '{task_name}' from '{source_main_project}' to "
+#~ "'{dest_main_project}'."
+#~ msgstr ""
+#~ "„{task_name}“ wurde erfolgreich von „{source_main_project}“ nach "
+#~ "„{dest_main_project}“ verschoben."
+
+#, python-brace-format
+#~ msgid "Error: {message}"
+#~ msgstr "Fehler: {message}"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- List Inactive Tasks ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Inaktive Aufgaben auflisten ---"
+
+#~ msgid "Enter the number of weeks without activity (e.g., 4): "
+#~ msgstr "Anzahl der Wochen ohne Aktivität eingeben (z.B. 4): "
+
+#, python-brace-format
+#~ msgid ""
+#~ "\n"
+#~ "Inactive Tasks (>{weeks} weeks):"
+#~ msgstr ""
+#~ "\n"
+#~ "Inaktive Aufgaben (>{weeks} Wochen):"
+
+#, python-brace-format
+#~ msgid "    Task: {name}"
+#~ msgstr "    Aufgabe: {name}"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- List All Closed Tasks ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Alle geschlossenen Aufgaben auflisten ---"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Delete All Closed Tasks ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Alle geschlossenen Aufgaben löschen ---"
+
+#~ msgid "Are you sure you want to delete ALL closed tasks? (y/n): "
+#~ msgstr ""
+#~ "Bist du sicher, dass du ALLE geschlossenen Aufgaben löschen möchtest? (j/"
+#~ "n): "
+
+#, python-brace-format
+#~ msgid "{count} closed tasks were deleted."
+#~ msgstr "{count} geschlossene Aufgaben wurden gelöscht."
+
+#~ msgid "Operation cancelled."
+#~ msgstr "Vorgang abgebrochen."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Promote Task to Main-Project ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Aufgabe zum Hauptprojekt hochstufen ---"
+
+#~ msgid "Select the main project containing the task to promote:"
+#~ msgstr ""
+#~ "Wählen Sie das Hauptprojekt aus, das die hochzustufende Aufgabe enthält:"
+
+#, python-brace-format
+#~ msgid "No tasks to promote in '{name}'."
+#~ msgstr "Keine zu befördernden Aufgaben in '{name}'."
+
+#, python-brace-format
+#~ msgid ""
+#~ "\n"
+#~ "Select a task from '{name}' to promote:"
+#~ msgstr ""
+#~ "\n"
+#~ "Wähle eine Aufgabe von '{name}' zum Befördern aus:"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Edit Task ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Aufgabe bearbeiten ---"
+
+#, python-brace-format
+#~ msgid "No open tasks in '{name}'."
+#~ msgstr "Keine offenen Aufgaben in „{name}“."
+
+#~ msgid "Select a task to edit:"
+#~ msgstr "Wählen Sie eine Aufgabe zum Bearbeiten aus:"
+
+#~ msgid "Enter the number: "
+#~ msgstr "Geben Sie die Nummer ein:"
+
+#, python-brace-format
+#~ msgid "New name (press Enter to keep '{name}'): "
+#~ msgstr ""
+#~ "Neuer Name (drücken Sie die Eingabetaste, um „{name}“ beizubehalten):"
+
+#, python-brace-format
+#~ msgid "New due date (YYYY-MM-DD, current: '{due}', enter '-' to clear): "
+#~ msgstr ""
+#~ "Neues Fälligkeitsdatum (JJJJ-MM-TT, aktuell: „{due}“, zum Löschen „-“ "
+#~ "eingeben):"
+
+#, python-brace-format
+#~ msgid "Is this for today? (current: {current}, y/n, press Enter to keep): "
+#~ msgstr ""
+#~ "Ist das für heute? (aktuell:{current}, j/n, drücken Sie die Eingabetaste, "
+#~ "um beizubehalten):"
+
+#, python-brace-format
+#~ msgid "Current Note: {note}"
+#~ msgstr "Aktuelle Notiz: {note}"
+
+#~ msgid "New note (press Enter to keep current): "
+#~ msgstr ""
+#~ "Neue Notiz (drücken Sie die Eingabetaste, um auf dem neuesten Stand zu "
+#~ "bleiben):"
+
+#, python-brace-format
+#~ msgid "Is this task done? (current: {current}, y/n, press Enter to keep): "
+#~ msgstr ""
+#~ "Ist diese Aufgabe erledigt? (aktuell:{current}, j/n, drücken Sie die "
+#~ "Eingabetaste, um beizubehalten):"
+
+#~ msgid "Error updating task."
+#~ msgstr "Fehler beim Aktualisieren der Aufgabe."
+
+#~ msgid "Invalid input."
+#~ msgstr "Ungültige Eingabe."
+
+#~ msgid "Invalid choice. Please enter a number from 0 to 11."
+#~ msgstr "Ungültige Auswahl. Bitte geben Sie eine Zahl zwischen 0 und 11 ein."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Settings ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Einstellungen ---"
+
+#~ msgid "1. Change Language"
+#~ msgstr "1. Sprache ändern"
+
+#~ msgid "2. Restore Previous Version"
+#~ msgstr "2. Vorherige Version wiederherstellen"
+
+#~ msgid "3. Change Data Storage Location"
+#~ msgstr "3. Speicherort der Daten ändern"
+
+#~ msgid "4. Change Streamlit Port"
+#~ msgstr "4. Streamlit-Port ändern"
+
+#~ msgid "0. Back to Main Menu"
+#~ msgstr "0. Zurück zum Hauptmenü"
+
+#~ msgid "Invalid choice. Please enter a number from 0 to 4."
+#~ msgstr "Ungültige Auswahl. Bitte geben Sie eine Zahl von 0 bis 4 ein."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Language Settings ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Spracheinstellungen ---"
+
+#~ msgid "No additional languages found."
+#~ msgstr "Keine zusätzlichen Sprachen gefunden."
+
+#, python-brace-format
+#~ msgid "Language changed to '{lang}'. Please restart the application."
+#~ msgstr "Sprache auf '{lang}' geändert. Bitte die Anwendung neu starten."
+
+#~ msgid "Invalid choice."
+#~ msgstr "Ungültige Auswahl."
+
+#~ msgid "Invalid input. Please enter a number."
+#~ msgstr "Ungültige Eingabe. Bitte eine Zahl eingeben."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Data Storage Settings ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Datenspeicher-Einstellungen ---"
+
+#, python-brace-format
+#~ msgid "Current data file: {path}"
+#~ msgstr "Aktuelle Datendatei: {path}"
+
+#~ msgid "Enter the new path for the data file (e.g., /path/to/my_data.json)."
+#~ msgstr ""
+#~ "Gib den neuen Pfad für die Datendatei ein (z.B. /pfad/zu/"
+#~ "meine_daten.json)."
+
+#~ msgid "Leave empty to cancel."
+#~ msgstr "Leer lassen zum Abbrechen."
+
+#~ msgid "New Path: "
+#~ msgstr "Neuer Pfad: "
+
+#~ msgid "Storage location updated."
+#~ msgstr "Speicherort aktualisiert."
+
+#~ msgid "Do you want to move the existing data to the new location? (y/n): "
+#~ msgstr ""
+#~ "Möchtest du die vorhandenen Daten an den neuen Ort verschieben? (j/n): "
+
+#, python-brace-format
+#~ msgid "Error updating configuration: {error}"
+#~ msgstr "Fehler beim Aktualisieren der Konfiguration: {error}"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Streamlit Port Settings ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Streamlit-Port-Einstellungen ---"
+
+#, python-brace-format
+#~ msgid "Current Streamlit Port: {port}"
+#~ msgstr "Aktueller Streamlit-Port: {port}"
+
+#~ msgid "Enter new port (or press Enter to keep current): "
+#~ msgstr ""
+#~ "Neuen Port eingeben (oder Enter drücken, um aktuellen beizubehalten): "
+
+#, python-brace-format
+#~ msgid ""
+#~ "Port updated to {port}. Please restart Streamlit for changes to take "
+#~ "effect."
+#~ msgstr ""
+#~ "Port auf {port} aktualisiert. Bitte Streamlit neu starten, damit die "
+#~ "Änderungen wirksam werden."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Reporting ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Berichterstattung ---"
+
+#~ msgid "1. Daily Report (Today)"
+#~ msgstr "1. Tagesbericht (Heute)"
+
+#~ msgid "2. Daily Report (Specific Day)"
+#~ msgstr "2. Tagesbericht (Bestimmter Tag)"
+
+#~ msgid "3. Date Range Report"
+#~ msgstr "3. Zeitraum-Bericht"
+
+#~ msgid "4. Detailed Task Report"
+#~ msgstr "4. Detaillierter Aufgaben-Bericht"
+
+#~ msgid "5. Detailed Main-Project Report"
+#~ msgstr "5. Detaillierter Hauptprojektbericht"
+
+#~ msgid "6. Detailed Daily Report"
+#~ msgstr "6. Detaillierter Tagesbericht"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Generate Daily Report (Today) ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Tagesbericht (Heute) erstellen ---"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Generate Daily Report for a specific Day ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Tagesbericht für einen bestimmten Tag erstellen ---"
+
+#~ msgid "Enter the date (YYYY-MM-DD): "
+#~ msgstr "Datum eingeben (JJJJ-MM-TT): "
+
+#~ msgid "Invalid date format. Please use YYYY-MM-DD."
+#~ msgstr "Ungültiges Datumsformat. Bitte JJJJ-MM-TT verwenden."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Generate Report for a Date Range ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Zeitraum-Bericht erstellen ---"
+
+#~ msgid "Enter the start date (YYYY-MM-DD): "
+#~ msgstr "Startdatum eingeben (JJJJ-MM-TT): "
+
+#~ msgid "Enter the end date (YYYY-MM-DD): "
+#~ msgstr "Enddatum eingeben (JJJJ-MM-TT): "
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Detailed Task Report ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Detaillierter Aufgaben-Bericht ---"
+
+#~ msgid ""
+#~ "\n"
+#~ "Select the task for the report:"
+#~ msgstr ""
+#~ "\n"
+#~ "Wähle die Aufgabe für den Bericht aus:"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Detailed Main-Project Report ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Detaillierter Hauptprojektbericht ---"
+
+#~ msgid "Select the main project for the report:"
+#~ msgstr "Wählen Sie das Hauptprojekt für den Bericht aus:"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Detailed Daily Report ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Detaillierter Tagesbericht ---"
+
+#~ msgid "Enter the date (YYYY-MM-DD) or press Enter for today: "
+#~ msgstr "Datum eingeben (JJJJ-MM-TT) oder Enter für heute drücken: "
+
+#~ msgid "Invalid choice. Please enter a number from 0 to 6."
+#~ msgstr "Ungültige Auswahl. Bitte eine Zahl von 0 bis 6 eingeben."
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Update Available ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Update verfügbar ---"
+
+#~ msgid "A downloaded update is ready to be installed."
+#~ msgstr "Ein heruntergeladenes Update ist zur Installation bereit."
+
+#~ msgid "0. Skip update for now"
+#~ msgstr "0. Update vorerst überspringen"
+
+#~ msgid "1. Install update now"
+#~ msgstr "1. Update jetzt installieren"
+
+#~ msgid "Enter your choice (0 or 1): "
+#~ msgstr "Auswahl eingeben (0 oder 1): "
+
+#~ msgid "Application is restarting to complete the update..."
+#~ msgstr "Anwendung wird neu gestartet, um das Update abzuschließen..."
+
+#~ msgid "Update installation skipped. The application will start normally."
+#~ msgstr ""
+#~ "Update-Installation übersprungen. Die Anwendung wird normal gestartet."
+
+#~ msgid ""
+#~ "Invalid choice. Update installation skipped. The application will start "
+#~ "normally."
+#~ msgstr ""
+#~ "Ungültige Auswahl. Update-Installation übersprungen. Die Anwendung wird "
+#~ "normal gestartet."
+
+#, python-brace-format
+#~ msgid ""
+#~ "\n"
+#~ "=== Time Control {version} ==="
+#~ msgstr ""
+#~ "\n"
+#~ "=== Time Control {version} ==="
+
+#~ msgid "--- Main Menu ---"
+#~ msgstr "--- Hauptmenü ---"
+
+#~ msgid "1. Start work on task"
+#~ msgstr "1. Arbeit an Aufgabe beginnen"
+
+#~ msgid "2. Show current work"
+#~ msgstr "2. Aktuelle Arbeit anzeigen"
+
+#~ msgid "3. Stop current work"
+#~ msgstr "3. Aktuelle Arbeit beenden"
+
+#~ msgid "4. Handle projects and tasks"
+#~ msgstr "4. Projekte und Aufgaben verwalten"
+
+#~ msgid "5. Reporting"
+#~ msgstr "5. Berichterstattung"
+
+#~ msgid "6. Settings"
+#~ msgstr "6. Einstellungen"
+
+#~ msgid "0. Exit"
+#~ msgstr "0. Beenden"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Start Work on a Task ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Arbeit an einer Aufgabe beginnen ---"
+
+#~ msgid "Select a main project:"
+#~ msgstr "Wählen Sie ein Hauptprojekt aus:"
+
+#, python-brace-format
+#~ msgid "No open tasks found for '{name}' to start work on."
+#~ msgstr ""
+#~ "Für „{name}“ wurden keine offenen Aufgaben gefunden, an denen mit der "
+#~ "Arbeit begonnen werden kann."
+
+#, python-brace-format
+#~ msgid "Select a task from '{name}':"
+#~ msgstr "Wähle eine Aufgabe von '{name}' aus:"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Current Active Work ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Aktuell laufende Arbeit ---"
+
+#~ msgid "You are currently working on:"
+#~ msgstr "Du arbeitest gerade an:"
+
+#, python-brace-format
+#~ msgid "  Main Project: {name}"
+#~ msgstr "Hauptprojekt: {name}"
+
+#, python-brace-format
+#~ msgid "  Task:         {name}"
+#~ msgstr "Aufgabe: {name}"
+
+#, python-brace-format
+#~ msgid "  Started at:   {date}"
+#~ msgstr "  Begonnen um:   {date}"
+
+#, python-brace-format
+#~ msgid "  Duration:     {duration}"
+#~ msgstr "  Dauer:        {duration}"
+
+#~ msgid ""
+#~ "\n"
+#~ "--- Stop Work ---"
+#~ msgstr ""
+#~ "\n"
+#~ "--- Arbeit beenden ---"
+
+#~ msgid ""
+#~ "\n"
+#~ "Checking for updates..."
+#~ msgstr ""
+#~ "\n"
+#~ "Prüfe auf Updates..."
+
+#~ msgid "Exiting application. Goodbye!"
+#~ msgstr "Anwendung wird beendet. Auf Wiedersehen!"
 
 #~ msgid "Back to Main Menu"
 #~ msgstr "Zurück zum Hauptmenü"

@@ -9,12 +9,6 @@ Core Logic: TimeTracker
 .. automodule:: TimeTracker
    :members:
 
-Command-Line Interface: TimeTrackerCLI
---------------------------------------
-
-.. automodule:: TimeTrackerCLI
-   :members:
-
 Update Mechanism
 ----------------
 .. automodule:: update

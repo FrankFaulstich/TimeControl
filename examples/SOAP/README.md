@@ -59,7 +59,7 @@ generating another report).
 
 ## Writing your own client
 
-All of the operations exposed via the GUI and CLI are available as SOAP
+All of the operations exposed via the GUI are available as SOAP
 methods on `TimeControlService` in `TimeTrackerSOAP_Server.py` — project
 and task management, reporting, and more. The WSDL at
 `http://localhost:8600/?wsdl` is self-describing and can be browsed

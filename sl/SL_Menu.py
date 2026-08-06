@@ -2846,26 +2846,6 @@ def view_report_display():
     if st.button(_("Back"), use_container_width=True):
         navigate_to(st.session_state.context.get('return_to', 'reporting'))
 
-# --- Generic List/Action View Helper ---
-# To avoid creating 50 separate functions, we can use a generic pattern for simple lists/actions
-# But for clarity in this example, I'll implement a few key ones and placeholders for others.
-
-def view_generic_placeholder(title):
-    """
-    Renders a placeholder view for features not yet implemented in the GUI.
-
-    :param title: The title of the placeholder view.
-    """
-    render_header(title)
-    st.info("This feature is available in the CLI. GUI implementation coming soon.")
-    if st.button(_("Back"), use_container_width=True): 
-        # Logic to go back
-        if 'task' in st.session_state.menu: navigate_to('task_mgmt')
-        elif 'main_project' in st.session_state.menu: navigate_to('main_project_mgmt')
-        elif 'report' in st.session_state.menu: navigate_to('reporting')
-        elif 'settings' in st.session_state.menu: navigate_to('settings')
-        else: navigate_to('today_view')
-
 # --- Main Router ---
 
 menu_map = {

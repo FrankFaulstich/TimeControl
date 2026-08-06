@@ -1,8 +1,6 @@
 # Time Tracker Application ⏱️
 
-A simple, object-oriented Python application for tracking time spent on projects and sub-projects. All data is stored locally in a `data.json` file.
-
-> ⚠️ **Note:** The command-line interface (`TimeTrackerCLI.py`) is no longer actively maintained. All development effort now goes into the **Streamlit GUI** (`TimeTrackerSL_GUI.py`). New features, bug fixes, and translations will only be added there — please use the GUI going forward.
+A simple, object-oriented Python application for tracking time spent on projects and tasks. All data is stored locally in a `data.json` file.
 
 ## Table of Contents
 
@@ -15,8 +13,6 @@ A simple, object-oriented Python application for tracking time spent on projects
   - [Configuration ⚙️](#configuration-️)
   - [Usage ⚙️](#usage-️)
     - [Running the Streamlit GUI](#running-the-streamlit-gui)
-    - [Running the Interactive CLI (Deprecated)](#running-the-interactive-cli-deprecated)
-    - [CLI Menu Options](#cli-menu-options)
   - [MCP Server 🤖](#mcp-server-)
   - [Building the Documentation 📚](#building-the-documentation-)
   - [Data Storage 🗄️](#data-storage-️)
@@ -31,6 +27,10 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **Time Tracking:** Start, stop, and view the current work session. Automatically stops the previous session when a new one begins.
 
+**Task Priorities:** Every task carries a priority from 0 (lowest, the default) to 9 (highest). Set it when adding or editing a task, adjust it inline right from the Today's Tasks list, and sort that list by priority with a single checkbox.
+
+**Today's Tasks:** The app's default view. Shows every task marked for today, grouped by project, alongside the currently active work session with quick "done"/"edit" actions - no separate main menu to go through first.
+
 **Reporting & Analysis:**
 
 - **Daily & Date Range Reports:** Generate detailed reports for specific days or periods.
@@ -40,16 +40,15 @@ A simple, object-oriented Python application for tracking time spent on projects
   - A breakdown of time spent per weekday (e.g., Monday: 2.5 hours, 30%).
   - For main projects, a summary of time distribution across its tasks.
   - For tasks, a day-by-day list of all time entries.
-- **Inactivity Tracking:** Identify main projects and tasks that have been inactive for a configurable duration.
+- **Inactivity Tracking:** Identify main projects and tasks that have been inactive for a configurable duration (tasks due today or in the future are never counted as inactive, since they're still actively scheduled).
 
 **Local Data Storage:** All project data and time entries are saved in a `data.json` file in the application's directory.
 
-**Automatic Updates:** The application can check for new versions on GitHub upon exit and install them on the next start.
+**Automatic Updates:** The app checks GitHub for a new version once per session and, if one is available, shows a notification right under the version number on every screen, with a one-click button that downloads, installs, and restarts into it.
 
 **Interface:**
 
-- **Streamlit GUI:** A graphical, browser-based user interface (`TimeTrackerSL_GUI.py`) and the actively developed way to use TimeControl.
-- **Interactive CLI (deprecated):** A command-line interface (`TimeTrackerCLI.py`) for task and project management. It is no longer maintained — see the note at the top of this document.
+- **Streamlit GUI:** A graphical, browser-based user interface (`TimeTrackerSL_GUI.py`).
 
 **SOAP API:** A full-featured SOAP web service (`TimeTrackerSOAP_Server.py`) to integrate TimeControl with other tools or dashboards. See [examples/SOAP](examples/SOAP) for runnable client examples.
 
@@ -65,16 +64,12 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 The Streamlit GUI groups all actions behind a compact icon toolbar — hover over an icon to see what it does, or click it to open the corresponding menu.
 
-**Main menu:** the toolbar, plus the currently active work session (if any).
-
-![Main menu](screenshots/main-menu.png)
-
-**Today's Tasks (★):** all tasks marked for today. The **Show only open tasks** checkbox above the list hides tasks that are already done.
+**Today's Tasks:** the default view on every start. The toolbar, the currently active work session (if any), and every task marked for today, grouped by project and showing its priority. The **Show only open tasks** and **Sort by priority** checkboxes filter and reorder the list.
 
 ![Today's Tasks view](screenshots/today-view.png)
 ![Today's Tasks view filtered to open tasks](screenshots/today-view-filtered.png)
 
-**Adding a task:** set a due date, mark it for today, and optionally make it recurring.
+**Adding a task:** set a due date, mark it for today, set a priority, and optionally make it recurring.
 
 ![Add task dialog](screenshots/add-task.png)
 
@@ -147,7 +142,7 @@ All of these MCP settings can also be changed from the GUI, under **Settings →
 
 ### Running the Streamlit GUI
 
-The GUI is the primary, actively developed way to use TimeControl (see [Screenshots](#screenshots-) above). To start it, run:
+The GUI is the way to use TimeControl (see [Screenshots](#screenshots-) above). To start it, run:
 
 ```bash
 python TimeTrackerSL_GUI.py
@@ -157,112 +152,6 @@ or
 
 ```bash
 python3 TimeTrackerSL_GUI.py
-```
-
-### Running the Interactive CLI (Deprecated)
-
-> ⚠️ This interface is no longer actively maintained. It still works, but new features, bug fixes, and translations are only added to the Streamlit GUI going forward.
-
-To start the interactive command-line interface, run:
-
-```bash
-python TimeTrackerCLI.py
-```
-
-or
-
-```bash
-python3 TimeTrackerCLI.py
-```
-
-### CLI Menu Options
-
-The interactive CLI provides a structured menu for all operations.
-
-**Main Menu:**
-
-```text
-=== Time Control [version] ===
---- Main Menu ---
-1. Start work on task
-2. Show current work
-3. Stop current work
-4. Handle projects and tasks
-5. Reporting
-6. Settings
---------------------------------
-0. Exit
-```
-
-**Project Management Submenu (Option 4):**
-
-```text
---- Project Management ---
-1. Main Project Management
-2. Task Management
---------------------------------
-0.  Back to Main Menu
-```
-
-**Main Project Management Submenu:**
-
-```text
---- Main Project Management ---
-1.  Add Main Project
-2.  List Main Projects
-3.  Rename Main Project
-4.  Close Main Project
-5.  Re-open Main Project
-6.  Delete Main Project
-7.  List Inactive Main Projects
-8.  Demote Main-Project to Sub-Project
-9.  List Completed Main Projects
---------------------------------
-0.  Back
-```
-
-**Task Management Submenu:**
-
-```text
---- Task Management ---
-1.  Add Task
-2.  List Tasks
-3.  Rename Task
-4.  Close Task
-5.  Re-open Task
-6.  Delete Task
-7.  Move Task
-8.  List Inactive Tasks
-9.  List All Closed Tasks
-10. Delete All Closed Tasks
-11. Promote Task to Main-Project
---------------------------------
-0.  Back
-```
-
-**Reporting Submenu (Option 5):**
-
-```text
---- Reporting ---
-1. Daily Report (Today)
-2. Daily Report (Specific Day)
-3. Date Range Report
-4. Detailed Task Report
-5. Detailed Main-Project Report
-6. Detailed Daily Report
---------------------------
-0. Back to Main Menu
-```
-
-**Settings Submenu (Option 6):**
-
-```text
---- Settings ---
-1. Change Language
-2. Restore Previous Version
-3. Change Data Storage Location
---------------------------
-0. Back to Main Menu
 ```
 
 ---
