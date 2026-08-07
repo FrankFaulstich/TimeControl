@@ -15,7 +15,7 @@ from tt.TimeTracker import TimeTracker
 from i18n import _
 
 try:
-    from update import restore_previous_version, check_for_updates, apply_update
+    from update import restore_previous_version, check_for_updates, apply_update, should_check_for_updates
     UPDATE_MODULE_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
     UPDATE_MODULE_AVAILABLE = False
@@ -315,16 +315,7 @@ if 'tracker' not in st.session_state:
     st.session_state.tracker = TimeTracker()
     st.session_state.tracker.initialize_dependencies()
     st.session_state.tracker.set_today_flag_for_due_tasks() # Set 'today' flag for tasks due today
-
-    # One check per session, not per rerun (Streamlit reruns this whole
-    # script on every click) - a frozen build has no loose source files for
-    # the update mechanism to overwrite (see update.py/TimeTrackerSL_GUI.py),
-    # so there's nothing to offer there.
     st.session_state.update_check = {'available': False}
-    if UPDATE_MODULE_AVAILABLE and not getattr(sys, 'frozen', False):
-        is_available, new_version, url = check_for_updates(st.session_state.tracker.get_version())
-        if is_available:
-            st.session_state.update_check = {'available': True, 'version': new_version, 'url': url}
 else:
     # Reload from disk on every rerun (i.e. on every click/navigation), so
     # changes made by another process sharing the same data file - the SOAP
@@ -343,6 +334,25 @@ else:
 
 if 'menu' not in st.session_state:
     st.session_state.menu = 'today_view'
+
+# Re-check for a new release whenever the view changes (navigating to a
+# different menu than the one this ran for last time) - not on every rerun
+# of the *same* view, e.g. not on every keystroke or the 5s auto-refresh
+# tick, which would hit GitHub far more often than the view itself changes.
+# A frozen build has no loose source files for the update mechanism to
+# overwrite (see update.py/TimeTrackerSL_GUI.py), so there's nothing to
+# offer there. check_for_updates() is itself immune to a dead network - it
+# runs under a hard deadline and never raises (see update.py) - so a flaky
+# connection just means this silently stays skipped instead of hanging the
+# view change or crashing.
+if (UPDATE_MODULE_AVAILABLE and not getattr(sys, 'frozen', False)
+        and should_check_for_updates(st.session_state, st.session_state.menu)):
+    st.session_state._update_checked_for_menu = st.session_state.menu
+    is_available, new_version, url = check_for_updates(st.session_state.tracker.get_version())
+    st.session_state.update_check = (
+        {'available': True, 'version': new_version, 'url': url} if is_available
+        else {'available': False}
+    )
 
 if 'feedback' not in st.session_state:
     st.session_state.feedback = None
