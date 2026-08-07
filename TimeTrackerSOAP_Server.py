@@ -2,8 +2,86 @@ import json
 import os
 import sys
 import logging
+import types
+import importlib.util
 from wsgiref.simple_server import make_server
 from datetime import datetime
+
+
+def _patch_spyne_vendored_six():
+    """
+    spyne 2.14.0 (the only release on PyPI) vendors an old copy of `six`
+    (spyne/util/six.py) whose meta path importer only implements the legacy
+    PEP 302 find_module()/load_module() protocol. Python 3.12 dropped the
+    compatibility shim that let the import system fall back to find_module()
+    when find_spec() (PEP 451) is missing, so every `spyne.util.six.moves.*`
+    import - including one hit while `spyne/__init__.py` itself is still
+    running - fails with "ModuleNotFoundError: No module named
+    'spyne.util.six.moves'". Upstream issue (open, unreleased as of
+    2026-08): https://github.com/arskom/spyne/issues/711
+
+    Fix: load spyne's vendored six.py directly under its real module name
+    (without triggering the still-broken `import spyne`) and add a
+    find_spec() to its meta path importer, mirroring the fix already present
+    in the real `six` package (>=1.15). The importer instance stays
+    registered in sys.meta_path for the rest of the process, so the normal
+    `import spyne` below - and every later `spyne.util.six.moves` import
+    inside spyne - resolves correctly.
+    """
+    if 'spyne.util.six' in sys.modules:
+        return
+
+    spyne_spec = importlib.util.find_spec('spyne')
+    if spyne_spec is None or not spyne_spec.submodule_search_locations:
+        return
+
+    six_path = os.path.join(spyne_spec.submodule_search_locations[0], 'util', 'six.py')
+    if not os.path.isfile(six_path):
+        return
+
+    six_spec = importlib.util.spec_from_file_location('spyne.util.six', six_path)
+    six_module = importlib.util.module_from_spec(six_spec)
+    sys.modules['spyne.util.six'] = six_module
+    six_spec.loader.exec_module(six_module)
+
+    importer = getattr(six_module, '_importer', None)
+    if importer is not None and not hasattr(importer, 'find_spec'):
+        def find_spec(self, fullname, path=None, target=None):
+            if fullname in self.known_modules:
+                return importlib.util.spec_from_loader(fullname, self)
+            return None
+        importer.find_spec = find_spec.__get__(importer)
+
+
+def _patch_missing_cgi_module():
+    """
+    spyne 2.14.0's SOAP11 protocol and WSGI transport (both used by this
+    server) still do `import cgi` to parse the Content-Type header. Python
+    3.13 removed the `cgi` module from the standard library (PEP 594), so on
+    3.13+ this raises "ModuleNotFoundError: No module named 'cgi'" - a
+    second, independent break from the six.moves issue above. Spyne's master
+    branch fixes this (unreleased) by parsing Content-Type via
+    email.message.EmailMessage instead; provide a minimal `cgi` stand-in
+    with the same fix so `import cgi` keeps working until spyne cuts a new
+    release.
+    """
+    if 'cgi' in sys.modules or importlib.util.find_spec('cgi') is not None:
+        return
+
+    from email.message import EmailMessage
+
+    def parse_header(line):
+        msg = EmailMessage()
+        msg['content-type'] = line
+        return msg.get_content_type(), dict(msg['content-type'].params)
+
+    cgi_stub = types.ModuleType('cgi')
+    cgi_stub.parse_header = parse_header
+    sys.modules['cgi'] = cgi_stub
+
+
+_patch_spyne_vendored_six()
+_patch_missing_cgi_module()
 
 # Attempt to import Spyne. This is the standard library for SOAP in Python.
 try:
