@@ -58,10 +58,17 @@ def check_and_install_requirements():
     if requirements_to_install:
         print(f"Fehlende Pakete werden installiert: {', '.join(requirements_to_install)}")
         try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install"] + requirements_to_install)
+            # See tt/TimeTracker.py's PIP_INSTALL_TIMEOUT for why this needs an
+            # explicit timeout: with no internet connection, DNS resolution can
+            # hang far longer than pip's own request timeouts, and
+            # subprocess.check_call() has no bound of its own unless given one.
+            subprocess.check_call([sys.executable, "-m", "pip", "install"] + requirements_to_install, timeout=120)
             print("\nAlle Abhängigkeiten wurden erfolgreich installiert.")
         except subprocess.CalledProcessError:
             print("\nFehler bei der Installation der Abhängigkeiten.")
+            sys.exit(1)
+        except subprocess.TimeoutExpired:
+            print("\nZeitüberschreitung bei der Installation der Abhängigkeiten (keine Internetverbindung?).")
             sys.exit(1)
     else:
         print("Alle Abhängigkeiten sind bereits erfüllt.")

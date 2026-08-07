@@ -2,6 +2,7 @@ import unittest
 import unittest.mock
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime, timedelta, date
 
@@ -199,6 +200,37 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker._check_and_install_dependencies()
 
         mock_subprocess.assert_not_called()
+        mock_exit.assert_not_called()
+
+    @unittest.mock.patch('tt.TimeTracker.distributions')
+    @unittest.mock.patch('subprocess.check_call')
+    @unittest.mock.patch('sys.exit')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open, read_data="packageB")
+    @unittest.mock.patch('os.path.exists')
+    def test_check_and_install_dependencies_timeout(self, mock_exists, mock_open, mock_exit, mock_subprocess, mock_distributions):
+        """
+        Regression test: with no internet connection, pip's own DNS
+        resolution can hang far longer than any of pip's own request
+        timeouts (which never even start ticking until DNS resolves), so
+        subprocess.check_call() needs an explicit timeout= or it will wait
+        forever - hanging the whole app before any UI is shown, since this
+        runs from initialize_dependencies() at startup. Simulates that hang
+        via subprocess.TimeoutExpired (what check_call raises once its own
+        timeout=PIP_INSTALL_TIMEOUT fires and kills the child) and asserts
+        the app logs a warning and keeps going instead of hanging or
+        crashing.
+        """
+        mock_exists.return_value = True
+        mock_distributions.return_value = []  # nothing installed
+        mock_subprocess.side_effect = subprocess.TimeoutExpired(cmd="pip", timeout=self.tracker.PIP_INSTALL_TIMEOUT)
+
+        self.tracker._check_and_install_dependencies()
+
+        mock_subprocess.assert_called_once()
+        _args, kwargs = mock_subprocess.call_args
+        self.assertEqual(kwargs.get('timeout'), self.tracker.PIP_INSTALL_TIMEOUT)
+        # Installation "failed" (timed out) - must NOT exit(0) to restart,
+        # since there is nothing new to restart into.
         mock_exit.assert_not_called()
 
     # --- General Method Tests ---

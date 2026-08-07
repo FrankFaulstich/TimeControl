@@ -1,6 +1,7 @@
 import json
 import sys
 import os
+import threading
 from i18n import _
 import requests
 import zipfile
@@ -11,6 +12,71 @@ from i18n import _ # Import translation function
 UPDATE_ZIP_FILE = "update.zip"
 CONFIG_FILE = "config.json"
 PROTECTED_FILES = ["data.json", "config.json"] # Files that should not be overwritten during an update if they already exist
+
+# requests' own `timeout=` only bounds the connect()/read() phases of a
+# socket that already knows its target address - it does NOT cover DNS
+# resolution (socket.getaddrinfo()), which runs first. With no internet
+# connection at all (especially on Windows, or whenever DNS packets are
+# silently dropped rather than actively refused), that lookup can hang far
+# longer than any requests-level timeout - the classic "app hangs with no
+# internet" gotcha. These deadlines are set comfortably above the request's
+# own worst case (timeout applies separately to connect and read, so
+# ~2x timeout) so they only ever kick in for that pathological hang.
+UPDATE_CHECK_DEADLINE = 15   # seconds - hard ceiling for the "is there a new release" request
+DOWNLOAD_DEADLINE = 65       # seconds - hard ceiling for opening the download connection
+
+
+def _call_with_deadline(func, deadline, *args, **kwargs):
+    """
+    Runs func(*args, **kwargs) in a daemon thread and waits at most
+    `deadline` seconds for it. Raises TimeoutError if it's still running
+    after that.
+
+    A daemon thread - not concurrent.futures.ThreadPoolExecutor - is
+    deliberate: ThreadPoolExecutor registers its worker threads to be
+    joined at interpreter exit, so a call that's genuinely stuck (e.g. DNS
+    resolution that never gets a response) would still hang the whole app
+    at shutdown even though we stopped waiting for it here. A daemon
+    thread is hard-killed by the interpreter on exit instead, so a stuck
+    lookup can never block the app from closing.
+    """
+    result = {}
+
+    def _target():
+        try:
+            result['value'] = func(*args, **kwargs)
+        except BaseException as exc:
+            result['error'] = exc
+
+    worker = threading.Thread(target=_target, daemon=True)
+    worker.start()
+    worker.join(deadline)
+    if worker.is_alive():
+        raise TimeoutError(f"Operation timed out after {deadline}s")
+    if 'error' in result:
+        raise result['error']
+    return result.get('value')
+
+
+def should_check_for_updates(session_state, current_menu):
+    """
+    True iff we haven't already checked for updates for this exact
+    menu/view since it was last navigated to - i.e. once per view change,
+    not once per rerun of the *same* view (a keystroke, a periodic
+    auto-refresh tick, ...), which would hit GitHub far more often than
+    the view itself actually changes.
+
+    Takes session_state/current_menu as plain arguments (rather than a
+    caller reaching into a global session object itself) purely so this
+    decision stays testable without any UI framework running - session_state
+    only needs a .get(key, default) method, so a Streamlit session_state or
+    a plain dict both work.
+
+    :param session_state: mapping-like object with .get(key, default)
+    :param current_menu: identifier of the view currently being shown
+    :return: True if check_for_updates() should be (re-)run now
+    """
+    return session_state.get('_update_checked_for_menu') != current_menu
 
 def _get_github_repo_from_config():
     """Reads the GitHub repository slug from config.json."""
@@ -37,10 +103,10 @@ def check_for_updates(current_version_str):
 
     api_url = f"https://api.github.com/repos/{github_repo}/releases/latest"
     try:
-        response = requests.get(api_url, timeout=5)
+        response = _call_with_deadline(requests.get, UPDATE_CHECK_DEADLINE, api_url, timeout=5)
         response.raise_for_status()
         latest_release = response.json()
-        
+
         latest_version_str = latest_release.get("tag_name", "").lstrip('v')
         current_version = parse_version(current_version_str)
         latest_version = parse_version(latest_version_str)
@@ -55,11 +121,13 @@ def check_for_updates(current_version_str):
                 print(_("Error: Download URL for the new version not found."))
                 return False, None, None
 
+    except TimeoutError:
+        print(_("Warning: Update check timed out (no internet connection?). Skipping."))
     except requests.exceptions.RequestException as e:
         print(_("Error checking for updates: {error}").format(error=e))
     except Exception as e:
         print(_("An unexpected error occurred while checking for updates: {error}").format(error=e))
-        
+
     return False, None, None
 
 def download_update(url):
@@ -71,13 +139,18 @@ def download_update(url):
     """
     try:
         print(_("Downloading update..."))
-        response = requests.get(url, stream=True, timeout=30)
+        response = _call_with_deadline(requests.get, DOWNLOAD_DEADLINE, url, stream=True, timeout=30)
         response.raise_for_status()
         with open(UPDATE_ZIP_FILE, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
         print(_("Download complete. The update will be installed on the next start."))
         return True
+    except TimeoutError:
+        print(_("Error: Connecting to the update server timed out (no internet connection?)."))
+        if os.path.exists(UPDATE_ZIP_FILE):
+            os.remove(UPDATE_ZIP_FILE) # Clean up partial download
+        return False
     except requests.exceptions.RequestException as e:
         print(_("Error downloading the update: {error}").format(error=e))
         if os.path.exists(UPDATE_ZIP_FILE):

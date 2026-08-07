@@ -43,6 +43,14 @@ class TimeTracker:
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
     HIDDEN_PROJECT = "hide"
+    # Hard ceiling per package for the pip-install subprocess below. pip's own
+    # request/retry timeouts only bound its HTTP phase, not the DNS lookup
+    # that happens first - with no internet connection that lookup can hang
+    # far longer than pip's own timeouts, and subprocess.check_call() has no
+    # timeout of its own unless we pass one. Set generously above a normal
+    # (even slow) install so this only ever kicks in for that dead-network
+    # case, where subprocess's timeout=<N> kills the pip child outright.
+    PIP_INSTALL_TIMEOUT = 120
 
     def __init__(self, file_path=None):
         """
@@ -109,9 +117,15 @@ class TimeTracker:
                 for package in missing_packages:
                     print(_("Installing {package}...").format(package=package))
                     try:
-                        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+                        subprocess.check_call(
+                            [sys.executable, "-m", "pip", "install", package],
+                            timeout=self.PIP_INSTALL_TIMEOUT,
+                        )
                     except subprocess.CalledProcessError:
                         print(_("Failed to install {package}. Continuing without it.").format(package=package))
+                        failed_packages.append(package)
+                    except subprocess.TimeoutExpired:
+                        print(_("Timed out installing {package} (no internet connection?). Continuing without it.").format(package=package))
                         failed_packages.append(package)
 
                 if not failed_packages:
