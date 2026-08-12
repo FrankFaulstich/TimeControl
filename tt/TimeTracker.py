@@ -640,17 +640,23 @@ class TimeTracker:
             # to record - better an unrecorded deletion than a note naming
             # nothing.
             return
+        at = datetime.now().isoformat()
         self.data.setdefault("_deleted", []).append({
             "uid": uid,
             "kind": kind,
-            "at": datetime.now().isoformat()
+            "at": at
         })
         # Told to the sync server from here rather than from each of the five
         # call sites, so the operations and the tombstones cannot drift apart
         # - they are now the same decision, taken once. In particular the
         # deliberate omissions carry over for free: move_task never reaches
         # this method, and time entries never get a note of their own.
-        self._emit(kind + '.delete', uid=uid)
+        #
+        # The moment is sent along. The other machine keeps a note of its own
+        # and expires it after ninety days; with nothing to date it from, that
+        # note is swept on the very next start and the deletion it was
+        # recording can then be undone by any later edit.
+        self._emit(kind + '.delete', uid=uid, ts=at)
 
     def _record_project_deletion(self, project):
         """

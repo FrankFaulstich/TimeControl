@@ -794,10 +794,39 @@ class TestSeeding(unittest.TestCase):
         ops = seed_operations(doc)
 
         self.assertEqual([o["op"] for o in ops],
-                         ["project.create", "task.create", "entry.add", "entry.close"])
-        self.assertEqual(ops[1]["project"], P1)
-        self.assertNotIn("id", ops[1]["f"])
-        self.assertNotIn("time_entries", ops[1]["f"])
+                         ["project.create", "project.set",
+                          "task.create", "task.set", "task.move",
+                          "entry.add", "entry.set"])
+        create = next(o for o in ops if o["op"] == "task.create")
+        self.assertEqual(create["project"], P1)
+        self.assertNotIn("id", create["f"])
+        self.assertNotIn("time_entries", create["f"])
+
+    def test_it_also_states_the_current_value_of_everything(self):
+        """
+        A machine re-introducing itself is talking to machines that already
+        have these objects, where a create does nothing. Without the set,
+        everything that changed while it was out of contact would be
+        announced and silently dropped.
+        """
+        from tt.sync_apply import seed_operations
+
+        doc = document(project(P1, "Renamed", tasks=[
+            task(T1, "Also renamed", priority=6,
+                 entries=[entry(E1, "2026-08-10 09:00:00", "2026-08-10 10:00:00")])]))
+        ops = seed_operations(doc)
+
+        # Apply to a machine that already holds the old values.
+        elsewhere = document(project(P1, "Old", tasks=[
+            task(T1, "Old name", priority=0,
+                 entries=[entry(E1, "2026-08-10 09:00:00")])]))
+        apply_ops(elsewhere, [dict(o, s=i) for i, o in enumerate(ops, 1)])
+
+        self.assertEqual(elsewhere["projects"][0]["main_project_name"], "Renamed")
+        arrived = find_task(elsewhere, T1)
+        self.assertEqual(arrived["task_name"], "Also renamed")
+        self.assertEqual(arrived["priority"], 6)
+        self.assertEqual(arrived["time_entries"][0]["end_time"], "2026-08-10 10:00:00")
 
     def test_a_seeded_document_rebuilds_exactly(self):
         """

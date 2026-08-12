@@ -32,7 +32,29 @@ except ImportError:
 
 from tt.sync_apply import apply_ops, reconcile, seed_operations
 
-BASE = "https://www.familiefaulstich.de/tc/index.php"
+BASE = None      # set in main(), see server_address()
+
+
+def server_address(suffix=""):
+    """
+    Where the server is, asked for rather than baked in.
+
+    This file lives in a public repository. A default here would publish the
+    address of somebody's private server, and would also be wrong for anyone
+    else who ran it.
+    """
+    url = os.environ.get('TC_SYNC_URL', '').strip()
+    if not url:
+        url = input("Server address (https://host/tc/): ").strip()
+    if not url:
+        sys.exit("No server address given. Set TC_SYNC_URL or type one.")
+    if not url.lower().startswith('https://'):
+        sys.exit("The address must start with https:// - the server refuses anything else.")
+    url = url.rstrip('/')
+    if suffix and not url.endswith(suffix):
+        url += '/' + suffix
+    return url
+
 
 passed = 0
 failed = 0
@@ -126,6 +148,8 @@ def find_entry(doc, entry_uid):
 
 
 def main():
+    global BASE
+    BASE = server_address('index.php')
     user = input("Throwaway account name: ").strip()
     if not user:
         sys.exit("No account given.")
@@ -163,11 +187,13 @@ def main():
         "next_id": 2, "_deleted": [], "schema_version": 2,
     }
     seeded = copy.deepcopy(a.doc)
+    expected = len(seed_operations(a.doc))
     for op in seed_operations(a.doc):
         a.queue(op.pop("op"), **op)
     r, _ = a.sync()
-    check("the seed was accepted", r.get("ok") and len(r.get("assigned", [])) == 4,
-          str(r.get("assigned")))
+    check("the seed was accepted",
+          r.get("ok") and len(r.get("assigned", [])) == expected,
+          "%s of %d" % (len(r.get("assigned", [])), expected))
     check("the document is unchanged by seeding it", a.doc["projects"] == seeded["projects"])
 
     r, _ = b.sync()

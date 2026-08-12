@@ -382,6 +382,9 @@ if SYNC_AVAILABLE:
             # would have been seen by nobody.
             if st.session_state.pop('sync_discarded_shown', False):
                 st.session_state.pop('sync_discarded', None)
+            # Before anything is applied: if data.json has been restored from
+            # a backup, the cursor has to come back with it.
+            sync_engine.align_cursor(st.session_state.tracker)
             sync_engine.offer_document(st.session_state.tracker)
             try:
                 _sync_summary = sync_engine.apply_pending(st.session_state.tracker)

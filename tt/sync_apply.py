@@ -187,13 +187,18 @@ def _add_tombstone(document, uid, kind, when):
     document["_deleted"].append({"uid": uid, "kind": kind, "at": when})
 
 
-def apply_ops(document, ops, on_conflict=None):
+def apply_ops(document, ops, on_conflict=None, now=None):
     """
     Applies operations from the server to a document, in place.
 
     :param document: A schema-2 document. Modified.
     :param ops: Operations as the server returned them, each with 's' (the
                 sequence number that decides order) and 'op'.
+    :param now: A timestamp to date a tombstone that arrives without one -
+                from a version that predates sending it. This module takes no
+                clock of its own; an undated tombstone is swept the moment it
+                is written, and the deletion it records can then be undone by
+                any later edit. Passing nothing keeps the old behaviour.
     :param on_conflict: Optional callable, invoked as (kind, detail) whenever
                         something had to be decided rather than simply done:
                         'discarded_time' when a time entry went with a deleted
@@ -210,7 +215,7 @@ def apply_ops(document, ops, on_conflict=None):
         report.highest_seq = max(report.highest_seq, seq)
         kind = op.get("op")
         uid = op.get("uid")
-        when = op.get("ts") or op.get("start") or op.get("end") or ""
+        when = op.get("ts") or op.get("start") or op.get("end") or now or ""
 
         # An operation naming something already deleted is dropped. The one
         # exception is below: it is about time entries, and losing tracked
@@ -370,7 +375,7 @@ def apply_ops(document, ops, on_conflict=None):
     return report
 
 
-def reconcile(document, incoming, local=None, on_conflict=None):
+def reconcile(document, incoming, local=None, on_conflict=None, now=None):
     """
     One merge: what came from elsewhere, then this machine's own unsent work.
 
@@ -401,7 +406,7 @@ def reconcile(document, incoming, local=None, on_conflict=None):
                   order is already the order the server will give them.
     :return: A Report covering both passes.
     """
-    report = apply_ops(document, incoming, on_conflict=on_conflict)
+    report = apply_ops(document, incoming, on_conflict=on_conflict, now=now)
     if not local:
         return report
 
@@ -412,7 +417,7 @@ def reconcile(document, incoming, local=None, on_conflict=None):
         op['s'] = floor + position
         replay.append(op)
 
-    second = apply_ops(document, replay, on_conflict=on_conflict)
+    second = apply_ops(document, replay, on_conflict=on_conflict, now=now)
     report.applied += second.applied
     report.ignored += second.ignored
     report.discarded_time += second.discarded_time
@@ -425,10 +430,18 @@ def seed_operations(document):
     """
     Describes an existing document as the operations that would build it.
 
-    Used once, by whichever machine reaches an empty server first. Everything
-    after that is incremental; this is the only time the whole document is
-    sent, and it is sent as operations rather than as a file so the server
-    never has to understand the format.
+    Used by whichever machine reaches an empty server first, and again by any
+    machine that has to re-introduce itself - after synchronisation was
+    switched off for a while, say. Everything in between is incremental; this
+    is the only time the whole document is sent, and it goes as operations
+    rather than as a file so the server never has to understand the format.
+
+    Each object is described twice: created, then set. The create is what an
+    unfamiliar machine needs, and it does nothing on one that already has the
+    object - which is precisely the case this has to work for. Without the
+    set, a machine re-introducing itself would announce objects the others
+    already know and silently fail to pass on everything that changed about
+    them while it was not talking.
 
     The order matters and is the same order the app itself would have
     produced: a project before its tasks, a task before its time.
@@ -437,30 +450,30 @@ def seed_operations(document):
     for project in document.get("projects", []):
         if not project.get("uid"):
             continue
-        ops.append({
-            'op': 'project.create',
-            'uid': project["uid"],
-            'f': {'name': project.get("main_project_name", ""),
+        fields = {'name': project.get("main_project_name", ""),
                   'status': project.get("status", "open"),
-                  'last_started': project.get("last_started")},
-        })
+                  'last_started': project.get("last_started")}
+        ops.append({'op': 'project.create', 'uid': project["uid"], 'f': fields})
+        ops.append({'op': 'project.set', 'uid': project["uid"], 'f': fields})
         for task in project.get("tasks", []):
             if not task.get("uid"):
                 continue
-            ops.append({
-                'op': 'task.create',
-                'uid': task["uid"],
-                'project': project["uid"],
-                'f': {k: task.get(k) for k in sorted(TASK_FIELDS) if k in task},
-            })
+            fields = {k: task.get(k) for k in sorted(TASK_FIELDS) if k in task}
+            ops.append({'op': 'task.create', 'uid': task["uid"],
+                        'project': project["uid"], 'f': fields})
+            ops.append({'op': 'task.set', 'uid': task["uid"], 'f': fields})
+            # Where it sits now, in case it was moved while out of contact.
+            ops.append({'op': 'task.move', 'uid': task["uid"],
+                        'project': project["uid"]})
             for entry in task.get("time_entries", []):
                 if not entry.get("uid") or not entry.get("start_time"):
                     continue
                 ops.append({'op': 'entry.add', 'uid': entry["uid"],
                             'task': task["uid"], 'start': entry["start_time"]})
+                times = {'start_time': entry["start_time"]}
                 if entry.get("end_time"):
-                    ops.append({'op': 'entry.close', 'uid': entry["uid"],
-                                'end': entry["end_time"]})
+                    times['end_time'] = entry["end_time"]
+                ops.append({'op': 'entry.set', 'uid': entry["uid"], 'f': times})
 
     # Deletions travel too, or a machine that seeds from a document still
     # carrying tombstones would hand the others no way to know those objects

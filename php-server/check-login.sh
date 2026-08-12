@@ -12,7 +12,18 @@
 #
 # The password is read without echo and never appears in the command line or
 # the shell history.
-URL=https://www.familiefaulstich.de/tc/index.php
+# No address baked in: this file lives in a public repository, and where
+# somebody's private server sits is not something to publish. Pass it in.
+URL="${TC_SYNC_URL:-}"
+if [ -z "$URL" ]; then
+  printf 'Server address (https://host/tc/): '
+  read -r URL
+fi
+case "$URL" in
+  */index.php) ;;
+  */)          URL="${URL}index.php" ;;
+  *)           URL="${URL}/index.php" ;;
+esac
 printf 'Kontoname [frank]: '; read TCUSER; [ -z "$TCUSER" ] && TCUSER=frank
 printf 'Kontopasswort: '; stty -echo; read TCPW; stty echo; echo
 

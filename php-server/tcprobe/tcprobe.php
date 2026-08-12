@@ -29,8 +29,12 @@
  * Nothing here writes anything a later install depends on.
  */
 
-const PROBE_KEY   = '12345678901234567890';
-const PROBE_BUILD = 2;
+// Ships empty on purpose. The gate below is a length check, and an empty
+// value fails it - so an unedited copy refuses every call. A shipped key long
+// enough to pass its own gate would arm the probe for anyone who uploaded it
+// without reading, with a key published in this repository for all to see.
+const PROBE_KEY   = '';
+const PROBE_BUILD = 3;
 
 // ---------------------------------------------------------------------------
 

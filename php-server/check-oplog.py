@@ -14,6 +14,7 @@ bundle, which is also why the sync client will use it.
 """
 
 import getpass
+import os
 import json
 import secrets
 import sys
@@ -23,7 +24,29 @@ try:
 except ImportError:
     sys.exit("requests is missing - pip install -r requirements.txt")
 
-BASE = "https://www.familiefaulstich.de/tc/index.php"
+BASE = None      # set in main(), see server_address()
+
+
+def server_address(suffix=""):
+    """
+    Where the server is, asked for rather than baked in.
+
+    This file lives in a public repository. A default here would publish the
+    address of somebody's private server, and would also be wrong for anyone
+    else who ran it.
+    """
+    url = os.environ.get('TC_SYNC_URL', '').strip()
+    if not url:
+        url = input("Server address (https://host/tc/): ").strip()
+    if not url:
+        sys.exit("No server address given. Set TC_SYNC_URL or type one.")
+    if not url.lower().startswith('https://'):
+        sys.exit("The address must start with https:// - the server refuses anything else.")
+    url = url.rstrip('/')
+    if suffix and not url.endswith(suffix):
+        url += '/' + suffix
+    return url
+
 
 passed = 0
 failed = 0
@@ -57,6 +80,8 @@ def call(action, payload=None, token=None, params=None):
 
 
 def main():
+    global BASE
+    BASE = server_address('index.php')
     user = input("Throwaway account name: ").strip()
     if not user:
         sys.exit("No account given.")

@@ -30,7 +30,29 @@ from tt import sync_client, sync_engine
 from tt.sync_outbox import Outbox
 from tt.TimeTracker import TimeTracker
 
-SERVER = "https://www.familiefaulstich.de/tc/"
+SERVER = None      # set in main(), see server_address()
+
+
+def server_address(suffix=""):
+    """
+    Where the server is, asked for rather than baked in.
+
+    This file lives in a public repository. A default here would publish the
+    address of somebody's private server, and would also be wrong for anyone
+    else who ran it.
+    """
+    url = os.environ.get('TC_SYNC_URL', '').strip()
+    if not url:
+        url = input("Server address (https://host/tc/): ").strip()
+    if not url:
+        sys.exit("No server address given. Set TC_SYNC_URL or type one.")
+    if not url.lower().startswith('https://'):
+        sys.exit("The address must start with https:// - the server refuses anything else.")
+    url = url.rstrip('/')
+    if suffix and not url.endswith(suffix):
+        url += '/' + suffix
+    return url
+
 
 passed = 0
 failed = 0
@@ -120,6 +142,8 @@ def running_entries(machine):
 
 
 def main():
+    global SERVER
+    SERVER = server_address('')
     user = input("Throwaway account name: ").strip()
     if not user:
         sys.exit("No account given.")

@@ -495,8 +495,9 @@ class TestOfferingTheExistingDocument(EngineTestCase):
         queued = sync_engine.offer_document(self.tracker)
 
         self.assertGreater(queued, 0)
+        from tt.sync_apply import seed_operations
         self.assertEqual([o['op'] for o in self.outbox.pending()],
-                         ['project.create', 'task.create'])
+                         [o['op'] for o in seed_operations(self.tracker.data)])
 
     def test_it_is_offered_only_once(self):
         self.tracker.add_main_project('Existing')
@@ -994,16 +995,19 @@ class TestOfferingIsDoneOnce(EngineTestCase):
 
         queued = sync_engine.offer_document(self.tracker)
 
-        self.assertEqual(queued, 61)
+        from tt.sync_apply import seed_operations
+        self.assertEqual(queued, len(seed_operations(self.tracker.data)))
         self.assertEqual(calls['n'], 0, "it still appends one at a time")
 
         # Numbered consecutively, and above the mark left by the changes that
         # were made and then cleared - the server refuses anything at or
         # below a number it has already seen from this device.
+        expected = len(seed_operations(self.tracker.data))
         numbers = [e['lc'] for e in self.outbox.pending()]
-        self.assertEqual(len(numbers), 61)
-        self.assertEqual(numbers, list(range(numbers[0], numbers[0] + 61)))
-        self.assertGreater(numbers[0], 61)
+        self.assertEqual(len(numbers), expected)
+        self.assertEqual(numbers, list(range(numbers[0], numbers[0] + expected)))
+        self.assertGreater(numbers[0], 61,
+                           "numbering restarted below what the server has seen")
 
     def test_two_tabs_offering_at_once_queue_one_copy(self):
         """
@@ -1029,8 +1033,11 @@ class TestOfferingIsDoneOnce(EngineTestCase):
         for t in threads:
             t.join(10)
 
-        self.assertEqual(sorted(counts), [0, 2], str(counts))
-        self.assertEqual(len(self.outbox.pending()), 2)
+        from tt.sync_apply import seed_operations
+        expected = len(seed_operations(self.tracker.data))
+        self.assertEqual(sorted(counts), [0, expected], str(counts))
+        self.assertEqual(len(self.outbox.pending()), expected,
+                         "the document was queued twice over")
 
 
 class TestWhenTheDiskItselfMisbehaves(EngineTestCase):
@@ -1157,6 +1164,134 @@ class TestWhenTheDiskItselfMisbehaves(EngineTestCase):
         finally:
             sync_engine.Outbox = original
         self.assertEqual(snap['pending'], 0)
+
+
+class TestTheCursorAndTheLogComingApart(EngineTestCase):
+    """
+    The cursor is a position in one particular log, held in one particular
+    document. Both can be replaced underneath it, and when that happens
+    nothing complains: the cycle keeps reporting success while sending and
+    receiving nothing at all.
+    """
+
+    DATA = 'test_engine_reset.json'
+
+    def setUp(self):
+        super().setUp()
+        if os.path.exists(self.DATA):
+            os.remove(self.DATA)
+        self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
+
+    def tearDown(self):
+        if os.path.exists(self.DATA):
+            os.remove(self.DATA)
+        super().tearDown()
+
+    def test_a_log_shorter_than_our_position_is_a_different_log(self):
+        """
+        A re-created account, a wiped store, a rebuilt server. A log only ever
+        grows, so a head below the cursor cannot be the log the cursor came
+        from.
+        """
+        sync_engine.write_state({'base_seq': 50, 'seeded': True})
+        self.tracker.add_main_project('Mine')
+
+        sync_engine.run_cycle(self.outbox)
+
+        state = sync_engine.read_state()
+        self.assertEqual(state['base_seq'], 0,
+                         "the cursor still points into a log that no longer exists")
+        self.assertGreater(len(self.server.log), 0,
+                           "nothing was ever sent to the new log")
+
+    def test_and_the_document_is_offered_to_it_again(self):
+        sync_engine.write_state({'base_seq': 50, 'seeded': True})
+        self.tracker.add_main_project('Mine')
+        sync_engine.run_cycle(self.outbox)
+        sync_engine.apply_pending(self.tracker)
+
+        self.assertFalse(sync_engine.read_state()['seeded'],
+                         "the new log is never told what this machine holds")
+        sync_engine.offer_document(self.tracker)
+        self.assertTrue(self.outbox.pending())
+
+    def test_signing_in_to_a_different_account_starts_over(self):
+        sync_engine.run_cycle(self.outbox)
+        sync_engine.apply_pending(self.tracker)
+        sync_engine.write_state({'base_seq': 3})
+
+        sync_client.load_credentials = lambda: {'token': 't', 'username': 'someone-else',
+                                                'base_url': 'https://x/index.php'}
+        sync_engine.run_cycle(self.outbox)
+
+        self.assertEqual(sync_engine.read_state()['base_seq'], 0)
+
+    def test_a_restored_backup_takes_the_cursor_back_with_it(self):
+        """
+        data.json goes back to yesterday while the state file stays at today.
+        Everything in between is already marked as applied, so without this it
+        is never fetched again and the restored copy stays incomplete - with a
+        healthy-looking sync throughout.
+        """
+        self.server.add_foreign('project.create', uid=P1, f={'name': 'Remote'})
+        sync_engine.run_cycle(self.outbox)
+        sync_engine.apply_pending(self.tracker)
+        self.assertEqual(sync_engine.read_state()['base_seq'], 1)
+        self.assertEqual(self.tracker.data['_sync_seq'], 1)
+
+        # Yesterday's file: it predates that operation.
+        self.tracker.data['_sync_seq'] = 0
+        self.tracker.data['projects'] = []
+
+        given_up = sync_engine.align_cursor(self.tracker)
+
+        self.assertEqual(given_up, 1)
+        self.assertEqual(sync_engine.read_state()['base_seq'], 0)
+
+        sync_engine.run_cycle(self.outbox)
+        sync_engine.apply_pending(self.tracker)
+        self.assertIsNotNone(self.tracker._get_project('Remote'),
+                             "what the restored copy was missing never came back")
+
+    def test_a_cursor_ahead_of_the_document_is_the_only_one_that_moves(self):
+        """Going forward over a gap cannot be undone, so it never happens."""
+        sync_engine.write_state({'base_seq': 2})
+        self.tracker.data['_sync_seq'] = 9
+        self.assertEqual(sync_engine.align_cursor(self.tracker), 0)
+        self.assertEqual(sync_engine.read_state()['base_seq'], 2)
+
+    def test_a_document_that_carries_no_mark_is_left_alone(self):
+        sync_engine.write_state({'base_seq': 4})
+        self.tracker.data.pop('_sync_seq', None)
+        self.assertEqual(sync_engine.align_cursor(self.tracker), 0)
+        self.assertEqual(sync_engine.read_state()['base_seq'], 4)
+
+
+class TestSwitchingItOffAndOnAgain(EngineTestCase):
+    """
+    While it is off nothing is recorded - that is what off means. So the
+    changes made in between exist nowhere but this machine, and switching it
+    back on has to make the machine describe itself again.
+    """
+
+    def test_the_gap_is_remembered(self):
+        sync_engine.ensure_started({'sync': {'enabled': True}})
+        sync_engine.write_state({'seeded': True})
+
+        sync_engine.ensure_started({'sync': {'enabled': False}})
+        self.assertTrue(sync_engine.read_state()['was_off'])
+
+        sync_engine.ensure_started({'sync': {'enabled': True}})
+        state = sync_engine.read_state()
+        self.assertFalse(state['seeded'],
+                         "the changes made while it was off reach nobody")
+        self.assertFalse(state['was_off'])
+
+    def test_staying_on_does_not_keep_re_offering(self):
+        sync_engine.write_state({'seeded': True})
+        for _ in range(3):
+            sync_engine.ensure_started({'sync': {'enabled': True}})
+        self.assertTrue(sync_engine.read_state()['seeded'])
 
 
 class TestTheInterval(EngineTestCase):

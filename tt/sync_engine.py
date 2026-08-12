@@ -43,6 +43,7 @@ import json
 import os
 import threading
 import time
+from datetime import datetime
 
 from tt import sync_client
 from tt.filelock import locked, LockTimeout
@@ -104,6 +105,8 @@ _DEFAULT_STATE = {
     'failures': 0,        # consecutive failures, for the backoff
     'next_attempt': 0,    # epoch seconds before which not to try again
     'server_head': 0,     # how far the log had got when last asked
+    'account': None,      # whose log base_seq is measured against
+    'was_off': False,     # synchronisation was switched off since the last offer
 }
 
 
@@ -300,6 +303,46 @@ def _since(state):
 MAX_PAGES_PER_CYCLE = 40
 
 
+def _current_account():
+    creds = sync_client.load_credentials() or {}
+    return creds.get('username')
+
+
+def _log_is_not_the_one_we_know(state, head):
+    """
+    Whether the cursor still refers to the log the server is answering from.
+
+    Two ways it stops doing so, and both are quiet:
+
+    The log is shorter than the position we hold. A log only grows, so a head
+    below our cursor means this is a different log - the account was
+    re-created, the store was wiped, or the server was rebuilt. Left alone,
+    every cycle asks for operations after a point the log will never reach,
+    the server rightly answers with nothing, and the machine reports success
+    for ever while sending and receiving nothing at all.
+
+    The credential belongs to somebody else. Signing in to a second account
+    leaves a cursor measured against the first one's log.
+
+    Both are rare, and both are indistinguishable from working correctly from
+    the outside, which is exactly why they are worth detecting rather than
+    leaving to be noticed months later.
+    """
+    if head < int(state.get('base_seq', 0)):
+        return True
+    account = _current_account()
+    known = state.get('account')
+    return bool(account) and known is not None and account != known
+
+
+def _drop_inbox_for_reset():
+    """Fetched operations numbered against a log that is no longer there."""
+    try:
+        clear_inbox()
+    except (OSError, LockTimeout):
+        pass
+
+
 def _run_cycle_locked(outbox):
     state = read_state()
     since = _since(state)
@@ -310,6 +353,15 @@ def _run_cycle_locked(outbox):
     result = sync_client.push(since, [_wire(op) for op in batch])
     if not result.get('ok'):
         return _record_failure(result.get('error') or 'unreachable')
+
+    if _log_is_not_the_one_we_know(state, int(result.get('head', 0))):
+        # Start again from the beginning against this log. Everything below
+        # depends on `since` pointing into the same log the server is
+        # answering from, and it no longer does.
+        state = write_state({'base_seq': 0, 'seeded': False,
+                             'account': _current_account()})
+        _drop_inbox_for_reset()
+        since = 0
 
     dups = [int(x) for x in (result.get('dups') or [])]
     seq_of = {int(lc): int(seq) for lc, seq in (result.get('assigned') or [])}
@@ -385,6 +437,7 @@ def _run_cycle_locked(outbox):
         'failures': 0,
         'next_attempt': 0,
         'server_head': max(head, reached),
+        'account': _current_account(),
     })
     return {'ok': True, 'sent': len(batch), 'received': len(incoming),
             'more': truncated or len(sending) > len(batch)}
@@ -465,6 +518,12 @@ def apply_pending(tracker):
             for entry_uid, end in report.auto_closed:
                 tracker._emit('entry.close', uid=entry_uid, end=end)
 
+            # Stamped into the document as well as into the state file. The
+            # two travel differently: restoring data.json from a backup takes
+            # the document back but leaves the state file where it was, and
+            # the machine would then never re-fetch what the restored copy is
+            # missing. align_cursor() below reads this back.
+            tracker.data['_sync_seq'] = reached
             tracker._save_data()
             write_state({'base_seq': reached}, required=True)
             if settled:
@@ -509,6 +568,37 @@ def _split_placed(queued, incoming):
         return list(queued), []
     return ([op for op in queued if int(op.get('lc', 0)) not in placed],
             sorted(placed))
+
+
+def align_cursor(tracker):
+    """
+    Brings the cursor back to what the document on disk actually contains.
+
+    Call this on the drawing thread, before applying anything.
+
+    The cursor lives in the state file, the document in data.json, and the two
+    can be separated: restoring data.json from a backup - or copying yesterday's
+    over today's - takes the document back while the state file stays where it
+    was. Everything after that point has already been marked as applied, so it
+    is never fetched again, and the restored copy silently stays missing
+    whatever it was missing. The interface reports a healthy sync throughout.
+
+    So the document carries its own mark, and the lower of the two wins. Going
+    back over ground already covered costs nothing - applying an operation
+    twice is harmless by design - while going forward over a gap cannot be
+    undone.
+
+    :return: The number of sequence positions given up, for the caller to log.
+    """
+    stamped = tracker.data.get('_sync_seq')
+    if stamped is None:
+        return 0
+    state = read_state()
+    behind = int(state.get('base_seq', 0)) - int(stamped)
+    if behind <= 0:
+        return 0
+    write_state({'base_seq': int(stamped)})
+    return behind
 
 
 def offer_document(tracker):
@@ -646,7 +736,17 @@ def ensure_started(config=None):
         sync_cfg = config.get('sync') if isinstance(config, dict) else None
         if not isinstance(sync_cfg, dict) or not sync_cfg.get('enabled'):
             stop()
+            # Remember the gap. While the feature is off nothing is recorded -
+            # that is what off means - so the changes made in between exist
+            # nowhere but this machine. Switching it back on has to make the
+            # machine describe itself again, or those changes are silently
+            # absent from the other one for ever, and the other machine's
+            # version of the same objects quietly wins.
+            if not read_state().get('was_off'):
+                write_state({'was_off': True})
             return False
+        if read_state().get('was_off'):
+            write_state({'was_off': False, 'seeded': False})
         try:
             _interval_minutes = int(sync_cfg.get('interval_minutes')
                                     or DEFAULT_INTERVAL_MINUTES)
