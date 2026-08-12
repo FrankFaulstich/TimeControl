@@ -1338,6 +1338,76 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.start_work("P2", "S3")
         self.assertEqual([p['main_project_name'] for p in self.tracker.data['projects']], ["P2", "P1"])
 
+    def test_ordering_holds_when_the_clock_cannot_tell_two_starts_apart(self):
+        """
+        `datetime.now()` resolves to about 16 milliseconds on Windows, so two
+        starts in quick succession land on the same value there and the
+        most-recently-used order comes out backwards - the older one stays in
+        front. Frozen here so the property is checked everywhere, not only on
+        the platform coarse enough to expose it.
+        """
+        from datetime import datetime as _real
+        import tt.TimeTracker as module
+
+        frozen = _real(2026, 8, 12, 17, 54, 6, 534224)
+
+        class Stopped(_real):
+            @classmethod
+            def now(cls, tz=None):
+                return frozen
+
+        self.tracker.add_main_project("P1")
+        self.tracker.add_task("P1", "T1")
+        self.tracker.add_main_project("P2")
+        self.tracker.add_task("P2", "T2")
+
+        original = module.datetime
+        module.datetime = Stopped
+        try:
+            self.tracker.start_work("P1", "T1")
+            self.tracker.start_work("P2", "T2")
+        finally:
+            module.datetime = original
+
+        self.assertEqual([p['main_project_name'] for p in self.tracker.data['projects']],
+                         ["P2", "P1"],
+                         "the more recent start did not come first")
+        stamps = [p['last_started'] for p in self.tracker.data['projects']]
+        self.assertGreater(stamps[0], stamps[1],
+                           "two starts share a timestamp, so nothing orders them")
+        self.assertIn("end_time",
+                      self.tracker._get_task("P1", "T1")['time_entries'][0],
+                      "the previous session was left running")
+
+    def test_a_clock_that_steps_backwards_does_not_reorder_the_past(self):
+        """An NTP correction or a daylight-saving change moves it back."""
+        from datetime import datetime as _real, timedelta as _delta
+        import tt.TimeTracker as module
+
+        self.tracker.add_main_project("P1")
+        self.tracker.add_task("P1", "T1")
+        self.tracker.add_main_project("P2")
+        self.tracker.add_task("P2", "T2")
+        self.tracker.start_work("P1", "T1")
+
+        earlier = _real.now() - _delta(hours=2)
+
+        class WoundBack(_real):
+            @classmethod
+            def now(cls, tz=None):
+                return earlier
+
+        original = module.datetime
+        module.datetime = WoundBack
+        try:
+            self.tracker.start_work("P2", "T2")
+        finally:
+            module.datetime = original
+
+        self.assertEqual([p['main_project_name'] for p in self.tracker.data['projects']],
+                         ["P2", "P1"],
+                         "the later start was filed behind the earlier one")
+
     def test_start_work_records_last_started(self):
         """Starting work stamps the task and its project, not just their position."""
         self.tracker.add_main_project("P1")

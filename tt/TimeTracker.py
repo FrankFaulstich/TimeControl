@@ -1432,6 +1432,43 @@ class TimeTracker:
         self._save_data()
         return True, _("Main project '{demoted_name}' was demoted to a sub-project under '{parent_name}'.").format(demoted_name=main_project_to_demote_name, parent_name=new_parent_main_project_name)
 
+    def _next_started_at(self):
+        """
+        A start timestamp that is strictly later than every one recorded.
+
+        Most-recently-used ordering is derived by sorting on `last_started`,
+        so two stamps that are equal leave the order undecided - and a stable
+        sort then keeps the older one in front, which is exactly backwards.
+
+        That is not hypothetical. `datetime.now()` resolves to about 16
+        milliseconds on Windows, so two starts in quick succession - a click
+        followed by another, or the GUI and an MCP call - genuinely land on
+        the same value there. The clock can also step backwards, over a
+        daylight-saving change or an NTP correction.
+
+        So the wall clock is used when it is ahead of everything on record,
+        and nudged past the highest stamp when it is not. The result is still
+        a real timestamp a person can read; it is only ever adjusted by
+        microseconds, and it goes back to following the clock as soon as the
+        clock has caught up.
+        """
+        now = datetime.now()
+        highest = None
+        for project in self.data.get("projects", []):
+            for value in [project.get("last_started")] + \
+                         [t.get("last_started") for t in project.get("tasks", [])]:
+                if value and (highest is None or value > highest):
+                    highest = value
+        if highest is None:
+            return now.isoformat()
+        try:
+            latest = datetime.fromisoformat(highest)
+        except (TypeError, ValueError):
+            return now.isoformat()
+        if now > latest:
+            return now.isoformat()
+        return (latest + timedelta(microseconds=1)).isoformat()
+
     @staticmethod
     def _sort_by_last_started(items):
         """
@@ -1476,7 +1513,7 @@ class TimeTracker:
             # Add the new time entry. The uid is what lets a specific entry be
             # referred to at all - "the last element of some array" stops
             # meaning anything once two machines hold their own copy.
-            started_at = datetime.now().isoformat()
+            started_at = self._next_started_at()
             new_entry = {
                 "uid": _new_uid(),
                 "start_time": started_at
