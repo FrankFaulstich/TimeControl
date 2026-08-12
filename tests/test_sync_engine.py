@@ -1,3 +1,4 @@
+import contextlib
 import os
 import shutil
 import sys
@@ -1059,35 +1060,61 @@ class TestWhenTheDiskItselfMisbehaves(EngineTestCase):
             os.remove(self.DATA)
         super().tearDown()
 
+    @contextlib.contextmanager
+    def _writes_fail(self):
+        """
+        A full disk, or a folder that has gone read-only.
+
+        Injected at the last step of the atomic write rather than by taking
+        the permissions off the directory: chmod does not stop a write on
+        Windows, where the test would then pass for the wrong reason - and
+        did, until CI said so.
+        """
+        real = os.replace
+
+        def refuse(src, dst, *a, **k):
+            if str(dst).startswith(self.tmp):
+                raise OSError(28, "No space left on device")
+            return real(src, dst, *a, **k)
+
+        os.replace = refuse
+        try:
+            yield
+        finally:
+            os.replace = real
+
     def test_state_that_cannot_be_written_is_shrugged_off_by_default(self):
         """
         When the cycle ran and what went wrong are a convenience. Losing them
         costs a line on the settings screen, so it must not cost the sync.
         """
-        os.chmod(self.tmp, 0o500)
-        try:
+        with self._writes_fail():
             state = sync_engine.write_state({'last_error': 'unreachable'})
-        finally:
-            os.chmod(self.tmp, 0o700)
         self.assertIsInstance(state, dict)
 
     def test_but_the_cursor_refuses_to_fail_quietly(self):
-        os.chmod(self.tmp, 0o500)
-        try:
+        with self._writes_fail():
             with self.assertRaises(OSError):
                 sync_engine.write_state({'base_seq': 5}, required=True)
-        finally:
-            os.chmod(self.tmp, 0o700)
 
     def test_a_cycle_that_cannot_write_locally_says_so(self):
         self.queue('project.create', uid=P1, f={'name': 'P'})
-        os.chmod(self.tmp, 0o500)
+        self.server.add_foreign('project.create', uid='c' * 16, f={'name': 'C'})
+
+        real_append = sync_engine._append_inbox
+
+        def refuse(record):
+            raise OSError(28, "No space left on device")
+        sync_engine._append_inbox = refuse
         try:
             result = sync_engine.run_cycle(self.outbox)
         finally:
-            os.chmod(self.tmp, 0o700)
+            sync_engine._append_inbox = real_append
+
         self.assertFalse(result['ok'])
-        self.assertIn(result['error'], ('local_io', 'unreachable'))
+        self.assertEqual(result['error'], 'local_io')
+        self.assertEqual(len(self.outbox.pending()), 1,
+                         "the change was dropped although nothing was recorded")
 
     def test_a_damaged_inbox_line_costs_that_line_and_no_more(self):
         self.server.add_foreign('project.create', uid=P1, f={'name': 'Remote'})

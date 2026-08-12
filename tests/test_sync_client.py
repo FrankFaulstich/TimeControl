@@ -127,6 +127,10 @@ class TestSyncClientCredentials(unittest.TestCase):
         self.assertEqual(result['error'], 'https_required')
         post.assert_not_called()
 
+    @unittest.skipIf(os.name == 'nt',
+                     "chmod only toggles the read-only bit on Windows; what "
+                     "keeps the file private there is the ACL on the user's "
+                     "own profile directory, which this cannot assert on")
     def test_credential_file_is_owner_only_on_posix(self):
         with patch('tt.sync_client.requests.post', return_value=_Response({'ok': True, 'token': 't'})):
             sync_client.login('https://x.de/tc', 'frank', 'pw')

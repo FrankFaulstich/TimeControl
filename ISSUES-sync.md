@@ -201,22 +201,22 @@ selectively.
 
 ---
 
-## 11. Sync: the Windows lock path and the frozen build are unverified
+## 11. Sync: the frozen build has never been checked
 
 **Labels:** `task`, `sync`, `windows`
 
-Two things have never been exercised on the platform they exist for:
+`TimeControl.spec` gained the sync modules under `hiddenimports`, because
+`sl/SL_Menu.py` is shipped as data and PyInstaller never scans data files for
+imports. That fix has not been checked against an actual build.
 
-- `tt/filelock.py`’s `msvcrt` branch is covered across processes but not
-  between two threads of one process — which is precisely what the sync worker
-  and the drawing thread do. The POSIX guarantee comes from `flock` attaching
-  to the open file description and does not transfer.
-- `TimeControl.spec` gained the sync modules under `hiddenimports`, because
-  `sl/SL_Menu.py` is shipped as data and never scanned for imports. That fix
-  has not been checked against an actual PyInstaller build.
+If the modules are missing, `SYNC_AVAILABLE` becomes `False` and the feature
+silently disappears — the failure mode gives no clue at all. Worth building
+once and confirming the settings section is there.
 
-If the sync modules are missing from a build, `SYNC_AVAILABLE` becomes `False`
-and the feature silently disappears — the failure mode gives no clue.
+*(The other half of this — whether `tt/filelock.py`’s `msvcrt` branch excludes
+two threads of one process, which is what the sync worker and the drawing
+thread do — is now answered: `test_two_threads_of_one_process_exclude_each_other`
+runs on the Windows CI job and passes.)*
 
 ---
 
