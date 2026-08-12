@@ -116,6 +116,9 @@ class UpdateTaskRequest(BaseModel):
     frequency: Optional[str] = None
     userdefined_days: Optional[int] = None
     priority: Optional[int] = Field(default=None, ge=0, le=9)
+    # A PATCH omits what it doesn't want to change, so an absent due_date
+    # cannot double as "remove the due date" - that needs its own field.
+    clear_due_date: bool = False
 
 
 class MoveTaskRequest(BaseModel):
@@ -294,6 +297,7 @@ def update_task(main_project_name: str, task_name: str, body: UpdateTaskRequest,
         body.userdefined_days,
         body.priority,
         task_id=task_id,
+        clear_due_date=body.clear_due_date,
     )
     return SuccessResult(success=updated)
 

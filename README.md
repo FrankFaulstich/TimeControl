@@ -14,6 +14,7 @@ A simple, object-oriented Python application for tracking time spent on projects
   - [Usage ⚙️](#usage-️)
     - [Running the Streamlit GUI](#running-the-streamlit-gui)
   - [MCP Server 🤖](#mcp-server-)
+  - [Synchronising Two Machines 🔄](#synchronising-two-machines-)
   - [Building the Documentation 📚](#building-the-documentation-)
   - [Data Storage 🗄️](#data-storage-️)
   - [Contributing 🤝](#contributing-)
@@ -43,6 +44,8 @@ A simple, object-oriented Python application for tracking time spent on projects
 - **Inactivity Tracking:** Identify main projects and tasks that have been inactive for a configurable duration (tasks due today or in the future are never counted as inactive, since they're still actively scheduled).
 
 **Local Data Storage:** All project data and time entries are saved in a `data.json` file in the application's directory.
+
+**Synchronisation (optional):** Keep one person's `data.json` in step across their own two or three computers, via a small PHP server you host yourself. Off by default, and everything above works exactly the same without it — see [Synchronising Two Machines](#synchronising-two-machines-) below.
 
 **Automatic Updates:** The app checks GitHub for a new version once per session and, if one is available, shows a notification right under the version number on every screen, with a one-click button that downloads, installs, and restarts into it.
 
@@ -122,19 +125,27 @@ The application can be configured via the `config.json` file.
     "mcp_transport": "http",
     "mcp_port": 8700,
     "data_file": "data.json",
-    "css_file": "style.css"
+    "css_file": "style.css",
+    "sync": {
+        "enabled": false,
+        "base_url": "https://example.com/tc/",
+        "interval_minutes": 5
+    }
 }
 ```
 
 - **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions.
 - **`language`**: The user interface language ("en", "de", "fr", "es", "cs").
 - **`soap_port`**: The port on which the SOAP server listens (default: 8600).
-- **`rest_port`**: The port on which the REST server listens (default: 8800). See [REST API](#rest-api-).
+- **`rest_port`**: The port on which the REST server listens (default: 8800). See [examples/REST](examples/REST) for runnable client examples.
 - **`mcp_server_enabled`**: Whether `TimeTrackerSL_GUI.py` also starts the MCP server when `mcp_transport` is `"http"` (default: `false`). See [MCP Server](#mcp-server-).
 - **`mcp_transport`**: `"http"` or `"stdio"` (default: `"http"`). See [MCP Server](#mcp-server-).
 - **`mcp_port`**: The port on which the MCP server listens when using the `"http"` transport (default: 8700).
+- **`sync`**: Optional, and absent by default — which means off. `enabled` switches synchronisation on, `base_url` is the address of your own server, and `interval_minutes` is how often it runs in the background (default: 5). See [Synchronising Two Machines](#synchronising-two-machines-).
 
-All of these MCP settings can also be changed from the GUI, under **Settings → MCP Server Settings**.
+All of these MCP settings can also be changed from the GUI, under **Settings → MCP Server Settings**, and the sync settings under **Settings → Sync Server Settings**.
+
+Your sync **username and password are deliberately not in this file.** Signing in stores an access token in the per-user configuration directory instead — `%APPDATA%\TimeControl\` on Windows, `~/.config/TimeControl/` elsewhere. That way you can copy `config.json` to your second machine to give it the same server without handing it your credentials, and the token never travels with the project directory into a backup or a repository.
 
 ---
 
@@ -196,7 +207,7 @@ python TimeTrackerMCP_Server.py
 - **Email import:** `fetch_emails_to_tasks` (requires email import to be configured, see above).
 - **Misc:** `get_version`.
 
-`update_task` only changes the fields you actually pass — in particular, a task's due date is preserved automatically if you don't specify one, since updating it always requires re-sending the current value under the hood.
+`update_task` only changes the fields you actually pass — a task's due date included, so omitting it leaves it as it is. Removing a due date is a separate request: pass `clear_due_date`.
 
 > ⚠️ **Destructive tools:** `delete_task`, `delete_all_closed_tasks`, and `delete_main_project` permanently delete data and cannot be undone. An MCP client should always confirm with you before calling them.
 
@@ -216,6 +227,46 @@ python TimeTrackerMCP_Server.py
 Use the absolute path to the script - Claude Desktop (like most MCP clients) launches it with an undefined working directory, not necessarily the repo root, and does not reliably support a `cwd` override for that even though some setups suggest one. The server accounts for this itself: it always resolves `config.json`/`data.json` relative to its own location on disk, not the process's working directory, so no `cwd` entry is needed.
 
 Claude Desktop then starts and stops the server itself - it does not need to be running beforehand, and the GUI does not start a second copy of it (see above). Alternatively, with `"mcp_transport": "http"` and the server running (either via the GUI or stand-alone), point Claude Desktop at the Streamable HTTP endpoint, `http://127.0.0.1:8700/mcp` (adjust the port to match `mcp_port`), instead. Consult Claude Desktop's current documentation for the exact configuration steps, since these have changed between versions.
+
+## Synchronising Two Machines 🔄
+
+TimeControl can keep **one person's** `data.json` in step across their own two or three computers — a desktop and a laptop, say. It is entirely optional and off by default: without it the application works exactly as it always has, storing everything locally and talking to nobody.
+
+This is deliberately **not** a collaboration feature. There is one document per account, and it is yours.
+
+### What you need
+
+A `data.json` cannot simply be copied back and forth — whichever copy is written last would silently destroy the other machine's afternoon. So the machines exchange *intentions* ("set the priority of task X to 3") through a small server that you host, which keeps them in an append-only log and hands each machine whatever it has not seen yet.
+
+That server is in [`php-server/`](php-server/). It is plain PHP with no database and no dependencies, and it runs on ordinary shared web hosting — the kind with an FTP login and no shell access. Installation, the security model and the exact API are described in [php-server/README.md](php-server/README.md).
+
+### Setting it up
+
+1. Upload the contents of `php-server/tc/` to your web space and run the installer once, following [php-server/README.md](php-server/README.md). Create yourself an account while you are there.
+2. In the GUI, open **Settings → Sync Server Settings**.
+3. Enter the **server address** (it must start with `https://`), tick **Enable synchronisation**, and press **Save**. Save it before signing in — the sign-in reads the address from disk, not from the text box.
+4. Enter your **username** and **password** and press **Sign in**.
+5. Repeat steps 2–4 on the second machine.
+
+Whichever machine reaches an empty server first offers what it already has. A machine joining later offers its own document too, so nothing built up before you switched synchronisation on is left behind.
+
+### How it behaves
+
+Synchronisation runs in the background, every few minutes and whenever you switch to a different view. **Nothing in the interface ever waits for it** — a server that has gone away costs you a sync, never a pause. Changes you make while offline queue up and go out when the connection returns.
+
+When the same task is edited on both machines, changes to *different* fields both survive; for the *same* field, whichever reached the server later wins. Starting work on one machine ends a session left running on the other, at the moment the new one began, so no stretch of time is counted twice.
+
+**Deleting a task discards its recorded hours on both machines.** That is what deleting has always done locally, and both sides have to agree or the two documents drift apart. If work was booked on the other machine and had not yet been sent when you deleted the task, it is gone — the app says so rather than letting it pass unnoticed, but it cannot bring it back.
+
+The status line under the version number appears only when something needs you — a sign-in that has expired, or time that was discarded. **Settings → Sync Server Settings** shows when the last sync ran and how much is still waiting to be sent.
+
+### Limitations worth knowing
+
+Only the GUI drives synchronisation. Changes made through the MCP, REST or SOAP interfaces are recorded and queued, but they leave the machine when the GUI is running.
+
+The server's log currently grows without bound; compaction is planned but not yet implemented, so a machine that has been away for a very long time replays a lot of history to catch up.
+
+---
 
 ## Building the Documentation 📚
 
@@ -248,19 +299,30 @@ The `data.json` file has the following structure:
 
 ```json
 {
+  "schema_version": 2,
+  "next_id": 7,
   "projects": [
     {
+      "uid": "9f3a1c40b27e5d81",
       "main_project_name": "Example Main Project",
+      "status": "open",
+      "last_started": "YYYY-MM-DDTHH:MM:SS.ffffff",
       "tasks": [
         {
+          "uid": "1b7c9e02a4d6f835",
+          "id": 3,
           "task_name": "Example Task 1",
           "status": "open",
+          "priority": 0,
+          "last_started": "YYYY-MM-DDTHH:MM:SS.ffffff",
           "time_entries": [
             {
+              "uid": "c5e8017da39b642f",
               "start_time": "YYYY-MM-DDTHH:MM:SS.ffffff",
               "end_time": "YYYY-MM-DDTHH:MM:SS.ffffff"
             },
             {
+              "uid": "77aa10bc9e3d5f24",
               "start_time": "YYYY-MM-DDTHH:MM:SS.ffffff"
               // "end_time" is missing if the entry is still active
             }
@@ -270,11 +332,21 @@ The `data.json` file has the following structure:
       ]
     },
     // ... other main projects
+  ],
+  "_deleted": [
+    { "uid": "0e4d8f21ab6c37e9", "kind": "task", "at": "YYYY-MM-DDTHH:MM:SS.ffffff" }
   ]
 }
 ```
 
 Time entries are stored in **ISO 8601 format** (e.g., `"2025-09-12T09:30:00.123456"`). If an `end_time` is missing for a `time_entry`, it means that time tracking is currently active for that task.
+
+Older files are migrated automatically the first time they are opened; nothing needs to be done by hand. The fields added in schema 2 exist for [synchronisation](#synchronising-two-machines-) and are harmless without it:
+
+- **`uid`** — a 16-character identifier on every project, task and time entry, generated where the object was created and never reused. It is what lets two machines agree that they are talking about the same task even though each numbers its own.
+- **`id`** — the short integer handle used by the GUI and the MCP/REST/SOAP calls. Local to one machine, and the same task may carry different ones on different computers.
+- **`last_started`** — when work on this project or task last began, so "most recently used" survives a merge rather than depending on the order of a list.
+- **`_deleted`** — a record of what has been deleted, kept for 90 days. Without it a deletion here plus any edit there would resurrect the object on the next sync, and again on every sync after that.
 
 ---
 

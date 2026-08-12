@@ -3,6 +3,7 @@ import os
 import tempfile
 import imaplib
 import re
+import uuid
 import email
 from email.header import decode_header
 from i18n import _
@@ -32,17 +33,66 @@ except ImportError:
     parse_version = None
 
 
+def _new_uid():
+    """
+    Returns a fresh identifier for a project, task or time entry.
+
+    This is deliberately NOT the same thing as a task's integer 'id'.
+    That one is a purely local counter (see next_id) and may legitimately
+    differ between two machines holding the very same task - it exists so
+    the GUI and the MCP/REST/SOAP interfaces have a short handle to pass
+    around. This identifier, by contrast, is generated randomly, so two
+    machines editing offline never produce the same one for different
+    objects. It is what an entity can be addressed by across machines.
+
+    16 hex characters are 64 bits of randomness. For the few tens of
+    thousands of entities a personal time tracker accumulates over years,
+    the chance of a collision is negligible, while keeping every stored
+    record half the length a full uuid4 would add.
+
+    :return: A 16-character hexadecimal identifier.
+    :rtype: str
+    """
+    return uuid.uuid4().hex[:16]
+
+
+# The task attributes that mean the same thing on every machine. Deliberately
+# excluded: 'uid' (it is the address, not a field), 'id' (a local counter that
+# is allowed to differ between machines) and 'time_entries' (carried by their
+# own operations, so a task and its entries can be reconciled independently).
+TASK_SYNC_FIELDS = (
+    "task_name", "status", "due_date", "today", "note",
+    "recurring", "frequency", "userdefined_days", "priority", "last_started",
+)
+
+
+def _task_fields(task):
+    """Returns the syncable attributes of a task."""
+    return {k: task.get(k) for k in TASK_SYNC_FIELDS if k in task}
+
+
 class TimeTracker:
     """
     Manages time tracking for various main and sub-projects.
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "3.32"
+    VERSION = "4.1"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
     HIDDEN_PROJECT = "hide"
+    # Shape of data.json. 1 = the implicit, unstamped original layout;
+    # 2 added a 'uid' to every project/task/time entry, a 'last_started'
+    # timestamp, and the '_deleted' tombstone list. Stamped so a migration
+    # can be recognised as already done rather than re-derived field by
+    # field on every start.
+    SCHEMA_VERSION = 2
+    # How long a tombstone is kept before it is swept up. This has to stay
+    # comfortably longer than the longest stretch a copy of the data might
+    # plausibly go without being reconciled: forget a deletion here while
+    # another copy still holds the object, and the object comes back.
+    TOMBSTONE_RETENTION_DAYS = 90
     # Hard ceiling per package for the pip-install subprocess below. pip's own
     # request/retry timeouts only bound its HTTP phase, not the DNS lookup
     # that happens first - with no internet connection that lookup can hang
@@ -52,7 +102,7 @@ class TimeTracker:
     # case, where subprocess's timeout=<N> kills the pip child outright.
     PIP_INSTALL_TIMEOUT = 120
 
-    def __init__(self, file_path=None):
+    def __init__(self, file_path=None, op_outbox=None):
         """
         Initializes the TimeTracker, checks for dependencies, and loads data from the JSON file.
 
@@ -60,21 +110,63 @@ class TimeTracker:
                           If None, the path is read from config.json (key 'data_file').
                           Defaults to 'data.json'.
         :type file_path: str
+        :param op_outbox: Where changes are recorded for the sync server. Left
+                          as None it is derived from config.json, which for
+                          any installation without synchronisation switched on
+                          - including every one that predates the feature -
+                          means no queue and no recording at all. Passing one
+                          explicitly is what the tests do.
         """
+        config = {}
+        if os.path.exists('config.json'):
+            try:
+                with open('config.json', 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+            except (IOError, json.JSONDecodeError):
+                config = {}
+
         if file_path is None:
-            file_path = 'data.json'
-            if os.path.exists('config.json'):
-                try:
-                    with open('config.json', 'r', encoding='utf-8') as f:
-                        config = json.load(f)
-                        file_path = config.get('data_file', 'data.json')
-                except (IOError, json.JSONDecodeError):
-                    pass
+            file_path = config.get('data_file', 'data.json') if config else 'data.json'
 
         self.file_path = file_path
+        self.op_outbox = op_outbox
+        if self.op_outbox is None:
+            try:
+                from tt.sync_outbox import default_outbox_if_enabled
+                self.op_outbox = default_outbox_if_enabled(config)
+            except ImportError:
+                self.op_outbox = None
+
         self.data = self._load_data()
         if self._migrate_data_structure():
+            # Migration is not a user action - it changes the shape of the
+            # document, not its content - so it is deliberately not recorded
+            # as operations. The other machine performs the same migration on
+            # its own copy.
             self._save_data()
+
+    def _emit(self, op, **fields):
+        """
+        Records one change for the sync server.
+
+        Does nothing at all when synchronisation is off, which is the default
+        and the only state an installation without a configured server can be
+        in.
+
+        Failures here are swallowed on purpose. This runs inside every
+        mutating operation, and a queue that cannot be written - a full disk,
+        a lock another process is sitting on - must not stop the user from
+        tracking their time. The cost is that the change is not synced; the
+        cost of the alternative is that the app stops working.
+
+        :param op: One of the operation names the server accepts.
+        """
+        if self.op_outbox is None:
+            return
+        try:
+            self.op_outbox.append(op, **fields)
+        except Exception:
+            pass
 
     def initialize_dependencies(self):
         """
@@ -151,11 +243,40 @@ class TimeTracker:
         else:
             return {"projects": []}
 
+    def reload_data(self):
+        """
+        Re-reads the data file from disk and brings it up to the current schema.
+
+        Callers that only want to pick up changes another process made used to
+        reach for _load_data() directly, which hands back whatever the file
+        happens to hold. Migration runs in __init__ alone, so the refreshed
+        document skipped it - and the rest of this class then reads fields it
+        assumes are present (add_task takes self.data["next_id"] with no
+        guard). That holds together while every writer runs this same version.
+        It stops holding when the file arrives from somewhere else: a restored
+        backup, a copy written by an older version, and in future one
+        reconciled with another machine.
+
+        If the file cannot be read the exception propagates and the previously
+        loaded data is left untouched, so a caller can treat a transient
+        failure as "keep what we have".
+        """
+        self.data = self._load_data()
+        if self._migrate_data_structure():
+            self._save_data()
+
     def _migrate_data_structure(self):
         """
         Ensures that the data structure is up to date.
         - Adds 'status': 'open' to sub-projects if missing.
-        
+        - Brings a schema-1 file up to schema 2: a 'uid' on every project,
+          task and time entry, a 'last_started' timestamp, and the
+          '_deleted' tombstone list (see SCHEMA_VERSION).
+
+        Every step keys off the presence of the individual field rather
+        than off the version stamp alone, so the migration stays idempotent
+        and a file written by a mix of app versions still converges.
+
         :return: True if data was changed, otherwise False.
         :rtype: bool
         """
@@ -165,17 +286,24 @@ class TimeTracker:
             self.data["projects"] = []
             data_changed = True # The data object itself was changed
 
-        # Initialize or update next_id
-        if "next_id" not in self.data:
-            max_id = 0
-            for project in self.data.get("projects", []):
-                for task in project.get("tasks", []):
-                    try:
-                        # Try to read existing integer IDs
-                        tid = int(task.get("id"))
-                        if tid > max_id: max_id = tid
-                    except (ValueError, TypeError, KeyError):
-                        pass
+        # Initialize next_id - or lift it back above the highest id actually
+        # in use. This used to run only when the key was missing entirely and
+        # never re-validated afterwards, so a file that gained tasks from
+        # somewhere else (a restored backup, a hand edit, and in future a
+        # sync) could end up with the counter sitting at or below a live id.
+        # The next add_task() would then hand out an id a task already has,
+        # and since nothing anywhere checks id uniqueness that duplicate
+        # stays silent right up until delete_task() removes both of them.
+        max_id = 0
+        for project in self.data.get("projects", []):
+            for task in project.get("tasks", []):
+                try:
+                    tid = int(task.get("id"))
+                except (ValueError, TypeError):
+                    continue
+                if tid > max_id:
+                    max_id = tid
+        if self.data.get("next_id") is None or self.data["next_id"] <= max_id:
             self.data["next_id"] = max_id + 1
             data_changed = True
 
@@ -188,6 +316,11 @@ class TimeTracker:
             # Migration: Rename sub_projects to tasks
             if "sub_projects" in project:
                 project["tasks"] = project.pop("sub_projects")
+                data_changed = True
+
+            # Schema 2: a machine-independent identity (see _new_uid).
+            if not project.get("uid"):
+                project["uid"] = _new_uid()
                 data_changed = True
 
             for task in project.get("tasks", []):
@@ -225,6 +358,60 @@ class TimeTracker:
                     task["id"] = self.data["next_id"]
                     self.data["next_id"] += 1
                     data_changed = True
+
+                # Schema 2: identity, and the time entries below it.
+                if not task.get("uid"):
+                    task["uid"] = _new_uid()
+                    data_changed = True
+
+                for entry in task.get("time_entries", []):
+                    if not entry.get("uid"):
+                        entry["uid"] = _new_uid()
+                        data_changed = True
+
+                # Schema 2: 'last_started' will replace the implicit
+                # most-recently-used ordering that start_work() currently
+                # expresses by moving entries to the front of the list -
+                # array position is state two machines would otherwise have
+                # to agree on. Seeded from the newest time entry so the
+                # existing ordering survives the switch instead of every
+                # task starting out equal.
+                if "last_started" not in task:
+                    starts = [e.get("start_time") for e in task.get("time_entries", []) if e.get("start_time")]
+                    task["last_started"] = max(starts) if starts else None
+                    data_changed = True
+
+            if "last_started" not in project:
+                task_starts = [t["last_started"] for t in project.get("tasks", []) if t.get("last_started")]
+                project["last_started"] = max(task_starts) if task_starts else None
+                data_changed = True
+
+        # Schema 2: deletions have to leave a trace. Without one, a machine
+        # receiving an update cannot tell 'this was deleted elsewhere' apart
+        # from 'this does not exist here yet', and deleted items come back on
+        # every merge. Nothing writes to this list yet - that lands together
+        # with the sync layer.
+        if "_deleted" not in self.data:
+            self.data["_deleted"] = []
+            data_changed = True
+
+        # Sweep expired tombstones. They only need to outlive the moment every
+        # copy of the data has certainly seen them; keeping them for good would
+        # grow the document without bound. Done here rather than on write so a
+        # long-idle file is tidied on the next start, and so the sweep cannot
+        # run in the middle of a deletion.
+        cutoff = (datetime.now() - timedelta(days=self.TOMBSTONE_RETENTION_DAYS)).isoformat()
+        still_relevant = [t for t in self.data["_deleted"] if t.get("at", "") >= cutoff]
+        if len(still_relevant) != len(self.data["_deleted"]):
+            self.data["_deleted"] = still_relevant
+            data_changed = True
+
+        # Stamped last, so a run that fails part way through is not recorded
+        # as a completed migration.
+        if self.data.get("schema_version") != self.SCHEMA_VERSION:
+            self.data["schema_version"] = self.SCHEMA_VERSION
+            data_changed = True
+
         return data_changed
 
     def _save_data(self):
@@ -352,26 +539,40 @@ class TimeTracker:
         Helper method to find a task by ID or name within a main project.
         If searching by name and duplicates exist, it prioritizes 'open' tasks.
         
+        An id, when given, decides on its own: it names exactly one task,
+        while names are not unique - nothing stops two tasks in the same
+        project from sharing one. Both checks used to sit in the same pass of
+        one loop, so a task that merely matched the name could be returned
+        ahead of the task that actually carried the requested id, and callers
+        pass both together as a matter of course.
+
         :param main_project_name: The name of the main project.
         :param task_name: The name of the task (optional).
         :param task_id: The unique ID of the task (optional, preferred).
         :return: The task dictionary or None if not found.
         """
         project = self._get_project(main_project_name)
-        if project:
-            fallback_task = None
+        if not project:
+            return None
+
+        if task_id is not None:
             for task in project["tasks"]:
-                if task_id is not None:
-                    # Robust comparison handling integer and string IDs
-                    if str(task.get("id")) == str(task_id):
-                        return task
-                if task_name and task["task_name"] == task_name:
-                    if task.get("status") == self.STATUS_OPEN:
-                        return task
-                    if fallback_task is None:
-                        fallback_task = task
-            return fallback_task
-        return None
+                # Robust comparison handling integer and string IDs
+                if str(task.get("id")) == str(task_id):
+                    return task
+            return None
+
+        if not task_name:
+            return None
+
+        fallback_task = None
+        for task in project["tasks"]:
+            if task["task_name"] == task_name:
+                if task.get("status") == self.STATUS_OPEN:
+                    return task
+                if fallback_task is None:
+                    fallback_task = task
+        return fallback_task
 
     def add_main_project(self, main_project_name):
         """
@@ -381,11 +582,15 @@ class TimeTracker:
         :type main_project_name: str
         """
         new_project = {
+            "uid": _new_uid(),
             "main_project_name": main_project_name,
             "tasks": [],
-            "status": self.STATUS_OPEN
+            "status": self.STATUS_OPEN,
+            "last_started": None
         }
         self.data["projects"].append(new_project)
+        self._emit('project.create', uid=new_project["uid"],
+                   f={"name": main_project_name, "status": self.STATUS_OPEN})
         self._save_data()
 
     def list_main_projects(self, status_filter='all'):
@@ -408,6 +613,70 @@ class TimeTracker:
                 })
         return projects
 
+    def _record_deletion(self, entity, kind):
+        """
+        Notes that one project or task was deleted on purpose.
+
+        Deletion is the one change that cannot be recognised from the data
+        that is left behind: an object another copy has and this one does not
+        is either an object this copy has not been told about yet, or one it
+        deleted - and those look identical. This note is what tells them
+        apart, so a deleted object is not handed back on the next reconcile.
+
+        Only real deletions belong here. Removing an entry from a list is not
+        by itself one: move_task() takes a task out of one project to put it
+        into another, and the task lives on. Recording that as a deletion
+        would destroy it everywhere else.
+
+        :param entity: The project or task dict being deleted.
+        :type entity: dict
+        :param kind: Which level it sits on - 'project' or 'task'.
+        :type kind: str
+        """
+        uid = entity.get("uid")
+        if not uid:
+            # Written by a version that predates uids (a rollback, say).
+            # There is no identity to point at, so there is nothing useful
+            # to record - better an unrecorded deletion than a note naming
+            # nothing.
+            return
+        at = datetime.now().isoformat()
+        self.data.setdefault("_deleted", []).append({
+            "uid": uid,
+            "kind": kind,
+            "at": at
+        })
+        # Told to the sync server from here rather than from each of the five
+        # call sites, so the operations and the tombstones cannot drift apart
+        # - they are now the same decision, taken once. In particular the
+        # deliberate omissions carry over for free: move_task never reaches
+        # this method, and time entries never get a note of their own.
+        #
+        # The moment is sent along. The other machine keeps a note of its own
+        # and expires it after ninety days; with nothing to date it from, that
+        # note is swept on the very next start and the deletion it was
+        # recording can then be undone by any later edit.
+        self._emit(kind + '.delete', uid=uid, ts=at)
+
+    def _record_project_deletion(self, project):
+        """
+        Notes a deleted project together with every task that went with it.
+
+        Time entries deliberately get no note of their own: nothing in this
+        class deletes a single entry, so an entry only ever disappears along
+        with the task holding it - and that task's note already accounts for
+        it. One note per project plus one per task keeps the list bounded
+        while still covering the case where the other copy has meanwhile
+        moved a task out of this project, which a project-only note would
+        wrongly take down with it.
+
+        :param project: The project dict being deleted.
+        :type project: dict
+        """
+        self._record_deletion(project, "project")
+        for task in project.get("tasks", []):
+            self._record_deletion(task, "task")
+
     def delete_main_project(self, main_project_name):
         """
         Deletes a main project along with all associated tasks and time entries.
@@ -418,10 +687,15 @@ class TimeTracker:
         :rtype: bool
         """
         initial_count = len(self.data["projects"])
+        # Duplicate project names are creatable, and the filter below drops
+        # every match - so collect them all rather than assuming there is one.
+        removed = [p for p in self.data["projects"] if p["main_project_name"] == main_project_name]
         self.data["projects"] = [
             project for project in self.data["projects"] if project["main_project_name"] != main_project_name
         ]
         if len(self.data["projects"]) < initial_count:
+            for project in removed:
+                self._record_project_deletion(project)
             self._save_data()
             return True
         return False
@@ -445,6 +719,7 @@ class TimeTracker:
         project = self._get_project(old_name)
         if project:
             project["main_project_name"] = new_name
+            self._emit('project.set', uid=project.get("uid"), f={"name": new_name})
             self._save_data()
             return True
         return False
@@ -461,6 +736,7 @@ class TimeTracker:
         project = self._get_project(main_project_name)
         if project:
             project["status"] = self.STATUS_CLOSED
+            self._emit('project.set', uid=project.get("uid"), f={"status": self.STATUS_CLOSED})
             self._save_data()
             return True
         return False
@@ -477,6 +753,7 @@ class TimeTracker:
         project = self._get_project(main_project_name)
         if project:
             project["status"] = self.STATUS_OPEN
+            self._emit('project.set', uid=project.get("uid"), f={"status": self.STATUS_OPEN})
             self._save_data()
             return True
         return False
@@ -506,6 +783,7 @@ class TimeTracker:
         project = self._get_project(main_project_name)
         if project:
             new_task = {
+                "uid": _new_uid(),
                 "id": self.data["next_id"],
                 "task_name": task_name,
                 "time_entries": [],
@@ -516,10 +794,13 @@ class TimeTracker:
                 "recurring": recurring,
                 "frequency": frequency,
                 "userdefined_days": userdefined_days,
-                "priority": priority
+                "priority": priority,
+                "last_started": None
             }
             self.data["next_id"] += 1
             project["tasks"].append(new_task)
+            self._emit('task.create', uid=new_task["uid"],
+                       project=project.get("uid"), f=_task_fields(new_task))
             self._save_data()
             return True
         return False
@@ -613,6 +894,14 @@ class TimeTracker:
         """
         Removes the 'today' flag (⭐) from tasks that have a due date in the past.
         
+        Deliberately sends nothing to the sync server. Both machines run this
+        same sweep, from the same rule, against the same due dates, so each
+        reaches the identical result on its own. Sending it would spend
+        traffic saying something the other side already knows, and two
+        machines re-deriving and re-sending it could bounce it back and
+        forth. What the sweep reads from - the due date - is synced; what it
+        concludes is not.
+
         :return: True if any task was updated and saved.
         :rtype: bool
         """
@@ -632,6 +921,10 @@ class TimeTracker:
         Sets the 'today' flag (⭐) for tasks that have today's date as their due date
         and are not yet marked as 'today'.
         
+        Like cleanup_overdue_today_tasks above, this sends nothing to the
+        sync server: it is derived from the due date, which is synced, so the
+        other machine reaches the same conclusion by itself.
+
         :return: True if any task was updated and saved.
         :rtype: bool
         """
@@ -664,12 +957,18 @@ class TimeTracker:
         project = self._get_project(main_project_name)
         if project:
             initial_count = len(project["tasks"])
+            # Both filters below remove EVERY match, not just the first, so
+            # the removed set is collected the same way.
             if task_id is not None:
+                removed = [t for t in project["tasks"] if str(t.get("id")) == str(task_id)]
                 project["tasks"] = [t for t in project["tasks"] if str(t.get("id")) != str(task_id)]
             else:
+                removed = [t for t in project["tasks"] if t["task_name"] == task_name]
                 project["tasks"] = [t for t in project["tasks"] if t["task_name"] != task_name]
-            
+
             if len(project["tasks"]) < initial_count:
+                for task in removed:
+                    self._record_deletion(task, "task")
                 self._save_data()
                 return True
         return False
@@ -686,6 +985,7 @@ class TimeTracker:
             tasks = project.get("tasks", [])
             for i in range(len(tasks) - 1, -1, -1):
                 if tasks[i].get("status") == self.STATUS_CLOSED:
+                    self._record_deletion(tasks[i], "task")
                     del tasks[i]
                     deleted_count += 1
 
@@ -709,6 +1009,7 @@ class TimeTracker:
         task = self._get_task(main_project_name, task_name, task_id)
         if task:
             task["status"] = self.STATUS_CLOSED
+            self._emit('task.set', uid=task.get("uid"), f={"status": self.STATUS_CLOSED})
             self._save_data()
             return True
         return False
@@ -728,6 +1029,7 @@ class TimeTracker:
         task = self._get_task(main_project_name, task_name, task_id)
         if task:
             task["status"] = self.STATUS_OPEN
+            self._emit('task.set', uid=task.get("uid"), f={"status": self.STATUS_OPEN})
             self._save_data()
             return True
         return False
@@ -752,18 +1054,22 @@ class TimeTracker:
             task = self._get_task(main_project_name, old_task_name, task_id)
             if task:
                 task["task_name"] = new_task_name
+                self._emit('task.set', uid=task.get("uid"), f={"task_name": new_task_name})
                 self._save_data()
                 return True
         return False
 
-    def update_task(self, main_project_name, old_task_name, new_task_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, priority=None, task_id=None):
+    def update_task(self, main_project_name, old_task_name, new_task_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, priority=None, task_id=None, clear_due_date=False):
         """
-        Updates a task's properties.
+        Updates a task's properties. Every field is left as it is unless a
+        value for it is actually passed, the due date included - removing a
+        due date is asked for explicitly, via clear_due_date.
 
         :param main_project_name: Name of the main project.
         :param old_task_name: Current name of the task.
         :param new_task_name: New name (optional).
-        :param due_date: New due date (optional, ISO string or None).
+        :param due_date: New due date (optional, ISO string). None keeps the
+                         current one; use clear_due_date to remove it.
         :param today: New today status (optional, bool).
         :param note: New note (optional, str).
         :param status: New status (optional, str).
@@ -772,12 +1078,22 @@ class TimeTracker:
         :param userdefined_days: Days for userdefined frequency (optional, int).
         :param priority: Priority from 0 (lowest) to 9 (highest) (optional, int).
         :param task_id: Unique ID of the task (optional).
+        :param clear_due_date: Remove the task's due date (optional, bool).
+                               Takes precedence over due_date. Last in the
+                               signature so existing positional callers keep
+                               working.
         :return: True if successful.
         """
         project = self._get_project(main_project_name)
         if project:
             task = self._get_task(main_project_name, old_task_name, task_id)
             if task:
+                # Snapshot taken so the change can be reported as a difference
+                # rather than by listing the fields again here. That keeps the
+                # two from drifting when a field is added later, and means
+                # nothing is sent when a save turns out to change nothing.
+                before = _task_fields(task)
+
                 # Handle recurring task generation
                 is_completing = (status == self.STATUS_DONE and task.get("status") != self.STATUS_DONE)
                 is_recurring = recurring if recurring is not None else task.get("recurring", False)
@@ -788,8 +1104,16 @@ class TimeTracker:
                 if new_task_name:
                     task["task_name"] = new_task_name
 
-                # Update due_date (always update to what's provided)
-                task["due_date"] = due_date
+                # An omitted due_date means "unchanged", exactly like every
+                # other field here. It used to mean "clear", so a caller
+                # updating one unrelated field - a PATCH carrying just a
+                # priority, say - wiped the due date as a side effect, and
+                # with sync enabled dutifully propagated that to the user's
+                # other machines.
+                if clear_due_date:
+                    task["due_date"] = None
+                elif due_date is not None:
+                    task["due_date"] = due_date
 
                 # Update today status if provided
                 if today is not None:
@@ -812,6 +1136,11 @@ class TimeTracker:
                 if priority is not None:
                     task["priority"] = priority
 
+                after = _task_fields(task)
+                changed = {k: v for k, v in after.items() if before.get(k) != v}
+                if changed:
+                    self._emit('task.set', uid=task.get("uid"), f=changed)
+
                 self._save_data()
                 return True
         return False
@@ -826,6 +1155,7 @@ class TimeTracker:
         next_due = self._calculate_next_due_date(base_due, freq, ud_days)
 
         new_task = {
+            "uid": _new_uid(),
             "id": self.data["next_id"],
             "task_name": task["task_name"],
             "time_entries": [], # Start with a fresh, empty list for the new instance
@@ -836,10 +1166,13 @@ class TimeTracker:
             "recurring": True,
             "frequency": freq,
             "userdefined_days": ud_days,
-            "priority": priority
+            "priority": priority,
+            "last_started": None
         }
         self.data["next_id"] += 1
         project["tasks"].append(new_task)
+        self._emit('task.create', uid=new_task["uid"],
+                   project=project.get("uid"), f=_task_fields(new_task))
 
     def _calculate_next_due_date(self, base_due_str, frequency, ud_days):
         if base_due_str:
@@ -901,6 +1234,11 @@ class TimeTracker:
 
         if task_to_move:
             dest_project["tasks"].append(task_to_move)
+            # A move, not a delete-and-recreate: the task keeps its identity,
+            # so the other machine re-parents the very same object and its
+            # time entries travel with it untouched.
+            self._emit('task.move', uid=task_to_move.get("uid"),
+                       project=dest_project.get("uid"))
             self._save_data()
             return True, _("Task '{task_name}' moved successfully.").format(task_name=task_name)
         return False, _("Task '{task_name}' not found in '{main_name}'.").format(task_name=task_name, main_name=old_main_project_name)
@@ -940,16 +1278,73 @@ class TimeTracker:
         if task_index is None:
             return False, _("Task '{task_name}' not found in '{main_name}'.").format(task_name=task_name_to_promote, main_name=main_project_name)
 
-        # Remove task from old main project and get its data
+        # Remove task from old main project and get its data. The task itself
+        # does not survive this - its time entries are re-homed under the
+        # "General" task created below, but the task object is gone, so it
+        # needs a tombstone. The entries do not: they are being moved, and
+        # they keep the identity they already carry.
         task_data = source_project["tasks"].pop(task_index)
         time_entries = task_data.get("time_entries", [])
+        # The deletion is recorded further down, after the entries have been
+        # reported as re-parented. Recording it here would put the operations
+        # on the wire in the order "delete this task" then "move its entries
+        # somewhere else" - and the receiving machine, applying them in that
+        # order, would destroy the entries along with the task before being
+        # told where they were going.
 
-        # Create the new main project
+        # Create the new main project.
+        # The project and its task used to be stored bare - no id, no status,
+        # none of the other task fields - and were only completed by the
+        # migration on the next start. They are filled in here now, because a
+        # uid has to be assigned exactly once at creation; leaving the object
+        # half-built means the uid only appears later, on whichever machine
+        # happens to restart first. The time entries keep the uids they
+        # already carry: they are being moved, not recreated.
+        starts = [e.get("start_time") for e in time_entries if e.get("start_time")]
+        last_started = max(starts) if starts else None
         new_main_project = {
+            "uid": _new_uid(),
             "main_project_name": task_name_to_promote,
-            "tasks": [{"task_name": _("General"), "time_entries": time_entries}]
+            "tasks": [{
+                "uid": _new_uid(),
+                "id": self.data["next_id"],
+                "task_name": _("General"),
+                "time_entries": time_entries,
+                "status": self.STATUS_OPEN,
+                "due_date": None,
+                "today": False,
+                "note": "",
+                "recurring": False,
+                "frequency": "daily",
+                "userdefined_days": 1,
+                "priority": 0,
+                "last_started": last_started
+            }],
+            "status": self.STATUS_OPEN,
+            "last_started": last_started
         }
+        self.data["next_id"] += 1
         self.data["projects"].append(new_main_project)
+
+        # Reported as its parts rather than as one "promote" verb, so the
+        # other machine needs no rule for a compound restructuring: a project
+        # appears, a task appears inside it, the entries are re-parented, and
+        # the old task is deleted (by _record_deletion above). Each part is an
+        # operation the applier already knows, and the entries keep the
+        # identities they had, so no tracked time is recreated or lost.
+        general = new_main_project["tasks"][0]
+        self._emit('project.create', uid=new_main_project["uid"],
+                   f={"name": task_name_to_promote, "status": self.STATUS_OPEN,
+                      "last_started": last_started})
+        self._emit('task.create', uid=general["uid"],
+                   project=new_main_project["uid"], f=_task_fields(general))
+        for entry in time_entries:
+            if entry.get("uid"):
+                self._emit('entry.move', uid=entry["uid"], task=general["uid"])
+
+        # Only now: the entries have a new home on both machines.
+        self._record_deletion(task_data, "task")
+
         self._save_data()
         return True, _("Task '{task_name}' was promoted to a new main project.").format(task_name=task_name_to_promote)
 
@@ -995,17 +1390,99 @@ class TimeTracker:
         # Sort entries by start time to maintain chronological order
         all_time_entries.sort(key=lambda x: x['start_time'])
 
-        # 3. Create the new task
+        # 3. Create the new task. Stored complete rather than bare for the
+        #    same reason as in promote_task_to_project() above. The moved
+        #    time entries keep their existing uids.
+        starts = [e.get("start_time") for e in all_time_entries if e.get("start_time")]
         new_task = {
+            "uid": _new_uid(),
+            "id": self.data["next_id"],
             "task_name": main_project_to_demote_name,
-            "time_entries": all_time_entries
+            "time_entries": all_time_entries,
+            "status": self.STATUS_OPEN,
+            "due_date": None,
+            "today": False,
+            "note": "",
+            "recurring": False,
+            "frequency": "daily",
+            "userdefined_days": 1,
+            "priority": 0,
+            "last_started": max(starts) if starts else None
         }
+        self.data["next_id"] += 1
         new_parent_project["tasks"].append(new_task)
 
-        # 4. Remove the old main project and save
+        # Told to the other machine as its parts, as in promote above: the
+        # consolidated task appears, every entry is re-parented onto it, and
+        # only then is the old project (with its tasks) deleted. That order
+        # matters - re-homing the entries before their old task disappears is
+        # what keeps tracked time from being caught by the deletion.
+        self._emit('task.create', uid=new_task["uid"],
+                   project=new_parent_project.get("uid"), f=_task_fields(new_task))
+        for entry in all_time_entries:
+            if entry.get("uid"):
+                self._emit('entry.move', uid=entry["uid"], task=new_task["uid"])
+
+        # 4. Remove the old main project and save. The project and every task
+        #    it held are destroyed here - only their time entries live on, in
+        #    the single consolidated task created above - so both levels are
+        #    recorded, the entries are not.
+        self._record_project_deletion(project_to_demote)
         self.data["projects"].pop(project_to_demote_index)
         self._save_data()
         return True, _("Main project '{demoted_name}' was demoted to a sub-project under '{parent_name}'.").format(demoted_name=main_project_to_demote_name, parent_name=new_parent_main_project_name)
+
+    def _next_started_at(self):
+        """
+        A start timestamp that is strictly later than every one recorded.
+
+        Most-recently-used ordering is derived by sorting on `last_started`,
+        so two stamps that are equal leave the order undecided - and a stable
+        sort then keeps the older one in front, which is exactly backwards.
+
+        That is not hypothetical. `datetime.now()` resolves to about 16
+        milliseconds on Windows, so two starts in quick succession - a click
+        followed by another, or the GUI and an MCP call - genuinely land on
+        the same value there. The clock can also step backwards, over a
+        daylight-saving change or an NTP correction.
+
+        So the wall clock is used when it is ahead of everything on record,
+        and nudged past the highest stamp when it is not. The result is still
+        a real timestamp a person can read; it is only ever adjusted by
+        microseconds, and it goes back to following the clock as soon as the
+        clock has caught up.
+        """
+        now = datetime.now()
+        highest = None
+        for project in self.data.get("projects", []):
+            for value in [project.get("last_started")] + \
+                         [t.get("last_started") for t in project.get("tasks", [])]:
+                if value and (highest is None or value > highest):
+                    highest = value
+        if highest is None:
+            return now.isoformat()
+        try:
+            latest = datetime.fromisoformat(highest)
+        except (TypeError, ValueError):
+            return now.isoformat()
+        if now > latest:
+            return now.isoformat()
+        return (latest + timedelta(microseconds=1)).isoformat()
+
+    @staticmethod
+    def _sort_by_last_started(items):
+        """
+        Orders a list of projects or tasks most-recently-started first, in place.
+
+        Items that were never started (last_started is None) go to the end.
+        Python's sort is stable and stays stable with reverse=True, so among
+        those the original order survives - which for a never-started item is
+        the order it was created in, exactly where it sits today.
+
+        :param items: The list of project or task dicts to reorder.
+        :type items: list[dict]
+        """
+        items.sort(key=lambda item: item.get("last_started") or "", reverse=True)
 
     def start_work(self, main_project_name, task_name=None, task_id=None):
         """
@@ -1020,33 +1497,12 @@ class TimeTracker:
         :return: True if work was started successfully, otherwise False.
         :rtype: bool
         """
-        main_project = None
-        main_project_index = -1
-        task = None
-        task_index = -1
-
-        fallback_task = None
-        fallback_index = -1
-
-        # Find the main project and task along with their indices
-        for i, p in enumerate(self.data["projects"]):
-            if p["main_project_name"] == main_project_name:
-                main_project_index = i
-                main_project = p
-                for j, t in enumerate(p["tasks"]):
-                    if task_id is not None and str(t.get("id")) == str(task_id):
-                        task, task_index = t, j
-                        break
-                    if task_name and t["task_name"] == task_name:
-                        if t.get("status") == self.STATUS_OPEN:
-                            task, task_index = t, j
-                            break
-                        if fallback_task is None:
-                            fallback_task, fallback_index = t, j
-                break
-
-        if not task and fallback_task:
-            task, task_index = fallback_task, fallback_index
+        # This used to carry its own copy of the project/task lookup - along
+        # with its own copy of the bug where a name match could beat the id
+        # that was actually asked for. It now defers to _get_task, so the
+        # lookup rules live in exactly one place.
+        main_project = self._get_project(main_project_name)
+        task = self._get_task(main_project_name, task_name, task_id) if main_project else None
 
         if task and main_project:
             # Only stop the previous session once we know a new one can
@@ -1054,21 +1510,39 @@ class TimeTracker:
             # silently end whatever was running without replacing it.
             self.stop_work()
 
-            # Add the new time entry
+            # Add the new time entry. The uid is what lets a specific entry be
+            # referred to at all - "the last element of some array" stops
+            # meaning anything once two machines hold their own copy.
+            started_at = self._next_started_at()
             new_entry = {
-                "start_time": datetime.now().isoformat()
+                "uid": _new_uid(),
+                "start_time": started_at
             }
             task["time_entries"].append(new_entry)
 
-            # Move the task to the top of the list
-            if task_index > 0:
-                moved_task = main_project["tasks"].pop(task_index)
-                main_project["tasks"].insert(0, moved_task)
+            # Most-recently-used ordering used to be expressed by physically
+            # moving the task and its project to the front of their arrays,
+            # which made array position the only record of "what did I work on
+            # last". That is state, and state nothing can derive: two machines
+            # holding the same projects would have to agree on it, with no
+            # field to reconcile it from. It is carried by last_started now,
+            # and the arrays are merely kept in that order - so the ordering
+            # every caller sees is unchanged, but it is reproducible from the
+            # data rather than stored alongside it.
+            task["last_started"] = started_at
+            main_project["last_started"] = started_at
+            self._sort_by_last_started(main_project["tasks"])
+            self._sort_by_last_started(self.data["projects"])
 
-            # Move the main project to the top of the list
-            if main_project_index > 0:
-                moved_main_project = self.data["projects"].pop(main_project_index)
-                self.data["projects"].insert(0, moved_main_project)
+            # last_started is sent explicitly rather than left for the other
+            # machine to derive from the entry. Deriving it would work only
+            # as long as every entry ever reaches the other side, and the
+            # ordering the user sees should not depend on that.
+            self._emit('entry.add', uid=new_entry["uid"], task=task.get("uid"),
+                       start=started_at)
+            self._emit('task.set', uid=task.get("uid"), f={"last_started": started_at})
+            self._emit('project.set', uid=main_project.get("uid"),
+                       f={"last_started": started_at})
 
             self._save_data()
             return True
@@ -1164,7 +1638,20 @@ class TimeTracker:
         for project in reversed(self.data["projects"]):
             for task in reversed(project["tasks"]):
                 if task["time_entries"] and "end_time" not in task["time_entries"][-1]:
-                    task["time_entries"][-1]["end_time"] = datetime.now().isoformat()
+                    entry = task["time_entries"][-1]
+                    end_time = datetime.now().isoformat()
+                    # An entry must never end before it began. Every duration
+                    # in every report is these two subtracted from one another,
+                    # so a negative one does not announce itself - it just
+                    # quietly makes the numbers wrong. It can happen without
+                    # anyone doing something odd: a clock corrected backwards,
+                    # the switch off daylight saving, and later a session
+                    # closed on the strength of another machine's clock.
+                    start_time = entry.get("start_time")
+                    if start_time and end_time < start_time:
+                        end_time = start_time
+                    entry["end_time"] = end_time
+                    self._emit('entry.close', uid=entry.get("uid"), end=end_time)
                     self._save_data()
                     return True
         return False

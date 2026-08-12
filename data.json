@@ -8,22 +8,27 @@
           "time_entries": [
             {
               "start_time": "2025-09-23T14:59:56.164582",
-              "end_time": "2025-09-23T15:03:57.621970"
+              "end_time": "2025-09-23T15:03:57.621970",
+              "uid": "ecfc4573b7854aa0"
             },
             {
               "start_time": "2025-09-23T15:06:24.656467",
-              "end_time": "2025-09-16T12:27:56.221747"
+              "end_time": "2025-09-16T12:27:56.221747",
+              "uid": "0b90989c240d40b4"
             },
             {
               "start_time": "2025-09-16T12:27:56.222770",
-              "end_time": "2025-09-16T12:28:01.839785"
+              "end_time": "2025-09-16T12:28:01.839785",
+              "uid": "77e8b875225a4cc2"
             },
             {
               "start_time": "2025-09-17T12:09:04.645565",
-              "end_time": "2025-09-17T12:09:17.821338"
+              "end_time": "2025-09-17T12:09:17.821338",
+              "uid": "545b602b97904a58"
             },
             {
-              "start_time": "2025-10-31T08:09:59.292314"
+              "start_time": "2025-10-31T08:09:59.292314",
+              "uid": "a96e24f3f26c4631"
             }
           ],
           "status": "closed",
@@ -35,9 +40,13 @@
           "userdefined_days": 1,
           "task_name": "Sub Test 1",
           "id": 1,
-          "priority": 0
+          "priority": 0,
+          "uid": "93b37f66458b4257",
+          "last_started": "2025-10-31T08:09:59.292314"
         }
-      ]
+      ],
+      "uid": "447f8c25e7214b5a",
+      "last_started": "2025-10-31T08:09:59.292314"
     },
     {
       "main_project_name": "Test 3",
@@ -47,7 +56,8 @@
           "time_entries": [
             {
               "start_time": "2025-09-23T15:03:57.623331",
-              "end_time": "2025-09-23T15:05:02.930081"
+              "end_time": "2025-09-23T15:05:02.930081",
+              "uid": "54d8ffbe3ca2443e"
             }
           ],
           "status": "open",
@@ -59,15 +69,23 @@
           "userdefined_days": 1,
           "task_name": "Sub Test 2",
           "id": 2,
-          "priority": 0
+          "priority": 0,
+          "uid": "4a3e2dcca4bb47dd",
+          "last_started": "2025-09-23T15:03:57.623331"
         }
-      ]
+      ],
+      "uid": "823cf196386d44fb",
+      "last_started": "2025-09-23T15:03:57.623331"
     },
     {
       "main_project_name": "Test 4",
       "status": "open",
-      "tasks": []
+      "tasks": [],
+      "uid": "ab5f4711e92341e0",
+      "last_started": null
     }
   ],
-  "next_id": 3
+  "next_id": 3,
+  "_deleted": [],
+  "schema_version": 2
 }

@@ -270,7 +270,7 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
         result = self.mcp_server.set_today_flag_for_due_tasks()
         self.assertIn("Marked", result)
 
-    # --- update_task (and its due-date preservation safeguard) ---
+    # --- update_task (and its due-date handling) ---
 
     def test_update_task_not_found(self):
         self.mock_tracker.list_tasks.return_value = []
@@ -278,12 +278,13 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
         self.mock_tracker.update_task.assert_not_called()
         self.assertIn("not found", result)
 
-    def test_update_task_preserves_due_date_when_unspecified(self):
+    def test_update_task_passes_an_omitted_due_date_straight_through(self):
         """
-        Regression-style test for the due-date footgun: TimeTracker.update_task
-        always overwrites due_date with whatever is passed (defaulting to
-        None), so omitting it here must resolve to the task's *current*
-        due date instead of silently clearing it.
+        Keeping an unspecified due date is TimeTracker.update_task's own job
+        now, so an omission is forwarded as None ("leave it alone") rather
+        than resolved to the task's current value here - this server used to
+        have to look the current value up and re-send it, because an omitted
+        due_date used to clear the date instead of preserving it.
         """
         self.mock_tracker.list_tasks.return_value = [
             {"id": 1, "task_name": "Write docs", "due_date": "2026-02-01"}
@@ -294,9 +295,10 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
 
         self.mock_tracker.update_task.assert_called_once_with(
             "Acme", "Write docs",
-            new_task_name=None, due_date="2026-02-01", today=None,
+            new_task_name=None, due_date=None, today=None,
             note="Updated note", status=None, recurring=None,
             frequency=None, userdefined_days=None, priority=None, task_id=1,
+            clear_due_date=False,
         )
         self.assertIn("updated", result)
 
@@ -328,7 +330,7 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
         self.mcp_server.update_task("Acme", "Write docs", clear_due_date=True)
 
         _args, kwargs = self.mock_tracker.update_task.call_args
-        self.assertIsNone(kwargs["due_date"])
+        self.assertTrue(kwargs["clear_due_date"])
 
     def test_update_task_explicit_due_date_overrides_current(self):
         self.mock_tracker.list_tasks.return_value = [

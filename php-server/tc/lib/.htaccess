@@ -1,0 +1,11 @@
+# These files are includes, never entry points. Nothing here should ever be
+# fetched directly, and the store's own protection must not be the only thing
+# standing between a misconfiguration and the source.
+Options -Indexes
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

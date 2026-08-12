@@ -1,0 +1,21 @@
+# Stops any rewriting inherited from an application installed further up the
+# tree; without this a front controller in the web root would answer instead
+# of index.php.
+<IfModule mod_rewrite.c>
+    RewriteEngine Off
+</IfModule>
+
+Options -Indexes
+
+# setup.enable carries the operator passphrase in plain text. It lives here
+# because write access to this directory IS the proof of being the operator,
+# but it must never be readable over the web.
+<Files "setup.enable">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</Files>

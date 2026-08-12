@@ -1,0 +1,26 @@
+# Shields this directory from an application installed further up.
+#
+# A framework's .htaccess in the web root typically rewrites every request to
+# its own front controller. Those rules apply to subdirectories as well, so a
+# plain file dropped underneath is never reached - the framework answers
+# instead. Switching the rewrite engine off here ends that for this directory
+# only; nothing above is affected.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine Off
+</IfModule>
+
+# Some setups pull a bootstrap file into every PHP request. Where PHP runs as
+# an Apache module this turns it off; under PHP-FPM the directive is ignored,
+# which is harmless - it is wrapped so an unknown directive cannot produce a
+# 500 and hide the real problem.
+<IfModule mod_php.c>
+    php_value auto_prepend_file none
+    php_value auto_append_file none
+</IfModule>
+<IfModule mod_php7.c>
+    php_value auto_prepend_file none
+    php_value auto_append_file none
+</IfModule>
+
+Options -Indexes

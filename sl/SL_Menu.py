@@ -21,6 +21,22 @@ except (ImportError, ModuleNotFoundError):
     UPDATE_MODULE_AVAILABLE = False
 
 try:
+    from tt import sync_client, sync_engine
+    from tt.sync_outbox import default_outbox_if_enabled
+    SYNC_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    # Only reachable if requests is missing, which requirements.txt rules
+    # out - but the settings screen should degrade to an explanation rather
+    # than taking the whole app down with it.
+    SYNC_AVAILABLE = False
+
+# How many failed cycles in a row before a merely-flaky connection is worth
+# saying out loud. Below this the header stays clean, because a lost network
+# fixes itself; above it, the silence has lasted long enough to be the more
+# misleading of the two.
+SYNC_QUIET_FAILURES = 5
+
+try:
     # Internal (not officially public) API, but it's the only way to tell a
     # fragment's own run_every tick apart from an ordinary rerun - see the
     # usage in _auto_refresh_on_external_changes() for why that distinction
@@ -328,12 +344,74 @@ else:
     # runs on every auto-refresh tick too, used to reset the visible view
     # back to the main menu once the user reloaded after such a crash.
     try:
-        st.session_state.tracker.data = st.session_state.tracker._load_data()
+        st.session_state.tracker.reload_data()
     except (json.JSONDecodeError, OSError):
         pass
 
 if 'menu' not in st.session_state:
     st.session_state.menu = 'today_view'
+
+# --- Synchronisation ---
+#
+# Three things happen here, in this order, and all of them are cheap: the
+# network half runs in a worker thread and nothing below waits on it.
+#
+# The binding first, because the tracker is built once per browser session
+# and reads config.json at that moment. Without this, switching
+# synchronisation on in Settings would leave the running session recording
+# nothing until the app was restarted - and the settings screen never said so.
+#
+# Then applying, on this thread, into the document this thread has just
+# reloaded and is about to draw. That is deliberate: the interface keeps its
+# document in memory between redraws, so a background thread writing the file
+# would be silently overwritten by the next thing the user did.
+if SYNC_AVAILABLE:
+    try:
+        st.session_state.tracker.op_outbox = default_outbox_if_enabled(config)
+        # Outside the check below on purpose: this call is what stops the
+        # worker as well as what starts it. Switching synchronisation off
+        # while the app is open has to actually end it, or the thread keeps
+        # talking to the server with the stored token and filing operations
+        # nothing will ever read.
+        sync_engine.ensure_started(config)
+        if st.session_state.tracker.op_outbox is not None:
+            # The notice from a previous run has been drawn by now, so it
+            # can go. Cleared here rather than where it is shown, because a
+            # run that draws it can still be abandoned by an st.rerun()
+            # further down the page, and a message consumed by such a run
+            # would have been seen by nobody.
+            if st.session_state.pop('sync_discarded_shown', False):
+                st.session_state.pop('sync_discarded', None)
+            # Before anything is applied: if data.json has been restored from
+            # a backup, the cursor has to come back with it.
+            sync_engine.align_cursor(st.session_state.tracker)
+            sync_engine.offer_document(st.session_state.tracker)
+            try:
+                _sync_summary = sync_engine.apply_pending(st.session_state.tracker)
+            except OSError as exc:
+                # The document could not be written - a full disk, or a data
+                # file on a share that has gone read-only. Nothing was
+                # consumed, so this will be retried; but staying silent would
+                # show the incoming changes on screen as though they had been
+                # saved, and they would vanish at the next restart.
+                _sync_summary = None
+                st.session_state.sync_apply_error = str(exc)
+            else:
+                st.session_state.pop('sync_apply_error', None)
+                if _sync_summary and _sync_summary['discarded_time']:
+                    st.session_state['sync_discarded'] = (
+                        st.session_state.get('sync_discarded', 0)
+                        + _sync_summary['discarded_time'])
+            # A change of view is the moment the user is most likely to want
+            # current figures, so ask for a cycle then. It only wakes the
+            # worker - nothing here blocks on the answer.
+            if st.session_state.get('_synced_for_menu') != st.session_state.menu:
+                st.session_state._synced_for_menu = st.session_state.menu
+                sync_engine.nudge()
+    except Exception:
+        # Synchronisation is an optional extra. Nothing about it may stop the
+        # application from starting or a view from drawing.
+        pass
 
 # Re-check for a new release whenever the view changes (navigating to a
 # different menu than the one this ran for last time) - not on every rerun
@@ -479,6 +557,7 @@ def render_header(title, subtitle=None):
             if st.button("⟳", help=_("Restart and install the update"), key="update_restart_btn"):
                 with st.spinner(_("Downloading and installing update...")):
                     apply_update(update_check['url'])
+    render_sync_notice()
     st.title(title)
     if subtitle:
         st.caption(subtitle)
@@ -488,6 +567,54 @@ def render_header(title, subtitle=None):
         elif f['type'] == 'info': st.info(f['message'])
         elif f['type'] == 'error': st.error(f['message'])
         st.session_state.feedback = None # Clear after showing
+
+
+def render_sync_notice():
+    """
+    Says something about synchronisation only when there is something to say.
+
+    Working synchronisation is meant to be invisible; a permanent "last
+    synced at" line on every screen would be noise that stops being read, and
+    would then be no use on the day it matters. So this shows two things and
+    nothing else: tracked time that was discarded, because that is a loss the
+    user did not ask for on this machine and would otherwise never learn
+    about, and a failure that only they can clear.
+    """
+    if not SYNC_AVAILABLE or st.session_state.tracker.op_outbox is None:
+        return
+
+    discarded = st.session_state.get('sync_discarded') or 0
+    if discarded:
+        # Marked as shown rather than removed. A run can be abandoned partway
+        # by st.rerun() - a button handler further down the page, say - and a
+        # message consumed by such a run would be seen by nobody. The mark is
+        # cleared at the top of the next run, which by then has drawn it.
+        st.session_state.sync_discarded_shown = True
+        st.warning(_("{count} time entries were discarded because the task they "
+                     "belonged to had been deleted on another machine.").format(
+                         count=discarded))
+
+    failed_to_save = st.session_state.get('sync_apply_error')
+    if failed_to_save:
+        st.error(_sync_error_message('local_io'))
+
+    try:
+        snapshot = sync_engine.snapshot()
+    except Exception:
+        return
+    if snapshot['state'] != 'failing':
+        return
+
+    # An error the user has to clear is shown at once. A dropped connection
+    # usually clears itself, so it is left alone at first - but not for ever:
+    # a sync that has been failing all week while the app looks perfectly
+    # normal is how two machines quietly become two different documents.
+    actionable = snapshot['error'] in ('not_signed_in', 'invalid_token', 'https_required',
+                                       'not_installed', 'bad_response', 'local_io')
+    if not actionable and int(snapshot.get('failures', 0)) < SYNC_QUIET_FAILURES:
+        return
+    st.warning(_("Synchronisation is paused: {reason}").format(
+        reason=_sync_error_message(snapshot['error'])))
 
 # --- Views ---
 
@@ -746,7 +873,6 @@ def view_task_planning():
                                     task['main_project_name'],
                                     task['task_name'],
                                     today=not task.get('today', False),
-                                    due_date=task.get('due_date'),
                                     recurring=task.get('recurring'),
                                     frequency=task.get('frequency'),
                                     userdefined_days=task.get('userdefined_days'),
@@ -759,7 +885,6 @@ def view_task_planning():
                                     task['main_project_name'],
                                     task['task_name'],
                                     status='done',
-                                    due_date=task.get('due_date'),
                                     recurring=task.get('recurring'),
                                     frequency=task.get('frequency'),
                                     userdefined_days=task.get('userdefined_days'),
@@ -832,7 +957,6 @@ def view_task_planning():
                                         task['main_project_name'],
                                         task['task_name'],
                                         today=not task.get('today', False),
-                                        due_date=task.get('due_date'),
                                         recurring=task.get('recurring'),
                                         frequency=task.get('frequency'),
                                         userdefined_days=task.get('userdefined_days'),
@@ -845,7 +969,6 @@ def view_task_planning():
                                         task['main_project_name'],
                                         task['task_name'],
                                         status='done',
-                                        due_date=task.get('due_date'),
                                         recurring=task.get('recurring'),
                                         frequency=task.get('frequency'),
                                         userdefined_days=task.get('userdefined_days'),
@@ -897,7 +1020,6 @@ def view_today_tasks():
                 current_work['main_project_name'],
                 current_work['task_name'],
                 status='done',
-                due_date=task_details.get('due_date'),
                 recurring=task_details.get('recurring'),
                 frequency=task_details.get('frequency'),
                 userdefined_days=task_details.get('userdefined_days'),
@@ -1021,7 +1143,6 @@ def view_today_tasks():
                                 st.session_state.tracker.update_task(
                                     task['main_project_name'],
                                     task['task_name'],
-                                    due_date=task.get('due_date'),
                                     recurring=task.get('recurring'),
                                     frequency=task.get('frequency'),
                                     userdefined_days=task.get('userdefined_days'),
@@ -1046,7 +1167,6 @@ def view_today_tasks():
                                     task['main_project_name'],
                                     task['task_name'],
                                     status='done',
-                                    due_date=task.get('due_date'),
                                     recurring=task.get('recurring'),
                                     frequency=task.get('frequency'),
                                     userdefined_days=task.get('userdefined_days'),
@@ -1203,7 +1323,12 @@ def view_email_assignment():
                         due_date=final_due_date,
                         today=new_today_flag,
                         note=new_note,
-                        task_id=task['id']
+                        task_id=task['id'],
+                        # This form always shows the whole task, so an empty
+                        # date field means the user cleared it - not that they
+                        # left the current one alone (which is what an omitted
+                        # due_date means to update_task).
+                        clear_due_date=final_due_date is None,
                     ):
                         set_feedback(_("Task details updated successfully."))
                         # Clear session state for this task's date input to ensure fresh load next time
@@ -1354,6 +1479,36 @@ def view_reporting():
     
     if st.button(_("Back"), use_container_width=True):
         navigate_to('today_view')
+
+def _sync_error_message(code):
+    """
+    Turns a sync-client error code into something worth reading.
+
+    The distinction that matters is between "you typed something wrong" and
+    "the connection failed" - those call for completely different reactions,
+    and a single "sign-in failed" would leave the user guessing which one
+    they are looking at.
+    """
+    messages = {
+        'no_server': _("No server address is set. Enter one above and save it first."),
+        'https_required': _("The address must start with https:// - a token sent over "
+                            "plain HTTP could be read by anyone on the way."),
+        'missing_credentials': _("Please enter both a username and a password."),
+        'invalid_credentials': _("Wrong username or password."),
+        'too_many_attempts': _("Too many sign-in attempts on the server. Try again in a minute."),
+        'tls_failed': _("The server's certificate could not be verified."),
+        'timeout': _("The server did not answer in time."),
+        'unreachable': _("The server could not be reached. Check the address and your connection."),
+        'bad_response': _("The address answered, but not like a TimeControl sync server. "
+                          "Check that it points at the right directory."),
+        'not_installed': _("The server is reachable but has not been set up yet."),
+        # Reachable from the background sync rather than the sign-in form.
+        'not_signed_in': _("This device is not signed in to the server."),
+        'invalid_token': _("This device is no longer signed in. Please sign in again."),
+        'local_io': _("The synchronisation files on this computer could not be written."),
+    }
+    return messages.get(code, _("Sign-in failed ({code}).").format(code=code or '?'))
+
 
 def view_settings():
     """
@@ -1619,6 +1774,146 @@ def view_settings():
                 save_config(config)
                 set_feedback(_("MCP server settings saved. Please restart the application for the changes to take effect."))
                 st.rerun()
+
+    with _settings_section("sync", _("Sync Server Settings")):
+        if not SYNC_AVAILABLE:
+            st.error(_("The sync client is unavailable because the 'requests' package is missing."))
+        else:
+            sync_cfg = config.get('sync', {}) if isinstance(config.get('sync'), dict) else {}
+
+            # The address and the on/off switch are ordinary settings and
+            # belong in config.json - copying that file to a second machine
+            # to give it the same server is exactly the right thing to do.
+            # The token is not here: see tt/sync_client.py for why it must
+            # never travel with this file.
+            with st.form("sync_server_form"):
+                server_url = st.text_input(
+                    _("Server address"),
+                    value=sync_cfg.get('base_url', ''),
+                    placeholder="https://example.com/tc/",
+                )
+                sync_enabled = st.checkbox(
+                    _("Enable synchronisation"),
+                    value=bool(sync_cfg.get('enabled', False)),
+                    help=_("Without this, TimeControl works entirely locally, exactly as before."),
+                )
+                sync_interval = st.number_input(
+                    _("Sync every (minutes)"),
+                    min_value=1, max_value=120,
+                    value=int(sync_cfg.get('interval_minutes', 5) or 5),
+                    step=1,
+                    help=_("Synchronisation also runs whenever you switch to a different view."),
+                )
+                if st.form_submit_button(_("Save"), use_container_width=True):
+                    # Updated key by key rather than replaced wholesale, so a
+                    # setting this form does not show is not silently dropped
+                    # by saving the ones it does.
+                    saved = dict(sync_cfg)
+                    saved.update({
+                        'enabled': bool(sync_enabled),
+                        'base_url': server_url.strip(),
+                        'interval_minutes': int(sync_interval),
+                    })
+                    config['sync'] = saved
+                    save_config(config)
+                    set_feedback(_("Sync server settings saved."))
+                    st.rerun()
+
+            st.divider()
+
+            # Read from what the background worker last recorded rather than
+            # asking the server. This runs on every redraw of the settings
+            # screen - a collapsed section still executes - so a request here
+            # would put a network round trip behind every keystroke in every
+            # other form on this page.
+            creds = sync_client.load_credentials()
+            snapshot = sync_engine.snapshot()
+
+            # A stored credential is not the same as a working one. The token
+            # expires after ninety days and the server replaces it when this
+            # account signs in on a third machine, and in both cases the file
+            # is still sitting here saying "signed in". Trusting it alone left
+            # the screen showing "Signed in as ..." with no way to sign in
+            # again - the one thing the user needs at that moment.
+            rejected = snapshot['error'] in ('invalid_token', 'not_signed_in')
+            state = ({'state': 'rejected'} if creds and rejected
+                     else {'state': 'ok', 'username': creds.get('username'),
+                           'expires_at': creds.get('expires_at')} if creds
+                     else {'state': 'not_configured'})
+
+            if snapshot['last_ok']:
+                st.caption(_("Last synchronised at {time}.").format(
+                    time=datetime.fromtimestamp(int(snapshot['last_ok'])).strftime('%Y-%m-%d %H:%M')))
+            elif sync_cfg.get('enabled'):
+                st.caption(_("Not synchronised yet."))
+            if snapshot['pending']:
+                st.caption(_("{count} changes are waiting to be sent.").format(
+                    count=snapshot['pending']))
+            if snapshot['error'] and not rejected:
+                st.warning(_sync_error_message(snapshot['error']))
+
+            if state['state'] == 'ok':
+                st.success(_("Signed in as {user}.").format(user=state.get('username')))
+                if state.get('expires_at'):
+                    st.caption(_("Access expires on {date}.").format(
+                        date=datetime.fromtimestamp(int(state['expires_at'])).strftime('%Y-%m-%d')))
+                col_check, col_out = st.columns(2)
+                with col_check:
+                    if st.button(_("Check connection"), use_container_width=True,
+                                 key="sync_check_btn"):
+                        with st.spinner(_("Contacting the server...")):
+                            checked = sync_client.status()
+                        # Reported once, through the ordinary feedback slot,
+                        # rather than stored. A pinned result goes stale: one
+                        # failed check on a train would keep saying the server
+                        # is unreachable long after it came back, next to a
+                        # "last synchronised" line proving otherwise.
+                        if checked['state'] == 'ok':
+                            set_feedback(_("The server answered."))
+                        else:
+                            set_feedback(_sync_error_message(
+                                checked.get('error') or checked['state']), 'error')
+                        # Asked for explicitly, so this also lifts any pause
+                        # a run of failures has put the worker into.
+                        sync_engine.nudge(force=True)
+                        st.rerun()
+                with col_out:
+                    if st.button(_("Sign out"), use_container_width=True, key="sync_logout_btn"):
+                        with st.spinner(_("Contacting the server...")):
+                            sync_client.logout()
+                        set_feedback(_("Signed out on this device."))
+                        st.rerun()
+            else:
+                if state['state'] == 'rejected':
+                    # Expired, revoked elsewhere, or the account was switched
+                    # off. The user's next move is the same in every case.
+                    st.warning(_("This device is no longer signed in. Please sign in again."))
+                elif state['state'] == 'unreachable':
+                    st.error(_("The server could not be reached ({reason}).").format(
+                        reason=state.get('error', 'unreachable')))
+
+                with st.form("sync_login_form"):
+                    st.caption(_("Signing in stores an access token for this device only. "
+                                 "It is kept outside the project directory and is never "
+                                 "written to config.json."))
+                    sync_user = st.text_input(_("Username"), key="sync_login_user")
+                    sync_pass = st.text_input(_("Password"), type="password", key="sync_login_pass")
+                    if st.form_submit_button(_("Sign in"), use_container_width=True):
+                        with st.spinner(_("Contacting the server...")):
+                            result = sync_client.login(sync_cfg.get('base_url', ''),
+                                                       sync_user, sync_pass)
+                        if result.get('ok'):
+                            # force, because the reason the worker had given
+                            # up - no credential - is exactly what just changed.
+                            sync_engine.nudge(force=True)
+                            set_feedback(_("Signed in successfully."))
+                        else:
+                            set_feedback(_sync_error_message(result.get('error')), 'error')
+                        st.rerun()
+
+            identity = sync_client.device_identity()
+            st.caption(_("This device: {name} ({uid})").format(
+                name=identity['device_name'], uid=identity['device_uid']))
 
     st.divider()
 
@@ -2580,7 +2875,11 @@ def view_edit_task_form():
                     frequency=final_freq,
                     userdefined_days=ud_days,
                     priority=priority,
-                    task_id=task_id
+                    task_id=task_id,
+                    # The edit form submits every field at once, so an empty
+                    # date field is the user removing the due date rather than
+                    # declining to change it.
+                    clear_due_date=final_due is None,
                 ):
                     set_feedback(_("Task updated successfully."))
                     if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
