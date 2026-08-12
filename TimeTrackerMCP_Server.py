@@ -402,22 +402,11 @@ def update_task(
     if current_task is None:
         return f"Error: Task '{task_name}' not found in project '{main_project_name}'."
 
-    # update_task() always overwrites due_date with whatever is passed, even
-    # if that's None - so an explicit omission has to be resolved to the
-    # task's current value here rather than left as None, or it would be
-    # silently cleared as a side effect of changing something unrelated.
-    if clear_due_date:
-        final_due_date = None
-    elif due_date is not None:
-        final_due_date = due_date
-    else:
-        final_due_date = current_task.get('due_date')
-
     success = tracker.update_task(
         main_project_name,
         task_name,
         new_task_name=new_task_name,
-        due_date=final_due_date,
+        due_date=due_date,
         today=today,
         note=note,
         status=status,
@@ -426,6 +415,7 @@ def update_task(
         userdefined_days=userdefined_days,
         priority=priority,
         task_id=current_task.get('id'),
+        clear_due_date=clear_due_date,
     )
     if success:
         return f"Task '{task_name}' updated."

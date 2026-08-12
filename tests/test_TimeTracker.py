@@ -70,7 +70,10 @@ class TestTimeTracker(unittest.TestCase):
 
     def test_load_data_initial_empty(self):
         """Tests if _load_data returns an empty dictionary when no file exists."""
-        self.assertEqual(self.tracker.data, {"projects": [], "next_id": 1})
+        self.assertEqual(
+            self.tracker.data,
+            {"projects": [], "next_id": 1, "_deleted": [], "schema_version": 2},
+        )
 
     def test_save_and_load_data(self):
         """Tests the interaction of _save_data and _load_data."""
@@ -115,6 +118,224 @@ class TestTimeTracker(unittest.TestCase):
         # priority is the lowest (0) by default, same as an old task that
         # predates the field entirely.
         self.assertEqual(task.get("priority"), 0)
+
+    def test_migration_assigns_uids_to_everything(self):
+        """A schema-1 file gains a uid on every project, task and time entry."""
+        old_data = {
+            "projects": [{
+                "main_project_name": "Old Project",
+                "tasks": [{
+                    "task_name": "Old Task",
+                    "time_entries": [
+                        {"start_time": "2026-01-02T09:00:00", "end_time": "2026-01-02T10:00:00"},
+                        {"start_time": "2026-01-03T09:00:00"},
+                    ]
+                }]
+            }]
+        }
+        with open(TEST_FILE_PATH, 'w') as f:
+            json.dump(old_data, f)
+
+        tracker = TimeTracker(file_path=TEST_FILE_PATH)
+
+        self.assertEqual(tracker.data["schema_version"], TimeTracker.SCHEMA_VERSION)
+        self.assertEqual(tracker.data["_deleted"], [])
+
+        project = tracker.data["projects"][0]
+        task = project["tasks"][0]
+        uids = [project["uid"], task["uid"]] + [e["uid"] for e in task["time_entries"]]
+
+        for uid in uids:
+            self.assertIsInstance(uid, str)
+            self.assertEqual(len(uid), 16)
+        # Every entity must get its OWN identity - a shared one would make
+        # them indistinguishable to anything addressing them by uid.
+        self.assertEqual(len(set(uids)), len(uids))
+
+        # last_started is seeded from the newest entry so the existing
+        # most-recently-used ordering survives the later switch away from
+        # array position.
+        self.assertEqual(task["last_started"], "2026-01-03T09:00:00")
+        self.assertEqual(project["last_started"], "2026-01-03T09:00:00")
+
+    def test_migration_is_idempotent(self):
+        """Running the migration again must not re-issue uids or bump next_id."""
+        self.tracker.add_main_project("P")
+        self.tracker.add_task("P", "T")
+        self.tracker.start_work("P", "T")
+
+        before = json.dumps(self.tracker.data, sort_keys=True)
+
+        reloaded = TimeTracker(file_path=TEST_FILE_PATH)
+        self.assertFalse(reloaded._migrate_data_structure())
+        self.assertEqual(json.dumps(reloaded.data, sort_keys=True), before)
+
+    def test_new_entities_get_a_uid_without_a_restart(self):
+        """Projects, tasks and time entries are born with a uid, not given one later."""
+        self.tracker.add_main_project("Fresh Project")
+        project = self.tracker.data["projects"][0]
+        self.assertTrue(project.get("uid"))
+
+        self.tracker.add_task("Fresh Project", "Fresh Task")
+        task = project["tasks"][0]
+        self.assertTrue(task.get("uid"))
+        self.assertNotEqual(task["uid"], project["uid"])
+
+        self.tracker.start_work("Fresh Project", "Fresh Task")
+        entry = task["time_entries"][0]
+        self.assertTrue(entry.get("uid"))
+        self.assertNotEqual(entry["uid"], task["uid"])
+
+    def test_promote_and_demote_store_complete_objects(self):
+        """
+        Both used to persist half-built objects that only the next start
+        completed. A uid has to be assigned exactly once, at creation, so
+        they must now be stored whole.
+        """
+        self.tracker.add_main_project("Source")
+        self.tracker.add_task("Source", "Rising Task")
+        self.tracker.start_work("Source", "Rising Task")
+        self.tracker.stop_work()
+        moved_entry_uid = self.tracker._get_task("Source", "Rising Task")["time_entries"][0]["uid"]
+
+        ok, _msg = self.tracker.promote_task_to_project("Source", "Rising Task")
+        self.assertTrue(ok)
+
+        promoted = self.tracker._get_project("Rising Task")
+        self.assertTrue(promoted.get("uid"))
+        self.assertEqual(promoted.get("status"), "open")
+        general = promoted["tasks"][0]
+        self.assertTrue(general.get("uid"))
+        self.assertIsInstance(general.get("id"), int)
+        self.assertEqual(general.get("priority"), 0)
+        # The entry moved with the task - it is the same entry, so it keeps
+        # the identity it already had rather than becoming a new one.
+        self.assertEqual(general["time_entries"][0]["uid"], moved_entry_uid)
+
+        ok, _msg = self.tracker.demote_main_project("Rising Task", "Source")
+        self.assertTrue(ok)
+
+        demoted = self.tracker._get_task("Source", "Rising Task")
+        self.assertTrue(demoted.get("uid"))
+        self.assertIsInstance(demoted.get("id"), int)
+        self.assertEqual(demoted.get("status"), "open")
+        self.assertEqual(demoted["time_entries"][0]["uid"], moved_entry_uid)
+
+    def test_next_id_is_lifted_above_a_stale_counter(self):
+        """
+        next_id used to be seeded only when absent and never re-checked, so a
+        file arriving from elsewhere could leave it at or below a live id -
+        and the next add_task() would then mint a duplicate.
+        """
+        stale = {
+            "next_id": 2,
+            "projects": [{
+                "main_project_name": "P",
+                "tasks": [
+                    {"task_name": "A", "id": 7, "time_entries": []},
+                    {"task_name": "B", "id": 9, "time_entries": []},
+                ]
+            }]
+        }
+        with open(TEST_FILE_PATH, 'w') as f:
+            json.dump(stale, f)
+
+        tracker = TimeTracker(file_path=TEST_FILE_PATH)
+        self.assertEqual(tracker.data["next_id"], 10)
+
+        tracker.add_task("P", "C")
+        ids = [t["id"] for t in tracker.data["projects"][0]["tasks"]]
+        self.assertEqual(len(set(ids)), len(ids), "add_task reused an id already in use")
+
+    def test_get_task_prefers_the_id_over_an_earlier_name_match(self):
+        """
+        Callers routinely pass an id and a name together. The id names exactly
+        one task; the name may name several, since duplicates are creatable.
+        Both checks used to run in one pass, so the first name match won.
+        """
+        self.tracker.add_main_project("P")
+        self.tracker.add_task("P", "Same Name")
+        self.tracker.add_task("P", "Same Name")
+        wanted = self.tracker.data["projects"][0]["tasks"][1]
+
+        found = self.tracker._get_task("P", "Same Name", task_id=wanted["id"])
+
+        self.assertEqual(found["uid"], wanted["uid"])
+
+    def test_start_work_starts_the_task_carrying_the_given_id(self):
+        """The same precedence, on the path that used to carry its own copy."""
+        self.tracker.add_main_project("P")
+        self.tracker.add_task("P", "Same Name")
+        self.tracker.add_task("P", "Same Name")
+        wanted = self.tracker.data["projects"][0]["tasks"][1]
+        other = self.tracker.data["projects"][0]["tasks"][0]
+
+        self.assertTrue(self.tracker.start_work("P", "Same Name", task_id=wanted["id"]))
+
+        self.assertEqual(len(wanted["time_entries"]), 1)
+        self.assertEqual(other["time_entries"], [])
+
+    def test_stop_work_never_ends_an_entry_before_it_began(self):
+        """
+        Durations are these two timestamps subtracted, so a negative one does
+        not announce itself - it just makes every report containing it wrong.
+        """
+        self.tracker.add_main_project("P")
+        self.tracker.add_task("P", "T")
+        self.tracker.start_work("P", "T")
+
+        # Stand in for a clock corrected backwards between start and stop.
+        entry = self.tracker._get_task("P", "T")["time_entries"][-1]
+        future_start = (datetime.now() + timedelta(hours=2)).isoformat()
+        entry["start_time"] = future_start
+
+        self.assertTrue(self.tracker.stop_work())
+
+        entry = self.tracker._get_task("P", "T")["time_entries"][-1]
+        self.assertEqual(entry["end_time"], future_start)
+        self.assertGreaterEqual(entry["end_time"], entry["start_time"])
+
+    def test_reload_data_migrates_what_it_reads(self):
+        """
+        Picking up another process's changes has to normalise too - the file
+        can come from an older version or another machine, and add_task reads
+        next_id with no guard for its absence.
+        """
+        self.tracker.add_main_project("Placeholder")
+
+        legacy = {
+            "projects": [{
+                "main_project_name": "From Elsewhere",
+                "sub_projects": [{"task_name": "Legacy", "time_entries": []}]
+            }]
+        }
+        with open(TEST_FILE_PATH, 'w') as f:
+            json.dump(legacy, f)
+
+        self.tracker.reload_data()
+
+        self.assertEqual(self.tracker.data["schema_version"], TimeTracker.SCHEMA_VERSION)
+        self.assertIn("next_id", self.tracker.data)
+        task = self.tracker.data["projects"][0]["tasks"][0]
+        self.assertTrue(task.get("uid"))
+        self.assertEqual(task.get("priority"), 0)
+
+        # The point of all of it: the class can work with what it just read.
+        self.assertTrue(self.tracker.add_task("From Elsewhere", "Fresh"))
+
+    def test_reload_data_keeps_previous_data_when_the_file_is_unreadable(self):
+        """A transient read failure must not leave the tracker holding nothing."""
+        self.tracker.add_main_project("Keep Me")
+
+        with open(TEST_FILE_PATH, 'w') as f:
+            f.write("{ this is not json")
+
+        with self.assertRaises(json.JSONDecodeError):
+            self.tracker.reload_data()
+
+        self.assertEqual(
+            [p["main_project_name"] for p in self.tracker.data["projects"]], ["Keep Me"]
+        )
 
     def test_format_duration(self):
         """Tests the _format_duration helper method."""
@@ -274,6 +495,140 @@ class TestTimeTracker(unittest.TestCase):
         self.assertFalse(success)
         self.assertEqual(len(self.tracker.data["projects"]), 1)
 
+    # --- Tombstones -------------------------------------------------------
+    # A deleted object leaves no trace in the data that is left behind, so
+    # "the other copy has something we do not" cannot be told apart from "we
+    # deleted it" without one of these notes.
+
+    def _tombstones(self, kind=None):
+        """Returns the recorded tombstones, optionally filtered by kind."""
+        notes = self.tracker.data.get("_deleted", [])
+        return [n for n in notes if kind is None or n["kind"] == kind]
+
+    def test_delete_project_records_project_and_its_tasks(self):
+        """Deleting a project notes the project and every task it took down."""
+        self.tracker.add_main_project("Doomed")
+        self.tracker.add_task("Doomed", "T1")
+        self.tracker.add_task("Doomed", "T2")
+        self.tracker.start_work("Doomed", "T1")
+        self.tracker.stop_work()
+
+        project = self.tracker._get_project("Doomed")
+        project_uid = project["uid"]
+        task_uids = {t["uid"] for t in project["tasks"]}
+
+        self.assertTrue(self.tracker.delete_main_project("Doomed"))
+
+        self.assertEqual([n["uid"] for n in self._tombstones("project")], [project_uid])
+        self.assertEqual({n["uid"] for n in self._tombstones("task")}, task_uids)
+        # Time entries cannot be deleted on their own anywhere in this class,
+        # so they are covered by their task's note and get none themselves.
+        self.assertEqual(self._tombstones("entry"), [])
+
+    def test_delete_task_records_a_tombstone(self):
+        """Deleting a single task notes exactly that task."""
+        self.tracker.add_main_project("P")
+        self.tracker.add_task("P", "Keep")
+        self.tracker.add_task("P", "Drop")
+        dropped_uid = self.tracker._get_task("P", "Drop")["uid"]
+
+        self.assertTrue(self.tracker.delete_task("P", "Drop"))
+
+        self.assertEqual([n["uid"] for n in self._tombstones()], [dropped_uid])
+
+    def test_delete_all_closed_tasks_records_each_one(self):
+        """The bulk delete notes every task it removes, not just one."""
+        self.tracker.add_main_project("P")
+        for name in ("A", "B", "C"):
+            self.tracker.add_task("P", name)
+        self.tracker.close_task("P", "A")
+        self.tracker.close_task("P", "C")
+        closed_uids = {
+            self.tracker._get_task("P", n, )["uid"] for n in ("A", "C")
+        }
+
+        self.assertEqual(self.tracker.delete_all_closed_tasks(), 2)
+        self.assertEqual({n["uid"] for n in self._tombstones("task")}, closed_uids)
+
+    def test_moving_a_task_records_nothing(self):
+        """
+        move_task takes a task out of one project to put it in another. The
+        task lives on, so noting it as deleted would destroy it on every other
+        copy - the note has to follow intent, not the list operation.
+        """
+        self.tracker.add_main_project("From")
+        self.tracker.add_main_project("To")
+        self.tracker.add_task("From", "Traveller")
+        uid_before = self.tracker._get_task("From", "Traveller")["uid"]
+
+        self.assertTrue(self.tracker.move_task("From", "Traveller", "To"))
+
+        self.assertEqual(self._tombstones(), [])
+        # ...and it is still the same task, not a copy.
+        self.assertEqual(self.tracker._get_task("To", "Traveller")["uid"], uid_before)
+
+    def test_promote_records_the_task_but_not_its_entries(self):
+        """Promoting destroys the task object; its time entries are re-homed."""
+        self.tracker.add_main_project("P")
+        self.tracker.add_task("P", "Rising")
+        self.tracker.start_work("P", "Rising")
+        self.tracker.stop_work()
+        task = self.tracker._get_task("P", "Rising")
+        task_uid, entry_uid = task["uid"], task["time_entries"][0]["uid"]
+
+        ok, _msg = self.tracker.promote_task_to_project("P", "Rising")
+        self.assertTrue(ok)
+
+        self.assertEqual([n["uid"] for n in self._tombstones()], [task_uid])
+        surviving = self.tracker._get_project("Rising")["tasks"][0]["time_entries"][0]
+        self.assertEqual(surviving["uid"], entry_uid)
+
+    def test_demote_records_the_project_and_its_tasks(self):
+        """Demoting destroys the project and its tasks; the entries survive."""
+        self.tracker.add_main_project("Parent")
+        self.tracker.add_main_project("Sinking")
+        self.tracker.add_task("Sinking", "Inner")
+        self.tracker.start_work("Sinking", "Inner")
+        self.tracker.stop_work()
+
+        sinking = self.tracker._get_project("Sinking")
+        project_uid = sinking["uid"]
+        inner_uid = sinking["tasks"][0]["uid"]
+        entry_uid = sinking["tasks"][0]["time_entries"][0]["uid"]
+
+        ok, _msg = self.tracker.demote_main_project("Sinking", "Parent")
+        self.assertTrue(ok)
+
+        self.assertEqual([n["uid"] for n in self._tombstones("project")], [project_uid])
+        self.assertEqual([n["uid"] for n in self._tombstones("task")], [inner_uid])
+        merged = self.tracker._get_task("Parent", "Sinking")
+        self.assertEqual(merged["time_entries"][0]["uid"], entry_uid)
+
+    def test_expired_tombstones_are_swept_but_recent_ones_kept(self):
+        """
+        Tombstones expire, or the document would grow for ever - but only well
+        past the point any copy could still be carrying the deleted object.
+        """
+        old = (datetime.now() - timedelta(days=TimeTracker.TOMBSTONE_RETENTION_DAYS + 1)).isoformat()
+        recent = (datetime.now() - timedelta(days=1)).isoformat()
+        data = {
+            "schema_version": 2,
+            "next_id": 1,
+            "projects": [],
+            "_deleted": [
+                {"uid": "expired000000000", "kind": "task", "at": old},
+                {"uid": "recent0000000000", "kind": "task", "at": recent},
+            ],
+        }
+        with open(TEST_FILE_PATH, 'w') as f:
+            json.dump(data, f)
+
+        tracker = TimeTracker(file_path=TEST_FILE_PATH)
+
+        self.assertEqual(
+            [n["uid"] for n in tracker.data["_deleted"]], ["recent0000000000"]
+        )
+
     def test_rename_main_project_success(self):
         """Tests the successful renaming of a main project."""
         self.tracker.add_main_project("Old Project Name")
@@ -383,6 +738,58 @@ class TestTimeTracker(unittest.TestCase):
 
         sub = self.tracker.list_tasks("Main")[0]
         self.assertEqual(sub["priority"], 7)
+
+    def test_update_task_due_date_unchanged_when_omitted(self):
+        """
+        Regression test: due_date used to be the one parameter that was
+        written unconditionally, so every caller that omitted it - a REST
+        PATCH of just the priority, a GUI button toggling 'today' - erased
+        the task's due date as a side effect of the change it did ask for.
+        """
+        self.tracker.add_main_project("Main")
+        self.tracker.add_task("Main", "Task", due_date="2026-08-09", priority=1)
+
+        self.tracker.update_task("Main", "Task", priority=4)
+
+        sub = self.tracker.list_tasks("Main")[0]
+        self.assertEqual(sub["due_date"], "2026-08-09")
+        self.assertEqual(sub["priority"], 4)
+
+    def test_update_task_clear_due_date(self):
+        """Removing a due date is possible, but has to be asked for."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_task("Main", "Task", due_date="2026-08-09")
+
+        self.tracker.update_task("Main", "Task", clear_due_date=True)
+
+        self.assertIsNone(self.tracker.list_tasks("Main")[0]["due_date"])
+
+    def test_update_task_clear_due_date_beats_a_passed_due_date(self):
+        """clear_due_date wins over due_date, as its docstring promises."""
+        self.tracker.add_main_project("Main")
+        self.tracker.add_task("Main", "Task", due_date="2026-08-09")
+
+        self.tracker.update_task("Main", "Task", due_date="2026-09-01", clear_due_date=True)
+
+        self.assertIsNone(self.tracker.list_tasks("Main")[0]["due_date"])
+
+    def test_update_task_recurring_instance_still_follows_the_old_due_date(self):
+        """
+        Completing a recurring task without restating its due date has to keep
+        scheduling the next instance from the current one, and leave the
+        completed task's own due date intact.
+        """
+        self.tracker.add_main_project("Recurring Due Test")
+        self.tracker.add_task("Recurring Due Test", "Daily Task",
+                              due_date="2026-08-09", recurring=True, frequency="daily")
+
+        self.tracker.update_task("Recurring Due Test", "Daily Task", status="done")
+
+        tasks = self.tracker.list_tasks("Recurring Due Test", status_filter='all')
+        done_task = next(t for t in tasks if t["status"] == "done")
+        open_task = next(t for t in tasks if t["status"] == "open")
+        self.assertEqual(done_task["due_date"], "2026-08-09")
+        self.assertEqual(open_task["due_date"], "2026-08-10")
 
     def test_recurring_task_new_instance_today_flag(self):
         """Tests that a new instance of a recurring task is created with today=False."""
@@ -930,6 +1337,72 @@ class TestTimeTracker(unittest.TestCase):
         # Action 2: Start work on P2, S3. This moves P2 to the top of the main projects list.
         self.tracker.start_work("P2", "S3")
         self.assertEqual([p['main_project_name'] for p in self.tracker.data['projects']], ["P2", "P1"])
+
+    def test_start_work_records_last_started(self):
+        """Starting work stamps the task and its project, not just their position."""
+        self.tracker.add_main_project("P1")
+        self.tracker.add_task("P1", "T1")
+        self.tracker.start_work("P1", "T1")
+
+        task = self.tracker._get_task("P1", "T1")
+        entry_start = task["time_entries"][-1]["start_time"]
+
+        self.assertEqual(task["last_started"], entry_start)
+        self.assertEqual(self.tracker._get_project("P1")["last_started"], entry_start)
+
+    def test_ordering_is_derivable_from_last_started(self):
+        """
+        The property a future sync rests on: the most-recently-used order is a
+        function of last_started, not of where an item happens to sit in the
+        array. Two machines that agree on last_started therefore arrive at the
+        same order without ever exchanging positions - which is what makes the
+        ordering reconcilable at all.
+        """
+        self.tracker.add_main_project("P1")
+        self.tracker.add_task("P1", "T1")
+        self.tracker.add_task("P1", "T2")
+        self.tracker.add_main_project("P2")
+        self.tracker.add_task("P2", "T3")
+
+        self.tracker.start_work("P1", "T2")
+        self.tracker.start_work("P2", "T3")
+        self.tracker.start_work("P1", "T1")
+
+        expected_projects = [p["main_project_name"] for p in self.tracker.data["projects"]]
+        expected_tasks = [t["task_name"] for t in self.tracker._get_project("P1")["tasks"]]
+
+        # Scramble the stored order, then rebuild it from last_started alone.
+        self.tracker.data["projects"].reverse()
+        self.tracker._get_project("P1")["tasks"].reverse()
+        self.tracker._sort_by_last_started(self.tracker.data["projects"])
+        self.tracker._sort_by_last_started(self.tracker._get_project("P1")["tasks"])
+
+        self.assertEqual(
+            [p["main_project_name"] for p in self.tracker.data["projects"]],
+            expected_projects,
+        )
+        self.assertEqual(
+            [t["task_name"] for t in self.tracker._get_project("P1")["tasks"]],
+            expected_tasks,
+        )
+
+    def test_never_started_items_sort_last_in_creation_order(self):
+        """
+        A project nobody has worked on has no last_started to sort by. It goes
+        to the end, and among such projects creation order survives - which is
+        where an unstarted project sat before the switch too.
+        """
+        self.tracker.add_main_project("Never A")
+        self.tracker.add_main_project("Worked")
+        self.tracker.add_task("Worked", "T")
+        self.tracker.add_main_project("Never B")
+
+        self.tracker.start_work("Worked", "T")
+
+        self.assertEqual(
+            [p["main_project_name"] for p in self.tracker.data["projects"]],
+            ["Worked", "Never A", "Never B"],
+        )
 
     def test_stop_work_success(self):
         """Tests the successful stopping of work."""

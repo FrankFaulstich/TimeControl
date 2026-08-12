@@ -232,16 +232,19 @@ class TimeControlService(ServiceBase):
             return ctx.udc.rename_task(main_project_name, old_name, new_name, task_id=task_id)
         return ctx.udc.rename_task(main_project_name, old_name, new_name)
 
-    @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, Unicode, Boolean, Unicode, Integer, Integer, Integer, _returns=Boolean)
-    def update_task(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, task_id=None, priority=None):
-        # priority is appended after task_id (rather than grouped with the
-        # other content fields before it) so existing positional callers that
-        # already pass task_id as the 11th argument aren't shifted - spyne
-        # dispatches @rpc args purely by position, so inserting a new
-        # parameter anywhere but the end would silently break them.
+    @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, Unicode, Boolean, Unicode, Integer, Integer, Integer, Boolean, _returns=Boolean)
+    def update_task(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, task_id=None, priority=None, clear_due_date=None):
+        # priority and clear_due_date are appended after task_id (rather than
+        # grouped with the other content fields before them) so existing
+        # positional callers that already pass task_id as the 11th argument
+        # aren't shifted - spyne dispatches @rpc args purely by position, so
+        # inserting a new parameter anywhere but the end would silently break
+        # them. An omitted due_date leaves the current one alone, so removing
+        # a due date is requested with clear_due_date; spyne passes None for
+        # any argument the caller left out, hence the bool().
         if task_id is not None:
-            return ctx.udc.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, priority=priority, task_id=task_id)
-        return ctx.udc.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, priority=priority)
+            return ctx.udc.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, priority=priority, task_id=task_id, clear_due_date=bool(clear_due_date))
+        return ctx.udc.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, priority=priority, clear_due_date=bool(clear_due_date))
 
     @rpc(Unicode, Unicode, Unicode, Unicode, _returns=OperationResultModel)
     def move_task(ctx, old_main, task_name, new_main, task_id=None):

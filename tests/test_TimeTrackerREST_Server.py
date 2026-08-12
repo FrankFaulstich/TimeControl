@@ -240,7 +240,8 @@ class TestTimeTrackerREST_Server(unittest.TestCase):
         })
         self.assertEqual(r.status_code, 200)
         self.mock_tracker.update_task.assert_called_once_with(
-            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, None, task_id=None
+            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, None,
+            task_id=None, clear_due_date=False
         )
         self.assertEqual(r.json(), {"success": True})
 
@@ -249,13 +250,34 @@ class TestTimeTrackerREST_Server(unittest.TestCase):
         r = self.client.patch("/projects/Main/tasks/Old", json={"priority": 3})
         self.assertEqual(r.status_code, 200)
         self.mock_tracker.update_task.assert_called_once_with(
-            "Main", "Old", None, None, None, None, None, None, None, None, 3, task_id=None
+            "Main", "Old", None, None, None, None, None, None, None, None, 3,
+            task_id=None, clear_due_date=False
         )
 
     def test_update_task_priority_out_of_range_rejected(self):
         r = self.client.patch("/projects/Main/tasks/Old", json={"priority": -1})
         self.assertEqual(r.status_code, 422)
         self.mock_tracker.update_task.assert_not_called()
+
+    def test_update_task_omitting_due_date_does_not_clear_it(self):
+        """
+        A PATCH says nothing about the fields it leaves out, so a body without
+        a due_date must not ask for the due date to be removed - it used to,
+        which erased the date whenever anything else was patched.
+        """
+        self.mock_tracker.update_task.return_value = True
+        r = self.client.patch("/projects/Main/tasks/Old", json={"note": "Note"})
+        self.assertEqual(r.status_code, 200)
+        _args, kwargs = self.mock_tracker.update_task.call_args
+        self.assertFalse(kwargs["clear_due_date"])
+
+    def test_update_task_clear_due_date(self):
+        """Removing a due date over REST is an explicit request."""
+        self.mock_tracker.update_task.return_value = True
+        r = self.client.patch("/projects/Main/tasks/Old", json={"clear_due_date": True})
+        self.assertEqual(r.status_code, 200)
+        _args, kwargs = self.mock_tracker.update_task.call_args
+        self.assertTrue(kwargs["clear_due_date"])
 
     def test_move_task(self):
         self.mock_tracker.move_task.return_value = (True, "Moved successfully")

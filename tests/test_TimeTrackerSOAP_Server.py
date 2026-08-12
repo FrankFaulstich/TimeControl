@@ -128,7 +128,8 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
             self.ctx, "Main", "Old", "New", "2025-01-01", True, "Note", "done"
         )
         self.mock_tracker.update_task.assert_called_with(
-            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, priority=None
+            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None,
+            priority=None, clear_due_date=False
         )
         self.assertTrue(result)
 
@@ -144,8 +145,23 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
             self.ctx, "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, 7, 4
         )
         self.mock_tracker.update_task.assert_called_with(
-            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, priority=4, task_id=7
+            "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None,
+            priority=4, task_id=7, clear_due_date=False
         )
+        self.assertTrue(result)
+
+    def test_update_task_clear_due_date(self):
+        """
+        clear_due_date is appended last in the @rpc signature, for the same
+        positional-dispatch reason as priority. A caller that omits it gets
+        None from spyne, which must not read as a request to clear.
+        """
+        self.mock_tracker.update_task.return_value = True
+        result = self.soap_server.TimeControlService.update_task(
+            self.ctx, "Main", "Old", None, None, None, None, None, None, None, None, None, None, True
+        )
+        _args, kwargs = self.mock_tracker.update_task.call_args
+        self.assertTrue(kwargs["clear_due_date"])
         self.assertTrue(result)
 
     def test_start_work(self):

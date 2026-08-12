@@ -27,7 +27,21 @@ datas = [
     ('locale', 'locale'),
 ]
 binaries = []
-hiddenimports = ['TimeTrackerMCP_Server', 'tt.TimeTracker']
+# sl/SL_Menu.py is carried in `datas`, which PyInstaller copies verbatim
+# without ever scanning it for imports - so everything only that file reaches
+# has to be named here or it is simply left out of the build. The sync
+# modules degrade quietly when missing (SL_Menu catches ImportError and sets
+# SYNC_AVAILABLE = False), which is exactly why their absence would go
+# unnoticed until somebody wondered why the packaged build never syncs.
+hiddenimports = [
+    'TimeTrackerMCP_Server',
+    'tt.TimeTracker',
+    'tt.sync_client',
+    'tt.sync_engine',
+    'tt.sync_apply',
+    'tt.sync_outbox',
+    'tt.filelock',
+]
 
 # collect_all() pulls in a package's submodules, data files (including its
 # own dist-info metadata, which streamlit's importlib.metadata-based version
