@@ -129,7 +129,8 @@ The application can be configured via the `config.json` file.
     "sync": {
         "enabled": false,
         "base_url": "https://example.com/tc/",
-        "interval_minutes": 5
+        "interval_minutes": 5,
+        "log_enabled": false
     }
 }
 ```
@@ -141,7 +142,7 @@ The application can be configured via the `config.json` file.
 - **`mcp_server_enabled`**: Whether `TimeTrackerSL_GUI.py` also starts the MCP server when `mcp_transport` is `"http"` (default: `false`). See [MCP Server](#mcp-server-).
 - **`mcp_transport`**: `"http"` or `"stdio"` (default: `"http"`). See [MCP Server](#mcp-server-).
 - **`mcp_port`**: The port on which the MCP server listens when using the `"http"` transport (default: 8700).
-- **`sync`**: Optional, and absent by default — which means off. `enabled` switches synchronisation on, `base_url` is the address of your own server, and `interval_minutes` is how often it runs in the background (default: 5). See [Synchronising Two Machines](#synchronising-two-machines-).
+- **`sync`**: Optional, and absent by default — which means off. `enabled` switches synchronisation on, `base_url` is the address of your own server, `interval_minutes` is how often it runs in the background (default: 5), and `log_enabled` turns on a diagnostic log (default: off). See [Synchronising Two Machines](#synchronising-two-machines-).
 
 All of these MCP settings can also be changed from the GUI, under **Settings → MCP Server Settings**, and the sync settings under **Settings → Sync Server Settings**.
 
@@ -259,6 +260,20 @@ When the same task is edited on both machines, changes to *different* fields bot
 **Deleting a task discards its recorded hours on both machines.** That is what deleting has always done locally, and both sides have to agree or the two documents drift apart. If work was booked on the other machine and had not yet been sent when you deleted the task, it is gone — the app says so rather than letting it pass unnoticed, but it cannot bring it back.
 
 The status line under the version number appears only when something needs you — a sign-in that has expired, or time that was discarded. **Settings → Sync Server Settings** shows when the last sync ran and how much is still waiting to be sent.
+
+### When something looks wrong
+
+**Settings → Sync Server Settings → Write a diagnostic log** records what
+synchronisation actually did — what was sent, what came back, where the cursor
+got to, and why it gave up. It is off by default and writes nothing until you
+switch it on.
+
+The log holds counts, error codes, sequence numbers and identifiers, and
+deliberately no project names, task names, notes, usernames or server
+addresses: it is meant to be readable by whoever is helping you without also
+handing them a list of everything you worked on. It lives beside the other
+per-machine sync files, caps itself at about a megabyte, and the settings
+screen shows the recent entries with buttons to save or clear them.
 
 ### Limitations worth knowing
 

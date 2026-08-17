@@ -47,6 +47,7 @@ from datetime import datetime
 
 from tt import sync_client
 from tt.filelock import locked, LockTimeout
+from tt import sync_log
 from tt.sync_apply import reconcile, seed_operations
 from tt.sync_outbox import Outbox
 
@@ -279,8 +280,10 @@ def run_cycle(outbox=None):
             return _run_cycle_locked(outbox)
     except LockTimeout:
         # Another process is mid-cycle. Its work is our work.
+        sync_log.log('cycle.skipped', why='another process is syncing')
         return {'ok': True, 'skipped': 'busy'}
     except OSError as exc:
+        sync_log.log('cycle.local_io', detail=type(exc).__name__)
         return {'ok': False, 'error': 'local_io', 'detail': str(exc)}
 
 
@@ -350,14 +353,21 @@ def _run_cycle_locked(outbox):
     sending = outbox.pending()
     batch = sending[:sync_client.MAX_OPS_PER_CALL]
 
+    sync_log.log('push', since=since, sending=len(batch),
+                 queued=len(sending))
     result = sync_client.push(since, [_wire(op) for op in batch])
     if not result.get('ok'):
+        sync_log.log('push.failed', error=result.get('error') or 'unreachable')
         return _record_failure(result.get('error') or 'unreachable')
 
     if _log_is_not_the_one_we_know(state, int(result.get('head', 0))):
         # Start again from the beginning against this log. Everything below
         # depends on `since` pointing into the same log the server is
         # answering from, and it no longer does.
+        sync_log.log('reset', was=int(state.get('base_seq', 0)),
+                     head=int(result.get('head', 0)),
+                     why='head_behind_cursor' if int(result.get('head', 0)) <
+                         int(state.get('base_seq', 0)) else 'different_account')
         state = write_state({'base_seq': 0, 'seeded': False,
                              'account': _current_account()})
         _drop_inbox_for_reset()
@@ -386,6 +396,10 @@ def _run_cycle_locked(outbox):
         cursor = since
         for _page in range(MAX_PAGES_PER_CYCLE):
             fetched = sync_client.pull(cursor)
+            sync_log.log('pull', since=cursor,
+                         got=len(fetched.get('ops') or []),
+                         more=bool(fetched.get('more')),
+                         error=fetched.get('error') or '-')
             if not fetched.get('ok'):
                 # Keep the contiguous run we did get; the rest comes next
                 # time. The cursor below advances only over what is in hand.
@@ -417,6 +431,8 @@ def _run_cycle_locked(outbox):
 
     if incoming or reached > since:
         _append_inbox({'base_seq': reached, 'ops': incoming})
+        sync_log.log('filed', reached=reached, ops=len(incoming),
+                     complete=complete)
 
     # Only now, once what came back is safely on disk - and only for what is
     # covered by it. An operation dropped from the queue before its place in
@@ -427,6 +443,8 @@ def _run_cycle_locked(outbox):
         acknowledged.extend(dups)
     if acknowledged:
         outbox.drop(acknowledged)
+        sync_log.log('acknowledged', lcs=len(acknowledged),
+                     dups=len(dups), assigned=len(seq_of))
 
     if failure is not None:
         return _record_failure(failure)
@@ -439,6 +457,8 @@ def _run_cycle_locked(outbox):
         'server_head': max(head, reached),
         'account': _current_account(),
     })
+    sync_log.log('cycle.ok', sent=len(batch), received=len(incoming),
+                 head=head, reached=reached)
     return {'ok': True, 'sent': len(batch), 'received': len(incoming),
             'more': truncated or len(sending) > len(batch)}
 
@@ -464,6 +484,8 @@ def _record_failure(code):
         'failures': failures,
         'next_attempt': int(time.time()) + delay,
     })
+    sync_log.log('backoff', error=code, failures=failures, wait_s=delay,
+                 terminal=code in TERMINAL_ERRORS)
     return {'ok': False, 'error': code}
 
 
@@ -531,6 +553,11 @@ def apply_pending(tracker):
     except LockTimeout:
         return None
 
+    sync_log.log('applied', ops=report.applied, ignored=report.ignored,
+                 discarded_time=report.discarded_time,
+                 auto_closed=len(report.auto_closed), reached=reached)
+    for entry_uid, end in report.auto_closed:
+        sync_log.log('auto_closed', entry=entry_uid)
     return {'applied': report.applied, 'discarded_time': report.discarded_time,
             'auto_closed': len(report.auto_closed), 'base_seq': reached}
 
@@ -598,6 +625,8 @@ def align_cursor(tracker):
     if behind <= 0:
         return 0
     write_state({'base_seq': int(stamped)})
+    sync_log.log('cursor.rewound', to=int(stamped), gave_up=behind,
+                 why='data.json is older than the recorded position')
     return behind
 
 
@@ -639,6 +668,8 @@ def offer_document(tracker):
                 # one-off batch, not a runaway, and it drains 500 at a time.
                 outbox.extend(ops, allow_overflow=True)
             write_state({'seeded': True})
+            sync_log.log('offered', ops=len(ops),
+                         projects=len(tracker.data.get('projects', [])))
             return len(ops)
     except Exception:
         # Same reasoning as _emit: a queue that will not take a write costs a
