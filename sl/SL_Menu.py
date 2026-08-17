@@ -21,7 +21,7 @@ except (ImportError, ModuleNotFoundError):
     UPDATE_MODULE_AVAILABLE = False
 
 try:
-    from tt import sync_client, sync_engine
+    from tt import sync_client, sync_engine, sync_log
     from tt.sync_outbox import default_outbox_if_enabled
     SYNC_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
@@ -367,6 +367,7 @@ if 'menu' not in st.session_state:
 # would be silently overwritten by the next thing the user did.
 if SYNC_AVAILABLE:
     try:
+        sync_log.configure(config)
         st.session_state.tracker.op_outbox = default_outbox_if_enabled(config)
         # Outside the check below on purpose: this call is what stops the
         # worker as well as what starts it. Switching synchronisation off
@@ -1804,6 +1805,13 @@ def view_settings():
                     step=1,
                     help=_("Synchronisation also runs whenever you switch to a different view."),
                 )
+                sync_logging = st.checkbox(
+                    _("Write a diagnostic log"),
+                    value=bool(sync_cfg.get('log_enabled', False)),
+                    help=_("Records what synchronisation did, so a problem can be "
+                           "traced afterwards. Counts and identifiers only - never "
+                           "project or task names."),
+                )
                 if st.form_submit_button(_("Save"), use_container_width=True):
                     # Updated key by key rather than replaced wholesale, so a
                     # setting this form does not show is not silently dropped
@@ -1813,6 +1821,7 @@ def view_settings():
                         'enabled': bool(sync_enabled),
                         'base_url': server_url.strip(),
                         'interval_minutes': int(sync_interval),
+                        'log_enabled': bool(sync_logging),
                     })
                     config['sync'] = saved
                     save_config(config)
@@ -1914,6 +1923,28 @@ def view_settings():
             identity = sync_client.device_identity()
             st.caption(_("This device: {name} ({uid})").format(
                 name=identity['device_name'], uid=identity['device_uid']))
+
+            # Only once there is something to show. An empty box explaining
+            # that the log is off is noise on a screen that already has the
+            # switch for it three lines up.
+            entries = sync_log.tail() if sync_log.is_enabled() else []
+            if entries:
+                st.divider()
+                st.caption(_("Diagnostic log ({size} KB)").format(
+                    size=max(1, sync_log.size() // 1024)))
+                st.code('\n'.join(entries), language=None)
+                col_save, col_clear = st.columns(2)
+                with col_save:
+                    st.download_button(
+                        _("Save log"), '\n'.join(entries) + '\n',
+                        file_name="timecontrol-sync.log", mime="text/plain",
+                        use_container_width=True, key="sync_log_download")
+                with col_clear:
+                    if st.button(_("Clear log"), use_container_width=True,
+                                 key="sync_log_clear"):
+                        sync_log.clear()
+                        set_feedback(_("Diagnostic log cleared."))
+                        st.rerun()
 
     st.divider()
 
