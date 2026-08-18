@@ -103,8 +103,6 @@ def render_icon_button_css():
         # popover trigger in this app is one of these three toolbar icons,
         # so targeting the testid directly covers all of them.
         '[data-testid="stPopoverButton"]',
-        '[class*="st-key-toolbar_today_btn"] button',
-        '[class*="st-key-toolbar_planning_btn"] button',
         '[class*="st-key-toolbar_email_btn"] button',
         '[class*="st-key-toolbar_start_btn"] button',
         '[class*="st-key-toolbar_info_btn"] button',
@@ -178,10 +176,12 @@ def render_icon_button_css():
            in this Streamlit version (same root cause worked around in
            button_selectors above) - so touching it would newly activate its
            existing align-items/column-gap rules too, changing more than
-           just spacing. st-key-toolbar_today_btn is a plain st.button, whose
+           just spacing. st-key-toolbar_email_btn is a plain st.button, whose
            key correctly does become a class, so it reliably identifies the
-           same toolbar row without that side effect. */
-        [data-testid="stHorizontalBlock"]:has([class*="st-key-toolbar_today_btn"]) {{
+           same toolbar row without that side effect. (It used to be
+           toolbar_today_btn, which was removed when Today's Tasks and Task
+           Planning became tabs - any plain button in the row will do.) */
+        [data-testid="stHorizontalBlock"]:has([class*="st-key-toolbar_email_btn"]) {{
             margin-top: 1rem !important;
         }}
 
@@ -539,13 +539,15 @@ def _auto_refresh_on_external_changes():
 
 # --- UI Components ---
 
-def render_header(title, subtitle=None):
+def render_header(title=None, subtitle=None):
     """
     Renders the standard header for a view: the app version (always, at the
     very top, above the title), the view's title, an optional subtitle
     below it, and any pending feedback message.
 
-    :param title: The main title of the view.
+    :param title: The main title of the view. Falsy omits it, which is what
+        a view whose tabs already name the section wants - repeating the
+        active tab's label directly above it says nothing twice.
     :param subtitle: An optional subtitle.
     """
     st.caption(_("Version {version}").format(version=st.session_state.tracker.get_version()))
@@ -559,7 +561,8 @@ def render_header(title, subtitle=None):
                 with st.spinner(_("Downloading and installing update...")):
                     apply_update(update_check['url'])
     render_sync_notice()
-    st.title(title)
+    if title:
+        st.title(title)
     if subtitle:
         st.caption(subtitle)
     if st.session_state.feedback:
@@ -621,9 +624,12 @@ def render_sync_notice():
 
 def render_toolbar(return_to):
     """
-    Renders the shared icon toolbar (New/Management/Today View/Task
-    Planning/E-Mail/Start/Info/Stop/Reporting/Settings), used at the top of
-    the main menu, task planning, and today's tasks views.
+    Renders the shared icon toolbar (New/Management/E-Mail/Start/Info/Stop/
+    Reporting/Settings), used at the top of the working views.
+
+    Today's Tasks and Task Planning used to have buttons of their own here.
+    They are tabs now - see view_work() - and a button that merely selects
+    the tab you are looking at is one control too many.
 
     :param return_to: The menu key to navigate back to once the user is
         done with whatever the toolbar sends them to (closes a form, backs
@@ -634,7 +640,7 @@ def render_toolbar(return_to):
     """
     current_work = st.session_state.tracker.get_current_work()
 
-    t_col_new, t_col_mgmt, t_col_today, t_col_planning, t_col_email, t_col_start, t_col_info, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2])
+    t_col_new, t_col_mgmt, t_col_email, t_col_start, t_col_info, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 4])
     with t_col_new:
         with st.popover("+", help=_("New"), key="toolbar_new_popover"):
             if st.button(_("New Project"), use_container_width=True):
@@ -713,16 +719,6 @@ def render_toolbar(return_to):
                     st.session_state.context['return_to'] = return_to
                     navigate_to('promote_task_to_project')
 
-    with t_col_today:
-        if st.button("★", help=_("Today View"), key="toolbar_today_btn"):
-            st.session_state.context['return_to'] = return_to
-            navigate_to('today_view')
-
-    with t_col_planning:
-        if st.button("▣", help=_("Task Planning"), key="toolbar_planning_btn"):
-            st.session_state.context['return_to'] = return_to
-            navigate_to('task_planning')
-
     with t_col_email:
         if st.button("@", help=_("E-Mail Task Assignment"), key="toolbar_email_btn"):
             st.session_state.context['return_to'] = return_to
@@ -774,13 +770,89 @@ def render_toolbar(return_to):
             st.session_state.context['return_to'] = return_to
             navigate_to('settings')
 
-def view_task_planning():
+# The two halves of the working day, shown as tabs rather than as separate
+# screens. Both keep their own menu key: a great deal of the app navigates
+# back to one of them through `return_to`, and 'today_view' is the app's home.
+# The key decides which tab opens, and switching tabs sets the key - so the
+# two stay mirrored and everything that returns here still lands where it
+# meant to.
+_WORK_ROUTES = ('today_view', 'task_planning')
+_WORK_TABS_KEY = 'work_tabs'
+
+
+def _work_tab_labels():
+    """Translated at call time, like every other label in this file."""
+    return {'today_view': _("Today's Tasks"), 'task_planning': _("Task Planning")}
+
+
+def view_work():
     """
-    Renders the task planning view, showing all tasks that are not closed.
+    The home screen: header, toolbar, and the two working views as tabs.
+
+    Only the open tab's body runs. `on_change="rerun"` is what makes that
+    possible - without it Streamlit computes every tab on every redraw, and
+    these two are the most expensive screens in the app.
     """
-    render_header(_("Task Planning"))
-    render_toolbar('task_planning')
+    labels = _work_tab_labels()
+    route_of = {label: route for route, label in labels.items()}
+    from_menu = st.session_state.menu if st.session_state.menu in _WORK_ROUTES \
+        else _WORK_ROUTES[0]
+
+    # Which tab is the right one has three possible answers, and they have
+    # to be tried in this order.
+    #
+    # The route wins when it changed behind the tabs' back - a form
+    # returning to 'task_planning', say - which is what the remembered
+    # _work_tab_route detects.
+    #
+    # The route also wins when the widget has no state at all. Streamlit
+    # discards a widget's state while the widget is not drawn, so every
+    # detour through a form or the settings screen wipes it; left to itself
+    # the strip would then fall back to its first tab while the body below
+    # rendered the route's, and the two would disagree on screen.
+    #
+    # Otherwise the widget wins: the user has just clicked a tab, and the
+    # menu is the stale one.
+    stored = st.session_state.get(_WORK_TABS_KEY)
+    if stored is None or st.session_state.get('_work_tab_route') != from_menu:
+        active = from_menu
+    else:
+        active = route_of.get(stored, from_menu)
+
+    # Written back before the widget is created, so the strip and the body
+    # below it can never show different tabs.
+    st.session_state[_WORK_TABS_KEY] = labels[active]
+    st.session_state['_work_tab_route'] = active
+    # Settled before anything is drawn, so the toolbar's "return here"
+    # target and the rest of the run all agree on which tab this is.
+    st.session_state.menu = active
+
+    # No title: the tabs below name the section, and a heading repeating the
+    # active tab's label would say the same thing twice.
+    render_header()
+    render_toolbar(active)
+
     # Icon action buttons are styled globally by render_icon_button_css().
+    tabs = st.tabs([labels[r] for r in _WORK_ROUTES],
+                   key=_WORK_TABS_KEY, on_change="rerun")
+
+    for route, tab in zip(_WORK_ROUTES, tabs):
+        with tab:
+            if route != active:
+                continue
+            if route == 'today_view':
+                _today_tasks_body()
+            else:
+                _task_planning_body()
+
+
+def _task_planning_body():
+    """
+    The task planning list: everything not closed, filtered by due date.
+
+    The header and the toolbar are not drawn here - this is one of two tabs
+    inside view_work(), which draws both once for the pair.
+    """
 
     filter_options = [
         _("Today"), 
@@ -981,21 +1053,18 @@ def view_task_planning():
     else:
         st.info(_("No tasks found."))
 
-    if st.button(_("Back"), use_container_width=True):
-        navigate_to(st.session_state.context.get('return_to', 'today_view'))
+    # No "Back" button any more: this is a tab, and the tab strip above is
+    # the way out. It used to lead to whatever opened this screen, which is
+    # now almost always the other tab.
 
-def view_today_tasks():
+def _today_tasks_body():
     """
-    Renders the view showing all tasks marked as 'today' and not closed.
-    This is also the app's default/home view (see menu_map/return_to
-    fallbacks below), so it additionally shows the currently active work
-    session (with quick done/edit actions) and the app's Exit button -
-    both formerly the responsibility of a separate main-menu view.
-    """
-    render_header(_("Today's Tasks"))
-    render_toolbar('today_view')
+    Everything marked for today, plus the current work session and the Exit
+    button - this is the app's home, so those live here.
 
-    # Icon action buttons are styled globally by render_icon_button_css().
+    The header and the toolbar are not drawn here - this is one of two tabs
+    inside view_work(), which draws both once for the pair.
+    """
 
     st.session_state.tracker.cleanup_overdue_today_tasks()
     current_work = st.session_state.tracker.get_current_work()
@@ -3189,8 +3258,9 @@ def view_report_display():
 # --- Main Router ---
 
 menu_map = {
-    'task_planning': view_task_planning,
-    'today_view': view_today_tasks, # Default/home view - see view_today_tasks()
+    # Both keys reach the same screen; which tab opens is decided there.
+    'task_planning': view_work,
+    'today_view': view_work,        # Default/home view - see view_work()
     'email_assignment': view_email_assignment,
     'project_management': view_project_management,
     'main_project_mgmt': view_main_project_mgmt,
@@ -3260,7 +3330,10 @@ menu_map = {
 # immediate rerun anyway, which then shows whatever changed while it was
 # suppressed.
 _MENUS_TO_SKIP_AUTOREFRESH = {
-    'today_view', 'email_assignment', 'settings', 'add_main_project',
+    # Both halves of the working screen: a rerun underneath the user closes
+    # popovers and can undo an edit in progress.
+    'today_view', 'task_planning',
+    'email_assignment', 'settings', 'add_main_project',
     'rename_main_project', 'list_inactive_main', 'add_task_form',
     'edit_task_form', 'rename_task', 'list_inactive_tasks',
 }

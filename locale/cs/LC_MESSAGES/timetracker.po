@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: TimeControl\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-17 12:07+0200\n"
+"POT-Creation-Date: 2026-08-18 11:50+0200\n"
 "PO-Revision-Date: 2024-05-15 12:00+0200\n"
 "Last-Translator: Frank Faulstich\n"
 "Language-Team: Czech\n"
@@ -16,29 +16,29 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
-#: sl/SL_Menu.py:294 sl/SL_Menu.py:1138 sl/SL_Menu.py:2679 sl/SL_Menu.py:2851
+#: sl/SL_Menu.py:294 sl/SL_Menu.py:1207 sl/SL_Menu.py:2748 sl/SL_Menu.py:2920
 msgid "Priority"
 msgstr "Priorita"
 
-#: sl/SL_Menu.py:551
+#: sl/SL_Menu.py:553
 #, python-brace-format
 msgid "Version {version}"
 msgstr "Verze {version}"
 
-#: sl/SL_Menu.py:556 update.py:115
+#: sl/SL_Menu.py:558 update.py:115
 #, python-brace-format
 msgid "A new version ({version}) is available."
 msgstr "Je k dispozici nová verze ({version})."
 
-#: sl/SL_Menu.py:558
+#: sl/SL_Menu.py:560
 msgid "Restart and install the update"
 msgstr "Restartovat a nainstalovat aktualizaci"
 
-#: sl/SL_Menu.py:559
+#: sl/SL_Menu.py:561
 msgid "Downloading and installing update..."
 msgstr "Stahuji a instaluji aktualizaci..."
 
-#: sl/SL_Menu.py:594
+#: sl/SL_Menu.py:597
 #, python-brace-format
 msgid ""
 "{count} time entries were discarded because the task they belonged to had "
@@ -47,400 +47,396 @@ msgstr ""
 "{count} časových záznamů bylo zahozeno, protože úkol, ke kterému patřily, "
 "byl smazán na jiném počítači."
 
-#: sl/SL_Menu.py:617
+#: sl/SL_Menu.py:620
 #, python-brace-format
 msgid "Synchronisation is paused: {reason}"
 msgstr "Synchronizace je pozastavena: {reason}"
 
-#: sl/SL_Menu.py:639
+#: sl/SL_Menu.py:645
 msgid "New"
 msgstr "Nové"
 
-#: sl/SL_Menu.py:640
+#: sl/SL_Menu.py:646
 msgid "New Project"
 msgstr "Nový projekt"
 
-#: sl/SL_Menu.py:643
+#: sl/SL_Menu.py:649
 msgid "New Task"
 msgstr "Nový úkol"
 
-#: sl/SL_Menu.py:648
+#: sl/SL_Menu.py:654
 msgid "Project & Task Management"
 msgstr "Správa projektů a úkolů"
 
-#: sl/SL_Menu.py:649 sl/SL_Menu.py:1353
+#: sl/SL_Menu.py:655 sl/SL_Menu.py:1422
 msgid "Main Project Management"
 msgstr "Hlavní správa projektů"
 
-#: sl/SL_Menu.py:650 sl/SL_Menu.py:1369 sl/SL_Menu.py:1964
+#: sl/SL_Menu.py:656 sl/SL_Menu.py:1438 sl/SL_Menu.py:2033
 msgid "Add Project"
 msgstr "Přidat projekt"
 
-#: sl/SL_Menu.py:653 sl/SL_Menu.py:1372 sl/SL_Menu.py:2312
+#: sl/SL_Menu.py:659 sl/SL_Menu.py:1441 sl/SL_Menu.py:2381
 msgid "List Projects"
 msgstr "Vypsat projekty"
 
-#: sl/SL_Menu.py:656 sl/SL_Menu.py:1375 sl/SL_Menu.py:2327
+#: sl/SL_Menu.py:662 sl/SL_Menu.py:1444 sl/SL_Menu.py:2396
 msgid "Rename Project"
 msgstr "Přejmenovat projekt"
 
-#: sl/SL_Menu.py:659 sl/SL_Menu.py:1378 sl/SL_Menu.py:2442 sl/SL_Menu.py:2455
+#: sl/SL_Menu.py:665 sl/SL_Menu.py:1447 sl/SL_Menu.py:2511 sl/SL_Menu.py:2524
 msgid "Close Project"
 msgstr "Zavřít projekt"
 
-#: sl/SL_Menu.py:662 sl/SL_Menu.py:1381 sl/SL_Menu.py:2472 sl/SL_Menu.py:2485
+#: sl/SL_Menu.py:668 sl/SL_Menu.py:1450 sl/SL_Menu.py:2541 sl/SL_Menu.py:2554
 msgid "Re-open Project"
 msgstr "Znovu otevřít projekt"
 
-#: sl/SL_Menu.py:665 sl/SL_Menu.py:1384 sl/SL_Menu.py:2502 sl/SL_Menu.py:2516
+#: sl/SL_Menu.py:671 sl/SL_Menu.py:1453 sl/SL_Menu.py:2571 sl/SL_Menu.py:2585
 msgid "Delete Project"
 msgstr "Smazat projekt"
 
-#: sl/SL_Menu.py:668 sl/SL_Menu.py:1387 sl/SL_Menu.py:2533
+#: sl/SL_Menu.py:674 sl/SL_Menu.py:1456 sl/SL_Menu.py:2602
 msgid "List Inactive Projects"
 msgstr "Seznam neaktivních projektů"
 
-#: sl/SL_Menu.py:671 sl/SL_Menu.py:1390
+#: sl/SL_Menu.py:677 sl/SL_Menu.py:1459
 msgid "Demote Project to Task"
 msgstr "Degradovat projekt na úkol"
 
-#: sl/SL_Menu.py:674 sl/SL_Menu.py:1393 sl/SL_Menu.py:2595
+#: sl/SL_Menu.py:680 sl/SL_Menu.py:1462 sl/SL_Menu.py:2664
 msgid "List Completed Projects"
 msgstr "Vypsat dokončené projekty"
 
-#: sl/SL_Menu.py:678 sl/SL_Menu.py:1355 sl/SL_Menu.py:1406
+#: sl/SL_Menu.py:684 sl/SL_Menu.py:1424 sl/SL_Menu.py:1475
 msgid "Task Management"
 msgstr "Správa úkolů"
 
-#: sl/SL_Menu.py:679 sl/SL_Menu.py:1408 sl/SL_Menu.py:2613 sl/SL_Menu.py:2644
-#: sl/SL_Menu.py:2719
+#: sl/SL_Menu.py:685 sl/SL_Menu.py:1477 sl/SL_Menu.py:2682 sl/SL_Menu.py:2713
+#: sl/SL_Menu.py:2788
 msgid "Add Task"
 msgstr "Přidat úkol"
 
-#: sl/SL_Menu.py:682 sl/SL_Menu.py:1411 sl/SL_Menu.py:2362
+#: sl/SL_Menu.py:688 sl/SL_Menu.py:1480 sl/SL_Menu.py:2431
 msgid "List Tasks"
 msgstr "Vypsat úkoly"
 
-#: sl/SL_Menu.py:685 sl/SL_Menu.py:1414 sl/SL_Menu.py:2395
+#: sl/SL_Menu.py:691 sl/SL_Menu.py:1483 sl/SL_Menu.py:2464
 msgid "Rename Task"
 msgstr "Přejmenovat úkol"
 
-#: sl/SL_Menu.py:688 sl/SL_Menu.py:1417 sl/SL_Menu.py:1979 sl/SL_Menu.py:2005
-#: sl/SL_Menu.py:2184
+#: sl/SL_Menu.py:694 sl/SL_Menu.py:1486 sl/SL_Menu.py:2048 sl/SL_Menu.py:2074
+#: sl/SL_Menu.py:2253
 msgid "Close Task"
 msgstr "Uzavřít úkol"
 
-#: sl/SL_Menu.py:691 sl/SL_Menu.py:1420 sl/SL_Menu.py:2024 sl/SL_Menu.py:2050
+#: sl/SL_Menu.py:697 sl/SL_Menu.py:1489 sl/SL_Menu.py:2093 sl/SL_Menu.py:2119
 msgid "Re-open Task"
 msgstr "Znovu otevřít úkol"
 
-#: sl/SL_Menu.py:694 sl/SL_Menu.py:1423 sl/SL_Menu.py:2069 sl/SL_Menu.py:2096
+#: sl/SL_Menu.py:700 sl/SL_Menu.py:1492 sl/SL_Menu.py:2138 sl/SL_Menu.py:2165
 msgid "Delete Task"
 msgstr "Smazat úkol"
 
-#: sl/SL_Menu.py:697 sl/SL_Menu.py:1426 sl/SL_Menu.py:2115 sl/SL_Menu.py:2151
+#: sl/SL_Menu.py:703 sl/SL_Menu.py:1495 sl/SL_Menu.py:2184 sl/SL_Menu.py:2220
 msgid "Move Task"
 msgstr "Přesunout úkol"
 
-#: sl/SL_Menu.py:700 sl/SL_Menu.py:1429 sl/SL_Menu.py:2170
+#: sl/SL_Menu.py:706 sl/SL_Menu.py:1498 sl/SL_Menu.py:2239
 msgid "List Inactive Tasks"
 msgstr "Vypsat neaktivní úkoly"
 
-#: sl/SL_Menu.py:703 sl/SL_Menu.py:1432 sl/SL_Menu.py:2197
+#: sl/SL_Menu.py:709 sl/SL_Menu.py:1501 sl/SL_Menu.py:2266
 msgid "List All Closed Tasks"
 msgstr "Vypsat všechny uzavřené úkoly"
 
-#: sl/SL_Menu.py:706 sl/SL_Menu.py:865 sl/SL_Menu.py:949 sl/SL_Menu.py:1159
-#: sl/SL_Menu.py:1435 sl/SL_Menu.py:2747 sl/SL_Menu.py:2767 sl/SL_Menu.py:2802
+#: sl/SL_Menu.py:712 sl/SL_Menu.py:937 sl/SL_Menu.py:1021 sl/SL_Menu.py:1228
+#: sl/SL_Menu.py:1504 sl/SL_Menu.py:2816 sl/SL_Menu.py:2836 sl/SL_Menu.py:2871
 msgid "Edit Task"
 msgstr "Upravit úkol"
 
-#: sl/SL_Menu.py:709 sl/SL_Menu.py:1438 sl/SL_Menu.py:2222
+#: sl/SL_Menu.py:715 sl/SL_Menu.py:1507 sl/SL_Menu.py:2291
 msgid "Delete All Closed Tasks"
 msgstr "Smazat všechny uzavřené úkoly"
 
-#: sl/SL_Menu.py:712 sl/SL_Menu.py:1441 sl/SL_Menu.py:2264
+#: sl/SL_Menu.py:718 sl/SL_Menu.py:1510 sl/SL_Menu.py:2333
 msgid "Promote Task to Project"
 msgstr "Povýšit úkol na projekt"
 
-#: sl/SL_Menu.py:717
-msgid "Today View"
-msgstr "Dnes Zobrazit"
-
-#: sl/SL_Menu.py:722 sl/SL_Menu.py:781
-msgid "Task Planning"
-msgstr "Plánování úkolů"
-
-#: sl/SL_Menu.py:727 sl/SL_Menu.py:1193
+#: sl/SL_Menu.py:723 sl/SL_Menu.py:1262
 msgid "E-Mail Task Assignment"
 msgstr "Zadání úkolu E-"
 
-#: sl/SL_Menu.py:732 sl/SL_Menu.py:861 sl/SL_Menu.py:945 sl/SL_Menu.py:1155
+#: sl/SL_Menu.py:728 sl/SL_Menu.py:933 sl/SL_Menu.py:1017 sl/SL_Menu.py:1224
 msgid "Start work on task"
 msgstr "Začít práci na úkolu"
 
-#: sl/SL_Menu.py:737
+#: sl/SL_Menu.py:733
 msgid "Show current work"
 msgstr "Zobrazit aktuální práci"
 
-#: sl/SL_Menu.py:742
+#: sl/SL_Menu.py:738
 msgid "Stop current work"
 msgstr "Zastavit aktuální práci"
 
-#: sl/SL_Menu.py:744
+#: sl/SL_Menu.py:740
 msgid "Work session stopped successfully."
 msgstr "Pracovní relace byla úspěšně zastavena."
 
-#: sl/SL_Menu.py:746
+#: sl/SL_Menu.py:742
 msgid "No active work session to stop."
 msgstr "Žádná aktivní pracovní relace k zastavení."
 
-#: sl/SL_Menu.py:750 sl/SL_Menu.py:1454
+#: sl/SL_Menu.py:746 sl/SL_Menu.py:1523
 msgid "Reporting"
 msgstr "Reportování"
 
-#: sl/SL_Menu.py:751 sl/SL_Menu.py:1457
+#: sl/SL_Menu.py:747 sl/SL_Menu.py:1526
 msgid "Daily Report (Today)"
 msgstr "Denní zpráva (dnes)"
 
-#: sl/SL_Menu.py:756 sl/SL_Menu.py:1463 sl/SL_Menu.py:3001
+#: sl/SL_Menu.py:752 sl/SL_Menu.py:1532 sl/SL_Menu.py:3070
 msgid "Daily Report (Specific Day)"
 msgstr "Denní zpráva (konkrétní den)"
 
-#: sl/SL_Menu.py:759 sl/SL_Menu.py:1466 sl/SL_Menu.py:3020
+#: sl/SL_Menu.py:755 sl/SL_Menu.py:1535 sl/SL_Menu.py:3089
 msgid "Date Range Report"
 msgstr "Zpráva za období"
 
-#: sl/SL_Menu.py:762 sl/SL_Menu.py:1469 sl/SL_Menu.py:3047 sl/SL_Menu.py:3078
+#: sl/SL_Menu.py:758 sl/SL_Menu.py:1538 sl/SL_Menu.py:3116 sl/SL_Menu.py:3147
 msgid "Detailed Task Report"
 msgstr "Podrobná zpráva o úkolu"
 
-#: sl/SL_Menu.py:765 sl/SL_Menu.py:1472 sl/SL_Menu.py:3106
+#: sl/SL_Menu.py:761 sl/SL_Menu.py:1541 sl/SL_Menu.py:3175
 msgid "Detailed Project Report"
 msgstr "Podrobná zpráva o projektu"
 
-#: sl/SL_Menu.py:768 sl/SL_Menu.py:1475 sl/SL_Menu.py:3133
+#: sl/SL_Menu.py:764 sl/SL_Menu.py:1544 sl/SL_Menu.py:3202
 msgid "Detailed Daily Report"
 msgstr "Podrobná denní zpráva"
 
-#: sl/SL_Menu.py:773 sl/SL_Menu.py:1522
+#: sl/SL_Menu.py:769 sl/SL_Menu.py:1591
 msgid "Settings"
 msgstr "Nastavení"
 
-#: sl/SL_Menu.py:786 sl/SL_Menu.py:806 sl/SL_Menu.py:872 sl/SL_Menu.py:956
-#: sl/SL_Menu.py:1308 sl/SL_Menu.py:2674 sl/SL_Menu.py:2845
-msgid "Today"
-msgstr "Dnes"
+#: sl/SL_Menu.py:785
+msgid "Task Planning"
+msgstr "Plánování úkolů"
 
-#: sl/SL_Menu.py:787 sl/SL_Menu.py:807
-msgid "Tomorrow"
-msgstr "Zítra"
-
-#: sl/SL_Menu.py:788 sl/SL_Menu.py:808
-msgid "Weekly overview"
-msgstr "Týdenní přehled"
-
-#: sl/SL_Menu.py:789 sl/SL_Menu.py:809
-msgid "Overdue tasks"
-msgstr "Zpožděné úkoly"
-
-#: sl/SL_Menu.py:790 sl/SL_Menu.py:810
-msgid "Unplanned tasks"
-msgstr "Neplánované úkoly"
-
-#: sl/SL_Menu.py:791
-msgid "All"
-msgstr "Vše"
-
-#: sl/SL_Menu.py:798
-msgid "Filter"
-msgstr "Filtr"
-
-#: sl/SL_Menu.py:817
-msgid "Tasks"
-msgstr "Úkoly"
-
-#: sl/SL_Menu.py:824 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
-msgid "Friday"
-msgstr "Pátek"
-
-#: sl/SL_Menu.py:824 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
-msgid "Monday"
-msgstr "Pondělí"
-
-#: sl/SL_Menu.py:824 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
-msgid "Saturday"
-msgstr "Sobota"
-
-#: sl/SL_Menu.py:824 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
-msgid "Sunday"
-msgstr "Neděle"
-
-#: sl/SL_Menu.py:824 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
-msgid "Thursday"
-msgstr "Čtvrtek"
-
-#: sl/SL_Menu.py:824 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
-msgid "Tuesday"
-msgstr "Úterý"
-
-#: sl/SL_Menu.py:824 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
-msgid "Wednesday"
-msgstr "Středa"
-
-#: sl/SL_Menu.py:884 sl/SL_Menu.py:968 sl/SL_Menu.py:1019 sl/SL_Menu.py:1166
-#: sl/SL_Menu.py:2847
-msgid "Done"
-msgstr "Hotovo"
-
-#: sl/SL_Menu.py:933 sl/SL_Menu.py:1126
-msgid "Due"
-msgstr "Termín"
-
-#: sl/SL_Menu.py:982
-msgid "No tasks found."
-msgstr "Nebyly nalezeny žádné úkoly."
-
-#: sl/SL_Menu.py:984 sl/SL_Menu.py:1342 sl/SL_Menu.py:1360 sl/SL_Menu.py:1399
-#: sl/SL_Menu.py:1447 sl/SL_Menu.py:1481 sl/SL_Menu.py:1951 sl/SL_Menu.py:1984
-#: sl/SL_Menu.py:1995 sl/SL_Menu.py:2029 sl/SL_Menu.py:2040 sl/SL_Menu.py:2074
-#: sl/SL_Menu.py:2085 sl/SL_Menu.py:2120 sl/SL_Menu.py:2131 sl/SL_Menu.py:2139
-#: sl/SL_Menu.py:2190 sl/SL_Menu.py:2215 sl/SL_Menu.py:2237 sl/SL_Menu.py:2269
-#: sl/SL_Menu.py:2280 sl/SL_Menu.py:2320 sl/SL_Menu.py:2332 sl/SL_Menu.py:2367
-#: sl/SL_Menu.py:2388 sl/SL_Menu.py:2400 sl/SL_Menu.py:2411 sl/SL_Menu.py:2447
-#: sl/SL_Menu.py:2477 sl/SL_Menu.py:2507 sl/SL_Menu.py:2547 sl/SL_Menu.py:2559
-#: sl/SL_Menu.py:2606 sl/SL_Menu.py:2618 sl/SL_Menu.py:2752 sl/SL_Menu.py:2771
-#: sl/SL_Menu.py:2784 sl/SL_Menu.py:2799 sl/SL_Menu.py:2940 sl/SL_Menu.py:2950
-#: sl/SL_Menu.py:2994 sl/SL_Menu.py:3013 sl/SL_Menu.py:3040 sl/SL_Menu.py:3052
-#: sl/SL_Menu.py:3064 sl/SL_Menu.py:3083 sl/SL_Menu.py:3099 sl/SL_Menu.py:3111
-#: sl/SL_Menu.py:3126 sl/SL_Menu.py:3145 sl/SL_Menu.py:3186
-msgid "Back"
-msgstr "Zpět"
-
-#: sl/SL_Menu.py:995
+#: sl/SL_Menu.py:785
 msgid "Today's Tasks"
 msgstr "Dnešní úkoly"
 
-#: sl/SL_Menu.py:1014 sl/SL_Menu.py:2979
+#: sl/SL_Menu.py:858 sl/SL_Menu.py:878 sl/SL_Menu.py:944 sl/SL_Menu.py:1028
+#: sl/SL_Menu.py:1377 sl/SL_Menu.py:2743 sl/SL_Menu.py:2914
+msgid "Today"
+msgstr "Dnes"
+
+#: sl/SL_Menu.py:859 sl/SL_Menu.py:879
+msgid "Tomorrow"
+msgstr "Zítra"
+
+#: sl/SL_Menu.py:860 sl/SL_Menu.py:880
+msgid "Weekly overview"
+msgstr "Týdenní přehled"
+
+#: sl/SL_Menu.py:861 sl/SL_Menu.py:881
+msgid "Overdue tasks"
+msgstr "Zpožděné úkoly"
+
+#: sl/SL_Menu.py:862 sl/SL_Menu.py:882
+msgid "Unplanned tasks"
+msgstr "Neplánované úkoly"
+
+#: sl/SL_Menu.py:863
+msgid "All"
+msgstr "Vše"
+
+#: sl/SL_Menu.py:870
+msgid "Filter"
+msgstr "Filtr"
+
+#: sl/SL_Menu.py:889
+msgid "Tasks"
+msgstr "Úkoly"
+
+#: sl/SL_Menu.py:896 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
+msgid "Friday"
+msgstr "Pátek"
+
+#: sl/SL_Menu.py:896 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
+msgid "Monday"
+msgstr "Pondělí"
+
+#: sl/SL_Menu.py:896 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
+msgid "Saturday"
+msgstr "Sobota"
+
+#: sl/SL_Menu.py:896 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
+msgid "Sunday"
+msgstr "Neděle"
+
+#: sl/SL_Menu.py:896 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
+msgid "Thursday"
+msgstr "Čtvrtek"
+
+#: sl/SL_Menu.py:896 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
+msgid "Tuesday"
+msgstr "Úterý"
+
+#: sl/SL_Menu.py:896 tt/TimeTracker.py:1980 tt/TimeTracker.py:2078
+msgid "Wednesday"
+msgstr "Středa"
+
+#: sl/SL_Menu.py:956 sl/SL_Menu.py:1040 sl/SL_Menu.py:1088 sl/SL_Menu.py:1235
+#: sl/SL_Menu.py:2916
+msgid "Done"
+msgstr "Hotovo"
+
+#: sl/SL_Menu.py:1005 sl/SL_Menu.py:1195
+msgid "Due"
+msgstr "Termín"
+
+#: sl/SL_Menu.py:1054
+msgid "No tasks found."
+msgstr "Nebyly nalezeny žádné úkoly."
+
+#: sl/SL_Menu.py:1083 sl/SL_Menu.py:3048
 msgid "Current Active Work"
 msgstr "Aktuální aktivní práce"
 
-#: sl/SL_Menu.py:1016 sl/SL_Menu.py:2992
+#: sl/SL_Menu.py:1085 sl/SL_Menu.py:3061
 msgid "No active work session."
 msgstr "Žádná aktivní pracovní relace."
 
-#: sl/SL_Menu.py:1032
+#: sl/SL_Menu.py:1101
 msgid "Edit current task"
 msgstr "Upravit aktuální úkol"
 
-#: sl/SL_Menu.py:1056
+#: sl/SL_Menu.py:1125
 msgid "Show only open tasks"
 msgstr "Zobrazit pouze otevřené úkoly"
 
-#: sl/SL_Menu.py:1069
+#: sl/SL_Menu.py:1138
 msgid "Sort by priority"
 msgstr "Řadit podle priority"
 
-#: sl/SL_Menu.py:1141 sl/SL_Menu.py:2679 sl/SL_Menu.py:2851
+#: sl/SL_Menu.py:1210 sl/SL_Menu.py:2748 sl/SL_Menu.py:2920
 msgid "0 (lowest) to 9 (highest)"
 msgstr "0 (nejnižší) až 9 (nejvyšší)"
 
-#: sl/SL_Menu.py:1180
+#: sl/SL_Menu.py:1249
 msgid "No open tasks for today."
 msgstr "Žádné otevřené úkoly na dnešek."
 
-#: sl/SL_Menu.py:1182
+#: sl/SL_Menu.py:1251
 msgid "No tasks for today."
 msgstr "Žádné úkoly na dnešek."
 
-#: sl/SL_Menu.py:1186
+#: sl/SL_Menu.py:1255
 msgid "Exit"
 msgstr "Konec"
 
-#: sl/SL_Menu.py:1199
+#: sl/SL_Menu.py:1268
 msgid "Fetching emails..."
 msgstr "Načítání e-mailů..."
 
-#: sl/SL_Menu.py:1202
+#: sl/SL_Menu.py:1271
 #, python-brace-format
 msgid "Error fetching emails: {error}"
 msgstr "Chyba při načítání e-mailů: {error}"
 
-#: sl/SL_Menu.py:1205
+#: sl/SL_Menu.py:1274
 #, python-brace-format
 msgid "{count} new tasks created from emails."
 msgstr "{count} nových úkolů vytvořených z e-mailů."
 
-#: sl/SL_Menu.py:1207
+#: sl/SL_Menu.py:1276
 msgid "No new emails found."
 msgstr "Nebyly nalezeny žádné nové e-maily."
 
-#: sl/SL_Menu.py:1232
+#: sl/SL_Menu.py:1301
 #, python-brace-format
 msgid "{remaining} of {total} emails still to process"
 msgstr "{remaining} z {total} e-mailů zbývá zpracovat"
 
-#: sl/SL_Menu.py:1236
+#: sl/SL_Menu.py:1305
 msgid "No unassigned email tasks available."
 msgstr "Nejsou k dispozici žádné nepřiřazené e-mailové úkoly."
 
-#: sl/SL_Menu.py:1248
+#: sl/SL_Menu.py:1317
 msgid "Assign Project"
 msgstr "Přiřadit projekt"
 
-#: sl/SL_Menu.py:1259
+#: sl/SL_Menu.py:1328
 msgid "Are you sure you want to delete this task?"
 msgstr "Opravdu chcete smazat tento úkol?"
 
-#: sl/SL_Menu.py:1262
+#: sl/SL_Menu.py:1331
 msgid "Yes, delete"
 msgstr "Ano, smazat"
 
-#: sl/SL_Menu.py:1267
+#: sl/SL_Menu.py:1336
 msgid "No, cancel"
 msgstr "Ne, zrušit"
 
-#: sl/SL_Menu.py:1274
+#: sl/SL_Menu.py:1343
 msgid "Delete"
 msgstr "Smazat"
 
-#: sl/SL_Menu.py:1278
+#: sl/SL_Menu.py:1347
 msgid "Edit Details"
 msgstr "Upravit podrobnosti"
 
-#: sl/SL_Menu.py:1286 sl/SL_Menu.py:2831
+#: sl/SL_Menu.py:1355 sl/SL_Menu.py:2900
 msgid "Task Name"
 msgstr "Název úkolu"
 
-#: sl/SL_Menu.py:1295 sl/SL_Menu.py:2835
+#: sl/SL_Menu.py:1364 sl/SL_Menu.py:2904
 msgid "Due Date"
 msgstr "Termín"
 
-#: sl/SL_Menu.py:1303 sl/SL_Menu.py:2839
+#: sl/SL_Menu.py:1372 sl/SL_Menu.py:2908
 msgid "Clear"
 msgstr "Vymazat"
 
-#: sl/SL_Menu.py:1310 sl/SL_Menu.py:2707 sl/SL_Menu.py:2880
+#: sl/SL_Menu.py:1379 sl/SL_Menu.py:2776 sl/SL_Menu.py:2949
 msgid "Notes (Markdown)"
 msgstr "Poznámky (označení)"
 
-#: sl/SL_Menu.py:1334
+#: sl/SL_Menu.py:1403
 msgid "Task details updated successfully."
 msgstr "Podrobnosti úkolu byly úspěšně aktualizovány."
 
-#: sl/SL_Menu.py:1340
+#: sl/SL_Menu.py:1409
 msgid "Error updating task details."
 msgstr "Při aktualizaci podrobností úkolu došlo k chybě."
 
-#: sl/SL_Menu.py:1351 sl/SL_Menu.py:1367
+#: sl/SL_Menu.py:1411 sl/SL_Menu.py:1429 sl/SL_Menu.py:1468 sl/SL_Menu.py:1516
+#: sl/SL_Menu.py:1550 sl/SL_Menu.py:2020 sl/SL_Menu.py:2053 sl/SL_Menu.py:2064
+#: sl/SL_Menu.py:2098 sl/SL_Menu.py:2109 sl/SL_Menu.py:2143 sl/SL_Menu.py:2154
+#: sl/SL_Menu.py:2189 sl/SL_Menu.py:2200 sl/SL_Menu.py:2208 sl/SL_Menu.py:2259
+#: sl/SL_Menu.py:2284 sl/SL_Menu.py:2306 sl/SL_Menu.py:2338 sl/SL_Menu.py:2349
+#: sl/SL_Menu.py:2389 sl/SL_Menu.py:2401 sl/SL_Menu.py:2436 sl/SL_Menu.py:2457
+#: sl/SL_Menu.py:2469 sl/SL_Menu.py:2480 sl/SL_Menu.py:2516 sl/SL_Menu.py:2546
+#: sl/SL_Menu.py:2576 sl/SL_Menu.py:2616 sl/SL_Menu.py:2628 sl/SL_Menu.py:2675
+#: sl/SL_Menu.py:2687 sl/SL_Menu.py:2821 sl/SL_Menu.py:2840 sl/SL_Menu.py:2853
+#: sl/SL_Menu.py:2868 sl/SL_Menu.py:3009 sl/SL_Menu.py:3019 sl/SL_Menu.py:3063
+#: sl/SL_Menu.py:3082 sl/SL_Menu.py:3109 sl/SL_Menu.py:3121 sl/SL_Menu.py:3133
+#: sl/SL_Menu.py:3152 sl/SL_Menu.py:3168 sl/SL_Menu.py:3180 sl/SL_Menu.py:3195
+#: sl/SL_Menu.py:3214 sl/SL_Menu.py:3255
+msgid "Back"
+msgstr "Zpět"
+
+#: sl/SL_Menu.py:1420 sl/SL_Menu.py:1436
 msgid "Project Management"
 msgstr "Správa projektů"
 
-#: sl/SL_Menu.py:1494
+#: sl/SL_Menu.py:1563
 msgid "No server address is set. Enter one above and save it first."
 msgstr "Není nastavena adresa serveru. Zadejte ji výše a uložte."
 
-#: sl/SL_Menu.py:1495
+#: sl/SL_Menu.py:1564
 msgid ""
 "The address must start with https:// - a token sent over plain HTTP could be "
 "read by anyone on the way."
@@ -448,31 +444,31 @@ msgstr ""
 "Adresa musí začínat https:// – token odeslaný přes nešifrované HTTP by mohl "
 "cestou kdokoli přečíst."
 
-#: sl/SL_Menu.py:1497
+#: sl/SL_Menu.py:1566
 msgid "Please enter both a username and a password."
 msgstr "Zadejte prosím uživatelské jméno i heslo."
 
-#: sl/SL_Menu.py:1498
+#: sl/SL_Menu.py:1567
 msgid "Wrong username or password."
 msgstr "Nesprávné uživatelské jméno nebo heslo."
 
-#: sl/SL_Menu.py:1499
+#: sl/SL_Menu.py:1568
 msgid "Too many sign-in attempts on the server. Try again in a minute."
 msgstr "Příliš mnoho pokusů o přihlášení. Zkuste to za minutu znovu."
 
-#: sl/SL_Menu.py:1500
+#: sl/SL_Menu.py:1569
 msgid "The server's certificate could not be verified."
 msgstr "Certifikát serveru se nepodařilo ověřit."
 
-#: sl/SL_Menu.py:1501
+#: sl/SL_Menu.py:1570
 msgid "The server did not answer in time."
 msgstr "Server neodpověděl včas."
 
-#: sl/SL_Menu.py:1502
+#: sl/SL_Menu.py:1571
 msgid "The server could not be reached. Check the address and your connection."
 msgstr "Server není dostupný. Zkontrolujte adresu a připojení."
 
-#: sl/SL_Menu.py:1503
+#: sl/SL_Menu.py:1572
 msgid ""
 "The address answered, but not like a TimeControl sync server. Check that it "
 "points at the right directory."
@@ -480,61 +476,61 @@ msgstr ""
 "Adresa odpověděla, ale ne jako synchronizační server TimeControl. "
 "Zkontrolujte, zda ukazuje na správný adresář."
 
-#: sl/SL_Menu.py:1505
+#: sl/SL_Menu.py:1574
 msgid "The server is reachable but has not been set up yet."
 msgstr "Server je dostupný, ale ještě není nastaven."
 
-#: sl/SL_Menu.py:1507
+#: sl/SL_Menu.py:1576
 msgid "This device is not signed in to the server."
 msgstr "Toto zařízení není přihlášeno k serveru."
 
-#: sl/SL_Menu.py:1508 sl/SL_Menu.py:1899
+#: sl/SL_Menu.py:1577 sl/SL_Menu.py:1968
 msgid "This device is no longer signed in. Please sign in again."
 msgstr "Toto zařízení už není přihlášeno. Přihlaste se prosím znovu."
 
-#: sl/SL_Menu.py:1509
+#: sl/SL_Menu.py:1578
 msgid "The synchronisation files on this computer could not be written."
 msgstr "Synchronizační soubory na tomto počítači se nepodařilo zapsat."
 
-#: sl/SL_Menu.py:1511
+#: sl/SL_Menu.py:1580
 #, python-brace-format
 msgid "Sign-in failed ({code})."
 msgstr "Přihlášení selhalo ({code})."
 
-#: sl/SL_Menu.py:1525
+#: sl/SL_Menu.py:1594
 msgid "Change Language"
 msgstr "Změnit jazyk"
 
-#: sl/SL_Menu.py:1543
+#: sl/SL_Menu.py:1612
 msgid "Select Language"
 msgstr "Vybrat jazyk"
 
-#: sl/SL_Menu.py:1544 sl/SL_Menu.py:1584 sl/SL_Menu.py:1625 sl/SL_Menu.py:1638
-#: sl/SL_Menu.py:1658 sl/SL_Menu.py:1692 sl/SL_Menu.py:1715 sl/SL_Menu.py:1770
-#: sl/SL_Menu.py:1815
+#: sl/SL_Menu.py:1613 sl/SL_Menu.py:1653 sl/SL_Menu.py:1694 sl/SL_Menu.py:1707
+#: sl/SL_Menu.py:1727 sl/SL_Menu.py:1761 sl/SL_Menu.py:1784 sl/SL_Menu.py:1839
+#: sl/SL_Menu.py:1884
 msgid "Save"
 msgstr "Uložit"
 
-#: sl/SL_Menu.py:1550
+#: sl/SL_Menu.py:1619
 msgid ""
 "Language changed. Please restart the application for the changes to take "
 "effect."
 msgstr "Jazyk byl změněn. Restartujte aplikaci, aby se změny projevily."
 
-#: sl/SL_Menu.py:1553
+#: sl/SL_Menu.py:1622
 msgid "Restore Previous Version"
 msgstr "Obnovit předchozí verzi"
 
-#: sl/SL_Menu.py:1556
+#: sl/SL_Menu.py:1625
 msgid "The 'update' module is not available. This feature is disabled."
 msgstr "Modul 'aktualizace' není k dispozici. Tato funkce je zakázána."
 
-#: sl/SL_Menu.py:1558
+#: sl/SL_Menu.py:1627
 #, python-brace-format
 msgid "No previous version backup '{filename}' found."
 msgstr "Nebyla nalezena žádná záloha předchozí verze{filename}."
 
-#: sl/SL_Menu.py:1560
+#: sl/SL_Menu.py:1629
 msgid ""
 "This will restore the application to the previously backed-up version. The "
 "application will then restart. You may need to manually refresh your browser "
@@ -544,35 +540,35 @@ msgstr ""
 "restartuje. Pokud se prohlížeč automaticky znovu nepřipojí, možná budete "
 "muset aktualizovat ručně."
 
-#: sl/SL_Menu.py:1561
+#: sl/SL_Menu.py:1630
 msgid "Restore and Restart"
 msgstr "Obnovit a restartovat"
 
-#: sl/SL_Menu.py:1562
+#: sl/SL_Menu.py:1631
 msgid "Restoring and restarting..."
 msgstr "Obnovování a restartování..."
 
-#: sl/SL_Menu.py:1565
+#: sl/SL_Menu.py:1634
 msgid "Restore complete. Please restart the application."
 msgstr "Obnovení dokončeno. Restartujte aplikaci."
 
-#: sl/SL_Menu.py:1567
+#: sl/SL_Menu.py:1636
 msgid "Change Data Storage Location"
 msgstr "Změnit umístění úložiště dat"
 
-#: sl/SL_Menu.py:1569
+#: sl/SL_Menu.py:1638
 msgid "Current data file"
 msgstr "Aktuální datový soubor"
 
-#: sl/SL_Menu.py:1572
+#: sl/SL_Menu.py:1641
 msgid "New Path for data file"
 msgstr "Nová cesta pro datový soubor"
 
-#: sl/SL_Menu.py:1578
+#: sl/SL_Menu.py:1647
 msgid "Move existing data to the new location"
 msgstr "Přesunout existující data do nového umístění"
 
-#: sl/SL_Menu.py:1581
+#: sl/SL_Menu.py:1650
 msgid ""
 "If unchecked, the old data file will remain, and a new empty one might be "
 "created at the new location on restart."
@@ -580,11 +576,11 @@ msgstr ""
 "Pokud není zaškrtnuto, starý datový soubor zůstane a při restartu může být "
 "vytvořen nový prázdný v novém umístění."
 
-#: sl/SL_Menu.py:1588
+#: sl/SL_Menu.py:1657
 msgid "Please enter a new path."
 msgstr "Zadejte prosím novou cestu."
 
-#: sl/SL_Menu.py:1596
+#: sl/SL_Menu.py:1665
 msgid ""
 "Error: For security, the data file must be located within the application "
 "directory."
@@ -592,12 +588,12 @@ msgstr ""
 "Chyba: Z důvodu zabezpečení musí být datový soubor umístěn v adresáři "
 "aplikace."
 
-#: sl/SL_Menu.py:1600
+#: sl/SL_Menu.py:1669
 #, python-brace-format
 msgid "Error: The directory '{dir}' does not exist."
 msgstr "Chyba: Adresář '{dir}' neexistuje."
 
-#: sl/SL_Menu.py:1605
+#: sl/SL_Menu.py:1674
 msgid ""
 "Storage location updated. Please restart the application for the changes to "
 "take effect."
@@ -605,147 +601,147 @@ msgstr ""
 "Umístění úložiště aktualizováno. Restartujte aplikaci, aby se změny "
 "projevily."
 
-#: sl/SL_Menu.py:1610
+#: sl/SL_Menu.py:1679
 msgid "Data moved successfully."
 msgstr "Data byla úspěšně přesunuta."
 
-#: sl/SL_Menu.py:1612
+#: sl/SL_Menu.py:1681
 #, python-brace-format
 msgid "Error moving data: {error}"
 msgstr "Chyba při přesunu dat: {error}"
 
-#: sl/SL_Menu.py:1619
+#: sl/SL_Menu.py:1688
 msgid "Report Format"
 msgstr "Formát zprávy"
 
-#: sl/SL_Menu.py:1624
+#: sl/SL_Menu.py:1693
 msgid "Select Format"
 msgstr "Vyberte formát"
 
-#: sl/SL_Menu.py:1629
+#: sl/SL_Menu.py:1698
 msgid "Report format updated."
 msgstr "Formát zprávy byl aktualizován."
 
-#: sl/SL_Menu.py:1632
+#: sl/SL_Menu.py:1701
 msgid "Streamlit Port Settings"
 msgstr "Nastavení streamovaného portu"
 
-#: sl/SL_Menu.py:1634
+#: sl/SL_Menu.py:1703
 msgid "Current Streamlit Port"
 msgstr "Aktuální port streamovaného proudu"
 
-#: sl/SL_Menu.py:1637
+#: sl/SL_Menu.py:1706
 msgid "New Port"
 msgstr "Nový port"
 
-#: sl/SL_Menu.py:1642
+#: sl/SL_Menu.py:1711
 #, python-brace-format
 msgid "Port updated to {port}. Please restart Streamlit."
 msgstr "Port aktualizován na {port}. Restartujte prosím Streamlit."
 
-#: sl/SL_Menu.py:1645
+#: sl/SL_Menu.py:1714
 msgid "Email Settings"
 msgstr "Nastavení e-mailu"
 
-#: sl/SL_Menu.py:1651
+#: sl/SL_Menu.py:1720
 msgid "Enable email import"
 msgstr "Povolit import e-mailů"
 
-#: sl/SL_Menu.py:1652
+#: sl/SL_Menu.py:1721
 msgid "IMAP Server"
 msgstr "Server IMAP"
 
-#: sl/SL_Menu.py:1653
+#: sl/SL_Menu.py:1722
 msgid "Port"
 msgstr "Port"
 
-#: sl/SL_Menu.py:1654 sl/SL_Menu.py:1908
+#: sl/SL_Menu.py:1723 sl/SL_Menu.py:1977
 msgid "Username"
 msgstr "Uživatelské jméno"
 
-#: sl/SL_Menu.py:1655 sl/SL_Menu.py:1909
+#: sl/SL_Menu.py:1724 sl/SL_Menu.py:1978
 msgid "Password"
 msgstr "Heslo"
 
-#: sl/SL_Menu.py:1656
+#: sl/SL_Menu.py:1725
 msgid "Use SSL"
 msgstr "Použít SSL"
 
-#: sl/SL_Menu.py:1669
+#: sl/SL_Menu.py:1738
 msgid "Email settings saved."
 msgstr "Nastavení e-mailu bylo uloženo."
 
-#: sl/SL_Menu.py:1672
+#: sl/SL_Menu.py:1741
 msgid "Change CSS Style"
 msgstr "Změnit styl CSS"
 
-#: sl/SL_Menu.py:1674
+#: sl/SL_Menu.py:1743
 msgid "Current CSS file"
 msgstr "Aktuální soubor CSS"
 
-#: sl/SL_Menu.py:1691
+#: sl/SL_Menu.py:1760
 msgid "Select CSS File"
 msgstr "Vybrat soubor CSS"
 
-#: sl/SL_Menu.py:1697
+#: sl/SL_Menu.py:1766
 msgid ""
 "CSS style updated. Please restart the application for the changes to take "
 "effect."
 msgstr "Styl CSS byl aktualizován. Pro projevení změn restartujte aplikaci."
 
-#: sl/SL_Menu.py:1700
+#: sl/SL_Menu.py:1769
 msgid "Change View Mode"
 msgstr "Změnit režim zobrazení"
 
-#: sl/SL_Menu.py:1704
+#: sl/SL_Menu.py:1773
 msgid "App Window (Webview)"
 msgstr "Okno aplikace (Webview)"
 
-#: sl/SL_Menu.py:1704
+#: sl/SL_Menu.py:1773
 msgid "System Browser"
 msgstr "Systémový prohlížeč"
 
-#: sl/SL_Menu.py:1714
+#: sl/SL_Menu.py:1783
 msgid "Select View Mode"
 msgstr "Vyberte režim zobrazení"
 
-#: sl/SL_Menu.py:1721
+#: sl/SL_Menu.py:1790
 msgid ""
 "View mode updated. Please restart the application for the changes to take "
 "effect."
 msgstr ""
 "Režim zobrazení byl aktualizován. Pro projevení změn restartujte aplikaci."
 
-#: sl/SL_Menu.py:1724
+#: sl/SL_Menu.py:1793
 msgid "MCP Server Settings"
 msgstr "Nastavení serveru MCP"
 
-#: sl/SL_Menu.py:1726
+#: sl/SL_Menu.py:1795
 msgid "HTTP (Streamable HTTP)"
 msgstr "HTTP (Streamable HTTP)"
 
-#: sl/SL_Menu.py:1727
+#: sl/SL_Menu.py:1796
 msgid "stdio (recommended for Claude Desktop)"
 msgstr "stdio (doporučeno pro Claude Desktop)"
 
-#: sl/SL_Menu.py:1741
+#: sl/SL_Menu.py:1810
 msgid "Transport"
 msgstr "Přenos"
 
-#: sl/SL_Menu.py:1752
+#: sl/SL_Menu.py:1821
 msgid "Enable MCP server"
 msgstr "Povolit server MCP"
 
-#: sl/SL_Menu.py:1755
+#: sl/SL_Menu.py:1824
 msgid ""
 "Not used with stdio - the MCP client starts and stops the server itself."
 msgstr "Nepoužívá se s stdio – klient MCP server spouští a zastavuje sám."
 
-#: sl/SL_Menu.py:1758
+#: sl/SL_Menu.py:1827
 msgid "Port (HTTP only)"
 msgstr "Port (pouze HTTP)"
 
-#: sl/SL_Menu.py:1765
+#: sl/SL_Menu.py:1834
 msgid ""
 "With stdio, the app does not start the MCP server itself - the MCP client "
 "(e.g. Claude Desktop) launches it directly, and the port is ignored."
@@ -753,7 +749,7 @@ msgstr ""
 "Se stdio aplikace nespouští server MCP sama – klient MCP (např. Claude "
 "Desktop) jej spouští přímo a port se ignoruje."
 
-#: sl/SL_Menu.py:1776
+#: sl/SL_Menu.py:1845
 msgid ""
 "MCP server settings saved. Please restart the application for the changes to "
 "take effect."
@@ -761,99 +757,101 @@ msgstr ""
 "Nastavení serveru MCP bylo uloženo. Restartujte aplikaci, aby se změny "
 "projevily."
 
-#: sl/SL_Menu.py:1779
+#: sl/SL_Menu.py:1848
 msgid "Sync Server Settings"
 msgstr "Nastavení synchronizačního serveru"
 
-#: sl/SL_Menu.py:1781
+#: sl/SL_Menu.py:1850
 msgid ""
 "The sync client is unavailable because the 'requests' package is missing."
 msgstr "Synchronizace není dostupná, protože chybí balíček „requests“."
 
-#: sl/SL_Menu.py:1792
+#: sl/SL_Menu.py:1861
 msgid "Server address"
 msgstr "Adresa serveru"
 
-#: sl/SL_Menu.py:1797
+#: sl/SL_Menu.py:1866
 msgid "Enable synchronisation"
 msgstr "Povolit synchronizaci"
 
-#: sl/SL_Menu.py:1799
+#: sl/SL_Menu.py:1868
 msgid "Without this, TimeControl works entirely locally, exactly as before."
 msgstr "Bez toho pracuje TimeControl zcela lokálně, přesně jako dosud."
 
-#: sl/SL_Menu.py:1802
+#: sl/SL_Menu.py:1871
 msgid "Sync every (minutes)"
 msgstr "Synchronizovat každých (minut)"
 
-#: sl/SL_Menu.py:1806
+#: sl/SL_Menu.py:1875
 msgid "Synchronisation also runs whenever you switch to a different view."
 msgstr "Synchronizace proběhne také při každé změně zobrazení."
 
-#: sl/SL_Menu.py:1809
+#: sl/SL_Menu.py:1878
 msgid "Write a diagnostic log"
 msgstr "Zapisovat diagnostický protokol"
 
-#: sl/SL_Menu.py:1811
+#: sl/SL_Menu.py:1880
 msgid ""
 "Records what synchronisation did, so a problem can be traced afterwards. "
 "Counts and identifiers only - never project or task names."
-msgstr "Zaznamenává, co synchronizace udělala, aby šlo problém později dohledat. Pouze počty a identifikátory – nikdy názvy projektů ani úkolů."
+msgstr ""
+"Zaznamenává, co synchronizace udělala, aby šlo problém později dohledat. "
+"Pouze počty a identifikátory – nikdy názvy projektů ani úkolů."
 
-#: sl/SL_Menu.py:1828
+#: sl/SL_Menu.py:1897
 msgid "Sync server settings saved."
 msgstr "Nastavení synchronizačního serveru bylo uloženo."
 
-#: sl/SL_Menu.py:1854
+#: sl/SL_Menu.py:1923
 #, python-brace-format
 msgid "Last synchronised at {time}."
 msgstr "Naposledy synchronizováno {time}."
 
-#: sl/SL_Menu.py:1857
+#: sl/SL_Menu.py:1926
 msgid "Not synchronised yet."
 msgstr "Zatím nesynchronizováno."
 
-#: sl/SL_Menu.py:1859
+#: sl/SL_Menu.py:1928
 #, python-brace-format
 msgid "{count} changes are waiting to be sent."
 msgstr "{count} změn čeká na odeslání."
 
-#: sl/SL_Menu.py:1865
+#: sl/SL_Menu.py:1934
 #, python-brace-format
 msgid "Signed in as {user}."
 msgstr "Přihlášen jako {user}."
 
-#: sl/SL_Menu.py:1867
+#: sl/SL_Menu.py:1936
 #, python-brace-format
 msgid "Access expires on {date}."
 msgstr "Přístup vyprší {date}."
 
-#: sl/SL_Menu.py:1871
+#: sl/SL_Menu.py:1940
 msgid "Check connection"
 msgstr "Zkontrolovat připojení"
 
-#: sl/SL_Menu.py:1873 sl/SL_Menu.py:1891 sl/SL_Menu.py:1911
+#: sl/SL_Menu.py:1942 sl/SL_Menu.py:1960 sl/SL_Menu.py:1980
 msgid "Contacting the server..."
 msgstr "Kontaktuji server..."
 
-#: sl/SL_Menu.py:1881
+#: sl/SL_Menu.py:1950
 msgid "The server answered."
 msgstr "Server odpověděl."
 
-#: sl/SL_Menu.py:1890
+#: sl/SL_Menu.py:1959
 msgid "Sign out"
 msgstr "Odhlásit se"
 
-#: sl/SL_Menu.py:1893
+#: sl/SL_Menu.py:1962
 msgid "Signed out on this device."
 msgstr "Na tomto zařízení odhlášeno."
 
-#: sl/SL_Menu.py:1901
+#: sl/SL_Menu.py:1970
 #, python-brace-format
 msgid "The server could not be reached ({reason})."
 msgstr "Server není dostupný ({reason})."
 
-#: sl/SL_Menu.py:1905
+#: sl/SL_Menu.py:1974
 msgid ""
 "Signing in stores an access token for this device only. It is kept outside "
 "the project directory and is never written to config.json."
@@ -861,162 +859,162 @@ msgstr ""
 "Při přihlášení se uloží přístupový token pouze pro toto zařízení. Je uložen "
 "mimo adresář projektu a nikdy se nezapisuje do config.json."
 
-#: sl/SL_Menu.py:1910
+#: sl/SL_Menu.py:1979
 msgid "Sign in"
 msgstr "Přihlásit se"
 
-#: sl/SL_Menu.py:1918
+#: sl/SL_Menu.py:1987
 msgid "Signed in successfully."
 msgstr "Přihlášení proběhlo úspěšně."
 
-#: sl/SL_Menu.py:1924
+#: sl/SL_Menu.py:1993
 #, python-brace-format
 msgid "This device: {name} ({uid})"
 msgstr "Toto zařízení: {name} ({uid})"
 
-#: sl/SL_Menu.py:1933
+#: sl/SL_Menu.py:2002
 #, python-brace-format
 msgid "Diagnostic log ({size} KB)"
 msgstr "Diagnostický protokol ({size} KB)"
 
-#: sl/SL_Menu.py:1939
+#: sl/SL_Menu.py:2008
 msgid "Save log"
 msgstr "Uložit protokol"
 
-#: sl/SL_Menu.py:1943
+#: sl/SL_Menu.py:2012
 msgid "Clear log"
 msgstr "Vymazat protokol"
 
-#: sl/SL_Menu.py:1946
+#: sl/SL_Menu.py:2015
 msgid "Diagnostic log cleared."
 msgstr "Diagnostický protokol byl vymazán."
 
-#: sl/SL_Menu.py:1960
+#: sl/SL_Menu.py:2029
 msgid "Add New Project"
 msgstr "Přidat nový projekt"
 
-#: sl/SL_Menu.py:1963
+#: sl/SL_Menu.py:2032
 msgid "Name of the project"
 msgstr "Název projektu"
 
-#: sl/SL_Menu.py:1967
+#: sl/SL_Menu.py:2036
 #, python-brace-format
 msgid "Project '{name}' added."
 msgstr "Projekt '{name}' byl přidán."
 
-#: sl/SL_Menu.py:1971 sl/SL_Menu.py:2017 sl/SL_Menu.py:2062 sl/SL_Menu.py:2108
-#: sl/SL_Menu.py:2163 sl/SL_Menu.py:2257 sl/SL_Menu.py:2305 sl/SL_Menu.py:2355
-#: sl/SL_Menu.py:2435 sl/SL_Menu.py:2465 sl/SL_Menu.py:2495 sl/SL_Menu.py:2526
-#: sl/SL_Menu.py:2588 sl/SL_Menu.py:2628 sl/SL_Menu.py:2740 sl/SL_Menu.py:2759
-#: sl/SL_Menu.py:2924 sl/SL_Menu.py:2972
+#: sl/SL_Menu.py:2040 sl/SL_Menu.py:2086 sl/SL_Menu.py:2131 sl/SL_Menu.py:2177
+#: sl/SL_Menu.py:2232 sl/SL_Menu.py:2326 sl/SL_Menu.py:2374 sl/SL_Menu.py:2424
+#: sl/SL_Menu.py:2504 sl/SL_Menu.py:2534 sl/SL_Menu.py:2564 sl/SL_Menu.py:2595
+#: sl/SL_Menu.py:2657 sl/SL_Menu.py:2697 sl/SL_Menu.py:2809 sl/SL_Menu.py:2828
+#: sl/SL_Menu.py:2993 sl/SL_Menu.py:3041
 msgid "Cancel"
 msgstr "Zrušit"
 
-#: sl/SL_Menu.py:1983 sl/SL_Menu.py:2028 sl/SL_Menu.py:2073 sl/SL_Menu.py:2119
-#: sl/SL_Menu.py:2268 sl/SL_Menu.py:2399 sl/SL_Menu.py:2558 sl/SL_Menu.py:2751
+#: sl/SL_Menu.py:2052 sl/SL_Menu.py:2097 sl/SL_Menu.py:2142 sl/SL_Menu.py:2188
+#: sl/SL_Menu.py:2337 sl/SL_Menu.py:2468 sl/SL_Menu.py:2627 sl/SL_Menu.py:2820
 msgid "No open projects found."
 msgstr "Nebyly nalezeny žádné otevřené projekty."
 
-#: sl/SL_Menu.py:1989 sl/SL_Menu.py:2034 sl/SL_Menu.py:2079 sl/SL_Menu.py:2274
-#: sl/SL_Menu.py:2337 sl/SL_Menu.py:2372 sl/SL_Menu.py:2405 sl/SL_Menu.py:2454
-#: sl/SL_Menu.py:2484 sl/SL_Menu.py:2514 sl/SL_Menu.py:2945 sl/SL_Menu.py:3057
-#: sl/SL_Menu.py:3118
+#: sl/SL_Menu.py:2058 sl/SL_Menu.py:2103 sl/SL_Menu.py:2148 sl/SL_Menu.py:2343
+#: sl/SL_Menu.py:2406 sl/SL_Menu.py:2441 sl/SL_Menu.py:2474 sl/SL_Menu.py:2523
+#: sl/SL_Menu.py:2553 sl/SL_Menu.py:2583 sl/SL_Menu.py:3014 sl/SL_Menu.py:3126
+#: sl/SL_Menu.py:3187
 msgid "Select Project"
 msgstr "Vybrat projekt"
 
-#: sl/SL_Menu.py:1994
+#: sl/SL_Menu.py:2063
 #, python-brace-format
 msgid "No open tasks to close in '{name}'."
 msgstr "Žádné otevřené úkoly k uzavření v '{name}'."
 
-#: sl/SL_Menu.py:2001 sl/SL_Menu.py:2046 sl/SL_Menu.py:2091 sl/SL_Menu.py:2145
-#: sl/SL_Menu.py:2286 sl/SL_Menu.py:2415 sl/SL_Menu.py:2774 sl/SL_Menu.py:2956
-#: sl/SL_Menu.py:3088
+#: sl/SL_Menu.py:2070 sl/SL_Menu.py:2115 sl/SL_Menu.py:2160 sl/SL_Menu.py:2214
+#: sl/SL_Menu.py:2355 sl/SL_Menu.py:2484 sl/SL_Menu.py:2843 sl/SL_Menu.py:3025
+#: sl/SL_Menu.py:3157
 msgid "Select Task"
 msgstr "Vybrat úkol"
 
-#: sl/SL_Menu.py:2011
+#: sl/SL_Menu.py:2080
 #, python-brace-format
 msgid "Task '{sub_name}' in '{main_name}' has been closed."
 msgstr "Úloha '{sub_name}' v '{main_name}' byla uzavřena."
 
-#: sl/SL_Menu.py:2015 sl/SL_Menu.py:2060 sl/SL_Menu.py:2106
+#: sl/SL_Menu.py:2084 sl/SL_Menu.py:2129 sl/SL_Menu.py:2175
 msgid "Error: Main project or task not found."
 msgstr "Chyba: Hlavní projekt nebo úkol nebyl nalezen."
 
-#: sl/SL_Menu.py:2039
+#: sl/SL_Menu.py:2108
 #, python-brace-format
 msgid "No closed tasks to reopen in '{name}'."
 msgstr "Žádné uzavřené úlohy k opětovnému otevření v '{name}'."
 
-#: sl/SL_Menu.py:2056
+#: sl/SL_Menu.py:2125
 #, python-brace-format
 msgid "Task '{sub_name}' in '{main_name}' has been reopened."
 msgstr "Úloha '{sub_name}' v '{main_name}' byla znovu otevřena."
 
-#: sl/SL_Menu.py:2084
+#: sl/SL_Menu.py:2153
 #, python-brace-format
 msgid "No open tasks to delete in '{name}'."
 msgstr "Žádné otevřené úkoly k odstranění v '{name}'."
 
-#: sl/SL_Menu.py:2095
+#: sl/SL_Menu.py:2164
 msgid "This action cannot be undone."
 msgstr "Tuto akci nelze vrátit zpět."
 
-#: sl/SL_Menu.py:2102
+#: sl/SL_Menu.py:2171
 #, python-brace-format
 msgid "Task '{sub_name}' deleted from '{main_name}'."
 msgstr "Úkol '{sub_name}' byl smazán z '{main_name}'."
 
-#: sl/SL_Menu.py:2125
+#: sl/SL_Menu.py:2194
 msgid "Select Source Project"
 msgstr "Vybrat zdrojový projekt"
 
-#: sl/SL_Menu.py:2130
+#: sl/SL_Menu.py:2199
 #, python-brace-format
 msgid "No tasks found in '{name}'."
 msgstr "V '{name}' nebyly nalezeny žádné úkoly."
 
-#: sl/SL_Menu.py:2138
+#: sl/SL_Menu.py:2207
 msgid "No other projects available to move to."
 msgstr "Žádné další projekty k přesunu."
 
-#: sl/SL_Menu.py:2149 sl/SL_Menu.py:2574
+#: sl/SL_Menu.py:2218 sl/SL_Menu.py:2643
 msgid "Select Target Project"
 msgstr "Vybrat cílový projekt"
 
-#: sl/SL_Menu.py:2157
+#: sl/SL_Menu.py:2226
 #, python-brace-format
 msgid "Task '{sub}' moved from '{src}' to '{dst}'."
 msgstr "Úloha '{sub}' přesunuta z '{src}' do '{dst}'."
 
-#: sl/SL_Menu.py:2161
+#: sl/SL_Menu.py:2230
 msgid "Error: Could not move task."
 msgstr "Chyba: Úkol nelze přesunout."
 
-#: sl/SL_Menu.py:2172 sl/SL_Menu.py:2535
+#: sl/SL_Menu.py:2241 sl/SL_Menu.py:2604
 msgid "Weeks of inactivity"
 msgstr "Týdny neaktivity"
 
-#: sl/SL_Menu.py:2177
+#: sl/SL_Menu.py:2246
 #, python-brace-format
 msgid "Inactive Tasks (> {weeks} weeks):"
 msgstr "Neaktivní úkoly (> {weeks} týdnů):"
 
-#: sl/SL_Menu.py:2182 sl/SL_Menu.py:2543
+#: sl/SL_Menu.py:2251 sl/SL_Menu.py:2612
 msgid "Last Activity"
 msgstr "Poslední aktivita"
 
-#: sl/SL_Menu.py:2188
+#: sl/SL_Menu.py:2257
 #, python-brace-format
 msgid "No tasks found inactive for more than {weeks} weeks."
 msgstr "Žádné úkoly nebyly nalezeny neaktivní déle než {weeks} týdnů."
 
-#: sl/SL_Menu.py:2213 sl/SL_Menu.py:2236
+#: sl/SL_Menu.py:2282 sl/SL_Menu.py:2305
 msgid "No closed tasks found."
 msgstr "Nebyly nalezeny žádné uzavřené úkoly."
 
-#: sl/SL_Menu.py:2241
+#: sl/SL_Menu.py:2310
 #, python-brace-format
 msgid ""
 "Are you sure you want to delete {count} closed tasks? This action cannot be "
@@ -1024,25 +1022,25 @@ msgid ""
 msgstr ""
 "Opravdu chcete smazat{count}uzavřené úkoly? Tuto akci nelze vrátit zpět."
 
-#: sl/SL_Menu.py:2243
+#: sl/SL_Menu.py:2312
 msgid "Show projects to delete"
 msgstr "Zobrazit projekty k odstranění"
 
-#: sl/SL_Menu.py:2247
+#: sl/SL_Menu.py:2316
 msgid "Delete All"
 msgstr "Smazat vše"
 
-#: sl/SL_Menu.py:2253
+#: sl/SL_Menu.py:2322
 #, python-brace-format
 msgid "Successfully deleted {count} tasks."
 msgstr "Úspěšně odstraněno {count} úkolů."
 
-#: sl/SL_Menu.py:2279
+#: sl/SL_Menu.py:2348
 #, python-brace-format
 msgid "No open tasks to promote in '{name}'."
 msgstr "Žádné otevřené úkoly k povýšení v '{name}'."
 
-#: sl/SL_Menu.py:2290
+#: sl/SL_Menu.py:2359
 msgid ""
 "This will create a new Project with the task's name and move all time "
 "entries to a 'General' task within it."
@@ -1050,96 +1048,96 @@ msgstr ""
 "Tím vytvoříte nový projekt s názvem úkolu a přesunete všechny časové záznamy "
 "do úkolu „Obecné“ v něm."
 
-#: sl/SL_Menu.py:2292
+#: sl/SL_Menu.py:2361
 msgid "Promote to Project"
 msgstr "Povýšit na projekt"
 
-#: sl/SL_Menu.py:2316 sl/SL_Menu.py:2380
+#: sl/SL_Menu.py:2385 sl/SL_Menu.py:2449
 msgid "closed"
 msgstr "uzavřeno"
 
-#: sl/SL_Menu.py:2319 sl/SL_Menu.py:2366 sl/SL_Menu.py:2506 sl/SL_Menu.py:3051
-#: sl/SL_Menu.py:3110
+#: sl/SL_Menu.py:2388 sl/SL_Menu.py:2435 sl/SL_Menu.py:2575 sl/SL_Menu.py:3120
+#: sl/SL_Menu.py:3179
 msgid "No projects found."
 msgstr "Nebyly nalezeny žádné projekty."
 
-#: sl/SL_Menu.py:2331
+#: sl/SL_Menu.py:2400
 msgid "No open projects to rename."
 msgstr "Žádné otevřené projekty k přejmenování."
 
-#: sl/SL_Menu.py:2340 sl/SL_Menu.py:2420
+#: sl/SL_Menu.py:2409 sl/SL_Menu.py:2489
 msgid "New Name"
 msgstr "Nové jméno"
 
-#: sl/SL_Menu.py:2341 sl/SL_Menu.py:2421
+#: sl/SL_Menu.py:2410 sl/SL_Menu.py:2490
 msgid "Rename"
 msgstr "Přejmenovat"
 
-#: sl/SL_Menu.py:2345 sl/SL_Menu.py:2425
+#: sl/SL_Menu.py:2414 sl/SL_Menu.py:2494
 msgid "Please enter a new name."
 msgstr "Zadejte prosím nový název."
 
-#: sl/SL_Menu.py:2347 sl/SL_Menu.py:2427
+#: sl/SL_Menu.py:2416 sl/SL_Menu.py:2496
 msgid "New name is the same as the old name."
 msgstr "Nový název je stejný jako starý název."
 
-#: sl/SL_Menu.py:2349
+#: sl/SL_Menu.py:2418
 #, python-brace-format
 msgid "Project '{old_name}' successfully renamed to '{new_name}'."
 msgstr "Projekt '{old_name}' byl úspěšně přejmenován na '{new_name}'."
 
-#: sl/SL_Menu.py:2353
+#: sl/SL_Menu.py:2422
 #, python-brace-format
 msgid "Error: Could not rename. The new name '{new_name}' might already exist."
 msgstr "Chyba: Nelze přejmenovat. Nový název '{new_name}' již možná existuje."
 
-#: sl/SL_Menu.py:2377
+#: sl/SL_Menu.py:2446
 #, python-brace-format
 msgid "Tasks for '{name}':"
 msgstr "Úkoly pro '{name}':"
 
-#: sl/SL_Menu.py:2386 sl/SL_Menu.py:3082
+#: sl/SL_Menu.py:2455 sl/SL_Menu.py:3151
 #, python-brace-format
 msgid "No tasks found for '{name}'."
 msgstr "Pro '{name}' nebyly nalezeny žádné úkoly."
 
-#: sl/SL_Menu.py:2410
+#: sl/SL_Menu.py:2479
 #, python-brace-format
 msgid "No open tasks to rename in '{name}'."
 msgstr "Žádné otevřené úkoly k přejmenování v '{name}'."
 
-#: sl/SL_Menu.py:2429
+#: sl/SL_Menu.py:2498
 #, python-brace-format
 msgid "Task '{old_name}' renamed to '{new_name}'."
 msgstr "Úkol '{old_name}' byl přejmenován na '{new_name}'."
 
-#: sl/SL_Menu.py:2433
+#: sl/SL_Menu.py:2502
 msgid "Error: Could not rename. The new name might already exist."
 msgstr "Chyba: Nelze přejmenovat. Nový název již možná existuje."
 
-#: sl/SL_Menu.py:2446
+#: sl/SL_Menu.py:2515
 msgid "No open projects to close."
 msgstr "Žádné otevřené projekty k uzavření."
 
-#: sl/SL_Menu.py:2459
+#: sl/SL_Menu.py:2528
 #, python-brace-format
 msgid "Project '{name}' has been closed."
 msgstr "Projekt '{name}' byl uzavřen."
 
-#: sl/SL_Menu.py:2463 sl/SL_Menu.py:2493 sl/SL_Menu.py:2524
+#: sl/SL_Menu.py:2532 sl/SL_Menu.py:2562 sl/SL_Menu.py:2593
 msgid "Error: Project not found."
 msgstr "Chyba: Projekt nenalezen."
 
-#: sl/SL_Menu.py:2476
+#: sl/SL_Menu.py:2545
 msgid "No closed projects to reopen."
 msgstr "Žádné uzavřené projekty k opětovnému otevření."
 
-#: sl/SL_Menu.py:2489
+#: sl/SL_Menu.py:2558
 #, python-brace-format
 msgid "Project '{name}' has been reopened."
 msgstr "Projekt '{name}' byl znovu otevřen."
 
-#: sl/SL_Menu.py:2515
+#: sl/SL_Menu.py:2584
 msgid ""
 "This action cannot be undone. All associated tasks and time entries will be "
 "deleted."
@@ -1147,223 +1145,223 @@ msgstr ""
 "Tuto akci nelze vrátit zpět. Všechny související úkoly a časové záznamy "
 "budou smazány."
 
-#: sl/SL_Menu.py:2520
+#: sl/SL_Menu.py:2589
 #, python-brace-format
 msgid "Project '{name}' has been deleted."
 msgstr "Projekt '{name}' byl smazán."
 
-#: sl/SL_Menu.py:2540
+#: sl/SL_Menu.py:2609
 #, python-brace-format
 msgid "Inactive Projects (> {weeks} weeks):"
 msgstr "Neaktivní projekty (> {weeks} týdnů):"
 
-#: sl/SL_Menu.py:2545
+#: sl/SL_Menu.py:2614
 #, python-brace-format
 msgid "No projects found inactive for more than {weeks} weeks."
 msgstr ""
 "Žádné projekty nebyly nalezeny jako neaktivní po dobu delší než{weeks}týdnů."
 
-#: sl/SL_Menu.py:2554 sl/SL_Menu.py:2577
+#: sl/SL_Menu.py:2623 sl/SL_Menu.py:2646
 msgid "Demote Project"
 msgstr "Degradovat projekt"
 
-#: sl/SL_Menu.py:2566
+#: sl/SL_Menu.py:2635
 msgid "Select Project to Demote"
 msgstr "Vyberte projekt ke snížení úrovně"
 
-#: sl/SL_Menu.py:2572
+#: sl/SL_Menu.py:2641
 msgid "No other projects available to demote into."
 msgstr ""
 "Nejsou k dispozici žádné další projekty, na které by bylo možné snížit "
 "úroveň."
 
-#: sl/SL_Menu.py:2575
+#: sl/SL_Menu.py:2644
 #, python-brace-format
 msgid "This will convert '{src}' into a task of '{dst}'."
 msgstr "Toto převede '{src}' na úlohu '{dst}'."
 
-#: sl/SL_Menu.py:2600
+#: sl/SL_Menu.py:2669
 msgid "Projects with only closed or no tasks:"
 msgstr "Projekty pouze s uzavřenými nebo žádnými úkoly:"
 
-#: sl/SL_Menu.py:2604
+#: sl/SL_Menu.py:2673
 msgid "No completed projects found."
 msgstr "Nebyly nalezeny žádné dokončené projekty."
 
-#: sl/SL_Menu.py:2613 sl/SL_Menu.py:2747 sl/SL_Menu.py:3047
+#: sl/SL_Menu.py:2682 sl/SL_Menu.py:2816 sl/SL_Menu.py:3116
 msgid "Step 1: Select Project"
 msgstr "Krok 1: Vyberte projekt"
 
-#: sl/SL_Menu.py:2617 sl/SL_Menu.py:2939
+#: sl/SL_Menu.py:2686 sl/SL_Menu.py:3008
 msgid "No open projects found. Please add one first."
 msgstr "Nebyly nalezeny žádné otevřené projekty. Nejprve přidejte jednu."
 
-#: sl/SL_Menu.py:2622 sl/SL_Menu.py:2754 sl/SL_Menu.py:2987
+#: sl/SL_Menu.py:2691 sl/SL_Menu.py:2823 sl/SL_Menu.py:3056
 msgid "Project"
 msgstr "Project"
 
-#: sl/SL_Menu.py:2624 sl/SL_Menu.py:2755 sl/SL_Menu.py:2779 sl/SL_Menu.py:3059
+#: sl/SL_Menu.py:2693 sl/SL_Menu.py:2824 sl/SL_Menu.py:2848 sl/SL_Menu.py:3128
 msgid "Next"
 msgstr "Další"
 
-#: sl/SL_Menu.py:2639 sl/SL_Menu.py:3073
+#: sl/SL_Menu.py:2708 sl/SL_Menu.py:3142
 msgid "No project selected. Please start again."
 msgstr "Nebyl vybrán žádný projekt. Začněte prosím znovu."
 
-#: sl/SL_Menu.py:2644
+#: sl/SL_Menu.py:2713
 msgid "To Project:"
 msgstr "To Project:"
 
-#: sl/SL_Menu.py:2665
+#: sl/SL_Menu.py:2734
 msgid "Name of the new task"
 msgstr "Name of the new task"
 
-#: sl/SL_Menu.py:2671
+#: sl/SL_Menu.py:2740
 msgid "Due date"
 msgstr "Datum splatnosti"
 
-#: sl/SL_Menu.py:2677 sl/SL_Menu.py:2849
+#: sl/SL_Menu.py:2746 sl/SL_Menu.py:2918
 msgid "Recurring"
 msgstr "Opakující se"
 
-#: sl/SL_Menu.py:2693 sl/SL_Menu.py:2864
+#: sl/SL_Menu.py:2762 sl/SL_Menu.py:2933
 msgid "daily"
 msgstr "denně"
 
-#: sl/SL_Menu.py:2693 sl/SL_Menu.py:2864
+#: sl/SL_Menu.py:2762 sl/SL_Menu.py:2933
 msgid "monthly"
 msgstr "měsíčně"
 
-#: sl/SL_Menu.py:2693 sl/SL_Menu.py:2864
+#: sl/SL_Menu.py:2762 sl/SL_Menu.py:2933
 msgid "on all business days"
 msgstr "ve všech pracovních dnech"
 
-#: sl/SL_Menu.py:2693 sl/SL_Menu.py:2864
+#: sl/SL_Menu.py:2762 sl/SL_Menu.py:2933
 msgid "userdefined"
 msgstr "uživatelsky definované"
 
-#: sl/SL_Menu.py:2693 sl/SL_Menu.py:2864
+#: sl/SL_Menu.py:2762 sl/SL_Menu.py:2933
 msgid "weekly"
 msgstr "týdně"
 
-#: sl/SL_Menu.py:2697 sl/SL_Menu.py:2873
+#: sl/SL_Menu.py:2766 sl/SL_Menu.py:2942
 msgid "Frequency"
 msgstr "Frekvence"
 
-#: sl/SL_Menu.py:2701 sl/SL_Menu.py:2876
+#: sl/SL_Menu.py:2770 sl/SL_Menu.py:2945
 msgid "Days"
 msgstr "Dny"
 
-#: sl/SL_Menu.py:2705 sl/SL_Menu.py:2878
+#: sl/SL_Menu.py:2774 sl/SL_Menu.py:2947
 msgid "Edit"
 msgstr "Upravit"
 
-#: sl/SL_Menu.py:2705 sl/SL_Menu.py:2878
+#: sl/SL_Menu.py:2774 sl/SL_Menu.py:2947
 msgid "Preview"
 msgstr "Náhled"
 
-#: sl/SL_Menu.py:2710 sl/SL_Menu.py:2883
+#: sl/SL_Menu.py:2779 sl/SL_Menu.py:2952
 msgid "No notes provided."
 msgstr "Nebyly zadány žádné poznámky."
 
-#: sl/SL_Menu.py:2715 sl/SL_Menu.py:2888
+#: sl/SL_Menu.py:2784 sl/SL_Menu.py:2957
 msgid "A due date is required for recurring tasks."
 msgstr "Pro opakující se úkoly je vyžadováno datum dokončení."
 
-#: sl/SL_Menu.py:2723
+#: sl/SL_Menu.py:2792
 msgid "Please enter a name."
 msgstr "Zadejte prosím jméno."
 
-#: sl/SL_Menu.py:2735
+#: sl/SL_Menu.py:2804
 #, python-brace-format
 msgid "Task '{sub_name}' added to '{main_name}'."
 msgstr "Úkol '{sub_name}' byl přidán do '{main_name}'."
 
-#: sl/SL_Menu.py:2767 sl/SL_Menu.py:3078
+#: sl/SL_Menu.py:2836 sl/SL_Menu.py:3147
 msgid "Step 2: Select Task from"
 msgstr "Krok 2: Vyberte úkol z"
 
-#: sl/SL_Menu.py:2770
+#: sl/SL_Menu.py:2839
 msgid "No open tasks found."
 msgstr "Nebyly nalezeny žádné otevřené úkoly."
 
-#: sl/SL_Menu.py:2798
+#: sl/SL_Menu.py:2867
 msgid "Task not found."
 msgstr "Úkol nenalezen."
 
-#: sl/SL_Menu.py:2892
+#: sl/SL_Menu.py:2961
 msgid "Save Changes"
 msgstr "Uložit změny"
 
-#: sl/SL_Menu.py:2915
+#: sl/SL_Menu.py:2984
 msgid "Task updated successfully."
 msgstr "Úloha byla úspěšně aktualizována."
 
-#: sl/SL_Menu.py:2921
+#: sl/SL_Menu.py:2990
 msgid "Error: Could not update task."
 msgstr "Chyba: Úlohu nelze aktualizovat."
 
-#: sl/SL_Menu.py:2934
+#: sl/SL_Menu.py:3003
 msgid "Start Work on Task"
 msgstr "Zahájit práci na úloze"
 
-#: sl/SL_Menu.py:2949
+#: sl/SL_Menu.py:3018
 #, python-brace-format
 msgid "No open tasks to start work on in '{name}'."
 msgstr ""
 "Žádné otevřené úkoly, na kterých by bylo možné začít pracovat v '{name}'."
 
-#: sl/SL_Menu.py:2960
+#: sl/SL_Menu.py:3029
 msgid "Start Work"
 msgstr "Začít práci"
 
-#: sl/SL_Menu.py:2966
+#: sl/SL_Menu.py:3035
 #, python-brace-format
 msgid "Work started on '{task_name}' in project '{main_name}'."
 msgstr "Zahájena práce na '{task_name}' v projektu '{main_name}'."
 
-#: sl/SL_Menu.py:2970
+#: sl/SL_Menu.py:3039
 msgid "Error starting work."
 msgstr "Chyba při zahájení práce."
 
-#: sl/SL_Menu.py:2988
+#: sl/SL_Menu.py:3057
 msgid "Task"
 msgstr "Úloha"
 
-#: sl/SL_Menu.py:2989
+#: sl/SL_Menu.py:3058
 msgid "Started at"
 msgstr "Zahájeno v"
 
-#: sl/SL_Menu.py:2990 tt/TimeTracker.py:1955
+#: sl/SL_Menu.py:3059 tt/TimeTracker.py:1955
 msgid "Duration"
 msgstr "Trvání"
 
-#: sl/SL_Menu.py:3004 sl/SL_Menu.py:3136
+#: sl/SL_Menu.py:3073 sl/SL_Menu.py:3205
 msgid "Select Date"
 msgstr "Vyberte datum"
 
-#: sl/SL_Menu.py:3005 sl/SL_Menu.py:3029 sl/SL_Menu.py:3093 sl/SL_Menu.py:3119
-#: sl/SL_Menu.py:3137
+#: sl/SL_Menu.py:3074 sl/SL_Menu.py:3098 sl/SL_Menu.py:3162 sl/SL_Menu.py:3188
+#: sl/SL_Menu.py:3206
 msgid "Generate Report"
 msgstr "Vytvořit zprávu"
 
-#: sl/SL_Menu.py:3025
+#: sl/SL_Menu.py:3094
 msgid "Start Date"
 msgstr "Datum zahájení"
 
-#: sl/SL_Menu.py:3027
+#: sl/SL_Menu.py:3096
 msgid "End Date"
 msgstr "Datum ukončení"
 
-#: sl/SL_Menu.py:3033
+#: sl/SL_Menu.py:3102
 msgid "Error: The start date cannot be after the end date."
 msgstr "Chyba: Počáteční datum nemůže být po koncovém datu."
 
-#: sl/SL_Menu.py:3152
+#: sl/SL_Menu.py:3221
 msgid "Report Result"
 msgstr "Výsledek zprávy"
 
-#: sl/SL_Menu.py:3181
+#: sl/SL_Menu.py:3250
 msgid "Export Report"
 msgstr "Export zprávy"
 
@@ -1788,6 +1786,9 @@ msgstr "Kontrola aktualizací..."
 #: update.py:309
 msgid "No updates available."
 msgstr "Nejsou k dispozici žádné aktualizace."
+
+#~ msgid "Today View"
+#~ msgstr "Dnes Zobrazit"
 
 #~ msgid ""
 #~ "\n"

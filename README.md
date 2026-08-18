@@ -65,9 +65,9 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 ## Screenshots 📸
 
-The Streamlit GUI groups all actions behind a compact icon toolbar — hover over an icon to see what it does, or click it to open the corresponding menu.
+The Streamlit GUI groups all actions behind a compact icon toolbar — hover over an icon to see what it does, or click it to open the corresponding menu. Below it, two tabs hold the day's work: **Today's Tasks** and **Task Planning**.
 
-**Today's Tasks:** the default view on every start. The toolbar, the currently active work session (if any), and every task marked for today, grouped by project and showing its priority. The **Show only open tasks** and **Sort by priority** checkboxes filter and reorder the list.
+**Today's Tasks:** the default view on every start. The currently active work session (if any) and every task marked for today, grouped by project and showing its priority. The **Show only open tasks** and **Sort by priority** checkboxes filter and reorder the list.
 
 ![Today's Tasks view](screenshots/today-view.png)
 ![Today's Tasks view filtered to open tasks](screenshots/today-view-filtered.png)
