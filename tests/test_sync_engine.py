@@ -275,6 +275,54 @@ class TestPartialAnswers(EngineTestCase):
         self.assertLess(highest, 99)
 
 
+class TestABatchTheServerCanActuallyRead(EngineTestCase):
+    """
+    The failure this was written for, seen in the field: the client bundled
+    five hundred operations, the body went past the server's one-megabyte
+    read, the server parsed nothing and answered "ok" with an unchanged head.
+    The queue never shrank, no error appeared anywhere, and every change made
+    on that machine stopped reaching the other one.
+    """
+
+    def test_a_cycle_never_sends_more_than_the_server_will_read(self):
+        for n in range(60):
+            self.queue('task.set', uid=T1, f={'note': 'x' * 20000})
+
+        sent = {}
+        real = self.server.push
+
+        def measure(base_seq, ops):
+            body = __import__('json').dumps({'base_seq': base_seq, 'ops': ops},
+                                            ensure_ascii=False)
+            sent['bytes'] = max(sent.get('bytes', 0), len(body.encode('utf-8')))
+            return real(base_seq, ops)
+        sync_client.push = measure
+
+        sync_engine.run_cycle(self.outbox)
+        self.assertLess(sent['bytes'], 1048576,
+                        "the body is past what the server reads, and would "
+                        "arrive as an empty request")
+
+    def test_a_large_backlog_still_drains_completely(self):
+        for n in range(40):
+            self.queue('task.set', uid=T1, f={'note': 'x' * 30000})
+        for _ in range(20):
+            if not self.outbox.pending():
+                break
+            sync_engine.run_cycle(self.outbox)
+        self.assertEqual(self.outbox.pending(), [], "the queue never emptied")
+        self.assertEqual(len(self.server.log), 40)
+
+    def test_the_order_survives_being_split(self):
+        for n in range(30):
+            self.queue('task.set', uid=T1, f={'note': 'x' * 30000, 'priority': n})
+        for _ in range(20):
+            if not self.outbox.pending():
+                break
+            sync_engine.run_cycle(self.outbox)
+        self.assertEqual([e['f']['priority'] for e in self.server.log], list(range(30)))
+
+
 class TestFailures(EngineTestCase):
 
     def test_a_failed_cycle_leaves_the_queue_alone(self):

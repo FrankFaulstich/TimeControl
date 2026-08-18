@@ -334,6 +334,59 @@ class TestTheRequestsTheLogEndpointsBuild(unittest.TestCase):
             self.assertEqual(sync_client.pull(0)['error'], 'invalid_token')
 
 
+class TestABatchThatWillActuallyArrive(unittest.TestCase):
+    """
+    The server reads a bounded amount of request body and treats anything
+    longer as an EMPTY request - appending nothing, answering "ok", and
+    leaving the client to strike the operations off as delivered. Nothing is
+    reported at either end. Counting operations is no protection: five
+    hundred carrying notes and task names go well past the limit.
+    """
+
+    def _op(self, n, padding=0):
+        return {'op': 'task.set', 'lc': n, 'uid': 'a' * 16,
+                'f': {'note': 'x' * padding}}
+
+    def test_a_batch_is_cut_by_size_not_only_by_count(self):
+        ops = [self._op(n, padding=4000) for n in range(1, 501)]
+        batch = sync_client.fit_batch(ops)
+
+        self.assertLess(len(batch), 500, "it still counts operations only")
+        body = json.dumps({'base_seq': 0, 'ops': batch}, ensure_ascii=False)
+        self.assertLessEqual(len(body.encode('utf-8')), sync_client.MAX_BYTES_PER_CALL * 1.1)
+
+    def test_small_operations_still_go_five_hundred_at_a_time(self):
+        ops = [self._op(n) for n in range(1, 900)]
+        self.assertEqual(len(sync_client.fit_batch(ops)), sync_client.MAX_OPS_PER_CALL)
+
+    def test_one_operation_too_large_on_its_own_is_still_sent(self):
+        """
+        Held back, it would sit at the head of the queue and block everything
+        behind it for ever. Better to send it and be told.
+        """
+        ops = [self._op(1, padding=sync_client.MAX_BYTES_PER_CALL * 2), self._op(2)]
+        batch = sync_client.fit_batch(ops)
+        self.assertEqual(len(batch), 1)
+        self.assertEqual(batch[0]['lc'], 1)
+
+    def test_the_order_is_never_disturbed(self):
+        """
+        The server stamps a batch in the order it receives it and refuses
+        anything at or below the highest number it has seen, so a gap would
+        strand everything it skipped.
+        """
+        ops = [self._op(n, padding=3000) for n in range(1, 400)]
+        batch = sync_client.fit_batch(ops)
+        self.assertEqual([o['lc'] for o in batch], list(range(1, len(batch) + 1)))
+
+    def test_an_empty_queue_yields_an_empty_batch(self):
+        self.assertEqual(sync_client.fit_batch([]), [])
+
+    def test_the_limit_leaves_room_for_what_the_client_does_not_count(self):
+        """The envelope, and whatever the transfer adds on top."""
+        self.assertLess(sync_client.MAX_BYTES_PER_CALL, 1048576)
+
+
 class TestTheCallCannotHangForEver(unittest.TestCase):
     """
     requests' own timeout starts once the address has been resolved, so it
