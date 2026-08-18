@@ -318,6 +318,40 @@ def status():
 # has the whole batch rejected, so the caller must send it in pieces.
 MAX_OPS_PER_CALL = 500
 
+# And a ceiling in bytes, which is the one that actually bites. The server
+# reads at most a megabyte of request body; anything longer arrives as a
+# truncated fragment that will not parse, and it then reads as an empty
+# request - accepted, acknowledged, and containing nothing. Five hundred
+# operations carrying notes and task names go well past that, so counting
+# operations alone is no protection at all.
+#
+# Half of the server's limit, because this counts the operations and the
+# server counts everything: the envelope, and whatever the transfer adds.
+MAX_BYTES_PER_CALL = 512 * 1024
+
+
+def fit_batch(operations, max_ops=None, max_bytes=None):
+    """
+    Takes as many operations from the front as will actually arrive.
+
+    :param operations: Wire-ready operations, in the order they must be sent.
+    :return: The prefix that fits. Never empty when given anything: one
+             operation too large to send on its own would otherwise sit at
+             the head of the queue and block everything behind it for ever.
+             Better to send it and be told than to stop silently.
+    """
+    max_ops = MAX_OPS_PER_CALL if max_ops is None else max_ops
+    max_bytes = MAX_BYTES_PER_CALL if max_bytes is None else max_bytes
+
+    batch, total = [], 0
+    for op in operations[:max_ops]:
+        size = len(json.dumps(op, ensure_ascii=False).encode('utf-8')) + 1
+        if batch and total + size > max_bytes:
+            break
+        batch.append(op)
+        total += size
+    return batch
+
 
 def _authenticated(action, payload=None, params=None):
     creds = load_credentials()

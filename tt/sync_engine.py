@@ -351,11 +351,18 @@ def _run_cycle_locked(outbox):
     since = _since(state)
 
     sending = outbox.pending()
-    batch = sending[:sync_client.MAX_OPS_PER_CALL]
+    # By size, not just by count. The server reads a bounded amount of request
+    # body and silently treats anything longer as an empty request - accepted,
+    # acknowledged, and carrying nothing - so a batch that is too large does
+    # not fail, it disappears.
+    wire = [_wire(op) for op in sending]
+    fitted = sync_client.fit_batch(wire)
+    batch = sending[:len(fitted)]
 
     sync_log.log('push', since=since, sending=len(batch),
-                 queued=len(sending))
-    result = sync_client.push(since, [_wire(op) for op in batch])
+                 queued=len(sending),
+                 bytes=sum(len(json.dumps(o, ensure_ascii=False)) for o in fitted))
+    result = sync_client.push(since, fitted)
     if not result.get('ok'):
         sync_log.log('push.failed', error=result.get('error') or 'unreachable')
         return _record_failure(result.get('error') or 'unreachable')

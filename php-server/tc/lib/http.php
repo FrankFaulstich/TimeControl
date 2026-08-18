@@ -42,11 +42,27 @@ function tc_ok(array $payload = [])
  */
 function tc_body()
 {
-    $raw = file_get_contents('php://input', false, null, 0, 1048576);
+    $limit = 1048576;
+    $raw = file_get_contents('php://input', false, null, 0, $limit + 1);
     if ($raw === false || $raw === '') {
         return [];
     }
+
+    // Say so rather than reading a prefix and shrugging. Truncating the body
+    // and handing back whatever parses turns a too-large push into an empty
+    // one: the server appends nothing, answers "ok", and the client strikes
+    // the operations off as delivered. Nothing is reported at either end and
+    // the changes are simply gone. Refusing is the only safe answer, and the
+    // client can then send the batch in smaller pieces.
+    if (strlen($raw) > $limit) {
+        tc_fail(413, 'body_too_large',
+                'The request body exceeds ' . $limit . ' bytes. Send fewer operations per push.');
+    }
+
     $data = json_decode($raw, true, 32);
+    if ($data === null && strtolower(trim($raw)) !== 'null') {
+        tc_fail(400, 'bad_json', 'The request body is not valid JSON.');
+    }
     return is_array($data) ? $data : [];
 }
 
