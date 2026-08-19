@@ -37,6 +37,20 @@ jobs:
       - name: Build executable
         run: pyinstaller TimeControl.spec --noconfirm
 
+      # Published alongside the .exe so the in-app updater can tell a
+      # complete, untampered download from a truncated one before it puts the
+      # result in the place of the user's working program (see update.py's
+      # _published_checksum). Written in the conventional "<hex>  <name>"
+      # shape, so `sha256sum -c` and Get-FileHash comparisons both work for
+      # anyone checking a download by hand.
+      - name: Compute checksum
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $hash = (Get-FileHash "dist/TimeControl.exe" -Algorithm SHA256).Hash.ToLower()
+          "$hash  TimeControl.exe" | Set-Content -Path "dist/TimeControl.exe.sha256" -Encoding ascii
+          Write-Host "sha256: $hash"
+
       # Runs the actual built .exe (in its own throwaway directory, so the
       # config.json/data.json it creates never end up inside dist/ - the
       # only thing the steps below publish) and confirms Streamlit comes up
@@ -99,11 +113,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TimeControl-windows-exe
-          path: dist/TimeControl.exe
+          path: |
+            dist/TimeControl.exe
+            dist/TimeControl.exe.sha256
 
       - name: Attach to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
-          files: dist/TimeControl.exe
+          files: |
+            dist/TimeControl.exe
+            dist/TimeControl.exe.sha256
           generate_release_notes: true
