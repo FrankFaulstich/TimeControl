@@ -1787,6 +1787,33 @@ msgstr "Kontrola aktualizací..."
 msgid "No updates available."
 msgstr "Nejsou k dispozici žádné aktualizace."
 
+#: update.py:272
+#, python-brace-format
+msgid "the download is only {size} bytes and cannot be a complete program"
+msgstr "stažený soubor má jen {size} bajtů a nemůže být úplný program"
+
+#: update.py:276
+msgid "the download is not a Windows executable"
+msgstr "stažený soubor není spustitelný program pro Windows"
+
+#: update.py:278
+msgid "the checksum does not match the one published with the release"
+msgstr "kontrolní součet neodpovídá tomu, který byl zveřejněn s vydáním"
+
+#: update.py:302
+msgid "Warning: this release publishes no checksum. Checking size and format only."
+msgstr "Upozornění: Toto vydání nezveřejňuje kontrolní součet. Kontroluje se pouze velikost a formát."
+
+#: update.py:324
+#, python-brace-format
+msgid "The downloaded update was rejected: {reason}"
+msgstr "Stažená aktualizace byla odmítnuta: {reason}"
+
+#: update.py:394
+#, python-brace-format
+msgid "The previous version is still available as {filename}."
+msgstr "Předchozí verze je stále k dispozici jako {filename}."
+
 #~ msgid "Today View"
 #~ msgstr "Dnes Zobrazit"
 

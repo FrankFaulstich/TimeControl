@@ -1816,6 +1816,33 @@ msgstr "Suche nach Updates..."
 msgid "No updates available."
 msgstr "Keine Updates verfügbar."
 
+#: update.py:272
+#, python-brace-format
+msgid "the download is only {size} bytes and cannot be a complete program"
+msgstr "der Download umfasst nur {size} Bytes und kann kein vollständiges Programm sein"
+
+#: update.py:276
+msgid "the download is not a Windows executable"
+msgstr "der Download ist kein ausführbares Windows-Programm"
+
+#: update.py:278
+msgid "the checksum does not match the one published with the release"
+msgstr "die Prüfsumme stimmt nicht mit der veröffentlichten überein"
+
+#: update.py:302
+msgid "Warning: this release publishes no checksum. Checking size and format only."
+msgstr "Warnung: Diese Version veröffentlicht keine Prüfsumme. Es werden nur Größe und Format geprüft."
+
+#: update.py:324
+#, python-brace-format
+msgid "The downloaded update was rejected: {reason}"
+msgstr "Das heruntergeladene Update wurde abgelehnt: {reason}"
+
+#: update.py:394
+#, python-brace-format
+msgid "The previous version is still available as {filename}."
+msgstr "Die vorherige Version liegt weiterhin als {filename} vor."
+
 #~ msgid "Today View"
 #~ msgstr "Heute-Ansicht"
 

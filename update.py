@@ -259,7 +259,9 @@ def _rejection_reason(path, digest, expected):
     an error page that arrived with a 200 both look like a file, and neither
     is one we should install.
 
-    Not translated - the caller embeds this in one translatable sentence.
+    Phrased to slot into the one sentence the caller prints, and translated
+    here rather than left in English: half a message in the user's language
+    reads worse than none of it.
 
     :param path: the downloaded file
     :param digest: its SHA-256, computed while it was being written
@@ -267,12 +269,13 @@ def _rejection_reason(path, digest, expected):
     """
     size = os.path.getsize(path)
     if size < MIN_EXE_BYTES:
-        return "the download is only %d bytes and cannot be a complete program" % size
+        return _("the download is only {size} bytes and cannot be a complete "
+                 "program").format(size=size)
     with open(path, 'rb') as handle:
         if handle.read(2) != b'MZ':
-            return "the download is not a Windows executable"
+            return _("the download is not a Windows executable")
     if expected and digest != expected:
-        return "the checksum does not match the one published with the release"
+        return _("the checksum does not match the one published with the release")
     return None
 
 
