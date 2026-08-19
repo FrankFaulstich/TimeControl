@@ -330,7 +330,7 @@ if __name__ == '__main__':
     # This is the one moment it can be: the sentinel re-launches above have
     # already returned, so no second process has been started from that image
     # yet. Renaming it aside is what Windows does allow - see update.py and
-    # .github/workflows/probe-windows-selfupdate.yaml.
+    # .github/workflows/probe-windows-selfupdate.yaml, in the git history.
     #
     # If the relaunch does not come off, carry on rather than exit: the code
     # already in memory is the old version, which is a worse outcome than a

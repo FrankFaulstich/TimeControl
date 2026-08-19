@@ -20,7 +20,8 @@ PROTECTED_FILES = ["data.json", "config.json"] # Files that should not be overwr
 # A frozen build cannot be updated the way a source install is: there are no
 # loose .py files to overwrite, and Windows refuses to overwrite an .exe that
 # is currently running. What it does allow - established on a real Windows
-# runner, see .github/workflows/probe-windows-selfupdate.yaml - is renaming
+# runner by a throwaway probe workflow, kept only in the git history as
+# .github/workflows/probe-windows-selfupdate.yaml - is renaming
 # the running image aside and putting a new one in its place, even with
 # several processes started from that same image.
 #
@@ -371,7 +372,7 @@ def _clean_environment():
     Measured rather than reasoned: with these left in place the relaunch never
     runs, no matter whether the launcher detaches it or waits around for a
     while afterwards, and stripping them is the only thing that helps. See
-    .github/workflows/probe-windows-selfupdate.yaml.
+    .github/workflows/probe-windows-selfupdate.yaml, in the git history.
     """
     return {name: value for name, value in os.environ.items()
             if not name.startswith('_MEI') and not name.startswith('_PYI')}

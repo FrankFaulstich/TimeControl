@@ -420,7 +420,7 @@ class TestSwappingTheExecutable(unittest.TestCase):
     The swap itself: rename the running image aside, move the download into
     its place. Windows refuses the overwrite this avoids, and permits the
     rename it relies on - established on a real runner, see
-    .github/workflows/probe-windows-selfupdate.yaml.
+    .github/workflows/probe-windows-selfupdate.yaml, in the git history.
     """
 
     def setUp(self):
@@ -559,7 +559,7 @@ class TestRelaunchingAfterTheSwap(unittest.TestCase):
 
     Measured on the runner: plain, detached, and waiting around before exiting
     all failed. Stripping the variables was the only thing that worked, with
-    or without detaching. See probe-windows-selfupdate.yaml.
+    or without detaching. See probe-windows-selfupdate.yaml in the git history.
     """
 
     def test_pyinstaller_handover_variables_are_stripped(self):

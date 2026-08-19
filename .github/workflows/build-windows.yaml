@@ -108,6 +108,84 @@ jobs:
           }
           Write-Host "Smoke test passed: Streamlit responded and config.json/data.json were created next to the executable."
 
+      # The step above proves the build runs. This one proves it can replace
+      # itself, which is the half of the update that Windows makes awkward:
+      # a running .exe cannot be overwritten, so the updater renames it aside
+      # and puts the new one in its place (see update.py).
+      #
+      # Worth doing against the real build rather than trusting the throwaway
+      # probe that worked this out, because the real one differs exactly
+      # where it matters - tens of megabytes, and two or three processes
+      # started from its own image. A copy of the same build stands in for a
+      # download; whether the version changes is beside the point.
+      #
+      # The assertion that carries this is not "the files moved" but "the
+      # replacement came up", and specifically that the process we started is
+      # no longer the one serving. Relaunching after the swap is where this
+      # went wrong three times: the call raised nothing and the new process
+      # died on the spot. Without the exit check a failed relaunch would look
+      # like success here, because the original process carries on and starts
+      # Streamlit itself.
+      - name: Smoke test the self-update
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $src = Join-Path $env:GITHUB_WORKSPACE "dist\TimeControl.exe"
+          $testDir = Join-Path $env:RUNNER_TEMP "tc-smoke-test"
+
+          Get-Process -Name "TimeControl" -ErrorAction SilentlyContinue |
+            Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 3
+
+          # Exactly what the in-app updater leaves behind for the next start.
+          Copy-Item $src (Join-Path $testDir "TimeControl.exe.new")
+
+          Push-Location $testDir
+          $proc = Start-Process -FilePath ".\TimeControl.exe" -PassThru
+          $serverResponded = $false
+          $firstExited = $false
+          try {
+            for ($i = 0; $i -lt 60; $i++) {
+              Start-Sleep -Seconds 1
+              try {
+                $resp = Invoke-WebRequest -Uri "http://localhost:8501" -UseBasicParsing -TimeoutSec 2
+                if ($resp.StatusCode -eq 200) { $serverResponded = $true; break }
+              } catch { }
+            }
+            # Read before the cleanup below, which would make it true anyway.
+            $firstExited = $proc.HasExited
+          } finally {
+            Get-Process -Name "TimeControl" -ErrorAction SilentlyContinue |
+              Stop-Process -Force -ErrorAction SilentlyContinue
+          }
+
+          $swappedIn = -not (Test-Path "TimeControl.exe.new")
+          $rollbackKept = Test-Path "TimeControl.exe.old"
+          $dataKept = Test-Path "data.json"
+          Pop-Location
+
+          if (-not $swappedIn) {
+            Write-Error "TimeControl.exe.new is still there - the update was never installed."
+            exit 1
+          }
+          if (-not $rollbackKept) {
+            Write-Error "TimeControl.exe.old is missing - the replaced build was not kept as a rollback."
+            exit 1
+          }
+          if (-not $firstExited) {
+            Write-Error "The process that performed the swap is still running - it never handed over, so Streamlit is being served by the old image."
+            exit 1
+          }
+          if (-not $serverResponded) {
+            Write-Error "The swapped-in executable never brought Streamlit up within the timeout - the relaunch did not run."
+            exit 1
+          }
+          if (-not $dataKept) {
+            Write-Error "data.json did not survive the update."
+            exit 1
+          }
+          Write-Host "Self-update smoke test passed: image replaced, previous build kept as a rollback, the replacement handed over and came up, data intact."
+
       - name: Upload build artifact
         if: always()
         uses: actions/upload-artifact@v4
