@@ -2,36 +2,38 @@ name: Probe - Windows self-update assumptions
 
 # THROWAWAY. Delete this file once it has answered its questions.
 #
-# A frozen build cannot update itself the way the source install does: it has
-# no loose .py files to overwrite, and Windows will not let a running .exe be
-# overwritten. The plan is to rename the running .exe out of the way instead,
-# put the new one in its place and relaunch - which rests on assumptions that
-# are worth proving on a real Windows machine before any code is built on
-# them. None of them can be checked from macOS.
+# Settled by the first two rounds, and no longer re-tested here:
 #
-#   1. A running PyInstaller onefile .exe - with child processes started from
-#      the same image, as TimeControl does - can be RENAMED, even though it
-#      cannot be overwritten or deleted.  ANSWERED: yes.
+#   - A running onefile .exe cannot be overwritten but CAN be renamed, with
+#     several processes alive from the same image. The replacement starts,
+#     and the old image is deletable once its processes end.
+#   - The running process can do that to itself: os.rename on its own image
+#     and shutil.copy2 of the replacement into the freed path both succeed,
+#     from a directory whose name contains spaces.
+#   - A file written by our own Python download carries no Mark-of-the-Web,
+#     on a volume that demonstrably does record alternate data streams. So
+#     the replacement will not raise SmartScreen, which is what made this
+#     approach viable without a signing certificate.
 #
-#   2. The same holds when the running process renames ITSELF, with Python,
-#      from a path containing spaces (a OneDrive folder carries the company
-#      name, so spaces are the normal case rather than the exception).
+# What is left is the last step of the dance. Round two relaunched the
+# replacement with a plain subprocess.Popen and then exited immediately: the
+# call raised nothing and the new process never ran. Round one had done the
+# same relaunch successfully - but from PowerShell, not from inside the
+# frozen process.
 #
-#   3. A file written by our own Python code does NOT get a Mark-of-the-Web
-#      (the Zone.Identifier stream that browsers attach), so the replacement
-#      .exe should not raise SmartScreen's "Windows protected your PC" -
-#      which matters because signing is not on the table for now.
+# The leading explanation is PyInstaller's own handover. A onefile build
+# unpacks itself into a temporary directory and tells the second stage about
+# it through the environment (_MEIPASS2 on older versions, _PYI_* on 6.x).
+# A frozen process that spawns its own image passes those variables straight
+# on, so the new process believes it is that second stage, skips unpacking
+# and runs out of the parent's temporary directory - which the parent deletes
+# on the way out. That is harmless for TimeControl's normal subprocesses,
+# where the parent stays alive, and fatal for an update relaunch, where it
+# does not.
 #
-# Round one answered 1 but left 3 open: Invoke-WebRequest was picked as the
-# positive control and turned out not to set a Mark-of-the-Web either, so
-# "absent" on both rows proved nothing about the environment. The control is
-# now a stream written by hand, which establishes that the volume records
-# alternate data streams at all.
-#
-# It also checks what Defender makes of a freshly written, unsigned .exe.
-#
-# The job does not fail on a negative answer: "no" is a result too, and the
-# summary below is meant to be read rather than inferred from a red cross.
+# This round tries six ways of starting the replacement and reports which
+# ones survive the launcher's exit. The job does not fail on a negative
+# answer: the table is the result.
 
 on:
   workflow_dispatch:
@@ -54,15 +56,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller
 
-      # A stand-in rather than the real application: it reproduces the one
-      # property under test - a running onefile .exe that has spawned another
-      # process from the same image - and builds in seconds instead of
-      # minutes. TimeControl re-invokes itself with --tc-streamlit-subprocess
-      # exactly like this.
-      #
-      # --selfupdate is the interesting mode: it performs the whole planned
-      # dance from inside the running process, with the same calls the real
-      # updater would make.
+      # A stand-in for the real application: a onefile build that spawns
+      # another process from its own image, which is what TimeControl does
+      # with --tc-streamlit-subprocess. It builds in seconds rather than
+      # minutes and reproduces the property under test.
       - name: Write and build the probe executable
         shell: pwsh
         run: |
@@ -73,31 +70,36 @@ jobs:
           me = os.path.abspath(sys.executable)
           here = os.path.dirname(me)
 
+          # Only defined on Windows; falling back to 0 keeps this script
+          # runnable on a developer machine for a dry run of the logic.
+          DETACHED = (getattr(subprocess, "DETACHED_PROCESS", 0)
+                      | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
+
           def mark(name):
               with open(os.path.join(here, name), "w") as handle:
                   handle.write(str(os.getpid()))
 
-          if "--child" in sys.argv:
-              mark("child-running.txt")
-              time.sleep(120)
-              sys.exit(0)
+          def arg_after(flag):
+              return sys.argv[sys.argv.index(flag) + 1]
 
-          if "--relaunched" in sys.argv:
-              mark("relaunched.txt")
-              time.sleep(60)
+          if "--marker" in sys.argv:
+              mark(arg_after("--marker"))
+              time.sleep(45)
               sys.exit(0)
 
           if "--selfupdate" in sys.argv:
-              # Bring up a second process from this same image first, so the
-              # rename happens under the real conditions rather than against a
-              # single-process executable.
-              subprocess.Popen([me, "--child"])
+              strategy = arg_after("--selfupdate")
+
+              # A second process from this same image, so the swap happens
+              # under the real conditions rather than against a lone .exe.
+              subprocess.Popen([me, "--marker", "child.txt"])
               for _ in range(30):
-                  if os.path.exists(os.path.join(here, "child-running.txt")):
+                  if os.path.exists(os.path.join(here, "child.txt")):
                       break
                   time.sleep(1)
 
-              result = {"child_up": os.path.exists(os.path.join(here, "child-running.txt"))}
+              result = {"strategy": strategy,
+                        "child_up": os.path.exists(os.path.join(here, "child.txt"))}
 
               try:
                   os.rename(me, me + ".old")
@@ -112,256 +114,97 @@ jobs:
                   except OSError as exc:
                       result["write"] = "FAILED: %s" % exc
 
-                  if result.get("write") == "ok":
-                      try:
-                          subprocess.Popen([me, "--relaunched"])
-                          result["relaunch"] = "spawned"
-                      except OSError as exc:
-                          result["relaunch"] = "FAILED: %s" % exc
+              if result.get("write") == "ok":
+                  # Everything PyInstaller uses to tell a second stage that
+                  # the bundle is already unpacked.
+                  clean = {k: v for k, v in os.environ.items()
+                           if not k.startswith("_MEI") and not k.startswith("_PYI")}
+                  launch = [me, "--marker", "ran.txt"]
+                  try:
+                      if strategy == "plain":
+                          subprocess.Popen(launch)
+                      elif strategy == "cleanenv":
+                          subprocess.Popen(launch, env=clean)
+                      elif strategy == "detached":
+                          subprocess.Popen(launch, close_fds=True, creationflags=DETACHED)
+                      elif strategy == "both":
+                          subprocess.Popen(launch, env=clean, close_fds=True,
+                                           creationflags=DETACHED)
+                      elif strategy == "linger":
+                          # Does the launcher merely need to outlive the
+                          # child's first moments?
+                          subprocess.Popen(launch)
+                          time.sleep(8)
+                      elif strategy == "startfile":
+                          if hasattr(os, "startfile"):
+                              os.startfile(me, arguments="--marker ran.txt")
+                          else:
+                              result["launch"] = "os.startfile not available here"
+                      result.setdefault("launch", "no error")
+                  except OSError as exc:
+                      result["launch"] = "FAILED: %s" % exc
 
-              with open(os.path.join(here, "selfupdate.json"), "w") as handle:
+              with open(os.path.join(here, "report.json"), "w") as handle:
                   json.dump(result, handle)
               sys.exit(0)
 
-          subprocess.Popen([me, "--child"])
-          mark("parent-running.txt")
+          subprocess.Popen([me, "--marker", "child.txt"])
+          mark("parent.txt")
           time.sleep(120)
           '@ | Set-Content -Path probe_app.py -Encoding utf8
 
           pyinstaller --onefile --name probe probe_app.py --distpath dist --workpath build --specpath . --noconfirm
           if (-not (Test-Path dist/probe.exe)) { throw "probe.exe was not built" }
 
-      - name: Assumption 1 - can a running .exe be renamed from outside?
-        id: rename
+      - name: Which relaunch survives the launcher's exit?
         shell: pwsh
         run: |
           $ErrorActionPreference = "Continue"
-          # Absolute, because the working directory moves below.
           $src = Join-Path $env:GITHUB_WORKSPACE "dist\probe.exe"
-          $dir = Join-Path $env:RUNNER_TEMP "probe"
-          New-Item -ItemType Directory -Path $dir -Force | Out-Null
-          Copy-Item $src (Join-Path $dir "probe.exe")
-          Push-Location $dir
 
-          Start-Process -FilePath (Join-Path $dir "probe.exe") -WindowStyle Hidden
-          $waited = 0
-          while (-not (Test-Path "child-running.txt") -and $waited -lt 30) {
-            Start-Sleep -Seconds 1; $waited++
-          }
-          $running = @(Get-Process -Name probe -ErrorAction SilentlyContinue)
-          Write-Host "probe processes running: $($running.Count)"
-          "processes=$($running.Count)" >> $env:GITHUB_OUTPUT
+          "| Relaunch strategy | Result |" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          "|---|---|" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
-          # The control: overwriting the image is expected to be refused. If
-          # this ever succeeds the whole rename dance is unnecessary.
-          $overwrite = "refused"
-          try {
-            Copy-Item $src (Join-Path $dir "probe.exe") -Force -ErrorAction Stop
-            $overwrite = "ALLOWED"
-          } catch { }
-          Write-Host "overwrite while running: $overwrite"
-          "overwrite=$overwrite" >> $env:GITHUB_OUTPUT
-
-          # The assumption under test.
-          $rename = "FAILED"
-          try {
-            Rename-Item -Path "probe.exe" -NewName "probe.old.exe" -ErrorAction Stop
-            $rename = "ok"
-          } catch {
-            Write-Host "rename error: $($_.Exception.Message)"
-          }
-          Write-Host "rename while running: $rename"
-          "rename=$rename" >> $env:GITHUB_OUTPUT
-
-          # And does the swapped-in replacement actually start?
-          $relaunch = "not attempted"
-          if ($rename -eq "ok") {
+          # "plain" is round two's failing baseline and has to be repeated
+          # here: without it reproducing, a success anywhere else would say
+          # nothing about what actually changed.
+          foreach ($strategy in @("plain", "cleanenv", "detached", "both", "linger", "startfile")) {
+            # Named like a OneDrive folder, so spaces and a dash stay covered.
+            $dir = Join-Path $env:RUNNER_TEMP "OneDrive - Test Company GmbH\$strategy"
+            New-Item -ItemType Directory -Path $dir -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $dir "stash") -Force | Out-Null
             Copy-Item $src (Join-Path $dir "probe.exe")
-            Remove-Item "child-running.txt","parent-running.txt" -ErrorAction SilentlyContinue
-            Start-Process -FilePath (Join-Path $dir "probe.exe") -WindowStyle Hidden
+            Copy-Item $src (Join-Path $dir "stash\probe.exe")
+
+            Start-Process -FilePath (Join-Path $dir "probe.exe") `
+                          -ArgumentList "--selfupdate", $strategy -WindowStyle Hidden
+
+            $report = Join-Path $dir "report.json"
             $waited = 0
-            while (-not (Test-Path "child-running.txt") -and $waited -lt 30) {
-              Start-Sleep -Seconds 1; $waited++
-            }
-            $relaunch = if (Test-Path "child-running.txt") { "ok" } else { "FAILED" }
-          }
-          Write-Host "replacement starts: $relaunch"
-          "relaunch=$relaunch" >> $env:GITHUB_OUTPUT
+            while (-not (Test-Path $report) -and $waited -lt 90) { Start-Sleep -Seconds 1; $waited++ }
 
-          # Can the renamed old image be cleared away once its processes end?
-          Get-Process -Name probe -ErrorAction SilentlyContinue | Stop-Process -Force
-          Start-Sleep -Seconds 3
-          $cleanup = "FAILED"
-          try {
-            Remove-Item "probe.old.exe" -ErrorAction Stop
-            $cleanup = "ok"
-          } catch {
-            Write-Host "cleanup error: $($_.Exception.Message)"
-          }
-          Write-Host "old image deletable after exit: $cleanup"
-          "cleanup=$cleanup" >> $env:GITHUB_OUTPUT
-          Pop-Location
-
-      # Round one had PowerShell do the renaming. The real updater renames the
-      # image it is itself running from, with os.rename, and writes the
-      # replacement with shutil.copyfile - so run exactly that. The directory
-      # name carries a space and a dash on purpose: a OneDrive folder is named
-      # after the company, and that is where the user's copy actually lives.
-      - name: Assumption 2 - can the running .exe replace itself, from a path with spaces?
-        id: selfupdate
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Continue"
-          $src = Join-Path $env:GITHUB_WORKSPACE "dist\probe.exe"
-          $dir = Join-Path $env:RUNNER_TEMP "OneDrive - Test Company GmbH"
-          New-Item -ItemType Directory -Path $dir -Force | Out-Null
-          New-Item -ItemType Directory -Path (Join-Path $dir "stash") -Force | Out-Null
-          $exe = Join-Path $dir "probe.exe"
-          Copy-Item $src $exe
-          # Stands in for the freshly downloaded build.
-          Copy-Item $src (Join-Path $dir "stash\probe.exe")
-          Write-Host "running from: $exe"
-
-          Start-Process -FilePath $exe -ArgumentList "--selfupdate" -WindowStyle Hidden
-          $report = Join-Path $dir "selfupdate.json"
-          $waited = 0
-          while (-not (Test-Path $report) -and $waited -lt 90) {
-            Start-Sleep -Seconds 1; $waited++
-          }
-
-          $selfRename = "no report"; $selfWrite = "no report"; $selfRelaunch = "no report"
-          if (Test-Path $report) {
-            $r = Get-Content $report -Raw | ConvertFrom-Json
-            Write-Host "report: $($r | ConvertTo-Json -Compress)"
-            $selfRename = if ($r.rename) { $r.rename } else { "missing" }
-            $selfWrite = if ($r.write) { $r.write } else { "not attempted" }
-            if ($r.relaunch -eq "spawned") {
-              # Spawning is not the same as starting: wait for the replacement
-              # to prove it actually ran.
-              $waited = 0
-              while (-not (Test-Path (Join-Path $dir "relaunched.txt")) -and $waited -lt 30) {
-                Start-Sleep -Seconds 1; $waited++
+            $verdict = "the probe never reported"
+            if (Test-Path $report) {
+              $r = Get-Content $report -Raw | ConvertFrom-Json
+              Write-Host "$strategy report: $($r | ConvertTo-Json -Compress)"
+              if ($r.rename -ne "ok" -or $r.write -ne "ok") {
+                $verdict = "swap failed (rename=$($r.rename), write=$($r.write))"
+              } elseif ($r.launch -ne "no error") {
+                $verdict = "the launch call itself failed: $($r.launch)"
+              } else {
+                $waited = 0
+                while (-not (Test-Path (Join-Path $dir "ran.txt")) -and $waited -lt 40) {
+                  Start-Sleep -Seconds 1; $waited++
+                }
+                $verdict = if (Test-Path (Join-Path $dir "ran.txt")) { "**RAN**" } else { "never ran" }
               }
-              $selfRelaunch = if (Test-Path (Join-Path $dir "relaunched.txt")) { "ok" } else { "spawned but never ran" }
-            } else {
-              $selfRelaunch = if ($r.relaunch) { $r.relaunch } else { "not attempted" }
             }
-            Write-Host "child was up during the rename: $($r.child_up)"
-            "childup=$($r.child_up)" >> $env:GITHUB_OUTPUT
-          } else {
-            Write-Host "the probe never wrote a report"
-            "childup=unknown" >> $env:GITHUB_OUTPUT
-          }
-          Write-Host "self-rename: $selfRename / self-write: $selfWrite / relaunch: $selfRelaunch"
-          "selfrename=$selfRename" >> $env:GITHUB_OUTPUT
-          "selfwrite=$selfWrite" >> $env:GITHUB_OUTPUT
-          "selfrelaunch=$selfRelaunch" >> $env:GITHUB_OUTPUT
+            Write-Host "$strategy -> $verdict"
+            "| ``$strategy`` | $verdict |" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
 
-          Get-Process -Name probe -ErrorAction SilentlyContinue | Stop-Process -Force
-
-      - name: Assumption 3 - does a Python-written download carry a Mark-of-the-Web?
-        id: motw
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Continue"
-          $dir = Join-Path $env:RUNNER_TEMP "motw"
-          New-Item -ItemType Directory -Path $dir -Force | Out-Null
-
-          # The positive control, and the part round one got wrong. Writing the
-          # stream by hand proves this volume records alternate data streams at
-          # all - without it, "absent" everywhere would mean nothing.
-          $control = Join-Path $dir "control.bin"
-          Set-Content -Path $control -Value "x"
-          Set-Content -Path $control -Stream Zone.Identifier -Value "[ZoneTransfer]`r`nZoneId=3"
-          $back = Get-Content -Path $control -Stream Zone.Identifier -ErrorAction SilentlyContinue
-          $ads = if ($back) { "supported" } else { "NOT SUPPORTED - the test below is meaningless" }
-          Write-Host "alternate data streams on this volume: $ads"
-          "ads=$ads" >> $env:GITHUB_OUTPUT
-
-          # Written the way update.py would write it, from a real HTTPS
-          # download, so the answer is about our actual method.
-          @'
-          import os, sys, urllib.request
-          url = "https://raw.githubusercontent.com/FrankFaulstich/TimeControl/main/README.md"
-          data = urllib.request.urlopen(url, timeout=30).read()
-          with open(os.path.join(sys.argv[1], "by-python.bin"), "wb") as handle:
-              handle.write(data)
-          print("written", len(data), "bytes")
-          '@ | Set-Content -Path fetch.py -Encoding utf8
-          python fetch.py $dir
-
-          # Not a control - PowerShell does not mark downloads either, which is
-          # what round one mistook for a result. Kept for the record.
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/FrankFaulstich/TimeControl/main/README.md" `
-                            -OutFile (Join-Path $dir "by-powershell.bin")
-
-          foreach ($name in @("by-python.bin", "by-powershell.bin")) {
-            $p = Join-Path $dir $name
-            $zone = Get-Content -Path $p -Stream Zone.Identifier -ErrorAction SilentlyContinue
-            $has = if ($zone) { "PRESENT" } else { "absent" }
-            Write-Host "$name -> Mark-of-the-Web $has"
-            if ($zone) { Write-Host ($zone -join "; ") }
-            if ($name -eq "by-python.bin") { "python_motw=$has" >> $env:GITHUB_OUTPUT }
-            else { "powershell_motw=$has" >> $env:GITHUB_OUTPUT }
+            Get-Process -Name probe -ErrorAction SilentlyContinue | Stop-Process -Force
+            Start-Sleep -Seconds 2
           }
 
-      - name: What Defender makes of a freshly written unsigned .exe
-        id: defender
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Continue"
-          $dir = Join-Path $env:RUNNER_TEMP "defender"
-          New-Item -ItemType Directory -Path $dir -Force | Out-Null
-          $target = Join-Path $dir "probe.exe"
-          # Copied with Python, as the updater would write it.
-          $src = Join-Path $env:GITHUB_WORKSPACE "dist\probe.exe"
-          @'
-          import shutil, sys
-          shutil.copyfile(sys.argv[1], sys.argv[2])
-          '@ | Set-Content -Path copyfile.py -Encoding utf8
-          python copyfile.py $src $target
-
-          # Whether real-time protection is even on decides how much the scan
-          # result is worth.
-          $rtp = "unknown"
-          try { $rtp = (Get-MpComputerStatus).RealTimeProtectionEnabled } catch { }
-          Write-Host "real-time protection: $rtp"
-          "rtp=$rtp" >> $env:GITHUB_OUTPUT
-
-          $verdict = "not scanned"
-          try {
-            Start-MpScan -ScanType CustomScan -ScanPath $dir -ErrorAction Stop
-            Start-Sleep -Seconds 3
-            $verdict = if (Test-Path $target) { "survived the scan" } else { "REMOVED by Defender" }
-          } catch {
-            $verdict = "scan unavailable: $($_.Exception.Message)"
-          }
-          Write-Host "defender: $verdict"
-          "verdict=$verdict" >> $env:GITHUB_OUTPUT
-
-      - name: Summary
-        if: always()
-        shell: pwsh
-        run: |
-          $rows = @(
-            "| Question | Result |",
-            "|---|---|",
-            "| probe processes running during the test | ${{ steps.rename.outputs.processes }} |",
-            "| overwrite a running .exe (expected: refused) | ${{ steps.rename.outputs.overwrite }} |",
-            "| rename a running .exe from outside | ${{ steps.rename.outputs.rename }} |",
-            "| replacement .exe starts afterwards | ${{ steps.rename.outputs.relaunch }} |",
-            "| old image deletable once its processes end | ${{ steps.rename.outputs.cleanup }} |",
-            "| second process was up during the self-update | ${{ steps.selfupdate.outputs.childup }} |",
-            "| **the running .exe renames itself (os.rename)** | **${{ steps.selfupdate.outputs.selfrename }}** |",
-            "| **it writes its replacement (shutil.copy2)** | **${{ steps.selfupdate.outputs.selfwrite }}** |",
-            "| **the replacement runs, from a path with spaces** | **${{ steps.selfupdate.outputs.selfrelaunch }}** |",
-            "| alternate data streams work here (control) | ${{ steps.motw.outputs.ads }} |",
-            "| **Mark-of-the-Web on a Python-written download** | **${{ steps.motw.outputs.python_motw }}** |",
-            "| Mark-of-the-Web via Invoke-WebRequest (not a control) | ${{ steps.motw.outputs.powershell_motw }} |",
-            "| Defender real-time protection on | ${{ steps.defender.outputs.rtp }} |",
-            "| Defender on a freshly written unsigned .exe | ${{ steps.defender.outputs.verdict }} |"
-          )
-          $rows -join "`n" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY
-          Write-Host ""
-          Write-Host "The design holds if the three self-update rows are ok AND"
-          Write-Host "the control says 'supported' while the Python download says 'absent'."
+          "" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          "``plain`` is expected to fail - it is round two's result. Any strategy marked RAN is one the updater can use." | Add-Content -Path $env:GITHUB_STEP_SUMMARY
