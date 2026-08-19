@@ -1845,6 +1845,30 @@ msgstr "La mise à jour téléchargée a été rejetée : {reason}"
 msgid "The previous version is still available as {filename}."
 msgstr "La version précédente est toujours disponible sous le nom {filename}."
 
+#: sl/SL_Menu.py:568
+msgid "Download the update and install it at the next start"
+msgstr "Télécharger la mise à jour et l'installer au prochain démarrage"
+
+#: sl/SL_Menu.py:575
+msgid "Update downloaded. It will be installed the next time you start the application."
+msgstr "Mise à jour téléchargée. Elle sera installée au prochain démarrage de l'application."
+
+#: sl/SL_Menu.py:577
+msgid "The update could not be downloaded."
+msgstr "La mise à jour n'a pas pu être téléchargée."
+
+#: sl/SL_Menu.py:1659
+msgid "This will put the previous version back in place. It takes effect the next time you start the application."
+msgstr "Cela remettra la version précédente en place. Elle prendra effet au prochain démarrage de l'application."
+
+#: sl/SL_Menu.py:1665
+msgid "Previous version restored. Please restart the application."
+msgstr "Version précédente restaurée. Veuillez redémarrer l'application."
+
+#: sl/SL_Menu.py:1666
+msgid "The previous version could not be restored."
+msgstr "La version précédente n'a pas pu être restaurée."
+
 #~ msgid "Today View"
 #~ msgstr "Vue du jour"
 

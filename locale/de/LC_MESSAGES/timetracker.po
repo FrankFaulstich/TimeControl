@@ -1843,6 +1843,30 @@ msgstr "Das heruntergeladene Update wurde abgelehnt: {reason}"
 msgid "The previous version is still available as {filename}."
 msgstr "Die vorherige Version liegt weiterhin als {filename} vor."
 
+#: sl/SL_Menu.py:568
+msgid "Download the update and install it at the next start"
+msgstr "Update herunterladen und beim nächsten Start einspielen"
+
+#: sl/SL_Menu.py:575
+msgid "Update downloaded. It will be installed the next time you start the application."
+msgstr "Update heruntergeladen. Es wird beim nächsten Start der Anwendung eingespielt."
+
+#: sl/SL_Menu.py:577
+msgid "The update could not be downloaded."
+msgstr "Das Update konnte nicht heruntergeladen werden."
+
+#: sl/SL_Menu.py:1659
+msgid "This will put the previous version back in place. It takes effect the next time you start the application."
+msgstr "Damit wird die vorherige Version wieder eingesetzt. Sie wird beim nächsten Start der Anwendung wirksam."
+
+#: sl/SL_Menu.py:1665
+msgid "Previous version restored. Please restart the application."
+msgstr "Vorherige Version wiederhergestellt. Bitte starten Sie die Anwendung neu."
+
+#: sl/SL_Menu.py:1666
+msgid "The previous version could not be restored."
+msgstr "Die vorherige Version konnte nicht wiederhergestellt werden."
+
 #~ msgid "Today View"
 #~ msgstr "Heute-Ansicht"
 

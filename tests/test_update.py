@@ -525,19 +525,78 @@ class TestSwappingTheExecutable(unittest.TestCase):
 
         self.assertEqual(self._read("TimeControl.exe"), b"the running build")
 
-    def test_an_update_after_a_rollback_reuses_the_name(self):
+    def test_leftovers_are_cleared_but_the_rollback_is_kept(self):
         """
-        The rolled-back build is kept because it is still running. By the next
-        start it is not, and it must not linger any longer than that.
+        The rolled-back build is kept at the time because it is still running,
+        and a download can be cut off mid-transfer; by the next start neither
+        is any use. The copy the last update renamed aside is a different
+        matter - that one is the rollback, and clearing it here would quietly
+        remove the user's way back.
         """
         self._write(self._path(update.REJECTED_EXE), b"a build we rejected")
+        self._write(self._path(update.PARTIAL_EXE), b"half a download")
+        self._write(self._path(update.PREVIOUS_EXE), b"the version before")
 
-        update.discard_rejected_exe(self.target)
+        update.clear_update_leftovers(self.target)
 
         self.assertFalse(os.path.exists(self._path(update.REJECTED_EXE)))
+        self.assertFalse(os.path.exists(self._path(update.PARTIAL_EXE)))
+        self.assertEqual(self._read(update.PREVIOUS_EXE), b"the version before",
+                         "the rollback must survive the tidying up")
 
     def test_discarding_what_is_not_there_is_not_an_error(self):
-        update.discard_rejected_exe(self.target)
+        update.clear_update_leftovers(self.target)
+
+
+class TestRelaunchingAfterTheSwap(unittest.TestCase):
+    """
+    The last step, and the one that took three rounds on a Windows runner to
+    get right. A onefile build unpacks itself into a temporary directory and
+    names it to the second stage through the environment; a frozen process
+    starting its own image hands those variables on, so the new process skips
+    unpacking and reads from a directory belonging to the process it is
+    replacing - out of an archive the swap has just renamed. It dies at once.
+
+    Measured on the runner: plain, detached, and waiting around before exiting
+    all failed. Stripping the variables was the only thing that worked, with
+    or without detaching. See probe-windows-selfupdate.yaml.
+    """
+
+    def test_pyinstaller_handover_variables_are_stripped(self):
+        environment = {"_MEIPASS2": "/tmp/_MEI123",
+                       "_PYI_ARCHIVE_FILE": "C:\\TimeControl.exe",
+                       "_PYI_APPLICATION_HOME_DIR": "/tmp/_MEI123",
+                       "PATH": "/usr/bin",
+                       "HOME": "/home/somebody"}
+
+        with unittest.mock.patch.dict('update.os.environ', environment, clear=True):
+            clean = update._clean_environment()
+
+        self.assertEqual(clean, {"PATH": "/usr/bin", "HOME": "/home/somebody"})
+
+    def test_the_replacement_is_started_without_them(self):
+        environment = {"_MEIPASS2": "/tmp/_MEI123", "PATH": "/usr/bin"}
+
+        with unittest.mock.patch.dict('update.os.environ', environment, clear=True):
+            with unittest.mock.patch('update.subprocess.Popen') as popen:
+                self.assertTrue(update.relaunch_frozen("/apps/TimeControl.exe"))
+
+        popen.assert_called_once()
+        argv, keywords = popen.call_args
+        self.assertEqual(argv[0], ["/apps/TimeControl.exe"])
+        self.assertNotIn("_MEIPASS2", keywords["env"],
+                         "the new process must not be told it is already unpacked")
+        self.assertEqual(keywords["env"]["PATH"], "/usr/bin",
+                         "the rest of the environment has to survive")
+
+    def test_a_relaunch_that_cannot_start_says_so(self):
+        """
+        The caller exits on True, so a quiet failure here would close the
+        application with nothing to take its place.
+        """
+        with unittest.mock.patch('update.subprocess.Popen',
+                                 side_effect=OSError("no such file")):
+            self.assertFalse(update.relaunch_frozen("/apps/TimeControl.exe"))
 
 
 if __name__ == "__main__":

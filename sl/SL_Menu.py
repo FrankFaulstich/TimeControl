@@ -15,7 +15,9 @@ from tt.TimeTracker import TimeTracker
 from i18n import _
 
 try:
-    from update import restore_previous_version, check_for_updates, apply_update, should_check_for_updates
+    from update import (restore_previous_version, check_for_updates, apply_update,
+                        should_check_for_updates, download_exe_update,
+                        restore_previous_exe, PREVIOUS_EXE)
     UPDATE_MODULE_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
     UPDATE_MODULE_AVAILABLE = False
@@ -418,13 +420,14 @@ if SYNC_AVAILABLE:
 # different menu than the one this ran for last time) - not on every rerun
 # of the *same* view, e.g. not on every keystroke or the 5s auto-refresh
 # tick, which would hit GitHub far more often than the view itself changes.
-# A frozen build has no loose source files for the update mechanism to
-# overwrite (see update.py/TimeTrackerSL_GUI.py), so there's nothing to
-# offer there. check_for_updates() is itself immune to a dead network - it
-# runs under a hard deadline and never raises (see update.py) - so a flaky
-# connection just means this silently stays skipped instead of hanging the
-# view change or crashing.
-if (UPDATE_MODULE_AVAILABLE and not getattr(sys, 'frozen', False)
+# A frozen build used to be excluded here, having no loose source files to
+# overwrite. It now updates by replacing its own executable instead, so the
+# check applies to it as well - what differs is only what the button below
+# does with the answer. check_for_updates() is itself immune to a dead
+# network - it runs under a hard deadline and never raises (see update.py) -
+# so a flaky connection just means this silently stays skipped instead of
+# hanging the view change or crashing.
+if (UPDATE_MODULE_AVAILABLE
         and should_check_for_updates(st.session_state, st.session_state.menu)):
     st.session_state._update_checked_for_menu = st.session_state.menu
     is_available, new_version, url = check_for_updates(st.session_state.tracker.get_version())
@@ -557,9 +560,26 @@ def render_header(title=None, subtitle=None):
         with col_update_msg:
             st.info(_("A new version ({version}) is available.").format(version=update_check['version']))
         with col_update_btn:
-            if st.button("⟳", help=_("Restart and install the update"), key="update_restart_btn"):
-                with st.spinner(_("Downloading and installing update...")):
-                    apply_update(update_check['url'])
+            # A frozen build cannot replace the .exe it is running from, so
+            # its button only fetches the new one; the swap happens at the
+            # next start (see update.py). Saying "restart and install" there
+            # would promise something this click does not do.
+            frozen = getattr(sys, 'frozen', False)
+            help_text = (_("Download the update and install it at the next start")
+                         if frozen else _("Restart and install the update"))
+            if st.button("⟳", help=help_text, key="update_restart_btn"):
+                if frozen:
+                    with st.spinner(_("Downloading update...")):
+                        downloaded = download_exe_update(update_check['url'])
+                    set_feedback(
+                        _("Update downloaded. It will be installed the next "
+                          "time you start the application.") if downloaded
+                        else _("The update could not be downloaded."),
+                        'success' if downloaded else 'error')
+                    st.rerun()
+                else:
+                    with st.spinner(_("Downloading and installing update...")):
+                        apply_update(update_check['url'])
     render_sync_notice()
     if title:
         st.title(title)
@@ -1623,6 +1643,29 @@ def view_settings():
         backup_zip_file = "prev-version.zip"
         if not UPDATE_MODULE_AVAILABLE:
             st.error(_("The 'update' module is not available. This feature is disabled."))
+        elif getattr(sys, 'frozen', False):
+            # For a frozen build the rollback is not an archive but the
+            # executable the last update renamed aside, so putting it back is
+            # a rename rather than an unpack. It cannot restart the
+            # application either: this code runs in the Streamlit subprocess,
+            # and exiting that would take down the interface while leaving
+            # the application itself running.
+            previous = os.path.join(
+                os.path.dirname(os.path.abspath(sys.executable)), PREVIOUS_EXE)
+            if not os.path.exists(previous):
+                st.info(_("No previous version backup '{filename}' found.").format(
+                    filename=PREVIOUS_EXE))
+            else:
+                st.warning(_("This will put the previous version back in place. It takes "
+                             "effect the next time you start the application."))
+                if st.button(_("Restore Previous Version"), type="primary",
+                             use_container_width=True, key="settings_restore_btn"):
+                    restored = restore_previous_exe()
+                    set_feedback(
+                        _("Previous version restored. Please restart the application.")
+                        if restored else _("The previous version could not be restored."),
+                        'success' if restored else 'error')
+                    st.rerun()
         elif not os.path.exists(backup_zip_file):
             st.info(_("No previous version backup '{filename}' found.").format(filename=backup_zip_file))
         else:

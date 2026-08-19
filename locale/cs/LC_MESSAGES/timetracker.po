@@ -1814,6 +1814,30 @@ msgstr "Stažená aktualizace byla odmítnuta: {reason}"
 msgid "The previous version is still available as {filename}."
 msgstr "Předchozí verze je stále k dispozici jako {filename}."
 
+#: sl/SL_Menu.py:568
+msgid "Download the update and install it at the next start"
+msgstr "Stáhnout aktualizaci a nainstalovat ji při příštím spuštění"
+
+#: sl/SL_Menu.py:575
+msgid "Update downloaded. It will be installed the next time you start the application."
+msgstr "Aktualizace byla stažena. Nainstaluje se při příštím spuštění aplikace."
+
+#: sl/SL_Menu.py:577
+msgid "The update could not be downloaded."
+msgstr "Aktualizaci se nepodařilo stáhnout."
+
+#: sl/SL_Menu.py:1659
+msgid "This will put the previous version back in place. It takes effect the next time you start the application."
+msgstr "Tímto se vrátí zpět předchozí verze. Projeví se při příštím spuštění aplikace."
+
+#: sl/SL_Menu.py:1665
+msgid "Previous version restored. Please restart the application."
+msgstr "Předchozí verze byla obnovena. Restartujte prosím aplikaci."
+
+#: sl/SL_Menu.py:1666
+msgid "The previous version could not be restored."
+msgstr "Předchozí verzi se nepodařilo obnovit."
+
 #~ msgid "Today View"
 #~ msgstr "Dnes Zobrazit"
 

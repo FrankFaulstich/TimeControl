@@ -1,5 +1,6 @@
 import hashlib
 import json
+import subprocess
 import sys
 import os
 import threading
@@ -341,12 +342,59 @@ def pending_exe_update(target=None):
     return os.path.exists(os.path.join(_app_dir(target), PENDING_EXE))
 
 
-def discard_rejected_exe(target=None):
+def clear_update_leftovers(target=None):
     """
-    Removes the build that a rollback pushed aside. Meant for startup: by
-    then the process that was running from it is gone.
+    Removes what an earlier session left lying around and nobody needs: the
+    build a rollback pushed aside, and any download interrupted mid-transfer.
+
+    Meant for startup. The rolled-back build could not be deleted at the time
+    because it was still running; by now it is not. Neither of these is the
+    rollback copy, which is kept on purpose until the next update replaces it.
     """
-    _discard(os.path.join(_app_dir(target), REJECTED_EXE))
+    here = _app_dir(target)
+    _discard(os.path.join(here, REJECTED_EXE))
+    _discard(os.path.join(here, PARTIAL_EXE))
+
+
+def _clean_environment():
+    """
+    A copy of the environment without PyInstaller's handover variables.
+
+    A onefile build unpacks itself into a temporary directory and tells the
+    second stage where that is through the environment (_MEIPASS2 on older
+    versions, _PYI_* on 6.x). A frozen process that starts its own image
+    passes those straight on, so the new process takes itself for that second
+    stage, skips unpacking, and reads from a directory belonging to the
+    process it is meant to replace - out of an archive the swap has just
+    renamed. It dies immediately.
+
+    Measured rather than reasoned: with these left in place the relaunch never
+    runs, no matter whether the launcher detaches it or waits around for a
+    while afterwards, and stripping them is the only thing that helps. See
+    .github/workflows/probe-windows-selfupdate.yaml.
+    """
+    return {name: value for name, value in os.environ.items()
+            if not name.startswith('_MEI') and not name.startswith('_PYI')}
+
+
+def relaunch_frozen(target=None):
+    """
+    Starts the executable again once its image has been swapped.
+
+    Only for the process that owns the application's lifetime - the one in
+    TimeTrackerSL_GUI's __main__, before any subprocess has been spawned.
+    Calling this from the Streamlit subprocess would start a second copy of
+    the whole application alongside the running one.
+
+    :return: True if the new process was started.
+    """
+    running = os.path.abspath(target or sys.executable)
+    try:
+        subprocess.Popen([running], env=_clean_environment())
+        return True
+    except OSError as exc:
+        print(_("Error during update installation: {error}").format(error=exc))
+        return False
 
 
 def install_exe_update(target=None):

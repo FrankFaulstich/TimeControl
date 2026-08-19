@@ -13,7 +13,9 @@ import threading
 from tt.TimeTracker import TimeTracker
 
 try:
-    from update import check_for_updates, download_update, install_update
+    from update import (check_for_updates, download_update, install_update,
+                        clear_update_leftovers, install_exe_update,
+                        pending_exe_update, relaunch_frozen)
     UPDATE_AVAILABLE = True
 except ImportError:
     UPDATE_AVAILABLE = False
@@ -322,6 +324,25 @@ if __name__ == '__main__':
 
     if _is_frozen():
         os.chdir(_app_root())
+
+    # A frozen build cannot overwrite the .exe it is running from, so an
+    # update downloaded during an earlier session is swapped in here instead.
+    # This is the one moment it can be: the sentinel re-launches above have
+    # already returned, so no second process has been started from that image
+    # yet. Renaming it aside is what Windows does allow - see update.py and
+    # .github/workflows/probe-windows-selfupdate.yaml.
+    #
+    # If the relaunch does not come off, carry on rather than exit: the code
+    # already in memory is the old version, which is a worse outcome than a
+    # restart but a far better one than a program that refuses to open.
+    if UPDATE_AVAILABLE and _is_frozen():
+        clear_update_leftovers()
+        if pending_exe_update() and install_exe_update():
+            print("Update installed. Restarting...")
+            if relaunch_frozen():
+                sys.exit(0)
+            print("Could not restart. The update takes effect the next time "
+                  "you start the application.")
 
     # The update mechanism downloads and unpacks a source-code zip over the
     # existing .py files (see update.py) - meaningless for a frozen build,

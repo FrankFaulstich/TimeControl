@@ -1759,3 +1759,27 @@ msgstr ""
 #, python-brace-format
 msgid "The previous version is still available as {filename}."
 msgstr ""
+
+#: sl/SL_Menu.py:568
+msgid "Download the update and install it at the next start"
+msgstr ""
+
+#: sl/SL_Menu.py:575
+msgid "Update downloaded. It will be installed the next time you start the application."
+msgstr ""
+
+#: sl/SL_Menu.py:577
+msgid "The update could not be downloaded."
+msgstr ""
+
+#: sl/SL_Menu.py:1659
+msgid "This will put the previous version back in place. It takes effect the next time you start the application."
+msgstr ""
+
+#: sl/SL_Menu.py:1665
+msgid "Previous version restored. Please restart the application."
+msgstr ""
+
+#: sl/SL_Menu.py:1666
+msgid "The previous version could not be restored."
+msgstr ""

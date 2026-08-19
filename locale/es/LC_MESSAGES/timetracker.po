@@ -1838,6 +1838,30 @@ msgstr "La actualización descargada fue rechazada: {reason}"
 msgid "The previous version is still available as {filename}."
 msgstr "La versión anterior sigue disponible como {filename}."
 
+#: sl/SL_Menu.py:568
+msgid "Download the update and install it at the next start"
+msgstr "Descargar la actualización e instalarla en el próximo inicio"
+
+#: sl/SL_Menu.py:575
+msgid "Update downloaded. It will be installed the next time you start the application."
+msgstr "Actualización descargada. Se instalará la próxima vez que inicie la aplicación."
+
+#: sl/SL_Menu.py:577
+msgid "The update could not be downloaded."
+msgstr "No se pudo descargar la actualización."
+
+#: sl/SL_Menu.py:1659
+msgid "This will put the previous version back in place. It takes effect the next time you start the application."
+msgstr "Esto volverá a colocar la versión anterior. Surtirá efecto la próxima vez que inicie la aplicación."
+
+#: sl/SL_Menu.py:1665
+msgid "Previous version restored. Please restart the application."
+msgstr "Versión anterior restaurada. Reinicie la aplicación."
+
+#: sl/SL_Menu.py:1666
+msgid "The previous version could not be restored."
+msgstr "No se pudo restaurar la versión anterior."
+
 #~ msgid "Today View"
 #~ msgstr "Vista de hoy"
 
