@@ -31,6 +31,19 @@ const TC_SEG_MAX_BYTES = 1048576;   // 1 MiB
 const TC_PUSH_MAX_OPS  = 500;
 const TC_PULL_MAX_OPS  = 500;
 
+// A snapshot is a whole document, so it is allowed to be larger than an
+// ordinary request - but only within reason, and only from a caller who has
+// already proved a token. Anything past this is refused with a code the
+// client can recognise and stop retrying on.
+const TC_SNAPSHOT_MAX_BYTES = 4194304;   // 4 MiB
+
+// How long the segments a snapshot replaced stay on disk. Space is not the
+// urgent problem - months of growth is - and a snapshot that turns out to be
+// wrong is only discovered by someone noticing, which takes days rather than
+// seconds. Deleting immediately would make that mistake unrecoverable to save
+// a week of storage.
+const TC_SEG_GRACE_SECONDS = 604800;     // 7 days
+
 function tc_log_dir($store, $uid)   { return tc_user_dir($store, $uid) . '/log'; }
 function tc_log_lock_path($store, $uid) { return tc_user_dir($store, $uid) . '/log.lock'; }
 function tc_log_state_path($store, $uid) { return tc_log_dir($store, $uid) . '/state.dat.php'; }
@@ -42,6 +55,13 @@ function tc_log_state_path($store, $uid) { return tc_log_dir($store, $uid) . '/s
  * and how many bytes of it are known-good. That last number is what makes a
  * half-finished append recoverable rather than corrupting: see
  * tc_log_reconcile().
+ *
+ * `retired` holds segments a snapshot has taken over from. They are out of
+ * the reading path but still on disk, waiting out TC_SEG_GRACE_SECONDS.
+ *
+ * `seg_seq` numbers segment files and only ever counts up. It cannot be
+ * derived from the number of segments any more, because retirement removes
+ * them from that list and a name would then be handed out twice.
  */
 function tc_log_state($store, $uid)
 {
@@ -51,6 +71,14 @@ function tc_log_state($store, $uid)
     }
     if (!isset($state['segments']) || !is_array($state['segments'])) {
         $state['segments'] = [];
+    }
+    if (!isset($state['retired']) || !is_array($state['retired'])) {
+        $state['retired'] = [];
+    }
+    // Installations that predate snapshots have no counter; theirs starts
+    // where the old count-based naming left off, so no name is reused.
+    if (!isset($state['seg_seq'])) {
+        $state['seg_seq'] = count($state['segments']);
     }
     $state['devices'] = (array)($state['devices'] ?? []);
     return $state;
@@ -149,7 +177,17 @@ function tc_log_append($store, $uid, $deviceUid, array $ops)
         if ($lines !== '') {
             $seg = tc_log_current_segment($state, $head - count($assigned) + 1);
             $path = $dir . '/' . $seg['f'];
-            if (!is_file($path)) {
+            if ((int)($seg['n'] ?? 0) === 0) {
+                // A segment the state has never recorded. Usually that means
+                // brand new, but a file can already be sitting there: an
+                // append that died between creating it and recording it
+                // leaves one behind, and adopting those bytes would put a
+                // fragment into the log and leave the byte count describing
+                // a file that no longer matches it. So the file is written
+                // fresh either way. Nothing the state vouches for can be lost
+                // here - a recorded segment always has n >= 1 - and the
+                // client never received an acknowledgement for the discarded
+                // bytes, so it sends them again.
                 @file_put_contents($path, TC_GUARD);
                 @chmod($path, 0600);
                 $seg['bytes'] = strlen(TC_GUARD);
@@ -195,6 +233,11 @@ function tc_log_append($store, $uid, $deviceUid, array $ops)
  * batch across two files would mean two appends to keep consistent instead
  * of one, and the overshoot is bounded by TC_PUSH_MAX_OPS either way. Do not
  * "fix" a segment that is over TC_SEG_MAX_OPS; it is working as intended.
+ *
+ * Names come from a counter that only rises, never from how many segments
+ * are currently listed: retirement takes them out of that list, and a name
+ * derived from the count would then be issued a second time and append new
+ * operations to a file that is waiting to be swept.
  */
 function tc_log_current_segment(array &$state, $nextSeq)
 {
@@ -205,8 +248,11 @@ function tc_log_current_segment(array &$state, $nextSeq)
             return $seg;
         }
     }
+    // Advanced here, but only reaching disk when the append that follows
+    // succeeds and writes the state - so a failed attempt reuses the number.
+    $state['seg_seq'] = (int)$state['seg_seq'] + 1;
     return [
-        'f'     => sprintf('seg-%07d.log.php', $n + 1),
+        'f'     => sprintf('seg-%07d.log.php', (int)$state['seg_seq']),
         'first' => $nextSeq,
         'last'  => $nextSeq - 1,
         'bytes' => 0,
@@ -228,13 +274,22 @@ function tc_log_put_segment(array &$state, array $seg)
 /**
  * Reads operations newer than $since.
  *
+ * Asking from below the snapshot point returns nothing and says so. Once a
+ * snapshot has taken over the early segments they are out of this path, so
+ * answering such a caller from what is left would hand them a stream with a
+ * hole at the front - and the hole is at the front, where the objects are
+ * created, so almost everything after it would be dropped as referring to
+ * something unknown. Nothing would report it. The caller has to fetch the
+ * snapshot first, and the refusal is what tells them so.
+ *
  * @param string|null $excludeDevice Operations this device submitted itself
  *                                   are left out. It already holds their
  *                                   bodies and only needs to be told which
  *                                   sequence numbers they got, which the push
  *                                   response carries - sending them back
  *                                   would double the traffic for nothing.
- * @return array{ops: array, head: int, more: bool}
+ * @return array{ops: array, head: int, more: bool, snapshot_seq: int,
+ *               needs_snapshot: bool}
  */
 function tc_log_read($store, $uid, $since, $limit, $excludeDevice = null)
 {
@@ -242,6 +297,12 @@ function tc_log_read($store, $uid, $since, $limit, $excludeDevice = null)
     $head  = (int)$state['head'];
     $out   = [];
     $more  = false;
+
+    $snapshotSeq = (int)($state['snapshot']['seq'] ?? 0);
+    if ($snapshotSeq > 0 && $since < $snapshotSeq) {
+        return ['ops' => [], 'head' => $head, 'more' => false,
+                'snapshot_seq' => $snapshotSeq, 'needs_snapshot' => true];
+    }
 
     foreach ($state['segments'] as $seg) {
         if ((int)$seg['last'] <= $since) {
@@ -280,7 +341,228 @@ function tc_log_read($store, $uid, $since, $limit, $excludeDevice = null)
         @fclose($fh);
     }
 
-    return ['ops' => $out, 'head' => $head, 'more' => $more];
+    return ['ops' => $out, 'head' => $head, 'more' => $more,
+            'snapshot_seq' => $snapshotSeq, 'needs_snapshot' => false];
+}
+
+// ---------------------------------------------------------------------------
+// Snapshots.
+//
+// The log only ever grows, and a machine joining late has to replay all of
+// it. A snapshot is the document as it stood at one sequence number: a
+// newcomer fetches that and then only the tail.
+//
+// It is produced by a client and stored here byte for byte. The server does
+// not fold operations into a document and must not learn how - those rules
+// already exist once, in tt/sync_apply.py, and a second copy here in another
+// language would drift from the first. The drift would show up as two
+// machines that quietly stopped agreeing, which is the one failure this
+// design exists to avoid. So the work here is bookkeeping: check that the
+// uploader was at head, store the bytes, and move the segments the snapshot
+// speaks for out of the reading path.
+// ---------------------------------------------------------------------------
+
+function tc_snapshot_meta($store, $uid)
+{
+    $state = tc_log_state($store, $uid);
+    $snap  = $state['snapshot'] ?? null;
+    return (is_array($snap) && !empty($snap['seq']) && !empty($snap['f'])) ? $snap : null;
+}
+
+function tc_snapshot_file($store, $uid, array $snap)
+{
+    return tc_log_dir($store, $uid) . '/' . $snap['f'];
+}
+
+/**
+ * Rejects anything that is not a document.
+ *
+ * The same stance tc_ops_validate takes towards operations, and for the same
+ * reason: whatever is accepted here is what every other machine will be
+ * handed as the truth. An error page that arrived with a 200, or a transfer
+ * that stopped early, both look like a body.
+ *
+ * The decoded value is thrown away - the original bytes are what gets stored
+ * - so nothing here needs to understand the format beyond recognising it.
+ *
+ * @return string|null An error code, or null when it may be stored.
+ */
+function tc_snapshot_validate($raw)
+{
+    if ($raw === '') {
+        return 'snapshot_empty';
+    }
+    if (strlen($raw) > TC_SNAPSHOT_MAX_BYTES) {
+        return 'snapshot_too_large';
+    }
+    $doc = json_decode($raw, true, 64);
+    if (!is_array($doc)) {
+        return 'snapshot_not_json';
+    }
+    if (!isset($doc['projects']) || !is_array($doc['projects'])) {
+        return 'snapshot_shape';
+    }
+    if (isset($doc['_deleted']) && !is_array($doc['_deleted'])) {
+        return 'snapshot_shape';
+    }
+    // A document with nothing in it, offered for a log that has something in
+    // it, is the shape a mistake takes: a client whose data.json was emptied
+    // or replaced while its cursor stayed where it was. Such a snapshot would
+    // be handed to every other machine as the truth. An account that really
+    // is empty loses nothing by being refused - there is nothing there to
+    // compact.
+    if (!$doc['projects']) {
+        return 'snapshot_has_no_projects';
+    }
+    return null;
+}
+
+/**
+ * Records a snapshot and retires the segments it covers.
+ *
+ * The order of the four steps below is the whole of the interruption story.
+ * A request can be killed at any point by max_execution_time, so each step
+ * has to leave the store in a state the next reader can use.
+ *
+ * @param int    $seq The sequence number the uploader claims to have held.
+ * @param string $raw The document, already validated.
+ * @return array|null Null when the log could not be locked or written.
+ */
+function tc_snapshot_put($store, $uid, $deviceUid, $seq, $raw)
+{
+    $lock = tc_lock(tc_log_lock_path($store, $uid));
+    if (!$lock) {
+        return null;
+    }
+    try {
+        $dir = tc_log_dir($store, $uid);
+        if (!is_dir($dir) && !tc_secure_mkdir($dir)) {
+            return null;
+        }
+        $state = tc_log_reconcile($store, $uid, tc_log_state($store, $uid));
+        $head  = (int)$state['head'];
+        $have  = (int)($state['snapshot']['seq'] ?? 0);
+
+        if ($head <= 0) {
+            return ['error' => 'log_empty', 'head' => $head, 'snapshot_seq' => $have];
+        }
+        // The uploader has to have held the whole log when it built this.
+        // Not proof - it is asserting its own position - but it rules out
+        // the ordinary accident, which is a machine snapshotting a document
+        // it had not finished catching up into. Anything stronger would mean
+        // the server checking the document against the operations, which is
+        // exactly the knowledge it is meant not to have.
+        if ($seq !== $head) {
+            return ['error' => 'not_at_head', 'head' => $head, 'snapshot_seq' => $have];
+        }
+        if ($seq <= $have) {
+            return ['error' => 'not_newer', 'head' => $head, 'snapshot_seq' => $have];
+        }
+
+        // 1. The bytes. Nothing points at this file yet, so being killed
+        //    here leaves an unreferenced file and nothing else.
+        $name = sprintf('snap-%010d.json.php', $seq);
+        if (!tc_write_secure($dir . '/' . $name, TC_GUARD . $raw)) {
+            return null;
+        }
+
+        // 2. The pointer, in one atomic write. Before it the previous
+        //    snapshot - or none - is in force; after it the new one is.
+        //    There is no moment in between, which is what lets every other
+        //    step be interrupted harmlessly.
+        $superseded = $state['snapshot_previous'] ?? null;
+        $state['snapshot_previous'] = $state['snapshot'] ?? null;
+        $state['snapshot'] = [
+            'seq'   => $seq,
+            'f'     => $name,
+            'bytes' => strlen($raw),
+            'at'    => time(),
+            'dev'   => $deviceUid,
+        ];
+        if (!tc_write_json(tc_log_state_path($store, $uid), $state)) {
+            @unlink($dir . '/' . $name);
+            return null;
+        }
+
+        // 3. Retire what the snapshot now speaks for. Interrupted here, the
+        //    segments are simply still in use.
+        $retired = tc_snapshot_retire($state, $seq);
+
+        // 4. Delete only what has waited long enough, and the snapshot that
+        //    has now been superseded twice over. Unlinking a file that is
+        //    already gone costs nothing, so being killed part-way through
+        //    leaves the next call to finish the job.
+        $deleted = tc_snapshot_sweep($state, $dir);
+        if (is_array($superseded) && !empty($superseded['f'])) {
+            @unlink($dir . '/' . $superseded['f']);
+        }
+        tc_write_json(tc_log_state_path($store, $uid), $state);
+
+        return ['head' => $head, 'snapshot_seq' => $seq, 'retired' => $retired,
+                'deleted' => $deleted, 'segments' => count($state['segments'])];
+    } finally {
+        tc_unlock($lock);
+    }
+}
+
+/**
+ * Moves the segments a snapshot speaks for out of the reading path.
+ *
+ * Wholly below the point only. A segment holding operations on both sides of
+ * it stays where it is: everything above the snapshot has to remain readable
+ * from the log, and half a segment cannot be handed back.
+ *
+ * As things stand a snapshot is only accepted at head, so in practice every
+ * segment qualifies and the straddling case does not arise. The condition is
+ * written for the general case anyway - it is the correct rule, it costs a
+ * comparison, and a later change to when snapshots are accepted should not
+ * silently start discarding live operations.
+ *
+ * @param array $state Modified: retired segments move between the two lists.
+ * @return int How many segments were retired.
+ */
+function tc_snapshot_retire(array &$state, $seq)
+{
+    $keep = [];
+    $retired = 0;
+    $now = time();
+    foreach ($state['segments'] as $segment) {
+        if ((int)$segment['last'] <= $seq) {
+            $segment['at'] = $now;
+            $state['retired'][] = $segment;
+            $retired++;
+        } else {
+            $keep[] = $segment;
+        }
+    }
+    $state['segments'] = array_values($keep);
+    return $retired;
+}
+
+/**
+ * Deletes retired segments that have served out TC_SEG_GRACE_SECONDS.
+ *
+ * @param array $state Modified: swept segments leave the retired list.
+ * @return int How many files were removed.
+ */
+function tc_snapshot_sweep(array &$state, $dir)
+{
+    $now = time();
+    $keep = [];
+    $deleted = 0;
+    foreach ($state['retired'] as $segment) {
+        if (empty($segment['f'])) {
+            continue;
+        }
+        if ($now - (int)($segment['at'] ?? $now) >= TC_SEG_GRACE_SECONDS) {
+            @unlink($dir . '/' . $segment['f']);
+            $deleted++;
+        } else {
+            $keep[] = $segment;
+        }
+    }
+    $state['retired'] = array_values($keep);
+    return $deleted;
 }
 
 /**

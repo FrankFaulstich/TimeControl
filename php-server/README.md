@@ -19,9 +19,7 @@ This directory holds two things:
 
 ## What is implemented so far
 
-Authentication and the operation log. What is *not* here yet: compaction, so
-the log grows without bound, and a machine that has been away for a long time
-has to replay everything rather than fetching a snapshot.
+Authentication, the operation log, and compaction.
 
 | Action | Method | Purpose |
 |---|---|---|
@@ -31,6 +29,8 @@ has to replay everything rather than fetching a snapshot.
 | `?a=head` | GET | current sequence number &ndash; the cheap poll |
 | `?a=push` | POST | submit operations, and receive everything newer |
 | `?a=pull` | GET | catch up from a given sequence number |
+| `?a=snapshot` | GET | the document the log has been compacted into |
+| `?a=snapshot&seq=N` | POST | offer a document as the snapshot at `N` |
 
 ### How the log works
 
@@ -68,6 +68,67 @@ strip it before PHP sees it.
 Every failure returns a stable `error` code alongside the human message, so a
 client can tell "your token is gone, sign in again" (`invalid_token`) apart
 from a network problem it should simply retry.
+
+### Compaction
+
+A log that only grows has two problems that arrive slowly. A new or restored
+machine replays the entire history &ndash; bounded at 500 operations per
+request &ndash; so after a year of daily use it needs several cycles before it
+shows anything useful. And the store grows without limit on web space usually
+measured in a few hundred megabytes, even though nearly all of it is
+superseded: a task edited fifty times keeps all fifty `task.set` operations.
+
+So the server may hold a **snapshot** beside the log: the document as it stood
+at one sequence number. A machine below that point fetches the snapshot and
+then only the tail.
+
+**The snapshot is uploaded by a client, never computed here.** This server
+stores operations without understanding them, and folding them into a document
+would put the merge rules in two places, in two languages, where they would
+drift apart. `tt/sync_apply.py` already produces exactly this document, and
+its `seed_operations()` already does the reverse &ndash; which is how a client
+takes a snapshot back apart into the operations that would build it, rather
+than installing it over the top of what it has.
+
+It is accepted only from a device claiming a cursor equal to `head`, so the
+uploader demonstrably held the whole log. That is an assertion rather than a
+proof, and it is the weakest link here; two things reduce what a wrong one
+costs. A document with no projects at all is refused outright, because that is
+the shape a `data.json` that was emptied or replaced takes. And the segments a
+snapshot replaces are not deleted with it &ndash; they are set aside and swept
+only after a week, so a mistake noticed in that time is still recoverable. The
+snapshot it replaced is kept until the one after that arrives.
+
+`?a=pull` and `?a=push` report `snapshot_seq`, and set `needs_snapshot` for a
+caller below it. Such a caller is sent **no operations at all**, rather than
+the part that survives: that part begins in the middle, so every object
+created before the point would be missing and almost everything after it would
+be dropped as naming something unknown &ndash; silently. The refusal is what
+tells the client to take the snapshot first.
+
+The document travels as the entire request body, with the sequence number in
+the query string, so it can be stored exactly as it arrived instead of being
+decoded and re-encoded on a host where memory is the scarce thing. The upload
+limit is 4 MiB, against 1 MiB for every other request.
+
+**What this costs.** A machine that has been out of contact for longer than
+the client's tombstone retention (ninety days) can resurrect an object deleted
+while it was away: the deletion has aged out of the snapshot, and the log no
+longer reaches back to it. Replaying the whole log would have caught that, so
+this is a real regression for that one case. The alternative &ndash; treating
+the snapshot as authoritative and deleting whatever it does not mention &ndash;
+trades a visible, correctable annoyance for the silent loss of work that was
+never sent. A reappearing task is the better failure.
+
+Two test scripts cover this, neither of which needs anything installed:
+`php php-server/test-oplog.php` calls the log functions directly against a
+throwaway store, which is how the awkward cases &ndash; a request killed
+between two writes, a segment holding operations on both sides of the snapshot
+point &ndash; get set up exactly. `php php-server/test-endpoints.php` starts
+PHP's own built-in server against a copy of `tc/` in a temporary directory and
+talks to it over HTTP, which is the only way to reach the routing, the size
+limits, and the snapshot response. `check-oplog.py` remains the one that
+exercises a real installation on real web space.
 
 ## Installing
 

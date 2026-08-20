@@ -171,6 +171,12 @@ switch ($action) {
             'dups'     => $result['dups'],
             'ops'      => $read['ops'],
             'more'     => $read['more'],
+            // Zero when there is none. A caller below this point was sent no
+            // operations at all and has to fetch the snapshot first; its own
+            // push was still accepted, which is why this is reported rather
+            // than made an error.
+            'snapshot_seq'   => $read['snapshot_seq'],
+            'needs_snapshot' => $read['needs_snapshot'],
         ]);
         break;
 
@@ -189,7 +195,85 @@ switch ($action) {
         // work - that is what a fresh machine, or one restoring a backup,
         // needs in order to rebuild.
         $read = tc_log_read($store, $session['uid'], $since, $limit);
-        tc_ok(['head' => $read['head'], 'ops' => $read['ops'], 'more' => $read['more']]);
+        tc_ok([
+            'head' => $read['head'],
+            'ops'  => $read['ops'],
+            'more' => $read['more'],
+            'snapshot_seq'   => $read['snapshot_seq'],
+            'needs_snapshot' => $read['needs_snapshot'],
+        ]);
+        break;
+
+    // -----------------------------------------------------------------
+    // The log only grows, so a machine joining late would otherwise replay
+    // everything ever done. A snapshot is the document at one sequence
+    // number; fetching it and then only the tail is bounded work.
+    //
+    // GET returns the stored document, POST offers a new one. The sequence
+    // number travels in the query string rather than the body so that the
+    // body IS the document - it can then be stored exactly as it arrived,
+    // without being decoded and re-encoded on a host where memory is the
+    // scarce thing.
+    case 'snapshot':
+        $session = tc_token_check($store, tc_presented_token());
+        if (!$session) {
+            tc_fail(401, 'invalid_token', 'Token is missing, expired or revoked.');
+        }
+        $method = $_SERVER['REQUEST_METHOD'] ?? '';
+
+        if ($method === 'GET') {
+            $snap = tc_snapshot_meta($store, $session['uid']);
+            if (!$snap) {
+                tc_fail(404, 'no_snapshot', 'This account has no snapshot.');
+            }
+            $raw = @file_get_contents(tc_snapshot_file($store, $session['uid'], $snap));
+            if ($raw === false) {
+                tc_fail(500, 'snapshot_unreadable', 'The snapshot could not be read.');
+            }
+            $guard = strlen(TC_GUARD);
+            if (strncmp($raw, TC_GUARD, $guard) === 0) {
+                $raw = substr($raw, $guard);
+            }
+            // Assembled by hand rather than through tc_ok: the document is
+            // already JSON, and decoding it only to encode it again would
+            // double what this costs in memory for no gain.
+            $state = tc_log_state($store, $session['uid']);
+            tc_send_headers(200);
+            echo '{"ok":true,"seq":' . (int)$snap['seq']
+                . ',"head":' . (int)$state['head']
+                . ',"document":' . $raw . '}';
+            exit;
+        }
+
+        if ($method !== 'POST') {
+            tc_fail(405, 'method_not_allowed', 'Use GET to fetch or POST to offer.');
+        }
+
+        $seq = isset($_GET['seq']) ? (int)$_GET['seq'] : 0;
+        if ($seq < 1) {
+            tc_fail(400, 'bad_seq', 'seq must be the sequence number this document covers.');
+        }
+        $raw = tc_raw_body(TC_SNAPSHOT_MAX_BYTES);
+        $bad = tc_snapshot_validate($raw);
+        if ($bad !== null) {
+            tc_fail(400, $bad, 'The snapshot was rejected: ' . $bad . '.');
+        }
+
+        $result = tc_snapshot_put($store, $session['uid'], $session['device_uid'], $seq, $raw);
+        if ($result === null) {
+            tc_fail(503, 'busy', 'The log is locked right now. Retry.');
+        }
+        if (isset($result['error'])) {
+            // Not a failure of the request so much as of its timing: the log
+            // moved on, or somebody else got there first. The client should
+            // carry on syncing and try again later, so this stays a 409
+            // rather than anything it might read as fatal.
+            tc_json(409, ['ok' => false, 'error' => $result['error'],
+                          'head' => $result['head'],
+                          'snapshot_seq' => $result['snapshot_seq'],
+                          'message' => 'The snapshot was not accepted: ' . $result['error'] . '.']);
+        }
+        tc_ok($result);
         break;
 
     // -----------------------------------------------------------------

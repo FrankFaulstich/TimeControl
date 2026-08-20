@@ -165,6 +165,67 @@ def main():
     check("body's claim ignored", found and found[0]["dev"] == dev_b,
           found[0]["dev"][:8] if found else None)
 
+    # test-oplog.php covers the log and compaction offline, and covers them
+    # far more thoroughly than this can. What it cannot reach is index.php:
+    # the routing, the sequence number arriving in the query string, and the
+    # snapshot response, which is assembled by hand rather than through
+    # json_encode. Those only ever run over HTTP.
+    print("\nCompaction")
+    head = call("head", token=a)["head"]
+    document = {
+        "schema_version": 2, "next_id": 2, "_deleted": [],
+        "projects": [{"uid": uid_p, "main_project_name": "Probe",
+                      "status": "open", "last_started": None,
+                      "tasks": [{"uid": uid_t, "id": 1, "task_name": "Entwurf",
+                                 "status": "open", "priority": 9,
+                                 "due_date": None, "today": False, "note": "",
+                                 "recurring": False, "frequency": "daily",
+                                 "userdefined_days": 1, "last_started": None,
+                                 "time_entries": []}]}],
+    }
+
+    r = call("snapshot", document, token=a, params={"seq": head - 1})
+    check("a device that is not at head is refused",
+          r.get("error") == "not_at_head", r.get("error"))
+
+    r = call("snapshot", {"projects": []}, token=a, params={"seq": head})
+    check("a document with nothing in it is refused",
+          r.get("error") == "snapshot_has_no_projects", r.get("error"))
+
+    r = call("snapshot", document, token=a, params={"seq": head})
+    check("accepted at head", r.get("ok"), r.get("error", ""))
+    check("it covers the sequence number offered", r.get("snapshot_seq") == head,
+          r.get("snapshot_seq"))
+
+    r = call("snapshot", token=a)
+    check("it comes back as the document that went in",
+          r.get("ok") and r.get("document") == document,
+          r.get("error") or "document differs")
+    check("and names the point it covers", r.get("seq") == head, r.get("seq"))
+
+    r = call("pull", token=b, params={"since": 0})
+    check("a machine below the point is sent to the snapshot",
+          r.get("needs_snapshot") is True, r.get("needs_snapshot"))
+    check("and is given no operations to misread", r.get("ops") == [], len(r.get("ops", [])))
+    check("it is told where the snapshot sits", r.get("snapshot_seq") == head,
+          r.get("snapshot_seq"))
+
+    r = call("push", {"base_seq": head, "ops": [
+        {"op": "task.set", "uid": uid_t, "f": {"priority": 2}, "lc": 901}]}, token=b)
+    check("work after the snapshot is still accepted", r.get("ok"), r.get("error", ""))
+
+    r = call("pull", token=a, params={"since": head})
+    check("and a machine at the point reads on as before",
+          not r.get("needs_snapshot") and len(r.get("ops", [])) == 1,
+          (r.get("needs_snapshot"), len(r.get("ops", []))))
+    check("the tail starts just past the snapshot",
+          r.get("ops") and r["ops"][0]["s"] == head + 1,
+          r["ops"][0]["s"] if r.get("ops") else None)
+
+    r = call("snapshot", document, token=a, params={"seq": head})
+    check("the same snapshot is not accepted twice",
+          r.get("error") == "not_newer", r.get("error"))
+
     print("\nSigning both devices out")
     call("logout", token=a)
     call("logout", token=b)

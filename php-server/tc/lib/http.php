@@ -8,13 +8,22 @@
  * machine-readable code alongside the human text.
  */
 
-function tc_json($code, array $payload)
+// What an ordinary request body may weigh. A snapshot is the one thing that
+// legitimately exceeds it and says so explicitly; everything else stays here.
+const TC_BODY_MAX = 1048576;
+
+function tc_send_headers($code)
 {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
     header('X-Content-Type-Options: nosniff');
     header('X-Robots-Tag: noindex, nofollow');
+}
+
+function tc_json($code, array $payload)
+{
+    tc_send_headers($code);
     echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -34,29 +43,44 @@ function tc_ok(array $payload = [])
 }
 
 /**
+ * Reads the request body as it arrived, refusing anything over the limit.
+ *
+ * Say so rather than reading a prefix and shrugging. Truncating the body and
+ * handing back whatever parses turns a too-large push into an empty one: the
+ * server appends nothing, answers "ok", and the client strikes the operations
+ * off as delivered. Nothing is reported at either end and the changes are
+ * simply gone. Refusing is the only safe answer, and the client can then send
+ * the batch in smaller pieces.
+ *
+ * @param int $limit Bytes. Raised only for the snapshot upload, which is a
+ *                   whole document by nature and is read only after the
+ *                   token has been checked.
+ */
+function tc_raw_body($limit = TC_BODY_MAX)
+{
+    $raw = file_get_contents('php://input', false, null, 0, $limit + 1);
+    if ($raw === false) {
+        return '';
+    }
+    if (strlen($raw) > $limit) {
+        tc_fail(413, 'body_too_large',
+                'The request body exceeds ' . $limit . ' bytes.');
+    }
+    return $raw;
+}
+
+/**
  * Reads and decodes the request body.
  *
  * Capped, and with a bounded nesting depth: this endpoint is reachable by
  * anyone, and neither an enormous body nor a deeply nested structure should
  * be able to exhaust memory before the credential has even been looked at.
  */
-function tc_body()
+function tc_body($limit = TC_BODY_MAX)
 {
-    $limit = 1048576;
-    $raw = file_get_contents('php://input', false, null, 0, $limit + 1);
-    if ($raw === false || $raw === '') {
+    $raw = tc_raw_body($limit);
+    if ($raw === '') {
         return [];
-    }
-
-    // Say so rather than reading a prefix and shrugging. Truncating the body
-    // and handing back whatever parses turns a too-large push into an empty
-    // one: the server appends nothing, answers "ok", and the client strikes
-    // the operations off as delivered. Nothing is reported at either end and
-    // the changes are simply gone. Refusing is the only safe answer, and the
-    // client can then send the batch in smaller pieces.
-    if (strlen($raw) > $limit) {
-        tc_fail(413, 'body_too_large',
-                'The request body exceeds ' . $limit . ' bytes. Send fewer operations per push.');
     }
 
     $data = json_decode($raw, true, 32);

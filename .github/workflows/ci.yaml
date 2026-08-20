@@ -36,3 +36,42 @@ jobs:
         
     - name: Run Unit Tests
       run: python -m unittest discover tests
+
+  # The sync server is PHP, and its operation log is the one place in this
+  # project where a mistake costs data rather than a red build. Its tests need
+  # no web server, so they run here - as a job of their own rather than across
+  # the matrix above, because nothing about them depends on the Python
+  # version.
+  #
+  # On 7.4 deliberately: that is the floor index.php enforces and roughly what
+  # shared hosting offers. Development happens against a much newer PHP, so
+  # without this a version-8 idiom would pass here and fail on the machine
+  # that actually matters.
+  server-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '7.4'
+
+    - name: Check Syntax
+      run: |
+        for file in php-server/tc/index.php php-server/tc/setup.php \
+                    php-server/tc/lib/*.php php-server/test-*.php; do
+          php -l "$file"
+        done
+
+    # The log and compaction, called directly against a throwaway store.
+    - name: Run Server Tests
+      run: php php-server/test-oplog.php
+
+    # And index.php itself, over real HTTP against PHP's own built-in server
+    # - the routing, the size limits and the snapshot response, which is
+    # assembled by hand rather than through json_encode.
+    - name: Run Endpoint Tests
+      run: php php-server/test-endpoints.php
