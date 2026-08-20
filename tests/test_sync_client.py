@@ -428,5 +428,125 @@ class TestTheCallCannotHangForEver(unittest.TestCase):
         self.assertGreater(sync_client.DEADLINE, 2 * sync_client.TIMEOUT)
 
 
+class TestTheSnapshotEndpoint(unittest.TestCase):
+    """
+    The one request that carries a whole document, and the only one whose
+    body is not an envelope of its own.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._real = sync_client.config_dir
+        sync_client.config_dir = lambda: self.tmp
+        with patch('tt.sync_client.requests.post',
+                   return_value=_Response({'ok': True, 'token': 'tok'})):
+            sync_client.login('https://x.de/tc', 'frank', 'pw')
+
+    def tearDown(self):
+        sync_client.config_dir = self._real
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_fetching_one_is_a_get_naming_the_action(self):
+        with patch('tt.sync_client.requests.get',
+                   return_value=_Response({'ok': True, 'seq': 12, 'document': {}})) as get:
+            result = sync_client.get_snapshot()
+
+        self.assertTrue(result['ok'])
+        self.assertEqual(get.call_args.kwargs['params'], {'a': 'snapshot'})
+        self.assertEqual(get.call_args.kwargs['headers']['X-TC-Token'], 'tok')
+
+    def test_offering_one_puts_the_document_in_the_body_and_the_number_in_the_query(self):
+        """
+        The sequence number travels in the query string so the body is the
+        document and nothing else - which is what lets the server store the
+        bytes exactly as they arrived.
+        """
+        document = {'schema_version': 2, 'projects': [{'uid': 'a' * 16}]}
+        with patch('tt.sync_client.requests.post',
+                   return_value=_Response({'ok': True, 'snapshot_seq': 12})) as post:
+            sync_client.put_snapshot(12, document)
+
+        self.assertEqual(post.call_args.kwargs['params'], {'a': 'snapshot', 'seq': 12})
+        self.assertEqual(json.loads(post.call_args.kwargs['data'].decode('utf-8')), document)
+
+    def test_a_document_the_server_will_never_take_is_not_sent(self):
+        """
+        There is nothing the client can do to make it smaller, so discovering
+        this as a 413 would mean rediscovering it on every attempt for the
+        rest of the installation's life.
+        """
+        huge = {'projects': [{'uid': 'a' * 16, 'note': 'x' * sync_client.MAX_SNAPSHOT_BYTES}]}
+        with patch('tt.sync_client.requests.post') as post:
+            result = sync_client.put_snapshot(1, huge)
+
+        self.assertFalse(result['ok'])
+        self.assertEqual(result['error'], 'snapshot_too_large')
+        post.assert_not_called()
+
+
+class TestWhatIsMeasuredIsWhatIsSent(unittest.TestCase):
+    """
+    The budget in fit_batch exists because the server turns an over-long body
+    into an empty one - accepted, acknowledged, and carrying nothing. That
+    only holds if the bytes it counts are the bytes that go out.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._real = sync_client.config_dir
+        sync_client.config_dir = lambda: self.tmp
+        with patch('tt.sync_client.requests.post',
+                   return_value=_Response({'ok': True, 'token': 'tok'})):
+            sync_client.login('https://x.de/tc', 'frank', 'pw')
+
+    def tearDown(self):
+        sync_client.config_dir = self._real
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_umlauts_do_not_cost_more_on_the_wire_than_they_were_counted(self):
+        """
+        Escaped as \\uXXXX a German task name weighs three times what UTF-8
+        charges for it, and fit_batch counts the UTF-8 figure. Counting one
+        way and sending the other is exactly how a batch slips past the
+        server's limit and is silently dropped.
+        """
+        ops = [{'op': 'task.set', 'lc': n, 'uid': '%016x' % n,
+                'f': {'task_name': 'Übersicht Prüfstände Größenänderung ' * 20}}
+               for n in range(1, 400)]
+        batch = sync_client.fit_batch(ops)
+
+        with patch('tt.sync_client.requests.post',
+                   return_value=_Response({'ok': True})) as post:
+            sync_client.push(0, batch)
+
+        sent = len(post.call_args.kwargs['data'])
+        counted = sum(len(json.dumps(op, ensure_ascii=False).encode('utf-8')) + 1
+                      for op in batch)
+
+        # Not exact, and it does not need to be: fit_batch allows one byte
+        # per operation for the separator where the encoder writes two, and
+        # the envelope around the list costs a few dozen more. What matters
+        # is that the gap is that - a byte an operation - rather than a
+        # factor, which is what escaping every umlaut would have made it.
+        self.assertLessEqual(sent - counted, len(batch) + 100,
+                             "the request is heavier than fit_batch was told")
+        self.assertLess(sent, 1048576, "past what the server will read")
+
+    def test_the_body_goes_out_as_utf8_bytes(self):
+        """
+        Handed over as a str, requests encodes it latin-1, which German task
+        names are not - that is a UnicodeEncodeError on a perfectly ordinary
+        entry rather than anything to do with size.
+        """
+        with patch('tt.sync_client.requests.post',
+                   return_value=_Response({'ok': True})) as post:
+            sync_client.push(0, [{'op': 'task.set', 'lc': 1, 'uid': 'a' * 16,
+                                  'f': {'task_name': 'Prüfstände'}}])
+
+        body = post.call_args.kwargs['data']
+        self.assertIsInstance(body, bytes)
+        self.assertIn('Prüfstände', body.decode('utf-8'))
+
+
 if __name__ == '__main__':
     unittest.main()

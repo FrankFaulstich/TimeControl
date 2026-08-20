@@ -195,8 +195,16 @@ def _post(base_url, action, payload=None, token=None, params=None):
     def _send():
         if payload is None:
             return requests.get(url, params=query, headers=headers, timeout=TIMEOUT)
+        # Encoded here rather than handed over as a str, and without ASCII
+        # escaping. Two reasons, both about the byte count: requests encodes a
+        # str body as latin-1, which German task names are not, and fit_batch
+        # measures what it is about to send this same way. Escaping here and
+        # measuring there would make every umlaut count for two bytes more
+        # than the budget was told about - and the budget exists because the
+        # server turns an over-long body into an empty one.
+        body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
         return requests.post(url, params=query, headers=headers,
-                             data=json.dumps(payload), timeout=TIMEOUT)
+                             data=body, timeout=TIMEOUT)
 
     try:
         # requests' own timeout does not cover the DNS lookup that runs
@@ -390,5 +398,49 @@ def pull(since, limit=MAX_OPS_PER_CALL):
     That last part is the difference from push, and the reason this exists:
     after a lost response, or on a machine restored from a backup, the only
     way to learn where one's own operations sit in the order is to be told.
+
+    A reply carrying 'needs_snapshot' means the log no longer reaches back
+    this far: the caller has to take the snapshot first and resume from
+    'snapshot_seq'. It arrives with no operations at all rather than with the
+    part that survives, because that part starts in the middle - every object
+    created before the snapshot point would be missing, and almost everything
+    after it would then be dropped as referring to something unknown.
     """
     return _authenticated('pull', params={'since': int(since), 'limit': int(limit)})
+
+
+# The server's own ceiling on a snapshot upload (TC_SNAPSHOT_MAX_BYTES). A
+# document past this is refused, and nothing the client does will make it
+# smaller - so it is caught here rather than rediscovered as a 413 on every
+# cycle for the rest of the installation's life.
+MAX_SNAPSHOT_BYTES = 4 * 1024 * 1024
+
+
+def get_snapshot():
+    """
+    Fetches the document the server holds and the sequence number it covers.
+
+    :return: On success 'seq', 'head' and 'document'. 'no_snapshot' when the
+             account has none, which is the ordinary state of a young server.
+    """
+    return _authenticated('snapshot')
+
+
+def put_snapshot(seq, document):
+    """
+    Offers a document as the snapshot for sequence number `seq`.
+
+    The server takes it only from a machine that was at head, so this is
+    worth attempting only straight after a cycle that reached it - and it
+    answers 'not_at_head' rather than failing when the log has moved on in
+    between, which is a reason to try again later, not a reason to stop.
+
+    The document travels as the whole request body, with the sequence number
+    in the query string, so the server can store the bytes exactly as they
+    arrived instead of decoding and re-encoding a document it has no business
+    understanding.
+    """
+    size = len(json.dumps(document, ensure_ascii=False).encode('utf-8'))
+    if size > MAX_SNAPSHOT_BYTES:
+        return {'ok': False, 'error': 'snapshot_too_large', 'bytes': size}
+    return _authenticated('snapshot', document, params={'seq': int(seq)})

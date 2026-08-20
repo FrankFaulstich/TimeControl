@@ -283,7 +283,9 @@ screen shows the recent entries with buttons to save or clear them.
 
 Only the GUI drives synchronisation. Changes made through the MCP, REST or SOAP interfaces are recorded and queued, but they leave the machine when the GUI is running.
 
-The server's log currently grows without bound; compaction is planned but not yet implemented, so a machine that has been away for a very long time replays a lot of history to catch up.
+Once the log has run far enough past its last snapshot, whichever machine is fully caught up offers the server its document as a new one, and the server sets aside the operations that snapshot now speaks for. A machine joining later takes the snapshot and then only what came after it, instead of replaying the whole history. This happens on its own; there is nothing to switch on.
+
+The one thing it costs: a machine out of contact for more than ninety days can see an object it deleted come back, because the deletion has aged out of the snapshot's records and the log no longer reaches back that far. It is visible, and deleting the object again fixes it. The alternative — treating the snapshot as the whole truth and removing anything it does not mention — would silently discard work that was never sent, which is the worse of the two.
 
 ---
 

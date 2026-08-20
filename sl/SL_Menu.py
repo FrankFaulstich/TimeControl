@@ -405,6 +405,13 @@ if SYNC_AVAILABLE:
                     st.session_state['sync_discarded'] = (
                         st.session_state.get('sync_discarded', 0)
                         + _sync_summary['discarded_time'])
+                # After applying, so it describes the document as it now
+                # stands - and only on this path, because a machine that
+                # could not write what it was given is not the one that
+                # should be telling the others what the log adds up to.
+                # Costs one state read on an ordinary redraw; the document
+                # is written out only on the rare pass where one is due.
+                sync_engine.offer_snapshot(st.session_state.tracker)
             # A change of view is the moment the user is most likely to want
             # current figures, so ask for a cycle then. It only wakes the
             # worker - nothing here blocks on the answer.
@@ -623,7 +630,7 @@ def render_sync_notice():
         st.error(_sync_error_message('local_io'))
 
     try:
-        snapshot = sync_engine.snapshot()
+        snapshot = sync_engine.status_summary()
     except Exception:
         return
     if snapshot['state'] != 'failing':
@@ -1948,7 +1955,7 @@ def view_settings():
             # would put a network round trip behind every keystroke in every
             # other form on this page.
             creds = sync_client.load_credentials()
-            snapshot = sync_engine.snapshot()
+            snapshot = sync_engine.status_summary()
 
             # A stored credential is not the same as a working one. The token
             # expires after ninety days and the server replaces it when this

@@ -63,6 +63,21 @@ class Report:
         self.auto_closed = []
         self.highest_seq = 0
 
+    def absorb(self, other):
+        """
+        Folds a later pass's report into this one.
+
+        Applying happens in several passes - what a snapshot brought, then
+        what the log carried, then this machine's own unsent work - and the
+        caller wants one account of all of them.
+        """
+        self.applied += other.applied
+        self.ignored += other.ignored
+        self.discarded_time += other.discarded_time
+        self.auto_closed.extend(other.auto_closed)
+        self.highest_seq = max(self.highest_seq, other.highest_seq)
+        return self
+
     def __repr__(self):
         return ("<applied=%d ignored=%d discarded_time=%d auto_closed=%d "
                 "highest_seq=%d>"
@@ -418,11 +433,58 @@ def reconcile(document, incoming, local=None, on_conflict=None, now=None):
         replay.append(op)
 
     second = apply_ops(document, replay, on_conflict=on_conflict, now=now)
-    report.applied += second.applied
-    report.ignored += second.ignored
-    report.discarded_time += second.discarded_time
-    report.auto_closed.extend(second.auto_closed)
-    report.highest_seq = max(report.highest_seq, second.highest_seq)
+    return report.absorb(second)
+
+
+def adopt_snapshot(document, snapshot, on_conflict=None, now=None):
+    """
+    Folds a document the server holds into this machine's own.
+
+    The server keeps every operation ever made, so a machine joining late
+    would otherwise replay all of them. Instead the server may hold a
+    snapshot - the document as it stood at one sequence number - and the
+    newcomer takes that and then only the tail.
+
+    WHY THIS IS THE SAME MACHINERY AS EVERYTHING ELSE
+    -------------------------------------------------
+    A snapshot arrives as a document, not as operations, and the obvious
+    thing would be to install it over the top. It is not installed. It is
+    turned back into the operations that would build it - seed_operations(),
+    the same function that offers this machine's document to an empty server
+    - and those go through apply_ops like anything else.
+
+    That keeps one set of merge rules rather than two. It also decides the
+    question the other approach would raise: what happens to something this
+    machine has that the snapshot does not. Replacing the document would
+    delete it; folding operations in keeps it, which is the same answer two
+    machines meeting for the first time already get. Nothing this machine has
+    can be lost by catching up.
+
+    The cost is on the other side, and it is worth stating plainly: an object
+    deleted so long ago that the deletion has aged out of the snapshot's
+    tombstones will come back on a machine that still has it. That machine
+    has to have been out of contact for longer than the tombstone retention
+    (TOMBSTONE_RETENTION_DAYS, ninety days) for it to happen, and today - with
+    the whole log still there to replay - it would not. The user sees a task
+    they deleted reappear, which is annoying and visible, rather than two
+    documents that quietly stopped agreeing.
+
+    The sequence numbers handed to the operations here are positions within
+    this call and nothing more: apply_ops sorts by them and keeps no memory
+    of them between calls, so what orders the snapshot before the tail is
+    that it is applied first, not the numbers it was given. For the same
+    reason the report's highest_seq is cleared - it would otherwise look like
+    a cursor, and it is not one.
+
+    :param document: This machine's document. Modified.
+    :param snapshot: The document the server returned.
+    :return: A Report covering the fold.
+    """
+    ops = seed_operations(snapshot or {})
+    for position, op in enumerate(ops, 1):
+        op['s'] = position
+    report = apply_ops(document, ops, on_conflict=on_conflict, now=now)
+    report.highest_seq = 0
     return report
 
 

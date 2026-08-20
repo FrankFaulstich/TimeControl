@@ -2,10 +2,11 @@ import copy
 import os
 import sys
 import unittest
+import unittest.mock
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from tt.sync_apply import apply_ops
+from tt.sync_apply import Report, adopt_snapshot, apply_ops, reconcile
 
 
 def document(*projects):
@@ -55,7 +56,7 @@ def uids(collection):
 
 
 P1, P2 = "p" * 16, "q" * 16
-T1, T2 = "t" * 16, "u" * 16
+T1, T2, T3 = "t" * 16, "u" * 16, "v" * 16
 E1, E2 = "e" * 16, "f" * 16
 
 
@@ -894,6 +895,237 @@ class TestSeeding(unittest.TestCase):
         doc["_deleted"] = [{"uid": T1, "kind": "task", "at": "2026-08-01 09:00:00"}]
         ops = seed_operations(doc)
         self.assertIn({"op": "task.delete", "uid": T1, "ts": "2026-08-01 09:00:00"}, ops)
+
+
+def numbered(ops, start=1):
+    """Gives operations the sequence numbers a server would have assigned."""
+    return [dict(op, s=start + i) for i, op in enumerate(ops)]
+
+
+class TestAdoptingASnapshot(unittest.TestCase):
+    """
+    A machine joining late is handed the document as it stood at one sequence
+    number, and then only the operations after it. What it ends up with has to
+    be what replaying the whole log would have given it.
+    """
+
+    def _full_log(self):
+        """A history with the sort of things that make replay interesting."""
+        return [
+            {"op": "project.create", "uid": P1, "f": {"name": "Work"}},
+            {"op": "task.create", "uid": T1, "project": P1, "f": {"task_name": "First"}},
+            {"op": "task.set", "uid": T1, "f": {"task_name": "Renamed", "priority": 3}},
+            {"op": "entry.add", "uid": E1, "task": T1, "start": "2026-08-10 09:00:00"},
+            {"op": "entry.close", "uid": E1, "end": "2026-08-10 10:00:00"},
+            {"op": "project.create", "uid": P2, "f": {"name": "Home"}},
+            {"op": "task.create", "uid": T2, "project": P2, "f": {"task_name": "Second"}},
+            # Created and then deleted: the replay has to end up without it,
+            # and so does the snapshot.
+            {"op": "task.create", "uid": T3, "project": P1, "f": {"task_name": "Doomed"}},
+            {"op": "task.delete", "uid": T3, "ts": "2026-08-11 09:00:00"},
+            # And a move, so the snapshot has to carry where things ended up
+            # rather than where they were made.
+            {"op": "task.move", "uid": T1, "project": P2},
+        ]
+
+    def test_snapshot_and_tail_match_replaying_everything(self):
+        """
+        The whole point, stated as an equality: catching up through a snapshot
+        has to land where replaying the entire log lands. Anything the
+        snapshot fails to carry - a move, a deletion, a field - shows up here
+        as two documents that differ.
+
+        Every cut is tried rather than one. A snapshot can be taken at any
+        point, and the interesting ones are the points where an operation is
+        only half accounted for: an object created before the cut and deleted
+        after it, or moved after it.
+        """
+        history = numbered(self._full_log())
+
+        replayed = document()
+        apply_ops(replayed, history)
+
+        for cut in range(1, len(history) + 1):
+            with self.subTest(cut=cut):
+                # What the up-to-date machine would have offered, built from
+                # the same history up to this point.
+                source = document()
+                apply_ops(source, history[:cut])
+
+                fresh = document()
+                adopt_snapshot(fresh, source)
+                apply_ops(fresh, history[cut:])
+
+                self.assertEqual(_comparable(fresh), _comparable(replayed))
+
+    def test_an_empty_machine_ends_up_with_the_snapshot(self):
+        history = numbered(self._full_log())
+        source = document()
+        apply_ops(source, history)
+
+        fresh = document()
+        adopt_snapshot(fresh, source)
+
+        self.assertEqual(_comparable(fresh), _comparable(source))
+
+    def test_what_this_machine_has_and_the_snapshot_does_not_survives(self):
+        """
+        Folded in as operations rather than installed over the top, so nothing
+        held here can be lost by catching up - the same answer two machines
+        meeting for the first time already get.
+        """
+        source = document(project(P1, "Work"))
+        mine = document(project(P2, "Only here", tasks=[task(T2, "Mine")]))
+
+        adopt_snapshot(mine, source)
+
+        self.assertEqual(set(uids(mine["projects"])), {P1, P2})
+        self.assertIsNotNone(find_task(mine, T2))
+
+    def test_a_deletion_the_snapshot_still_remembers_is_carried_out(self):
+        source = document(project(P1, "Work"))
+        source["_deleted"] = [{"uid": T2, "kind": "task", "at": "2026-08-01 09:00:00"}]
+        mine = document(project(P1, "Work", tasks=[task(T2, "Deleted elsewhere")]))
+
+        adopt_snapshot(mine, source)
+
+        self.assertIsNone(find_task(mine, T2))
+
+    def test_the_tail_wins_over_the_snapshot(self):
+        """
+        Ordering between the two comes from being applied in separate passes,
+        not from the numbers - the snapshot's are positions within its own
+        pass and can run higher than the tail's.
+        """
+        source = document(project(P1, "Work", tasks=[task(T1, "Old name")]))
+        # Deliberately low: lower than the count of operations the snapshot
+        # unfolds into, which is exactly the case numbering alone would break.
+        tail = [{"op": "task.set", "uid": T1, "f": {"task_name": "New name"}, "s": 2}]
+
+        mine = document()
+        adopt_snapshot(mine, source)
+        apply_ops(mine, tail)
+
+        self.assertEqual(find_task(mine, T1)["task_name"], "New name")
+
+    def test_the_report_does_not_hand_back_a_cursor(self):
+        """
+        highest_seq would otherwise look like a position in the log, and the
+        numbers it saw were positions within one call.
+        """
+        source = document(project(P1, "Work", tasks=[task(T1)]))
+
+        report = adopt_snapshot(document(), source)
+
+        self.assertGreater(report.applied, 0)
+        self.assertEqual(report.highest_seq, 0)
+
+    def test_nothing_at_all_is_not_an_error(self):
+        self.assertEqual(adopt_snapshot(document(), {}).applied, 0)
+        self.assertEqual(adopt_snapshot(document(), None).applied, 0)
+
+    def test_the_operations_are_handed_over_in_a_stated_order(self):
+        """
+        seed_operations already emits a project before its tasks and a task
+        before its time, and apply_ops sorts stably, so this would work with
+        no numbers at all. It is numbered anyway: the order is what makes the
+        fold correct, and leaning on how a sort breaks ties is not the same as
+        saying what the order is. This pins that down so the numbering cannot
+        quietly stop happening.
+        """
+        import tt.sync_apply as module
+
+        seen = []
+        real = module.apply_ops
+
+        def capture(doc, ops, **kwargs):
+            seen.extend(ops)
+            return real(doc, ops, **kwargs)
+
+        source = document(project(P1, "Work", tasks=[task(T1, entries=[entry(E1)])]))
+        with unittest.mock.patch.object(module, 'apply_ops', side_effect=capture):
+            adopt_snapshot(document(), source)
+
+        self.assertTrue(seen, "nothing was handed over")
+        numbers = [op["s"] for op in seen]
+        self.assertEqual(numbers, sorted(numbers), "the order is not stated")
+        self.assertEqual(len(set(numbers)), len(numbers), "two operations share a number")
+        self.assertEqual(seen[0]["op"], "project.create",
+                         "a project still has to come before its tasks")
+
+
+class TestOneAccountOfSeveralPasses(unittest.TestCase):
+    """
+    Applying happens in passes - what a snapshot brought, then the log, then
+    this machine's own unsent work - and the caller is given one report. A
+    pass that goes uncounted makes the interface understate what happened,
+    and discarded time is one of the numbers it reports to the user.
+    """
+
+    def test_a_second_pass_is_counted_too(self):
+        doc = document()
+        report = reconcile(
+            doc,
+            [{"s": 1, "op": "project.create", "uid": P1, "f": {"name": "Work"}}],
+            [{"lc": 1, "op": "task.create", "uid": T1, "project": P1,
+              "f": {"task_name": "Mine"}}],
+        )
+        self.assertEqual(report.applied, 2)
+        self.assertIsNotNone(find_task(doc, T1))
+
+    def test_a_snapshot_pass_is_counted_too(self):
+        source = document(project(P1, "Work", tasks=[task(T1)]))
+        doc = document()
+
+        report = adopt_snapshot(doc, source)
+        report.absorb(reconcile(doc, [{"s": 1, "op": "task.set", "uid": T1,
+                                       "f": {"priority": 4}}], []))
+
+        # The snapshot unfolds into several operations and the tail is one
+        # more; what matters is that the tail did not replace the count.
+        self.assertGreater(report.applied, 1)
+        self.assertEqual(find_task(doc, T1)["priority"], 4)
+
+    def test_discarded_time_from_either_pass_reaches_the_caller(self):
+        """
+        The one number that costs the user something, so it must not be the
+        one a pass forgets.
+        """
+        first, second = Report(), Report()
+        first.discarded_time = 2
+        second.discarded_time = 3
+        second.auto_closed = [(E1, "2026-08-10 10:00:00")]
+
+        first.absorb(second)
+
+        self.assertEqual(first.discarded_time, 5)
+        self.assertEqual(first.auto_closed, [(E1, "2026-08-10 10:00:00")])
+
+
+def _comparable(doc):
+    """
+    The parts of a document two machines have to agree on.
+
+    Local integer ids are left out deliberately: they are handed out per
+    machine as objects arrive, and two machines that took different routes to
+    the same document are not expected to have numbered it the same way. Order
+    is normalised for the same reason.
+    """
+    def entries(task):
+        return sorted(tuple(sorted(e.items())) for e in task.get("time_entries", []))
+
+    def fields(task):
+        rest = {k: v for k, v in task.items() if k not in ("id", "time_entries")}
+        return (tuple(sorted(rest.items())), tuple(entries(task)))
+
+    return {
+        "projects": [
+            (p["uid"], p.get("main_project_name"), p.get("status"),
+             sorted(fields(t) for t in p.get("tasks", [])))
+            for p in sorted(doc.get("projects", []), key=lambda p: p["uid"])
+        ],
+        "deleted": sorted((s["uid"], s["kind"]) for s in doc.get("_deleted", [])),
+    }
 
 
 if __name__ == '__main__':

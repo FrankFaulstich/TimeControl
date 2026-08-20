@@ -48,7 +48,7 @@ from datetime import datetime
 from tt import sync_client
 from tt.filelock import locked, LockTimeout
 from tt import sync_log
-from tt.sync_apply import reconcile, seed_operations
+from tt.sync_apply import Report, adopt_snapshot, reconcile, seed_operations
 from tt.sync_outbox import Outbox
 
 # How long between cycles when everything is working. The user asked for
@@ -94,6 +94,18 @@ def _seed_lock_path():
     return os.path.join(sync_client.config_dir(), 'sync_seed.lock')
 
 
+def staged_snapshot_path():
+    """
+    Where the drawing thread leaves a document for the worker to offer.
+
+    The two halves keep their usual division of labour: reading the document
+    belongs to the thread that owns it, and talking to the server belongs to
+    the worker. A snapshot needs both, so it goes through a file - the same
+    arrangement the inbox already uses in the other direction.
+    """
+    return os.path.join(sync_client.config_dir(), 'sync_snapshot.json')
+
+
 # ---------------------------------------------------------------------------
 # State: what this machine knows about its own position in the log.
 # ---------------------------------------------------------------------------
@@ -108,6 +120,9 @@ _DEFAULT_STATE = {
     'server_head': 0,     # how far the log had got when last asked
     'account': None,      # whose log base_seq is measured against
     'was_off': False,     # synchronisation was switched off since the last offer
+    'snapshot_seq': 0,      # the point the server's snapshot covers, 0 for none
+    'snapshot_staged': 0,   # a document waiting to be offered, by sequence number
+    'snapshot_tried': 0,    # epoch seconds of the last offer, successful or not
 }
 
 
@@ -386,6 +401,22 @@ def _run_cycle_locked(outbox):
     truncated = bool(result.get('more'))
     failure = None
 
+    # The log no longer reaches back as far as this machine has got: what is
+    # missing has been folded into a snapshot and the early segments retired.
+    # The server sends no operations at all in that case rather than the part
+    # that survives, because that part begins in the middle - so taking the
+    # snapshot is the only way anything after it makes sense.
+    if result.get('needs_snapshot') or int(result.get('snapshot_seq') or 0) > since:
+        taken = _take_server_snapshot(since)
+        if taken is None:
+            return _record_failure('snapshot_unavailable')
+        if taken:
+            since = taken
+            # Everything this machine needs now sits above the snapshot, and
+            # the push reply was written before we had it. Draining below
+            # fetches the tail, and unlike push it includes our own work.
+            truncated = True
+
     if dups or truncated:
         # Two situations, one answer.
         #
@@ -464,6 +495,10 @@ def _run_cycle_locked(outbox):
         'server_head': max(head, reached),
         'account': _current_account(),
     })
+    # Last, and only after a cycle that got everything: the server takes a
+    # snapshot only from a machine that is at head, and this is the one moment
+    # this machine knows it was.
+    _offer_staged_snapshot(max(head, reached), outbox)
     sync_log.log('cycle.ok', sent=len(batch), received=len(incoming),
                  head=head, reached=reached)
     return {'ok': True, 'sent': len(batch), 'received': len(incoming),
@@ -474,6 +509,152 @@ def _wire(op):
     """Strips the queue's own bookkeeping down to what the server accepts."""
     allowed = ('op', 'lc', 'uid', 'f', 'ts', 'project', 'task', 'start', 'end')
     return {k: v for k, v in op.items() if k in allowed}
+
+
+# ---------------------------------------------------------------------------
+# Snapshots: taking one, and offering one.
+#
+# The server's log only ever grows. A snapshot is the document as it stood at
+# one sequence number, so a machine joining late fetches that and then only
+# the tail instead of replaying everything ever done.
+#
+# The server never builds one - it stores operations without understanding
+# them, and teaching it to fold them into a document would put the merge rules
+# in two languages where they could drift. So a client that has everything
+# offers the document it already holds. Which means both halves of this module
+# are involved: reading the document belongs to the drawing thread, talking to
+# the server belongs to the worker, and a file passes it across.
+# ---------------------------------------------------------------------------
+
+def _take_server_snapshot(since):
+    """
+    Fetches the server's snapshot and files it for the drawing thread.
+
+    :return: The sequence number it covers, 0 when there is nothing usable to
+             take, or None when it could not be fetched - which is a failure
+             worth backing off on, because without it nothing else this cycle
+             would do makes sense.
+    """
+    reply = sync_client.get_snapshot()
+    if not reply.get('ok'):
+        if reply.get('error') == 'no_snapshot':
+            # Told to fetch one, and there is none. A store rebuilt between
+            # the two calls, or an installation in a state it should not be
+            # in. Reporting it beats retrying for ever against a server that
+            # will keep saying the same thing.
+            sync_log.log('snapshot.missing')
+            return 0
+        sync_log.log('snapshot.fetch_failed', error=reply.get('error') or 'unreachable')
+        return None
+
+    seq = int(reply.get('seq') or 0)
+    document = reply.get('document')
+    if seq <= since or not isinstance(document, dict):
+        sync_log.log('snapshot.unusable', seq=seq, since=since)
+        return 0
+
+    try:
+        # Whatever was already waiting sits below this point, and applying it
+        # after the snapshot would put older values on top of newer ones. The
+        # snapshot speaks for all of it, so it replaces the queue rather than
+        # joining the back of it. Nothing above the point can be in there:
+        # this machine would not have been sent any.
+        clear_inbox()
+        _append_inbox({'base_seq': seq, 'snapshot': document, 'ops': []})
+    except (OSError, LockTimeout):
+        return None
+
+    write_state({'snapshot_seq': seq})
+    sync_log.log('snapshot.taken', seq=seq,
+                 projects=len(document.get('projects') or []))
+    return seq
+
+
+def _read_staged_snapshot():
+    try:
+        with open(staged_snapshot_path(), 'r', encoding='utf-8') as handle:
+            document = json.load(handle)
+        return document if isinstance(document, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _write_staged_snapshot(document):
+    path = staged_snapshot_path()
+    tmp = path + '.tmp'
+    try:
+        os.makedirs(sync_client.config_dir(), exist_ok=True)
+        with open(tmp, 'w', encoding='utf-8') as handle:
+            json.dump(document, handle, ensure_ascii=False)
+        os.replace(tmp, path)
+        return True
+    except OSError:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        return False
+
+
+def _discard_staged_snapshot():
+    try:
+        os.remove(staged_snapshot_path())
+    except OSError:
+        pass
+    write_state({'snapshot_staged': 0})
+
+
+def _offer_staged_snapshot(head, outbox):
+    """
+    Sends a document the drawing thread prepared, if it still describes head.
+
+    Called only at the end of a cycle that got everything, and it checks
+    again anyway: between the staging and here the log can have moved, and a
+    snapshot that does not sit exactly at head is refused by the server -
+    rightly, because its uploader cannot then have held all of it.
+    """
+    state = read_state()
+    staged = int(state.get('snapshot_staged') or 0)
+    if not staged:
+        return
+
+    try:
+        still_queued = bool(outbox.pending())
+    except Exception:
+        still_queued = True
+    if staged != head or still_queued:
+        # Stale. Thrown away rather than sent, and the drawing thread will
+        # prepare a fresh one from the document as it stands then.
+        sync_log.log('snapshot.stale', staged=staged, head=head, queued=still_queued)
+        _discard_staged_snapshot()
+        return
+
+    document = _read_staged_snapshot()
+    if document is None:
+        _discard_staged_snapshot()
+        return
+
+    reply = sync_client.put_snapshot(staged, document)
+    if reply.get('ok'):
+        write_state({'snapshot_seq': int(reply.get('snapshot_seq') or staged)})
+        sync_log.log('snapshot.offered', seq=staged,
+                     retired=int(reply.get('retired') or 0),
+                     deleted=int(reply.get('deleted') or 0))
+        _discard_staged_snapshot()
+        return
+
+    error = reply.get('error') or 'unreachable'
+    sync_log.log('snapshot.refused', seq=staged, error=error)
+    if error not in ('unreachable', 'timeout', 'busy'):
+        # Either the timing was wrong - the log moved on, or another machine
+        # got there first - or the document was refused on its own account.
+        # Neither is worth keeping this file for: sending it again would fail
+        # the same way, and the next attempt should describe the log as it
+        # will be then. What stops that attempt from coming round on every
+        # redraw is the clock in snapshot_tried.
+        _discard_staged_snapshot()
+    # Anything left is the network. The file stays, and the next complete
+    # cycle offers it again as long as the log has not moved in the meantime.
 
 
 def _record_failure(code):
@@ -535,7 +716,18 @@ def apply_pending(tracker):
                           + [int(read_state().get('base_seq', 0))])
 
             local, settled = _split_placed(outbox.pending(), incoming)
-            report = reconcile(tracker.data, incoming, local)
+
+            # A snapshot goes in first, and in a pass of its own. It stands
+            # for everything up to its own sequence number, so applying it
+            # after the operations that come later would lay an older picture
+            # over a newer one. The separate pass is what orders it: apply_ops
+            # sorts by sequence number within a call and remembers nothing
+            # between calls, so being applied first is the ordering.
+            report = Report()
+            for record in sorted(records, key=lambda r: int(r.get('base_seq', 0))):
+                if record.get('snapshot'):
+                    report.absorb(adopt_snapshot(tracker.data, record['snapshot']))
+            report.absorb(reconcile(tracker.data, incoming, local))
 
             # A session this machine had left running was ended because work
             # began elsewhere. That was worked out here, from the order alone,
@@ -683,6 +875,79 @@ def offer_document(tracker):
         # sync, never the application. Nothing is marked, so this is tried
         # again on the next redraw.
         return 0
+
+
+# How far the log may run past the snapshot before a new one is worth making.
+# Four pages of catching up for a machine replaying the tail, which is quick,
+# and on ordinary use somewhere around a fortnight - often enough that the log
+# does not run away, rarely enough that a multi-megabyte upload is not a
+# routine event.
+SNAPSHOT_EVERY = 2000
+
+# And a floor on how often this machine will try, whatever the numbers say. A
+# snapshot that keeps being refused should not have the document written out
+# again on every redraw.
+SNAPSHOT_RETRY_SECONDS = 6 * 3600
+
+
+def offer_snapshot(tracker):
+    """
+    Stages this machine's document for the worker to offer as a snapshot.
+
+    Called on the drawing thread, beside offer_document, and for the same
+    reason: it reads the document, which belongs to this thread. It does no
+    network work of its own - it leaves a file, and the worker sends it at
+    the end of a cycle that reached head.
+
+    Every gate below is about one thing: only a machine that demonstrably
+    holds the whole log may describe it to the others. Getting that wrong
+    does not fail loudly, it publishes a wrong document as the truth.
+
+    :return: The sequence number staged, or 0 when nothing was.
+    """
+    state = read_state()
+    if int(state.get('snapshot_staged') or 0):
+        return 0                                  # one is already waiting
+
+    base = int(state.get('base_seq', 0))
+    head = int(state.get('server_head', 0))
+    if base <= 0 or base != head:
+        return 0                                  # not caught up
+    if head - int(state.get('snapshot_seq') or 0) < SNAPSHOT_EVERY:
+        return 0                                  # the log has not run far enough
+    if int(time.time()) - int(state.get('snapshot_tried') or 0) < SNAPSHOT_RETRY_SECONDS:
+        return 0
+
+    if read_inbox():
+        return 0        # fetched but not yet applied: the document is behind
+    if not sync_client.load_credentials():
+        return 0
+
+    outbox = tracker.op_outbox
+    if outbox is None:
+        return 0
+    try:
+        if outbox.pending():
+            return 0    # unsent work, which will move head out from under this
+    except Exception:
+        return 0
+
+    document = tracker.data
+    if not document.get('projects'):
+        # The server refuses this and is right to. A document with nothing in
+        # it, offered for a log with something in it, is the shape of a
+        # data.json that was emptied or replaced while the cursor stayed put -
+        # and it would be handed to every other machine as the truth. Stopping
+        # here saves a round trip and a refusal in the log every six hours.
+        sync_log.log('snapshot.not_offered', why='no_projects')
+        return 0
+
+    if not _write_staged_snapshot(document):
+        return 0
+    write_state({'snapshot_staged': base, 'snapshot_tried': int(time.time())})
+    sync_log.log('snapshot.staged', seq=base,
+                 projects=len(document.get('projects') or []))
+    return base
 
 
 # ---------------------------------------------------------------------------
@@ -841,9 +1106,12 @@ def stop():
     worker.join(timeout=0.2)
 
 
-def snapshot():
+def status_summary():
     """
     What the interface needs to show, without asking the network anything.
+
+    Named for what it is rather than "snapshot", which in this module now
+    means the document the server holds in place of the early log.
 
     :return: dict with 'state' as one of 'off', 'never', 'ok', 'failing';
              plus 'last_ok', 'error', 'pending' and 'incoming'.

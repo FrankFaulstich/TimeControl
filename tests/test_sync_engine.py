@@ -28,6 +28,10 @@ class FakeServer:
         self.page = 500
         self.fail_with = None
         self.calls = []
+        # What compaction leaves behind: a document standing for everything
+        # up to a point, and a log that no longer reaches back that far.
+        self.snapshot = None          # {'seq': int, 'document': dict}
+        self.snapshot_error = None    # what put_snapshot should refuse with
 
     # -- what the log holds ------------------------------------------------
 
@@ -58,18 +62,61 @@ class FakeServer:
             self.log.append(entry)
             assigned.append([lc, entry['s']])
             self.max_lc = max(self.max_lc, lc)
+        if self._behind_snapshot(base_seq):
+            return {'ok': True, 'head': self.head, 'assigned': assigned, 'dups': dups,
+                    'ops': [], 'more': False,
+                    'snapshot_seq': self.snapshot['seq'], 'needs_snapshot': True}
         visible = [e for e in self.log if e['s'] > base_seq and e['dev'] != self.device]
         return {'ok': True, 'head': self.head, 'assigned': assigned, 'dups': dups,
-                'ops': visible[:self.page], 'more': len(visible) > self.page}
+                'ops': visible[:self.page], 'more': len(visible) > self.page,
+                'snapshot_seq': self._snapshot_seq(), 'needs_snapshot': False}
 
     def pull(self, since, limit=500):
         self.calls.append(('pull', since, limit))
         if self.fail_with:
             return {'ok': False, 'error': self.fail_with}
+        if self._behind_snapshot(since):
+            # Nothing at all rather than the part that survives: that part
+            # starts in the middle, and a caller applying it would drop
+            # almost all of it as naming things it has never heard of.
+            return {'ok': True, 'head': self.head, 'ops': [], 'more': False,
+                    'snapshot_seq': self.snapshot['seq'], 'needs_snapshot': True}
         visible = [e for e in self.log if e['s'] > since]
         page = min(self.page, limit)
         return {'ok': True, 'head': self.head, 'ops': visible[:page],
-                'more': len(visible) > page}
+                'more': len(visible) > page,
+                'snapshot_seq': self._snapshot_seq(), 'needs_snapshot': False}
+
+    # -- the snapshot ------------------------------------------------------
+
+    def _snapshot_seq(self):
+        return self.snapshot['seq'] if self.snapshot else 0
+
+    def _behind_snapshot(self, since):
+        return bool(self.snapshot) and since < self.snapshot['seq']
+
+    def get_snapshot(self):
+        self.calls.append(('get_snapshot',))
+        if self.fail_with:
+            return {'ok': False, 'error': self.fail_with}
+        if not self.snapshot:
+            return {'ok': False, 'error': 'no_snapshot'}
+        return {'ok': True, 'seq': self.snapshot['seq'], 'head': self.head,
+                'document': self.snapshot['document']}
+
+    def put_snapshot(self, seq, document):
+        self.calls.append(('put_snapshot', seq))
+        if self.fail_with:
+            return {'ok': False, 'error': self.fail_with}
+        if self.snapshot_error:
+            return {'ok': False, 'error': self.snapshot_error,
+                    'head': self.head, 'snapshot_seq': self._snapshot_seq()}
+        if seq != self.head:
+            return {'ok': False, 'error': 'not_at_head',
+                    'head': self.head, 'snapshot_seq': self._snapshot_seq()}
+        self.snapshot = {'seq': seq, 'document': document}
+        return {'ok': True, 'head': self.head, 'snapshot_seq': seq,
+                'retired': 1, 'deleted': 0}
 
 
 class EngineTestCase(unittest.TestCase):
@@ -81,12 +128,16 @@ class EngineTestCase(unittest.TestCase):
         self._real_push = sync_client.push
         self._real_pull = sync_client.pull
         self._real_creds = sync_client.load_credentials
+        self._real_get_snapshot = sync_client.get_snapshot
+        self._real_put_snapshot = sync_client.put_snapshot
 
         sync_client.config_dir = lambda: self.tmp
         self.server = FakeServer()
         sync_client.push = self.server.push
         sync_client.pull = self.server.pull
         sync_client.load_credentials = lambda: {'token': 't', 'base_url': 'https://x/index.php'}
+        sync_client.get_snapshot = self.server.get_snapshot
+        sync_client.put_snapshot = self.server.put_snapshot
 
         self.outbox = Outbox()
 
@@ -96,6 +147,8 @@ class EngineTestCase(unittest.TestCase):
         sync_client.push = self._real_push
         sync_client.pull = self._real_pull
         sync_client.load_credentials = self._real_creds
+        sync_client.get_snapshot = self._real_get_snapshot
+        sync_client.put_snapshot = self._real_put_snapshot
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def queue(self, op, **fields):
@@ -1235,7 +1288,7 @@ class TestWhenTheDiskItselfMisbehaves(EngineTestCase):
         original = sync_engine.Outbox
         sync_engine.Outbox = lambda *a, **k: (_ for _ in ()).throw(OSError("gone"))
         try:
-            snap = sync_engine.snapshot()
+            snap = sync_engine.status_summary()
         finally:
             sync_engine.Outbox = original
         self.assertEqual(snap['pending'], 0)
@@ -1393,13 +1446,13 @@ class TestTheInterval(EngineTestCase):
 class TestWhatTheInterfaceIsTold(EngineTestCase):
 
     def test_before_anything_has_happened(self):
-        snap = sync_engine.snapshot()
+        snap = sync_engine.status_summary()
         self.assertEqual(snap['state'], 'never')
         self.assertEqual(snap['pending'], 0)
 
     def test_after_a_good_cycle(self):
         sync_engine.run_cycle(self.outbox)
-        snap = sync_engine.snapshot()
+        snap = sync_engine.status_summary()
         self.assertEqual(snap['state'], 'ok')
         self.assertIsNotNone(snap['last_ok'])
         self.assertIsNone(snap['error'])
@@ -1407,18 +1460,18 @@ class TestWhatTheInterfaceIsTold(EngineTestCase):
     def test_after_a_bad_one(self):
         self.server.fail_with = 'tls_failed'
         sync_engine.run_cycle(self.outbox)
-        snap = sync_engine.snapshot()
+        snap = sync_engine.status_summary()
         self.assertEqual(snap['state'], 'failing')
         self.assertEqual(snap['error'], 'tls_failed')
 
     def test_it_counts_what_is_waiting_in_both_directions(self):
         self.queue('project.create', uid=P1, f={'name': 'P'})
         self.server.add_foreign('project.create', uid='c' * 16, f={'name': 'C'})
-        snap = sync_engine.snapshot()
+        snap = sync_engine.status_summary()
         self.assertEqual(snap['pending'], 1)
 
         sync_engine.run_cycle(self.outbox)
-        snap = sync_engine.snapshot()
+        snap = sync_engine.status_summary()
         self.assertEqual(snap['pending'], 0)
         self.assertEqual(snap['incoming'], 1)
 
@@ -1427,7 +1480,315 @@ class TestWhatTheInterfaceIsTold(EngineTestCase):
             raise AssertionError("snapshot must never make a request")
         sync_client.push = forbidden
         sync_client.pull = forbidden
-        sync_engine.snapshot()
+        sync_engine.status_summary()
+
+
+class TestTakingTheServersSnapshot(EngineTestCase):
+    """
+    The log stops reaching all the way back once it has been compacted. A
+    machine below that point is sent no operations at all - so unless it
+    takes the snapshot, it sits there being told nothing and reporting
+    success, which is the failure this whole path exists to avoid.
+    """
+
+    def _compacted(self, seq=5, document=None):
+        """A server whose early log has been replaced by a snapshot."""
+        for i in range(seq):
+            self.server.add_foreign('project.create', uid='%016x' % i,
+                                    f={'name': 'P%d' % i})
+        self.server.snapshot = {'seq': seq, 'document': document or {
+            'schema_version': 2, 'next_id': 1, '_deleted': [],
+            'projects': [{'uid': P1, 'main_project_name': 'From the snapshot',
+                          'status': 'open', 'last_started': None, 'tasks': []}],
+        }}
+
+    def test_the_snapshot_is_fetched_and_filed(self):
+        self._compacted()
+
+        result = sync_engine.run_cycle(self.outbox)
+
+        self.assertTrue(result['ok'])
+        records = sync_engine.read_inbox()
+        self.assertEqual(len(records), 1, "the snapshot was not filed on its own")
+        self.assertIn('snapshot', records[0])
+        self.assertEqual(records[0]['base_seq'], 5)
+        self.assertIn(('get_snapshot',), self.server.calls)
+
+    def test_the_tail_after_it_comes_too(self):
+        self._compacted()
+        self.server.add_foreign('project.create', uid=T1, f={'name': 'Later'})
+
+        sync_engine.run_cycle(self.outbox)
+
+        records = sync_engine.read_inbox()
+        arrived = [op['uid'] for record in records for op in record.get('ops') or []]
+        self.assertIn(T1, arrived, "the operations after the snapshot were not fetched")
+        self.assertEqual(max(int(r['base_seq']) for r in records), self.server.head)
+
+    def test_what_was_already_waiting_below_the_point_is_dropped(self):
+        """
+        Operations fetched earlier sit below the snapshot. Applying them after
+        it would lay older values over newer ones - the snapshot already
+        speaks for them, so it replaces the queue rather than joining it.
+        """
+        sync_engine._append_inbox({'base_seq': 2, 'ops': [
+            {'s': 1, 'op': 'project.create', 'uid': P1, 'f': {'name': 'Stale'}}]})
+        self._compacted()
+
+        sync_engine.run_cycle(self.outbox)
+
+        records = sync_engine.read_inbox()
+        self.assertTrue(all(int(r['base_seq']) >= 5 for r in records),
+                        "something from below the snapshot survived")
+        stale = [op for r in records for op in r.get('ops') or []
+                 if op.get('f', {}).get('name') == 'Stale']
+        self.assertEqual(stale, [])
+
+    def test_a_server_that_asks_for_one_and_has_none_is_not_retried_for_ever(self):
+        self._compacted()
+        self.server.snapshot['seq'] = 5
+        real_get = self.server.get_snapshot
+        self.server.get_snapshot = lambda: {'ok': False, 'error': 'no_snapshot'}
+        sync_client.get_snapshot = self.server.get_snapshot
+
+        result = sync_engine.run_cycle(self.outbox)
+
+        self.assertTrue(result['ok'], "a missing snapshot should not fail the cycle")
+        self.assertEqual([], [r for r in sync_engine.read_inbox() if r.get('snapshot')])
+        self.server.get_snapshot = real_get
+
+    def test_a_snapshot_that_cannot_be_fetched_stops_the_cycle(self):
+        """
+        Carrying on would file the tail and move the cursor past a gap the
+        log will never offer again.
+        """
+        self._compacted()
+        sync_client.get_snapshot = lambda: {'ok': False, 'error': 'unreachable'}
+
+        result = sync_engine.run_cycle(self.outbox)
+
+        self.assertFalse(result['ok'])
+        self.assertEqual(sync_engine.read_inbox(), [])
+        self.assertEqual(sync_engine.read_state()['base_seq'], 0)
+
+
+class TestTheSnapshotReachesTheDocument(EngineTestCase):
+    """The other half: what the drawing thread does with what was filed."""
+
+    DATA = 'test_engine_snapshot_data.json'
+
+    def setUp(self):
+        super().setUp()
+        if os.path.exists(self.DATA):
+            os.remove(self.DATA)
+        self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
+
+    def tearDown(self):
+        if os.path.exists(self.DATA):
+            os.remove(self.DATA)
+        super().tearDown()
+
+    def test_a_fresh_machine_ends_up_with_the_snapshot_and_the_tail(self):
+        """
+        Acceptance, end to end: an empty document, a compacted server, and
+        the machine has to arrive at what the log describes.
+        """
+        for i in range(4):
+            self.server.add_foreign('project.create', uid='%016x' % i, f={'name': 'gone'})
+        self.server.snapshot = {'seq': 4, 'document': {
+            'schema_version': 2, 'next_id': 1, '_deleted': [],
+            'projects': [{'uid': P1, 'main_project_name': 'Work', 'status': 'open',
+                          'last_started': None,
+                          'tasks': [{'uid': T1, 'id': 1, 'task_name': 'Existing',
+                                     'status': 'open', 'time_entries': [],
+                                     'due_date': None, 'today': False, 'note': '',
+                                     'recurring': False, 'frequency': 'daily',
+                                     'userdefined_days': 1, 'priority': 0,
+                                     'last_started': None}]}],
+        }}
+        # And something that happened after the snapshot was taken.
+        self.server.add_foreign('task.set', uid=T1, f={'priority': 7})
+
+        sync_engine.run_cycle(self.outbox)
+        summary = sync_engine.apply_pending(self.tracker)
+
+        self.assertIsNotNone(summary)
+        project = self.tracker._get_project('Work')
+        self.assertIsNotNone(project, "the snapshot did not reach the document")
+        task = project['tasks'][0]
+        self.assertEqual(task['task_name'], 'Existing')
+        self.assertEqual(task['priority'], 7, "the tail did not land on top of the snapshot")
+        self.assertEqual(sync_engine.read_state()['base_seq'], self.server.head)
+        self.assertEqual(self.tracker.data['_sync_seq'], self.server.head)
+
+    def test_the_snapshot_does_not_undo_what_the_tail_did(self):
+        """
+        Ordering between the two passes, tested where it can actually go
+        wrong: the snapshot unfolds into more operations than the tail's
+        sequence numbers, so numbering alone would put it last.
+        """
+        self.server.add_foreign('project.create', uid=P1, f={'name': 'Work'})
+        self.server.snapshot = {'seq': 1, 'document': {
+            'schema_version': 2, 'next_id': 1, '_deleted': [],
+            'projects': [{'uid': P1, 'main_project_name': 'Old name',
+                          'status': 'open', 'last_started': None, 'tasks': []}],
+        }}
+        self.server.add_foreign('project.set', uid=P1, f={'name': 'New name'})
+
+        sync_engine.run_cycle(self.outbox)
+        sync_engine.apply_pending(self.tracker)
+
+        self.assertIsNotNone(self.tracker._get_project('New name'))
+        self.assertIsNone(self.tracker._get_project('Old name'))
+
+
+class TestOfferingASnapshot(EngineTestCase):
+    """
+    The server never builds one, so a client that has everything has to offer
+    it. Every gate here is about the same thing: only a machine that
+    demonstrably holds the whole log may describe it to the others.
+    """
+
+    DATA = 'test_engine_offer_data.json'
+
+    def setUp(self):
+        super().setUp()
+        if os.path.exists(self.DATA):
+            os.remove(self.DATA)
+        self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
+        self.tracker.data['projects'] = [
+            {'uid': P1, 'main_project_name': 'Work', 'status': 'open',
+             'last_started': None, 'tasks': []}]
+
+    def tearDown(self):
+        if os.path.exists(self.DATA):
+            os.remove(self.DATA)
+        super().tearDown()
+
+    def caught_up(self, at=None, snapshot_at=0):
+        at = sync_engine.SNAPSHOT_EVERY if at is None else at
+        sync_engine.write_state({'base_seq': at, 'server_head': at,
+                                 'snapshot_seq': snapshot_at, 'snapshot_tried': 0})
+        return at
+
+    def test_a_machine_that_holds_everything_stages_its_document(self):
+        at = self.caught_up()
+
+        staged = sync_engine.offer_snapshot(self.tracker)
+
+        self.assertEqual(staged, at)
+        self.assertEqual(sync_engine.read_state()['snapshot_staged'], at)
+        self.assertTrue(os.path.exists(sync_engine.staged_snapshot_path()))
+
+    def test_a_machine_that_is_not_caught_up_stages_nothing(self):
+        sync_engine.write_state({'base_seq': 10, 'server_head': sync_engine.SNAPSHOT_EVERY,
+                                 'snapshot_seq': 0, 'snapshot_tried': 0})
+        self.assertEqual(sync_engine.offer_snapshot(self.tracker), 0)
+        self.assertFalse(os.path.exists(sync_engine.staged_snapshot_path()))
+
+    def test_a_log_that_has_not_run_far_enough_is_left_alone(self):
+        self.caught_up(at=10)
+        self.assertEqual(sync_engine.offer_snapshot(self.tracker), 0)
+
+    def test_unsent_work_means_head_is_about_to_move(self):
+        self.caught_up()
+        self.queue('project.create', uid=T1, f={'name': 'Not sent yet'})
+        self.assertEqual(sync_engine.offer_snapshot(self.tracker), 0)
+
+    def test_changes_fetched_but_not_applied_mean_the_document_is_behind(self):
+        self.caught_up()
+        sync_engine._append_inbox({'base_seq': 9999, 'ops': []})
+        self.assertEqual(sync_engine.offer_snapshot(self.tracker), 0)
+
+    def test_a_document_with_nothing_in_it_is_never_offered(self):
+        """
+        The shape a data.json that was emptied or replaced takes. Offered for
+        a log that has something in it, it would be handed to every other
+        machine as the truth.
+        """
+        self.caught_up()
+        self.tracker.data['projects'] = []
+        self.assertEqual(sync_engine.offer_snapshot(self.tracker), 0)
+
+    def test_it_is_not_prepared_again_while_one_is_waiting(self):
+        self.caught_up()
+        sync_engine.offer_snapshot(self.tracker)
+        self.assertEqual(sync_engine.offer_snapshot(self.tracker), 0)
+
+    def test_it_is_not_retried_on_every_redraw(self):
+        at = self.caught_up()
+        sync_engine.write_state({'snapshot_tried': int(time.time())})
+        self.assertEqual(sync_engine.offer_snapshot(self.tracker), 0)
+
+    def test_the_worker_sends_what_was_staged(self):
+        at = self.caught_up(at=self.server.head)
+        # A log the staged number actually describes.
+        for i in range(sync_engine.SNAPSHOT_EVERY):
+            self.server.add_foreign('project.create', uid='%016x' % i, f={'name': 'x'})
+        sync_engine.write_state({'base_seq': self.server.head,
+                                 'server_head': self.server.head})
+        sync_engine.offer_snapshot(self.tracker)
+        sync_engine.clear_inbox()
+
+        sync_engine.run_cycle(self.outbox)
+
+        self.assertIsNotNone(self.server.snapshot, "nothing reached the server")
+        self.assertEqual(self.server.snapshot['seq'], self.server.head)
+        self.assertEqual(sync_engine.read_state()['snapshot_staged'], 0)
+        self.assertFalse(os.path.exists(sync_engine.staged_snapshot_path()))
+
+    def test_a_staged_snapshot_the_log_has_outgrown_is_thrown_away(self):
+        """
+        The server takes one only from a machine at head, and rightly - so a
+        stale one is discarded here rather than sent to be refused.
+        """
+        self.caught_up()
+        sync_engine.offer_snapshot(self.tracker)
+        self.server.add_foreign('project.create', uid=T1, f={'name': 'Moved on'})
+
+        sync_engine.run_cycle(self.outbox)
+
+        self.assertIsNone(self.server.snapshot)
+        self.assertEqual(sync_engine.read_state()['snapshot_staged'], 0)
+        self.assertFalse(os.path.exists(sync_engine.staged_snapshot_path()))
+        # Not merely refused at the far end - never sent. The server would
+        # turn it down anyway, so sending it costs a round trip carrying a
+        # whole document and puts a refusal in the log for something this
+        # machine could see for itself.
+        self.assertEqual([c for c in self.server.calls if c[0] == 'put_snapshot'], [],
+                         "a snapshot the log had outgrown was sent anyway")
+
+    def test_a_snapshot_refused_on_its_merits_is_not_offered_again(self):
+        for i in range(sync_engine.SNAPSHOT_EVERY):
+            self.server.add_foreign('project.create', uid='%016x' % i, f={'name': 'x'})
+        sync_engine.write_state({'base_seq': self.server.head,
+                                 'server_head': self.server.head,
+                                 'snapshot_seq': 0, 'snapshot_tried': 0})
+        sync_engine.offer_snapshot(self.tracker)
+        sync_engine.clear_inbox()
+        self.server.snapshot_error = 'snapshot_too_large'
+
+        sync_engine.run_cycle(self.outbox)
+
+        self.assertEqual(sync_engine.read_state()['snapshot_staged'], 0)
+        self.assertFalse(os.path.exists(sync_engine.staged_snapshot_path()),
+                         "a document the server will never take was kept")
+
+    def test_a_snapshot_that_could_not_be_sent_is_kept_for_the_next_try(self):
+        for i in range(sync_engine.SNAPSHOT_EVERY):
+            self.server.add_foreign('project.create', uid='%016x' % i, f={'name': 'x'})
+        sync_engine.write_state({'base_seq': self.server.head,
+                                 'server_head': self.server.head,
+                                 'snapshot_seq': 0, 'snapshot_tried': 0})
+        sync_engine.offer_snapshot(self.tracker)
+        sync_engine.clear_inbox()
+        self.server.snapshot_error = 'unreachable'
+
+        sync_engine.run_cycle(self.outbox)
+
+        self.assertEqual(sync_engine.read_state()['snapshot_staged'], self.server.head)
+        self.assertTrue(os.path.exists(sync_engine.staged_snapshot_path()),
+                        "a network failure threw the document away")
 
 
 if __name__ == '__main__':
