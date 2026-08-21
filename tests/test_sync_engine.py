@@ -1791,5 +1791,153 @@ class TestOfferingASnapshot(EngineTestCase):
                         "a network failure threw the document away")
 
 
+class TestTheAddressTheSettingsAskFor(EngineTestCase):
+    """
+    The setting and the credential are two addresses that can disagree: one is
+    edited in the settings screen, the other was frozen when the token was
+    issued. Carrying on regardless is what made changing the address look like
+    it did nothing - the app kept talking to the old server while the screen
+    showed the new one, and neither end said so.
+    """
+
+    # What EngineTestCase's stand-in credential points at.
+    SIGNED_IN_TO = 'https://x/index.php'
+
+    def settled_recently(self, **extra):
+        """
+        A state the worker will leave alone. ensure_started starts the thread,
+        and a cycle running mid-assertion would rewrite exactly the fields
+        these tests are about; a recent last_ok keeps it waiting out the
+        interval instead.
+        """
+        changes = {'last_ok': int(time.time())}
+        changes.update(extra)
+        sync_engine.write_state(changes)
+
+    def test_the_configured_address_is_recorded_for_the_cycle_to_check(self):
+        self.settled_recently()
+        sync_engine.ensure_started({'sync': {'enabled': True,
+                                             'base_url': 'https://elsewhere.example/tc/'}})
+        self.assertEqual(sync_engine.read_state()['configured_url'],
+                         'https://elsewhere.example/tc/')
+
+    def test_changing_the_address_lifts_the_pause_the_old_one_earned(self):
+        """
+        A wrong address backs off to half an hour, and the setting is the
+        thing the user reaches for to correct it. Making them then wait out a
+        pause the old address earned would look exactly like the bug they
+        just tried to fix.
+        """
+        self.settled_recently(configured_url='https://old.example/tc/',
+                              last_error='unreachable', failures=5,
+                              next_attempt=int(time.time()) + 1800)
+
+        sync_engine.ensure_started({'sync': {'enabled': True,
+                                             'base_url': 'https://new.example/tc/'}})
+
+        state = sync_engine.read_state()
+        self.assertEqual(state['configured_url'], 'https://new.example/tc/')
+        self.assertIsNone(state['last_error'])
+        self.assertEqual(state['failures'], 0)
+        self.assertEqual(state['next_attempt'], 0)
+
+    def test_signing_in_to_the_new_server_settles_it_too(self):
+        """
+        Found by using it. The other way out of a disagreement leaves the
+        setting untouched, so nothing above notices - and a terminal failure
+        waits half an hour before a cycle would find out. The interface went
+        on telling the user to fix what they had already fixed, and nothing
+        tried in the meantime.
+        """
+        self.settled_recently(configured_url=self.SIGNED_IN_TO,
+                              last_error='address_changed', failures=1,
+                              next_attempt=int(time.time()) + 1800)
+
+        sync_engine.ensure_started({'sync': {'enabled': True,
+                                             'base_url': self.SIGNED_IN_TO}})
+
+        state = sync_engine.read_state()
+        self.assertIsNone(state['last_error'])
+        self.assertEqual(state['failures'], 0)
+        self.assertEqual(state['next_attempt'], 0)
+
+    def test_a_failure_that_has_nothing_to_do_with_the_address_stands(self):
+        """
+        The clearing above is about one specific stale verdict. A server that
+        is genuinely down must keep its backoff, or every redraw would start
+        another attempt at it.
+        """
+        self.settled_recently(configured_url=self.SIGNED_IN_TO,
+                              last_error='unreachable', failures=3,
+                              next_attempt=int(time.time()) + 300)
+
+        sync_engine.ensure_started({'sync': {'enabled': True,
+                                             'base_url': self.SIGNED_IN_TO}})
+
+        state = sync_engine.read_state()
+        self.assertEqual(state['last_error'], 'unreachable')
+        self.assertEqual(state['failures'], 3)
+
+    def test_a_cycle_stops_when_the_address_is_not_the_one_signed_in_to(self):
+        sync_engine.write_state({'configured_url': 'https://elsewhere.example/tc/'})
+        self.queue('project.create', uid=P1, f={'name': 'P'})
+
+        result = sync_engine.run_cycle(self.outbox)
+
+        self.assertFalse(result['ok'])
+        self.assertEqual(result['error'], 'address_changed')
+
+    def test_nothing_is_sent_to_an_address_the_token_does_not_belong_to(self):
+        """
+        The point of stopping rather than following the setting. A token is a
+        bearer credential, and the address is something a person types - so
+        following it means handing that credential to whatever host a typo
+        happens to name. The server would refuse it, but by then it has been
+        sent.
+        """
+        sync_engine.write_state({'configured_url': 'https://typo.example/tc/'})
+        self.queue('project.create', uid=P1, f={'name': 'P'})
+
+        sync_engine.run_cycle(self.outbox)
+
+        self.assertEqual(self.server.calls, [], "a request went out anyway")
+        self.assertEqual(len(self.outbox.pending()), 1,
+                         "the queued change was dropped rather than held")
+
+    def test_it_is_not_retried_until_something_changes(self):
+        """
+        Only signing in again resolves this, so backing off in steps of a
+        minute would be a request a minute against a server that will keep
+        saying no.
+        """
+        sync_engine.write_state({'configured_url': 'https://elsewhere.example/tc/'})
+        sync_engine.run_cycle(self.outbox)
+
+        state = sync_engine.read_state()
+        self.assertEqual(state['last_error'], 'address_changed')
+        self.assertGreaterEqual(state['next_attempt'] - int(time.time()),
+                                sync_engine.BACKOFF_MAX_SECONDS - 5)
+
+    def test_the_same_address_written_differently_is_not_a_change(self):
+        """
+        The setting holds what the user typed and the credential holds the
+        normalised endpoint, so these differ as strings on every ordinary
+        installation. Treating that as a move would stop synchronisation for
+        everybody.
+        """
+        for spelling in ('https://x', 'https://x/', 'https://x/index.php',
+                         'https://X/index.php'):
+            with self.subTest(spelling=spelling):
+                sync_engine.write_state({'configured_url': spelling,
+                                         'last_error': None, 'failures': 0,
+                                         'next_attempt': 0})
+                result = sync_engine.run_cycle(self.outbox)
+                self.assertTrue(result['ok'], result.get('error'))
+
+    def test_nothing_configured_yet_is_not_a_change_either(self):
+        sync_engine.write_state({'configured_url': None})
+        self.assertTrue(sync_engine.run_cycle(self.outbox)['ok'])
+
+
 if __name__ == '__main__':
     unittest.main()
