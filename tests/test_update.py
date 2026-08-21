@@ -574,20 +574,41 @@ class TestRelaunchingAfterTheSwap(unittest.TestCase):
 
         self.assertEqual(clean, {"PATH": "/usr/bin", "HOME": "/home/somebody"})
 
+    # An absolute path on either platform, and one abspath leaves alone. A
+    # literal "/apps/TimeControl.exe" is neither: on Windows that names the
+    # current drive's root, so abspath returns "D:\apps\TimeControl.exe" and
+    # the comparison fails for a reason that has nothing to do with what is
+    # being tested. This is where that went wrong once.
+    EXE = os.path.abspath(os.path.join(tempfile.gettempdir(), "TimeControl.exe"))
+
     def test_the_replacement_is_started_without_them(self):
         environment = {"_MEIPASS2": "/tmp/_MEI123", "PATH": "/usr/bin"}
 
         with unittest.mock.patch.dict('update.os.environ', environment, clear=True):
             with unittest.mock.patch('update.subprocess.Popen') as popen:
-                self.assertTrue(update.relaunch_frozen("/apps/TimeControl.exe"))
+                self.assertTrue(update.relaunch_frozen(self.EXE))
 
         popen.assert_called_once()
         argv, keywords = popen.call_args
-        self.assertEqual(argv[0], ["/apps/TimeControl.exe"])
+        self.assertEqual(argv[0], [self.EXE])
         self.assertNotIn("_MEIPASS2", keywords["env"],
                          "the new process must not be told it is already unpacked")
         self.assertEqual(keywords["env"]["PATH"], "/usr/bin",
                          "the rest of the environment has to survive")
+
+    def test_a_relative_name_is_resolved_before_launching(self):
+        """
+        Popen resolves a relative path against the working directory, and a
+        frozen build chdir's to its own folder at startup - so a relative
+        name would mean different files at different moments. Checked with
+        isabs rather than against a spelling, because what "absolute" looks
+        like is exactly what differs between the two platforms this runs on.
+        """
+        with unittest.mock.patch('update.subprocess.Popen') as popen:
+            update.relaunch_frozen(os.path.join("sub", "TimeControl.exe"))
+
+        self.assertTrue(os.path.isabs(popen.call_args[0][0][0]),
+                        popen.call_args[0][0][0])
 
     def test_a_relaunch_that_cannot_start_says_so(self):
         """
@@ -596,7 +617,7 @@ class TestRelaunchingAfterTheSwap(unittest.TestCase):
         """
         with unittest.mock.patch('update.subprocess.Popen',
                                  side_effect=OSError("no such file")):
-            self.assertFalse(update.relaunch_frozen("/apps/TimeControl.exe"))
+            self.assertFalse(update.relaunch_frozen(self.EXE))
 
 
 if __name__ == "__main__":
