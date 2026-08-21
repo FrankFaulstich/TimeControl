@@ -1602,6 +1602,117 @@ class TestTimeTracker(unittest.TestCase):
         inactive_list_6w = self.tracker.list_inactive_tasks(inactive_weeks=6)
         self.assertEqual(len(inactive_list_6w), 0)
 
+    def _never_worked_on(self, name, due_date=None, status=None):
+        """A task with no time entries at all, optionally overdue."""
+        self._create_mock_project_with_task("MP_" + name, name)
+        task = self.tracker.data["projects"][-1]["tasks"][0]
+        task["time_entries"] = []
+        if due_date is not None:
+            task["due_date"] = due_date.isoformat()
+        if status is not None:
+            task["status"] = status
+        return task
+
+    def test_a_task_never_worked_on_is_listed_once_its_due_date_is_that_old(self):
+        """
+        The second way a task can look abandoned: nobody ever started it and
+        the day it was wanted has long gone.
+        """
+        today = date.today()
+        self._never_worked_on("LongOverdue", due_date=today - timedelta(weeks=6))
+
+        listed = self.tracker.list_inactive_tasks(inactive_weeks=4)
+
+        self.assertEqual({item["task_name"] for item in listed}, {"LongOverdue"})
+        self.assertIsNone(listed[0]["last_activity"],
+                          "there is no activity to report, and none should be invented")
+        self.assertEqual(listed[0]["due_date"], (today - timedelta(weeks=6)).isoformat(),
+                         "the due date is why it is here, so it has to come with it")
+
+    def test_both_conditions_are_needed_not_either(self):
+        """
+        The point of the rule. Each of these fails exactly one half of it and
+        must therefore stay out - a task with no due date says nothing about
+        when it was last wanted, and one that came due this week is late
+        rather than abandoned.
+        """
+        today = date.today()
+        self._never_worked_on("NoDueDate")
+        self._never_worked_on("DueLastWeek", due_date=today - timedelta(weeks=1))
+        self._never_worked_on("DueToday", due_date=today)
+        self._never_worked_on("DueNextMonth", due_date=today + timedelta(weeks=4))
+
+        listed = self.tracker.list_inactive_tasks(inactive_weeks=4)
+
+        self.assertEqual(listed, [], [item["task_name"] for item in listed])
+
+    def test_the_due_date_is_measured_against_the_same_threshold(self):
+        """
+        "As far back as the setting" means exactly that: a due date on the
+        threshold counts, the day after it does not - and raising the setting
+        pushes both out again.
+        """
+        today = date.today()
+        self._never_worked_on("OnTheLine", due_date=today - timedelta(weeks=4))
+        self._never_worked_on("ADayShort", due_date=today - timedelta(weeks=4) + timedelta(days=1))
+
+        listed = self.tracker.list_inactive_tasks(inactive_weeks=4)
+        self.assertEqual({item["task_name"] for item in listed}, {"OnTheLine"})
+
+        self.assertEqual(self.tracker.list_inactive_tasks(inactive_weeks=6), [],
+                         "a longer threshold has to exclude both")
+
+    def test_a_task_never_worked_on_obeys_the_same_status_rules(self):
+        """
+        Closed means archived and out, whichever route put the task in this
+        list; 'done' stays, because it may still need closing.
+        """
+        long_ago = date.today() - timedelta(weeks=8)
+        self._never_worked_on("Closed", due_date=long_ago,
+                              status=self.tracker.STATUS_CLOSED)
+        self._never_worked_on("Done", due_date=long_ago,
+                              status=self.tracker.STATUS_DONE)
+
+        listed = self.tracker.list_inactive_tasks(inactive_weeks=4)
+
+        self.assertEqual({item["task_name"] for item in listed}, {"Done"})
+
+    def test_a_task_never_worked_on_can_be_closed_from_the_list(self):
+        """
+        The list exists to be acted on, and the button needs the same handle
+        every other entry carries.
+        """
+        self._never_worked_on("Forgotten", due_date=date.today() - timedelta(weeks=9))
+
+        listed = self.tracker.list_inactive_tasks(inactive_weeks=4)
+
+        self.assertIsNotNone(listed[0]["id"])
+        self.assertTrue(self.tracker.close_task("MP_Forgotten", "Forgotten",
+                                                task_id=listed[0]["id"]))
+        self.assertEqual(self.tracker.list_inactive_tasks(inactive_weeks=4), [])
+
+    def test_a_task_that_was_worked_on_still_reports_its_activity(self):
+        """
+        The original route into the list is untouched, and now carries the due
+        date alongside - the two kinds sit in one list and are told apart by
+        whether there is a timestamp.
+        """
+        now = datetime.now()
+        due = date.today() - timedelta(weeks=2)
+        self._create_mock_project_with_task("MP_Dropped", "Dropped")
+        task = self.tracker.data["projects"][-1]["tasks"][0]
+        task["due_date"] = due.isoformat()
+        task["time_entries"].append({
+            "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
+            "end_time": (now - timedelta(weeks=5)).isoformat(),
+        })
+
+        listed = self.tracker.list_inactive_tasks(inactive_weeks=4)
+
+        self.assertEqual(len(listed), 1)
+        self.assertIsNotNone(listed[0]["last_activity"])
+        self.assertEqual(listed[0]["due_date"], due.isoformat())
+
     def test_list_inactive_main_projects(self):
         """Tests listing inactive main projects."""
         now = datetime.now()

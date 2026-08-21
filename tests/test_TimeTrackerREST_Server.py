@@ -190,6 +190,22 @@ class TestTimeTrackerREST_Server(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.mock_tracker.list_inactive_tasks.assert_called_once_with(2)
 
+    def test_list_inactive_tasks_that_were_never_worked_on(self):
+        """
+        Such a task has no last activity at all - it is listed for a due date
+        that went by long ago. A response model insisting on a timestamp
+        would turn the whole request into a 500 the moment one appears.
+        """
+        self.mock_tracker.list_inactive_tasks.return_value = [
+            {'main_project': 'Main', 'task_name': 'Never', 'id': 7,
+             'last_activity': None, 'due_date': '2020-01-01'}
+        ]
+        r = self.client.get("/tasks/inactive", params={"weeks": 2})
+        self.assertEqual(r.status_code, 200, r.text)
+        body = r.json()[0]
+        self.assertIsNone(body['last_activity'])
+        self.assertEqual(body['due_date'], '2020-01-01')
+
     def test_cleanup_overdue_today_tasks(self):
         self.mock_tracker.cleanup_overdue_today_tasks.return_value = True
         r = self.client.post("/tasks/cleanup-overdue-today")

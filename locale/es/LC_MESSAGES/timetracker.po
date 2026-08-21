@@ -1875,6 +1875,15 @@ msgstr "La dirección guardada no es aquella en la que este dispositivo ha inici
 msgid "The saved server address is not the one this device is signed in to. Sign in again to start using it."
 msgstr "La dirección del servidor guardada no es aquella en la que este dispositivo ha iniciado sesión. Vuelva a iniciar sesión para empezar a usarla."
 
+#: sl/SL_Menu.py:2326
+msgid "Covers two kinds of task: those whose last time entry is older than this, and those never worked on at all whose due date passed at least this long ago."
+msgstr "Abarca dos tipos de tarea: aquellas cuya última entrada de tiempo es más antigua que esto, y aquellas en las que nunca se trabajó y cuya fecha de vencimiento pasó hace al menos ese tiempo."
+
+#: sl/SL_Menu.py:2343
+#, python-brace-format
+msgid "Never worked on, due {date}"
+msgstr "Nunca trabajada, vencía el {date}"
+
 #~ msgid "Today View"
 #~ msgstr "Vista de hoy"
 

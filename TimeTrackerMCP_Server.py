@@ -435,9 +435,14 @@ def mark_task_done(main_project_name: str, task_name: str) -> str:
 @mcp.tool()
 def list_inactive_tasks(inactive_weeks: int) -> list:
     """
-    Lists tasks with no activity in the last `inactive_weeks` weeks. Closed
-    tasks are excluded, but tasks already marked 'done' are included since
-    they may still need to be closed.
+    Lists tasks with no activity in the last `inactive_weeks` weeks, and
+    tasks that were never worked on at all whose due date passed at least
+    that long ago - both conditions together for the second group, since a
+    task with no due date says nothing about when it was last wanted.
+
+    Closed tasks are excluded, but tasks already marked 'done' are included
+    since they may still need to be closed. 'last_activity' is null for a
+    task that was never worked on; 'due_date' says why it is listed.
     """
     tracker = get_tracker()
     return tracker.list_inactive_tasks(inactive_weeks)

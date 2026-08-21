@@ -53,7 +53,10 @@ class Task(BaseModel):
 class InactiveProject(BaseModel):
     main_project: str
     task_name: Optional[str] = None
-    last_activity: str
+    # Absent for a task that was never worked on: it is listed for a due date
+    # that has long passed, and a made-up timestamp would be worse than none.
+    last_activity: Optional[str] = None
+    due_date: Optional[str] = None
 
 
 class CurrentWork(BaseModel):
