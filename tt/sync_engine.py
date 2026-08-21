@@ -71,6 +71,9 @@ TICK_SECONDS = 2.0
 TERMINAL_ERRORS = frozenset((
     'not_signed_in', 'invalid_token', 'https_required',
     'not_installed', 'bad_response', 'tls_failed',
+    # The address in the settings is not the one the token belongs to. Only
+    # signing in again resolves that, so asking again sooner changes nothing.
+    'address_changed',
 ))
 
 
@@ -123,6 +126,11 @@ _DEFAULT_STATE = {
     'snapshot_seq': 0,      # the point the server's snapshot covers, 0 for none
     'snapshot_staged': 0,   # a document waiting to be offered, by sequence number
     'snapshot_tried': 0,    # epoch seconds of the last offer, successful or not
+    # The address the settings ask for, recorded by ensure_started. Kept here
+    # rather than read from config.json because this half of the module never
+    # opens that file - and because every process that runs a cycle has to
+    # reach the same verdict, not just the one holding the configuration.
+    'configured_url': None,
 }
 
 
@@ -363,6 +371,19 @@ def _drop_inbox_for_reset():
 
 def _run_cycle_locked(outbox):
     state = read_state()
+
+    # Before anything is sent. The token belongs to the server that issued it,
+    # and the setting can have been pointed somewhere else since - at a
+    # different machine, or at a typo. Carrying on would keep synchronising
+    # with the old address while the settings screen showed the new one, and
+    # nothing would say so; following the setting instead would send a bearer
+    # credential to whatever host it now names. Neither is acceptable, so this
+    # stops and says why. See sync_client.address_changed().
+    configured = state.get('configured_url')
+    if configured and sync_client.address_changed(configured):
+        sync_log.log('address.changed')
+        return _record_failure('address_changed')
+
     since = _since(state)
 
     sending = outbox.pending()
@@ -1050,6 +1071,26 @@ def ensure_started(config=None):
             return False
         if read_state().get('was_off'):
             write_state({'was_off': False, 'seeded': False})
+        # Recorded on every redraw, so the cycle can tell whether the address
+        # it is about to use is still the one being asked for.
+        state = read_state()
+        wanted = (sync_cfg.get('base_url') or '').strip() or None
+
+        # A disagreement can also end without the setting moving at all -
+        # by signing in to the new server, which is the intended way out of
+        # it. The credential is only read when there is such a failure on
+        # record, so the ordinary redraw costs nothing.
+        settled = (state.get('last_error') == 'address_changed'
+                   and not sync_client.address_changed(wanted or ''))
+
+        if state.get('configured_url') != wanted or settled:
+            # The slate goes with it. What the last cycle concluded was about
+            # an address that no longer applies, and for a wrong one that
+            # included a pause measured in half hours. Left standing, the
+            # interface would go on reporting a problem the user has already
+            # corrected, and refuse to try again long after they did.
+            write_state({'configured_url': wanted, 'last_error': None,
+                         'failures': 0, 'next_attempt': 0})
         try:
             _interval_minutes = int(sync_cfg.get('interval_minutes')
                                     or DEFAULT_INTERVAL_MINUTES)

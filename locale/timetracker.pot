@@ -1783,3 +1783,16 @@ msgstr ""
 #: sl/SL_Menu.py:1666
 msgid "The previous version could not be restored."
 msgstr ""
+
+#: sl/SL_Menu.py:1927
+#, python-brace-format
+msgid "Currently in use: {url}"
+msgstr ""
+
+#: sl/SL_Menu.py:2044
+msgid "The saved address is not the one this device is signed in to, so nothing is being sent to it yet. Signing in again is what switches over - a token belongs to the server that issued it and cannot be pointed elsewhere."
+msgstr ""
+
+#: sl/SL_Menu.py:1605
+msgid "The saved server address is not the one this device is signed in to. Sign in again to start using it."
+msgstr ""

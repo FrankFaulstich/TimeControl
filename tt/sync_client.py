@@ -30,6 +30,7 @@ import json
 import os
 import platform
 import secrets
+from urllib.parse import urlsplit, urlunsplit
 
 import requests
 
@@ -170,6 +171,63 @@ def _endpoint(base_url):
     if url.endswith('index.php'):
         return url
     return url + '/index.php'
+
+
+def _canonical(base_url):
+    """
+    An address reduced to a form two spellings of the same server share.
+
+    Only used for comparing, never for calling. On top of what _endpoint()
+    already settles, the scheme and the host are lowercased: those are
+    case-insensitive by definition, so treating a retyped `Example.com` as a
+    different server would be wrong. The path is left alone, because on most
+    servers it is not.
+    """
+    parts = urlsplit(_endpoint(base_url))
+    return urlunsplit((parts.scheme.lower(), parts.netloc.lower(),
+                       parts.path, parts.query, parts.fragment))
+
+
+def active_base_url():
+    """
+    The address requests actually go to, or None when not signed in.
+
+    Not necessarily the one in config.json. The token was issued by a
+    particular server and is stored beside the address it belongs to; the
+    setting can be edited afterwards, and until the next sign-in the two say
+    different things. The interface shows this one so that which is which is
+    visible rather than guessed at.
+    """
+    creds = load_credentials()
+    return creds.get('base_url') if creds else None
+
+
+def address_changed(configured):
+    """
+    Whether a configured address is not the one the stored token belongs to.
+
+    WHY THE TOKEN IS NOT SIMPLY SENT TO THE NEW ADDRESS
+    ---------------------------------------------------
+    It would make the setting appear to work, and it is the wrong thing to do.
+    A token is a bearer credential: whoever holds it can read and write this
+    account's data. It was issued by one particular server, and the address is
+    something a person types - so following it blindly means handing that
+    credential to whatever host a typo happens to name. The server would not
+    accept it, but by then it has been sent.
+
+    So the address stays fixed for the life of the token, and a change becomes
+    something the user is told about and resolves by signing in again - which
+    is the only step that can hand the new server a credential it issued
+    itself.
+
+    :param configured: The address from config.json.
+    :return: False when not signed in, or when nothing is configured; there is
+             nothing to disagree about in either case.
+    """
+    creds = load_credentials()
+    if not creds or not (configured or '').strip():
+        return False
+    return _canonical(configured) != _canonical(creds['base_url'])
 
 
 def _post(base_url, action, payload=None, token=None, params=None):

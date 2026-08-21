@@ -428,6 +428,89 @@ class TestTheCallCannotHangForEver(unittest.TestCase):
         self.assertGreater(sync_client.DEADLINE, 2 * sync_client.TIMEOUT)
 
 
+class TestWhichAddressIsActuallyInUse(unittest.TestCase):
+    """
+    The setting and the credential are two addresses, and only one of them is
+    being used. Editing the setting cannot move an existing token, so the
+    difference has to be something the interface can ask about rather than
+    something the user has to deduce from the sync failing.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._real = sync_client.config_dir
+        sync_client.config_dir = lambda: self.tmp
+
+    def tearDown(self):
+        sync_client.config_dir = self._real
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def sign_in(self, address):
+        with patch('tt.sync_client.requests.post',
+                   return_value=_Response({'ok': True, 'token': 'tok'})):
+            sync_client.login(address, 'frank', 'pw')
+
+    def test_nothing_is_in_use_before_signing_in(self):
+        self.assertIsNone(sync_client.active_base_url())
+
+    def test_the_address_in_use_is_the_one_the_token_was_issued_for(self):
+        self.sign_in('https://first.example/tc/')
+        self.assertEqual(sync_client.active_base_url(),
+                         'https://first.example/tc/index.php')
+
+    def test_editing_the_setting_does_not_move_it(self):
+        """
+        The behaviour the issue is about. It stays deliberately: what changes
+        is that it is now visible and reported.
+        """
+        self.sign_in('https://first.example/tc/')
+        self.assertEqual(sync_client.active_base_url(),
+                         'https://first.example/tc/index.php')
+        self.assertTrue(sync_client.address_changed('https://second.example/tc/'))
+
+    def test_signing_in_again_is_what_switches_over(self):
+        self.sign_in('https://first.example/tc/')
+        self.sign_in('https://second.example/tc/')
+
+        self.assertEqual(sync_client.active_base_url(),
+                         'https://second.example/tc/index.php')
+        self.assertFalse(sync_client.address_changed('https://second.example/tc/'))
+
+    def test_the_same_server_written_differently_is_not_a_change(self):
+        """
+        The setting holds what was typed, the credential holds the normalised
+        endpoint. These differ as strings on every ordinary installation, so
+        comparing them literally would report a move that has not happened.
+        """
+        self.sign_in('https://host.example/tc/')
+        for spelling in ('https://host.example/tc',
+                         'https://host.example/tc/',
+                         'https://host.example/tc/index.php',
+                         '  https://host.example/tc/  ',
+                         'https://HOST.example/tc/',
+                         'HTTPS://host.example/tc/'):
+            with self.subTest(spelling=spelling):
+                self.assertFalse(sync_client.address_changed(spelling))
+
+    def test_a_different_path_on_the_same_host_is_a_change(self):
+        """
+        Paths are case-sensitive on most servers and two directories on one
+        host are two installations, so this is not folded away.
+        """
+        self.sign_in('https://host.example/tc/')
+        self.assertTrue(sync_client.address_changed('https://host.example/other/'))
+        self.assertTrue(sync_client.address_changed('https://host.example/TC/'))
+
+    def test_there_is_nothing_to_disagree_about_when_not_signed_in(self):
+        self.assertFalse(sync_client.address_changed('https://anywhere.example/tc/'))
+
+    def test_or_when_no_address_is_configured(self):
+        self.sign_in('https://host.example/tc/')
+        self.assertFalse(sync_client.address_changed(''))
+        self.assertFalse(sync_client.address_changed('   '))
+        self.assertFalse(sync_client.address_changed(None))
+
+
 class TestTheSnapshotEndpoint(unittest.TestCase):
     """
     The one request that carries a whole document, and the only one whose

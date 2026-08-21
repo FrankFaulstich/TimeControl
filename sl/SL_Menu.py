@@ -1602,6 +1602,8 @@ def _sync_error_message(code):
         # Reachable from the background sync rather than the sign-in form.
         'not_signed_in': _("This device is not signed in to the server."),
         'invalid_token': _("This device is no longer signed in. Please sign in again."),
+        'address_changed': _("The saved server address is not the one this device is "
+                             "signed in to. Sign in again to start using it."),
         'local_io': _("The synchronisation files on this computer could not be written."),
     }
     return messages.get(code, _("Sign-in failed ({code}).").format(code=code or '?'))
@@ -1901,6 +1903,15 @@ def view_settings():
         else:
             sync_cfg = config.get('sync', {}) if isinstance(config.get('sync'), dict) else {}
 
+            # Two addresses exist and they can disagree: the one being asked
+            # for, in config.json, and the one requests actually go to, stored
+            # beside the token when it was issued. Editing the setting cannot
+            # move an existing token - see sync_client.address_changed() for
+            # why that would be the wrong thing to do - so the difference has
+            # to be visible, or the setting looks broken.
+            address_in_use = sync_client.active_base_url()
+            address_moved = sync_client.address_changed(sync_cfg.get('base_url', ''))
+
             # The address and the on/off switch are ordinary settings and
             # belong in config.json - copying that file to a second machine
             # to give it the same server is exactly the right thing to do.
@@ -1912,6 +1923,8 @@ def view_settings():
                     value=sync_cfg.get('base_url', ''),
                     placeholder="https://example.com/tc/",
                 )
+                if address_in_use:
+                    st.caption(_("Currently in use: {url}").format(url=address_in_use))
                 sync_enabled = st.checkbox(
                     _("Enable synchronisation"),
                     value=bool(sync_cfg.get('enabled', False)),
@@ -1964,7 +1977,13 @@ def view_settings():
             # the screen showing "Signed in as ..." with no way to sign in
             # again - the one thing the user needs at that moment.
             rejected = snapshot['error'] in ('invalid_token', 'not_signed_in')
-            state = ({'state': 'rejected'} if creds and rejected
+            # A saved address the token does not belong to needs the same
+            # thing a rejected token needs - a fresh sign-in - so it leads to
+            # the same form rather than to a "signed in" box that would be
+            # true of the old server and misleading about the new one.
+            moved = bool(creds) and address_moved
+            state = ({'state': 'address_changed'} if moved
+                     else {'state': 'rejected'} if creds and rejected
                      else {'state': 'ok', 'username': creds.get('username'),
                            'expires_at': creds.get('expires_at')} if creds
                      else {'state': 'not_configured'})
@@ -1977,7 +1996,16 @@ def view_settings():
             if snapshot['pending']:
                 st.caption(_("{count} changes are waiting to be sent.").format(
                     count=snapshot['pending']))
-            if snapshot['error'] and not rejected:
+            show_error = bool(snapshot['error']) and not rejected and not moved
+            if show_error and snapshot['error'] == 'address_changed':
+                # The two addresses agree again - the setting was put back, or
+                # this device signed in to the new server - and the state file
+                # only finds that out on the next cycle. Repeating it now
+                # would be telling the user to fix what they have just fixed.
+                # While they still disagree, the block below says it in
+                # context instead, next to the form that resolves it.
+                show_error = False
+            if show_error:
                 st.warning(_sync_error_message(snapshot['error']))
 
             if state['state'] == 'ok':
@@ -2012,7 +2040,12 @@ def view_settings():
                         set_feedback(_("Signed out on this device."))
                         st.rerun()
             else:
-                if state['state'] == 'rejected':
+                if state['state'] == 'address_changed':
+                    st.warning(_("The saved address is not the one this device is signed "
+                                 "in to, so nothing is being sent to it yet. Signing in "
+                                 "again is what switches over - a token belongs to the "
+                                 "server that issued it and cannot be pointed elsewhere."))
+                elif state['state'] == 'rejected':
                     # Expired, revoked elsewhere, or the account was switched
                     # off. The user's next move is the same in every case.
                     st.warning(_("This device is no longer signed in. Please sign in again."))
