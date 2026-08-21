@@ -77,7 +77,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.5"
+    VERSION = "4.6"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -1678,31 +1678,64 @@ class TimeTracker:
 
     def list_inactive_tasks(self, inactive_weeks):
         """
-        Lists sub-projects that have not had any activity (completed time entry)
-        within the specified number of weeks.
-        Currently running sessions are ignored (i.e., not listed as inactive).
-        Sub-projects with no time entries are also ignored.
-        Closed tasks are excluded, but 'done' tasks are included since they
-        may still need to be closed.
-        Tasks due today or in the future are excluded, since they are still
-        actively scheduled rather than abandoned.
+        Lists tasks that look abandoned, in either of two ways.
 
-        :param inactive_weeks: The number of weeks defining the inactivity threshold.
+        The first is a task that was worked on and then dropped: its most
+        recent completed time entry is older than the threshold.
+
+        The second is a task that was never worked on at all and whose due
+        date has since passed by at least that same threshold. Both halves
+        have to hold. A task with no time entries and no due date says
+        nothing about when it was last wanted, and one that came due
+        yesterday is late rather than abandoned - listing either would fill
+        this screen with things nobody has given up on.
+
+        A currently running session counts as activity, so such a task is
+        never listed, whatever its dates say. Closed tasks are excluded;
+        'done' tasks are kept, since they may still need closing. A task due
+        today or in the future is excluded either way, being still actively
+        scheduled rather than forgotten.
+
+        :param inactive_weeks: The number of weeks defining the threshold.
         :type inactive_weeks: int
-        :return: A list of dictionaries, each containing 'main_project', 'task_name',
-                 and the 'last_activity' timestamp (formatted).
+        :return: A list of dictionaries with 'id', 'main_project',
+                 'task_name', 'due_date' and 'last_activity'. The last is
+                 None for a task that was never worked on: the due date is
+                 what put it here, and inventing a timestamp it does not have
+                 would be worse than saying there is none.
         :rtype: list[dict]
         """
         cutoff_date = datetime.now() - timedelta(weeks=inactive_weeks)
+        # The same threshold expressed as a day, for comparing against a due
+        # date - which is a date, not a moment.
+        cutoff_day_str = cutoff_date.date().isoformat()
         today_str = date.today().isoformat()
         inactive_projects = []
+
+        def listed(project, task, last_activity):
+            """One entry, so both routes into this list report the same shape."""
+            return {
+                "id": task.get("id"),
+                "main_project": project["main_project_name"],
+                "task_name": task["task_name"],
+                "due_date": task.get("due_date"),
+                "last_activity": last_activity,
+            }
 
         for project in self.data["projects"]:
             if project["main_project_name"] == self.HIDDEN_PROJECT:
                 continue
             for task in project["tasks"]:
+                due_date = task.get("due_date")
+                is_closed = task.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED
+
                 if not task.get("time_entries"):
-                    # Ignore sub-projects with no entries
+                    # Never worked on. Only the due date can distinguish a
+                    # task that has been left to rot from one that was made
+                    # this morning, so without one there is nothing to go on
+                    # and it stays out.
+                    if not is_closed and due_date and due_date <= cutoff_day_str:
+                        inactive_projects.append(listed(project, task, None))
                     continue
 
                 # Check if the task is currently running (active)
@@ -1712,16 +1745,15 @@ class TimeTracker:
 
                 # Exclude closed tasks, but keep 'done' tasks (they may still need closing).
                 # This check is now after the 'running' check to correctly ignore running projects regardless of status.
-                if task.get("status", self.STATUS_OPEN) == self.STATUS_CLOSED:
+                if is_closed:
                     continue
 
                 # Exclude tasks due today or in the future - they are still scheduled.
-                due_date = task.get("due_date")
                 if due_date and due_date >= today_str:
                     continue
 
                 latest_timestamp = None
-                
+
                 # Find the latest timestamp from all completed entries
                 for entry in task["time_entries"]:
                     time_to_check = None
@@ -1730,19 +1762,16 @@ class TimeTracker:
                     elif "start_time" in entry:
                         # Fallback: use start_time if no end_time exists (for edge cases, though not ideal)
                         time_to_check = datetime.fromisoformat(entry["start_time"])
-                    
+
                     if time_to_check:
                         if latest_timestamp is None or time_to_check > latest_timestamp:
                             latest_timestamp = time_to_check
 
                 # Check for inactivity
                 if latest_timestamp and latest_timestamp < cutoff_date:
-                    inactive_projects.append({
-                        "id": task.get("id"),
-                        "main_project": project["main_project_name"],
-                        "task_name": task["task_name"],
-                        "last_activity": latest_timestamp.strftime("%Y-%m-%d %H:%M:%S")
-                    })
+                    inactive_projects.append(listed(
+                        project, task,
+                        latest_timestamp.strftime("%Y-%m-%d %H:%M:%S")))
 
         return inactive_projects
 

@@ -41,7 +41,7 @@ A simple, object-oriented Python application for tracking time spent on projects
   - A breakdown of time spent per weekday (e.g., Monday: 2.5 hours, 30%).
   - For main projects, a summary of time distribution across its tasks.
   - For tasks, a day-by-day list of all time entries.
-- **Inactivity Tracking:** Identify main projects and tasks that have been inactive for a configurable duration (tasks due today or in the future are never counted as inactive, since they're still actively scheduled).
+- **Inactivity Tracking:** Identify main projects and tasks that have been inactive for a configurable duration (tasks due today or in the future are never counted as inactive, since they're still actively scheduled). The task list also catches the opposite case: a task nobody ever started, whose due date went by at least that same duration ago. Both have to be true of it — a task with no due date says nothing about when it was last wanted, and one that came due this week is late rather than abandoned.
 
 **Local Data Storage:** All project data and time entries are saved in a `data.json` file in the application's directory.
 

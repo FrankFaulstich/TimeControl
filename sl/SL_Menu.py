@@ -2321,17 +2321,27 @@ def view_list_inactive_tasks():
     """
     render_header(_("List Inactive Tasks"))
     
-    weeks = st.number_input(_("Weeks of inactivity"), min_value=1, value=4, step=1)
-    
+    weeks = st.number_input(
+        _("Weeks of inactivity"), min_value=1, value=4, step=1,
+        help=_("Covers two kinds of task: those whose last time entry is older "
+               "than this, and those never worked on at all whose due date "
+               "passed at least this long ago."))
+
     inactive_list = st.session_state.tracker.list_inactive_tasks(weeks)
-    
+
     if inactive_list:
         st.markdown(_("Inactive Tasks (> {weeks} weeks):").format(weeks=weeks))
         for i, item in enumerate(inactive_list):
             col_info, col_btn = st.columns([10, 1])
             with col_info:
                 st.markdown(f"**{item['main_project']}** / {item['task_name']}")
-                st.caption(f"{_('Last Activity')}: {item['last_activity']}")
+                if item.get('last_activity'):
+                    st.caption(f"{_('Last Activity')}: {item['last_activity']}")
+                else:
+                    # Never worked on. The due date is the whole reason this
+                    # one is here, so it is what belongs in its place.
+                    st.caption(_("Never worked on, due {date}").format(
+                        date=item.get('due_date')))
             with col_btn:
                 if st.button("■", key=f"close_inactive_{i}", help=_("Close Task")):
                     st.session_state.tracker.close_task(item['main_project'], item['task_name'], task_id=item.get('id'))

@@ -126,7 +126,10 @@ class TaskModel(ComplexModel):
 class InactiveProjectModel(ComplexModel):
     main_project = Unicode
     task_name = Unicode(min_occurs=0, nillable=True)
-    last_activity = Unicode
+    # Both optional: a task listed because it was never worked on has no last
+    # activity, and one listed for its idle time need not have a due date.
+    last_activity = Unicode(min_occurs=0, nillable=True)
+    due_date = Unicode(min_occurs=0, nillable=True)
 
 class CurrentWorkModel(ComplexModel):
     main_project_name = Unicode

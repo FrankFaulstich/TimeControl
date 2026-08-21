@@ -1851,6 +1851,15 @@ msgstr "Uložená adresa není ta, ke které je toto zařízení přihlášeno, 
 msgid "The saved server address is not the one this device is signed in to. Sign in again to start using it."
 msgstr "Uložená adresa serveru není ta, ke které je toto zařízení přihlášeno. Přihlaste se znovu, abyste ji začali používat."
 
+#: sl/SL_Menu.py:2326
+msgid "Covers two kinds of task: those whose last time entry is older than this, and those never worked on at all whose due date passed at least this long ago."
+msgstr "Zahrnuje dva druhy úkolů: ty, jejichž poslední časový záznam je starší než tato hodnota, a ty, na kterých se nikdy nepracovalo a jejichž datum splatnosti uplynulo alespoň před touto dobou."
+
+#: sl/SL_Menu.py:2343
+#, python-brace-format
+msgid "Never worked on, due {date}"
+msgstr "Nikdy nezpracováno, termín {date}"
+
 #~ msgid "Today View"
 #~ msgstr "Dnes Zobrazit"
 

@@ -1880,6 +1880,15 @@ msgstr "Die gespeicherte Adresse ist nicht die, bei der dieses Gerät angemeldet
 msgid "The saved server address is not the one this device is signed in to. Sign in again to start using it."
 msgstr "Die gespeicherte Serveradresse ist nicht die, bei der dieses Gerät angemeldet ist. Melden Sie sich erneut an, um sie zu verwenden."
 
+#: sl/SL_Menu.py:2326
+msgid "Covers two kinds of task: those whose last time entry is older than this, and those never worked on at all whose due date passed at least this long ago."
+msgstr "Erfasst zwei Arten von Aufgaben: solche, deren letzter Zeiteintrag älter ist als dieser Wert, und solche, an denen nie gearbeitet wurde und deren Fälligkeitsdatum mindestens so lange zurückliegt."
+
+#: sl/SL_Menu.py:2343
+#, python-brace-format
+msgid "Never worked on, due {date}"
+msgstr "Nie bearbeitet, fällig am {date}"
+
 #~ msgid "Today View"
 #~ msgstr "Heute-Ansicht"
 
