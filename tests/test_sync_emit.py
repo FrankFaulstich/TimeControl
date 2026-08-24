@@ -251,22 +251,6 @@ class TestOperationsAreReported(unittest.TestCase):
 
     # -- deliberate silences ---------------------------------------------
 
-    def test_the_daily_sweeps_report_nothing(self):
-        """
-        Both machines run these from the same rule against the same due
-        dates, so each reaches the same result unaided. Sending them would be
-        traffic spent on something the other side already knows.
-        """
-        self.tracker.add_main_project("P")
-        self.tracker.add_task("P", "Overdue", due_date="2020-01-01", today=True)
-        self.tracker.add_task("P", "DueToday", due_date=__import__('datetime').date.today().isoformat())
-        self.outbox.reset()
-
-        self.tracker.cleanup_overdue_today_tasks()
-        self.tracker.set_today_flag_for_due_tasks()
-
-        self.assertEqual(self.outbox.ops, [])
-
     def test_migration_reports_nothing(self):
         """
         Adding uids and defaults changes the shape of the document, not its
@@ -319,6 +303,115 @@ class TestSyncOffByDefault(unittest.TestCase):
         tracker.add_main_project("P")
         tracker.add_task("P", "T")
         self.assertIsNotNone(tracker._get_task("P", "T"))
+
+
+OTHER_FILE_PATH = 'test_emit_other_data.json'
+
+
+class TestTheDailyTodaySweeps(unittest.TestCase):
+    """
+    These two sweeps used to change the 'today' flag without telling the
+    server, on the reasoning that both machines run the same rule against the
+    same synced due dates and so reach the same answer unaided.
+
+    Comparing two real installations disproved it. The flag is not a function
+    of the due date alone but of the due date *and the moment the sweep ran*,
+    and the machines do not sweep at the same moment. Eleven tasks had drifted
+    apart, and because neither machine ever sent its conclusion, they would
+    have stayed apart for good.
+    """
+
+    def setUp(self):
+        for path in (TEST_FILE_PATH, OTHER_FILE_PATH):
+            if os.path.exists(path):
+                os.remove(path)
+        self.outbox = RecordingOutbox()
+        self.tracker = TimeTracker(file_path=TEST_FILE_PATH, op_outbox=self.outbox)
+
+    def tearDown(self):
+        for path in (TEST_FILE_PATH, OTHER_FILE_PATH):
+            if os.path.exists(path):
+                os.remove(path)
+
+    def today_str(self):
+        from datetime import date
+        return date.today().isoformat()
+
+    def test_clearing_an_overdue_flag_is_reported(self):
+        self.tracker.add_main_project("P")
+        self.tracker.add_task("P", "Overdue", due_date="2020-01-01", today=True)
+        self.outbox.reset()
+
+        self.tracker.cleanup_overdue_today_tasks()
+
+        self.assertEqual([o['f'] for o in self.outbox.of('task.set')], [{'today': False}])
+
+    def test_setting_a_due_flag_is_reported(self):
+        self.tracker.add_main_project("P")
+        self.tracker.add_task("P", "DueToday", due_date=self.today_str())
+        self.outbox.reset()
+
+        self.tracker.set_today_flag_for_due_tasks()
+
+        self.assertEqual([o['f'] for o in self.outbox.of('task.set')], [{'today': True}])
+
+    def test_a_sweep_with_nothing_to_do_stays_silent(self):
+        """
+        Which is also what stops this bouncing between the machines: a sweep
+        only speaks when it actually changes a flag, so one that has just been
+        told the answer says nothing back.
+        """
+        self.tracker.add_main_project("P")
+        self.tracker.add_task("P", "DueToday", due_date=self.today_str())
+        self.tracker.set_today_flag_for_due_tasks()
+        self.outbox.reset()
+
+        self.tracker.set_today_flag_for_due_tasks()
+        self.tracker.cleanup_overdue_today_tasks()
+
+        self.assertEqual(self.outbox.ops, [])
+
+    def test_the_other_machine_stops_disagreeing(self):
+        """
+        The drift itself, reproduced. One machine sweeps while the task is
+        still open and marks it; the task is then completed, which the other
+        machine learns about. Its own sweep will not mark a task that is no
+        longer open, so without the operation the two disagree - permanently,
+        since neither would ever mention it again.
+        """
+        import shutil
+        from tt.sync_apply import apply_ops
+
+        self.tracker.add_main_project("P")
+        self.tracker.add_task("P", "Recurring", due_date=self.today_str())
+        shutil.copyfile(TEST_FILE_PATH, OTHER_FILE_PATH)
+
+        other_outbox = RecordingOutbox()
+        other = TimeTracker(file_path=OTHER_FILE_PATH, op_outbox=other_outbox)
+        # What the second machine already knows: the task has been completed.
+        other.data['projects'][0]['tasks'][0]['status'] = TimeTracker.STATUS_DONE
+
+        # First machine's morning sweep, while it was still open there.
+        self.outbox.reset()
+        self.tracker.set_today_flag_for_due_tasks()
+        emitted = self.outbox.of('task.set')
+        self.assertEqual(len(emitted), 1)
+
+        # Left to itself, the second machine would never reach that answer.
+        other_outbox.reset()
+        other.set_today_flag_for_due_tasks()
+        self.assertFalse(other.data['projects'][0]['tasks'][0]['today'],
+                         "the sweep alone would have agreed, and the drift is not reproduced")
+
+        apply_ops(other.data, [dict(emitted[0], s=1)])
+
+        self.assertTrue(other.data['projects'][0]['tasks'][0]['today'],
+                        "the operation did not carry the flag across")
+        other_outbox.reset()
+        other.set_today_flag_for_due_tasks()
+        other.cleanup_overdue_today_tasks()
+        self.assertEqual(other_outbox.ops, [],
+                         "the second machine answered back, which would bounce")
 
 
 if __name__ == '__main__':

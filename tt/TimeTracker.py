@@ -77,7 +77,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.6"
+    VERSION = "4.7"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -893,14 +893,27 @@ class TimeTracker:
     def cleanup_overdue_today_tasks(self):
         """
         Removes the 'today' flag (⭐) from tasks that have a due date in the past.
-        
-        Deliberately sends nothing to the sync server. Both machines run this
-        same sweep, from the same rule, against the same due dates, so each
-        reaches the identical result on its own. Sending it would spend
-        traffic saying something the other side already knows, and two
-        machines re-deriving and re-sending it could bounce it back and
-        forth. What the sweep reads from - the due date - is synced; what it
-        concludes is not.
+
+        WHY THIS SENDS WHAT IT DID
+        --------------------------
+        It used to send nothing, on the reasoning that both machines run the
+        same sweep against the same synced due dates and so reach the same
+        result by themselves. That is not true, and comparing two real
+        installations is what showed it: the flag is not a function of the
+        due date alone but of the due date *and the moment the sweep ran*.
+
+        A recurring task illustrates it. One machine sweeps in the morning
+        while the task is open and due today, and marks it. The task is then
+        completed, which rolls its due date forward, and that much does sync.
+        The other machine, sweeping afterwards, sees a task that is no longer
+        due today and leaves the flag alone - so the two disagree, and since
+        neither ever sends its conclusion, they disagree for good. Eleven
+        tasks had drifted apart this way.
+
+        Sending it costs a handful of operations a day and cannot bounce: both
+        sweeps only act on a task whose flag actually differs from what the
+        rule wants, so a machine that has just been told the answer changes
+        nothing and says nothing.
 
         :return: True if any task was updated and saved.
         :rtype: bool
@@ -911,6 +924,7 @@ class TimeTracker:
             for task in project.get("tasks", []):
                 if task.get('today') and task.get('due_date') and task.get('due_date') < today_str:
                     task['today'] = False
+                    self._emit('task.set', uid=task.get("uid"), f={'today': False})
                     changed = True
         if changed:
             self._save_data()
@@ -920,10 +934,12 @@ class TimeTracker:
         """
         Sets the 'today' flag (⭐) for tasks that have today's date as their due date
         and are not yet marked as 'today'.
-        
-        Like cleanup_overdue_today_tasks above, this sends nothing to the
-        sync server: it is derived from the due date, which is synced, so the
-        other machine reaches the same conclusion by itself.
+
+        Sends what it changed, for the reason set out in
+        cleanup_overdue_today_tasks above: the two machines do not reach the
+        same conclusion on their own, because this sweep reads a task's status
+        as well as its due date and each machine runs it at a different
+        moment.
 
         :return: True if any task was updated and saved.
         :rtype: bool
@@ -937,6 +953,7 @@ class TimeTracker:
                     # If due date is today and 'today' flag is not set
                     if task.get('due_date') == today_str and not task.get('today'):
                         task['today'] = True
+                        self._emit('task.set', uid=task.get("uid"), f={'today': True})
                         changed = True
         if changed:
             self._save_data()
