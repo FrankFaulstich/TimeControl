@@ -34,6 +34,52 @@ const TC_HASH_BUDGET_PER_MINUTE = 30;
 function tc_users_file($store)   { return $store . '/users.dat.php'; }
 function tc_users_lock($store)   { return $store . '/users.lock'; }
 function tc_tokens_dir($store)   { return $store . '/tokens'; }
+
+/**
+ * The operator passphrase as it was meant, out of a file an editor may have
+ * decorated without showing anything.
+ *
+ * setup.enable is written by hand, usually in whatever editor is nearest, and
+ * two of them leave bytes in it that nobody can see. A comparison against the
+ * raw contents then refuses the right passphrase for ever and calls it
+ * "Wrong passphrase.", which sends the operator looking for a typo that is
+ * not there.
+ *
+ * Surrounding whitespace was already dealt with. A byte order mark was not:
+ * it is not whitespace, so trim() leaves it, and it became the first
+ * character of the passphrase. It also added three to the length, so a
+ * passphrase too short to be allowed could slip past the minimum.
+ *
+ * A UTF-16 file is not repaired, only named. Every character in it would be
+ * padded with a NUL byte, so nothing anyone types could ever match, and
+ * quietly transcoding a credential file is a worse habit than saying what is
+ * wrong with it.
+ *
+ * @param string $raw The file contents.
+ * @return array{passphrase: string, note: string|null, error: string|null}
+ *         'note' is worth telling the operator but does not stop anything;
+ *         'error' means the file cannot be used as it stands.
+ */
+function tc_read_passphrase($raw)
+{
+    foreach (["\xFF\xFE" => 'UTF-16 (little-endian)',
+              "\xFE\xFF" => 'UTF-16 (big-endian)'] as $bom => $encoding) {
+        if (strncmp($raw, $bom, 2) === 0) {
+            return ['passphrase' => '', 'note' => null,
+                    'error' => 'setup.enable is saved as ' . $encoding . '. Save it as '
+                             . 'plain text - UTF-8 without a byte order mark - and try '
+                             . 'again.'];
+        }
+    }
+
+    if (strncmp($raw, "\xEF\xBB\xBF", 3) === 0) {
+        return ['passphrase' => trim(substr($raw, 3)), 'error' => null,
+                'note' => 'setup.enable begins with a byte order mark, which your editor '
+                        . 'added and does not show. It has been ignored here, but it '
+                        . 'will come back the next time the file is saved that way.'];
+    }
+    return ['passphrase' => trim($raw), 'note' => null, 'error' => null];
+}
 function tc_user_dir($store, $uid) { return $store . '/users/' . $uid; }
 
 /**

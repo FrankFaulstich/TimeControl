@@ -1,8 +1,14 @@
 <?php
 /**
- * Tests the checks the installer refuses to install without.
+ * Tests what the installer checks before it will do anything: that the
+ * operator passphrase is read as it was meant, and that the store cannot be
+ * fetched over the web.
  *
  *     php php-server/test-setup.php
+ *
+ * The passphrase half is small and the failure it prevents was not: a byte
+ * order mark that no editor displays became the first character of the
+ * passphrase, so the right one was refused for ever and called wrong.
  *
  * The store being unreadable over the web is the property the whole storage
  * design rests on, and it used to be taken on trust for the location outside
@@ -23,6 +29,7 @@
  */
 
 require_once __DIR__ . '/tc/lib/probe.php';
+require_once __DIR__ . '/tc/lib/auth.php';
 
 $GLOBALS['tc_tests'] = 0;
 $GLOBALS['tc_failed'] = 0;
@@ -52,7 +59,77 @@ function tc_rmtree($path)
     @rmdir($path);
 }
 
-print("Which address the store would be served at\n");
+print("Reading the operator passphrase out of setup.enable\n");
+
+$plain = 'a-passphrase-long-enough';
+
+$read = tc_read_passphrase($plain);
+tc_check('a plain file is read as written',
+         $read['passphrase'] === $plain && $read['note'] === null && $read['error'] === null,
+         var_export($read, true));
+
+$read = tc_read_passphrase($plain . "\r\n");
+tc_check('a trailing line ending is not part of it', $read['passphrase'] === $plain,
+         var_export($read['passphrase'], true));
+
+// The reported failure. Notepad and its like write these three bytes and show
+// nothing for them; trim() leaves them, because they are not whitespace, so
+// they became the first character of the passphrase and every attempt was
+// refused as wrong.
+$read = tc_read_passphrase("\xEF\xBB\xBF" . $plain . "\n");
+tc_check('a UTF-8 byte order mark is not part of it either',
+         $read['passphrase'] === $plain, var_export($read['passphrase'], true));
+tc_check('and it is not usable as a passphrase by accident',
+         hash_equals($read['passphrase'], $plain),
+         'the comparison the installer actually makes still fails');
+tc_check('the operator is told it was there', $read['note'] !== null,
+         'silently working around it leaves the editor doing it again');
+tc_check('but it does not stop the install', $read['error'] === null);
+
+// The mark also inflated the length, so a passphrase too short to be allowed
+// could clear the twelve-character minimum on three invisible bytes.
+$short = 'nine-char';
+tc_check('and it no longer pads out the minimum length',
+         strlen(tc_read_passphrase("\xEF\xBB\xBF" . $short)['passphrase']) === strlen($short),
+         (string)strlen(tc_read_passphrase("\xEF\xBB\xBF" . $short)['passphrase']));
+
+// A UTF-16 file is a different problem: every character carries a NUL byte,
+// so nothing anyone could type would ever match. Named rather than repaired -
+// quietly transcoding a credential file is a worse habit.
+foreach (["\xFF\xFE" => 'little-endian', "\xFE\xFF" => 'big-endian'] as $bom => $which) {
+    $read = tc_read_passphrase($bom . "a\x00-\x00p\x00a\x00s\x00s\x00");
+    // Rendered as hex: the raw bytes are exactly the kind that turn a test
+    // report into something a terminal cannot print.
+    tc_check('a UTF-16 (' . $which . ') file is refused with a reason',
+             $read['error'] !== null && $read['passphrase'] === '',
+             'passphrase=' . bin2hex($read['passphrase']));
+    tc_check('and the reason says what to do about it',
+             $read['error'] !== null && stripos($read['error'], 'UTF-8') !== false,
+             (string)$read['error']);
+}
+
+print("\nAnd that setup.php is the thing using it\n");
+
+// tc_read_passphrase can only be exercised on its own: setup.php demands an
+// operator passphrase and HTTPS before it will do anything, and the built-in
+// server has no TLS. So the wiring is read rather than run - a helper nothing
+// calls would leave every test above passing and the bug exactly where it was.
+$setup = (string)file_get_contents(__DIR__ . '/tc/setup.php');
+tc_check('the passphrase is read through it',
+         preg_match('/tc_read_passphrase\(\$enable\)/', $setup) === 1);
+tc_check('and not taken from the raw file any more',
+         preg_match('/\$expected\s*=\s*\$enableFile\[/', $setup) === 1
+         && preg_match('/\$expected\s*=\s*trim\(\$enable\)/', $setup) === 0,
+         'something still compares against the bytes as they were on disk');
+tc_check('what it found is passed on to the operator',
+         strpos($setup, "\$enableFile['note']") !== false);
+tc_check('and a file it refuses stops the page',
+         strpos($setup, "\$enableFile['error']") !== false);
+tc_check('the submitted passphrase is trimmed as well',
+         preg_match('/\$given\s*=\s*trim\(/', $setup) === 1,
+         'a pasted newline would fail just as invisibly');
+
+print("\nWhich address the store would be served at\n");
 
 // The layout that used to be trusted, and the one that broke it. tc/ is a
 // directory deep inside the web space, so two levels above it is the document
