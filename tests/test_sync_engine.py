@@ -5,6 +5,7 @@ import sys
 import tempfile
 import time
 import unittest
+import unittest.mock
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -1937,6 +1938,131 @@ class TestTheAddressTheSettingsAskFor(EngineTestCase):
     def test_nothing_configured_yet_is_not_a_change_either(self):
         sync_engine.write_state({'configured_url': None})
         self.assertTrue(sync_engine.run_cycle(self.outbox)['ok'])
+
+
+class TestOneSequenceForEveryEntryPoint(unittest.TestCase):
+    """
+    Four processes have to do the same things in the same order about
+    synchronisation - the interface, and the MCP, REST and SOAP servers. Only
+    the interface used to, which is why a machine driven through the servers
+    queued its changes correctly and then sat on them.
+
+    Deliberately not a subclass of EngineTestCase: this needs a real tracker
+    with a document, and its own isolation.
+    """
+
+    DATA = 'test_engine_sequence_data.json'
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._real_config_dir = sync_client.config_dir
+        self._real_creds = sync_client.load_credentials
+        sync_client.config_dir = lambda: self.tmp
+        sync_client.load_credentials = lambda: {'token': 't', 'base_url': 'https://x/index.php'}
+        if os.path.exists(self.DATA):
+            os.remove(self.DATA)
+        self.outbox = Outbox()
+        self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
+        self.config = {'sync': {'enabled': True, 'base_url': 'https://x/',
+                                'interval_minutes': 5}}
+
+        # No real worker anywhere in this class. Whether ensure_started puts a
+        # thread up is its own business and is tested where it lives; here a
+        # started worker outlives the test, because stop() deliberately does
+        # not wait for one - and it goes on calling config_dir() as it runs,
+        # which the next test class has by then pointed somewhere else. That
+        # is what turned three tests red on a slower machine while passing
+        # here: not the behaviour, the timing.
+        self._start_patch = unittest.mock.patch.object(sync_engine, 'ensure_started')
+        self.ensure_started = self._start_patch.start()
+        self.addCleanup(self._start_patch.stop)
+
+    def tearDown(self):
+        sync_engine.stop()
+        sync_client.config_dir = self._real_config_dir
+        sync_client.load_credentials = self._real_creds
+        if os.path.exists(self.DATA):
+            os.remove(self.DATA)
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_what_arrived_is_applied_and_reported(self):
+        sync_engine._append_inbox({'base_seq': 4, 'ops': [
+            {'s': 4, 'op': 'project.create', 'uid': P1, 'f': {'name': 'Remote'}}]})
+
+        outcome = sync_engine.bring_up_to_date(self.tracker, self.config)
+
+        self.assertIsNone(outcome['save_error'])
+        self.assertEqual(outcome['applied']['applied'], 1)
+        self.assertIsNotNone(self.tracker._get_project('Remote'))
+
+    def test_the_worker_is_started(self):
+        """
+        The reported failure in one line: this call is what gets queued
+        changes off the machine, and only the interface used to make it.
+
+        Asserted as the call rather than by counting threads. What the worker
+        does once it exists belongs to ensure_started, and a thread count is
+        a race here - the previous test's worker may not have finished
+        stopping.
+        """
+        sync_engine.bring_up_to_date(self.tracker, self.config)
+
+        self.ensure_started.assert_called_once_with(self.config)
+
+    def test_synchronisation_switched_off_is_left_alone(self):
+        self.tracker.op_outbox = None
+
+        switched_off = {'sync': {'enabled': False}}
+        outcome = sync_engine.bring_up_to_date(self.tracker, switched_off)
+
+        self.assertEqual(outcome, {'applied': None, 'save_error': None})
+        # Still called, and that matters: this is the call that stops a worker
+        # left running from before the setting was turned off.
+        self.ensure_started.assert_called_once_with(switched_off)
+
+    def test_a_document_that_cannot_be_saved_is_reported_not_raised(self):
+        """
+        The caller is a request being answered or a view being drawn. It must
+        not fail because the disk did - but it must not report the incoming
+        changes as saved either, because they were not.
+        """
+        sync_engine._append_inbox({'base_seq': 4, 'ops': [
+            {'s': 4, 'op': 'project.create', 'uid': P1, 'f': {'name': 'Remote'}}]})
+
+        with unittest.mock.patch.object(TimeTracker, '_save_data',
+                                        side_effect=OSError('read-only file system')):
+            outcome = sync_engine.bring_up_to_date(self.tracker, self.config)
+
+        self.assertIn('read-only', outcome['save_error'])
+        self.assertIsNone(outcome['applied'])
+        self.assertTrue(sync_engine.read_inbox(), "nothing may be consumed when the save failed")
+
+    def test_nothing_about_it_can_break_the_caller(self):
+        """
+        Synchronisation is an optional extra. Whatever goes wrong inside it,
+        the view still draws and the request is still answered.
+        """
+        with unittest.mock.patch.object(sync_engine, 'align_cursor',
+                                        side_effect=RuntimeError('something unforeseen')):
+            outcome = sync_engine.bring_up_to_date(self.tracker, self.config)
+
+        self.assertEqual(outcome, {'applied': None, 'save_error': None})
+
+    def test_it_prints_nothing(self):
+        """
+        One caller is an MCP server speaking JSON-RPC over stdout, where a
+        stray line of output corrupts the protocol itself.
+        """
+        import io
+        import contextlib
+
+        sync_engine._append_inbox({'base_seq': 4, 'ops': [
+            {'s': 4, 'op': 'project.create', 'uid': P1, 'f': {'name': 'Remote'}}]})
+        captured = io.StringIO()
+        with contextlib.redirect_stdout(captured):
+            sync_engine.bring_up_to_date(self.tracker, self.config)
+
+        self.assertEqual(captured.getvalue(), '')
 
 
 if __name__ == '__main__':

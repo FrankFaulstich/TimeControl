@@ -971,6 +971,68 @@ def offer_snapshot(tracker):
     return base
 
 
+def bring_up_to_date(tracker, config):
+    """
+    Everything one entry point has to do about synchronisation, in order.
+
+    Four processes reach this - the interface, and the MCP, REST and SOAP
+    servers. They differ in what they make of the outcome and in nothing
+    else, so the sequence lives here rather than in four copies that would
+    drift apart. And the order is not arbitrary: the cursor is realigned
+    before anything is applied, the document is offered before a cycle can
+    run without it, and a snapshot is offered only by a machine that managed
+    to save what it was just given.
+
+    Call it where the caller has this moment loaded the document from disk
+    and owns it - the top of a redraw, or the start of a request. That is the
+    whole reason the applying half exists separately from the worker: a
+    background thread writing data.json would be overwritten by whatever the
+    holder of the in-memory document did next.
+
+    Never raises. Synchronisation is an optional extra, and nothing about it
+    may stop a view from drawing or a request from being answered.
+
+    Deliberately prints nothing. One of the callers is an MCP server speaking
+    JSON-RPC over stdout, where a stray line of output corrupts the protocol
+    itself - so what went wrong is returned and the caller decides where to
+    put it.
+
+    :param tracker: The TimeTracker whose document this is. Modified.
+    :param config: The parsed config.json. Required rather than optional:
+                   ensure_started() takes no config to mean "leave the worker
+                   as it is", and would then start one for an installation
+                   that has synchronisation switched off.
+    :return: {'applied': the apply_pending summary or None,
+              'save_error': why incoming changes could not be saved, or None}
+    """
+    outcome = {'applied': None, 'save_error': None}
+    try:
+        sync_log.configure(config)
+        # Outside the check below on purpose: this call is what stops the
+        # worker as well as what starts it.
+        ensure_started(config)
+        if tracker.op_outbox is None:
+            return outcome
+
+        # Before anything is applied: if data.json has been restored from a
+        # backup, the cursor has to come back with it.
+        align_cursor(tracker)
+        offer_document(tracker)
+        try:
+            outcome['applied'] = apply_pending(tracker)
+        except OSError as exc:
+            # The document could not be written - a full disk, or a data file
+            # on a share that has gone read-only. Nothing was consumed, so
+            # this is retried; but silence would let the caller report the
+            # incoming changes as saved when they were not.
+            outcome['save_error'] = str(exc)
+            return outcome
+        offer_snapshot(tracker)
+    except Exception:
+        pass
+    return outcome
+
+
 # ---------------------------------------------------------------------------
 # The worker.
 # ---------------------------------------------------------------------------

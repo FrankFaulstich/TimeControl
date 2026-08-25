@@ -282,7 +282,7 @@ screen shows the recent entries with buttons to save or clear them.
 
 ### Limitations worth knowing
 
-Only the GUI drives synchronisation. Changes made through the MCP, REST or SOAP interfaces are recorded and queued, but they leave the machine when the GUI is running.
+All four entry points drive synchronisation now — the GUI, and the MCP, REST and SOAP servers. Each brings the document up to date and starts the background worker when it loads the document for a request, so a machine driven only through Claude Desktop no longer waits for somebody to open the GUI before its changes leave.
 
 Once the log has run far enough past its last snapshot, whichever machine is fully caught up offers the server its document as a new one, and the server sets aside the operations that snapshot now speaks for. A machine joining later takes the snapshot and then only what came after it, instead of replaying the whole history. This happens on its own; there is nothing to switch on.
 

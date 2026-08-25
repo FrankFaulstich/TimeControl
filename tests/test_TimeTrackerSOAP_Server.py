@@ -2,11 +2,41 @@ import io
 import unittest
 from unittest.mock import MagicMock, patch
 import sys
+import tempfile
+import shutil
 import os
 from datetime import date
 
 # Add parent directory to path to import modules from root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# The servers run a synchronisation step on every request (see _synchronise
+# in the module under test). That reaches tt/sync_client's config directory,
+# which is per user rather than per checkout: the installed application uses
+# the same one, so a test run that reaches it writes into somebody's live
+# cursor and credential. It is pointed somewhere disposable instead.
+#
+# In setUpModule rather than at import, or the override would still be in
+# place while other test modules run - including the ones whose subject is
+# how that directory is chosen.
+_TC_CONFIG_DIR = None
+_TC_CONFIG_DIR_WAS = None
+
+
+def setUpModule():
+    global _TC_CONFIG_DIR, _TC_CONFIG_DIR_WAS
+    _TC_CONFIG_DIR = tempfile.mkdtemp(prefix='tc-test-config-')
+    _TC_CONFIG_DIR_WAS = os.environ.get('TC_CONFIG_DIR')
+    os.environ['TC_CONFIG_DIR'] = _TC_CONFIG_DIR
+
+
+def tearDownModule():
+    if _TC_CONFIG_DIR_WAS is None:
+        os.environ.pop('TC_CONFIG_DIR', None)
+    else:
+        os.environ['TC_CONFIG_DIR'] = _TC_CONFIG_DIR_WAS
+    shutil.rmtree(_TC_CONFIG_DIR, ignore_errors=True)
+
 
 class TestTimeTrackerSOAP_Server(unittest.TestCase):
     
@@ -301,6 +331,26 @@ class TestTimeTrackerSOAP_ServerEndToEnd(unittest.TestCase):
         self.assertNotIn(b'Fault', body)
         self.mock_tracker.add_main_project.assert_called_once_with("Acme")
 
+
+
+    def test_a_call_gives_synchronisation_its_turn(self):
+        """
+        The reported failure: the worker was only ever started by the GUI, so
+        a machine driven through this server recorded its changes correctly
+        and then sat on them until somebody opened the interface.
+        """
+        if not getattr(self.soap_server, 'SYNC_AVAILABLE', False):
+            self.skipTest("the sync client is not importable here")
+        ctx = MagicMock()
+        with patch.object(self.soap_server.sync_engine, 'bring_up_to_date',
+                          return_value={'applied': None, 'save_error': None}) as brought, \
+             patch.object(self.soap_server.sync_engine, 'nudge') as nudged:
+            self.soap_server._init_tracker_context(ctx)
+
+        brought.assert_called_once()
+        self.assertIs(brought.call_args[0][0], ctx.udc,
+                      "synchronised something other than the tracker for this call")
+        nudged.assert_called_once()
 
 if __name__ == '__main__':
     unittest.main()

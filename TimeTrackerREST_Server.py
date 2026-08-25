@@ -134,6 +134,41 @@ class StartWorkRequest(BaseModel):
     task_id: Optional[int] = None
 
 
+# Synchronisation, from a headless entry point.
+#
+# Guarded: `requests` is an optional dependency, and a server that cannot
+# import the sync client must still serve everything else.
+try:
+    from tt import sync_engine
+    SYNC_AVAILABLE = True
+except ImportError:
+    SYNC_AVAILABLE = False
+
+
+def _synchronise(tracker):
+    """
+    Brings a freshly loaded tracker into step, and asks for the next round.
+
+    Attached to the per-request tracker rather than given a place of its own,
+    because this is the moment the conditions hold: the document has just
+    been read from disk and this thread owns it. The worker is started here
+    too - it used to be started only by the interface, so a machine driven
+    through this server queued its changes correctly and then sat on them
+    until somebody opened the GUI.
+
+    Nothing here can fail the request it is attached to: bring_up_to_date()
+    never raises, and a nudge only sets a flag.
+    """
+    if not SYNC_AVAILABLE or tracker.op_outbox is None:
+        return
+    outcome = sync_engine.bring_up_to_date(tracker, load_config())
+    if outcome['save_error']:
+        print('Sync: incoming changes could not be saved: %s' % outcome['save_error'],
+              file=sys.stderr)
+    # The change this request is about to make should not wait out the interval.
+    sync_engine.nudge()
+
+
 def get_tracker():
     """
     Returns a freshly loaded TimeTracker instance.
@@ -144,8 +179,14 @@ def get_tracker():
     or the MCP server - and so its own changes are picked up by them
     immediately too. Mirrors get_tracker() in TimeTrackerMCP_Server.py and
     the 'method_call' event listener in TimeTrackerSOAP_Server.py.
+
+    It is also where synchronisation gets its turn: this is the one function
+    every endpoint depends on, and the only moment at which the document has
+    just been loaded and is owned by this thread.
     """
-    return TimeTracker()
+    tracker = TimeTracker()
+    _synchronise(tracker)
+    return tracker
 
 
 def parse_date(date_str, param_name):
