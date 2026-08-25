@@ -391,6 +391,130 @@ class TestOneRunningSessionAtATime(unittest.TestCase):
         self.assertNotIn("end_time", there)
         self.assertEqual(report.auto_closed, [(E1, "2026-08-10 10:00:00")])
 
+    def test_the_log_decides_which_one_ran_first_not_the_clock(self):
+        """
+        The reported failure. The machine here has a session already in the
+        log; a session started on the other machine arrives after it. The two
+        clocks disagree, and the arriving one carries the *smaller*
+        timestamp - a laptop woken from sleep with no NTP is enough.
+
+        Sorting by the clock closed the newly started session and left the
+        abandoned one running. The log knows better, and both machines read
+        the same answer out of it.
+        """
+        doc = document(project(P1, tasks=[
+            task(T1, "Here", entries=[entry(E1, "2026-08-10 10:05:00")]),
+            task(T2, "There", tid=2)]))
+
+        apply_ops(doc, [{"s": 200, "op": "entry.add", "uid": E2, "task": T2,
+                         "start": "2026-08-10 10:02:00"}])
+
+        here, _ = find_entry(doc, E1)
+        there, _ = find_entry(doc, E2)
+        self.assertIn("end_time", here,
+                      "the abandoned session is still running")
+        self.assertNotIn("end_time", there,
+                         "the session that just started was closed instead")
+
+    def test_a_session_closed_that_way_never_ends_before_it_began(self):
+        """
+        The cost of ignoring the clock: the session the log calls later can
+        carry the smaller timestamp, so the close would run backwards. A
+        negative duration does not announce itself, it just makes the totals
+        wrong - entry.close guards against exactly this, and so must the
+        automatic close.
+        """
+        doc = document(project(P1, tasks=[
+            task(T1, "Here", entries=[entry(E1, "2026-08-10 10:05:00")]),
+            task(T2, "There", tid=2)]))
+
+        apply_ops(doc, [{"s": 200, "op": "entry.add", "uid": E2, "task": T2,
+                         "start": "2026-08-10 10:02:00"}])
+
+        here, _ = find_entry(doc, E1)
+        self.assertGreaterEqual(here["end_time"], here["start_time"])
+
+    def test_a_session_this_machine_has_not_sent_yet_is_the_later_one(self):
+        """
+        The other side of the same exchange. Here it is this machine that has
+        just started work, and its operation is still in the outgoing queue.
+        The server appends what it is sent, so this session will land after
+        everything already in the log - it is the later one, whatever the
+        clocks say.
+        """
+        doc = document(project(P1, tasks=[
+            task(T1, "Started here, not sent", entries=[entry(E1, "2026-08-10 10:02:00")]),
+            task(T2, "From the log", tid=2)]))
+
+        reconcile(
+            doc,
+            [{"s": 200, "op": "entry.add", "uid": E2, "task": T2,
+              "start": "2026-08-10 10:05:00"}],
+            [{"lc": 1, "op": "entry.add", "uid": E1, "task": T1,
+              "start": "2026-08-10 10:02:00"}],
+        )
+
+        mine, _ = find_entry(doc, E1)
+        theirs, _ = find_entry(doc, E2)
+        self.assertNotIn("end_time", mine, "this machine closed its own new session")
+        self.assertIn("end_time", theirs)
+
+    def test_two_sessions_this_machine_started_still_go_by_the_clock(self):
+        """
+        Neither is in the log, so it has nothing to say about them. The clock
+        is all there is, and both of them came off the same one.
+
+        The later session is put first in the document on purpose. Sorting is
+        stable, so with the two laid out in the order the clock would have
+        chosen anyway, dropping the clock entirely would still pass.
+        """
+        doc = document(project(P1, tasks=[
+            task(T2, "Second", tid=2, entries=[entry(E2, "2026-08-10 09:30:00")]),
+            task(T1, "First", entries=[entry(E1, "2026-08-10 09:00:00")])]))
+
+        reconcile(doc, [], [
+            {"lc": 1, "op": "entry.add", "uid": E1, "task": T1, "start": "2026-08-10 09:00:00"},
+            {"lc": 2, "op": "entry.add", "uid": E2, "task": T2, "start": "2026-08-10 09:30:00"},
+        ])
+
+        first, _ = find_entry(doc, E1)
+        second, _ = find_entry(doc, E2)
+        self.assertEqual(first["end_time"], "2026-08-10 09:30:00")
+        self.assertNotIn("end_time", second)
+
+    def test_both_machines_close_the_same_session(self):
+        """
+        The property that matters more than either machine's answer on its
+        own. Two documents that quietly stopped agreeing is the worst
+        outcome this design has to avoid, and a decision taken from two
+        disagreeing clocks is exactly how it would happen.
+        """
+        started_here = {"s": 200, "op": "entry.add", "uid": E1, "task": T1,
+                        "start": "2026-08-10 10:05:00"}
+        started_there = {"s": 201, "op": "entry.add", "uid": E2, "task": T2,
+                         "start": "2026-08-10 10:02:00"}
+
+        def fresh():
+            return document(project(P1, tasks=[task(T1, "One"),
+                                               task(T2, "Two", tid=2)]))
+
+        # One machine has its own session in the document already and learns
+        # of the other's; the other machine replays both out of the log.
+        one = fresh()
+        apply_ops(one, [started_here])
+        apply_ops(one, [started_there])
+
+        both = fresh()
+        apply_ops(both, [started_here, started_there])
+
+        def still_running(doc):
+            return {e["uid"] for p in doc["projects"] for t in p["tasks"]
+                    for e in t["time_entries"] if "end_time" not in e}
+
+        self.assertEqual(still_running(one), still_running(both))
+        self.assertEqual(still_running(one), {E2},
+                         "the session the log placed last is the one left running")
+
     def test_no_stretch_of_time_is_counted_twice(self):
         """
         The earlier session ends exactly where the later one begins, so the
