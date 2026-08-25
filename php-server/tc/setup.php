@@ -33,10 +33,20 @@ const TC_ENABLE_FILE = __DIR__ . '/setup.enable';
 
 $enable = @file_get_contents(TC_ENABLE_FILE);
 if ($enable === false || trim($enable) === '') {
+    // A bare 404, on purpose: with no passphrase file there is nothing to
+    // enable, and this page should not even admit to existing.
     http_response_code(404);
     exit;
 }
-$expected = trim($enable);
+// Not the raw contents. See tc_read_passphrase(): an editor can leave bytes
+// in this file that nobody can see, and comparing against them refuses the
+// right passphrase for ever while calling it a wrong one.
+$enableFile = tc_read_passphrase($enable);
+if ($enableFile['error'] !== null) {
+    header('Content-Type: text/plain; charset=utf-8');
+    exit($enableFile['error'] . "\n");
+}
+$expected = $enableFile['passphrase'];
 if (strlen($expected) < 12) {
     header('Content-Type: text/plain; charset=utf-8');
     exit("setup.enable must contain a passphrase of at least 12 characters.\n");
@@ -82,6 +92,12 @@ if ($exposure !== 'protected') {
 }
 
 $notices = [];
+if ($enableFile['note'] !== null) {
+    // Said out loud rather than silently worked around. The file goes on
+    // carrying the mark, and the operator would otherwise never learn that
+    // their editor is putting invisible bytes into a credential file.
+    $notices[] = $enableFile['note'];
+}
 $errors  = [];
 $done    = false;
 
@@ -245,7 +261,12 @@ function tc_rmtree($path, $store)
 // ---------------------------------------------------------------------------
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-    $given = (string)($_POST['passphrase'] ?? '');
+    // Trimmed for the same reason the stored one is: a passphrase pasted out
+    // of a file brings the newline with it, and the mismatch that causes is
+    // just as invisible as a byte order mark. Nothing is given up by it -
+    // the stored passphrase is trimmed too, so one ending in a space could
+    // never have been set in the first place.
+    $given = trim((string)($_POST['passphrase'] ?? ''));
     if (!hash_equals($expected, $given)) {
         $errors[] = 'Wrong passphrase.';
     } else {

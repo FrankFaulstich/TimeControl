@@ -127,10 +127,11 @@ between two writes, a segment holding operations on both sides of the snapshot
 point &ndash; get set up exactly. `php php-server/test-endpoints.php` starts
 PHP's own built-in server against a copy of `tc/` in a temporary directory and
 talks to it over HTTP, which is the only way to reach the routing, the size
-limits, and the snapshot response. `php php-server/test-setup.php` covers the
-installer's proof that the store is unreadable &ndash; which address it probes
-for which layout, and whether a fetch can tell a served directory from an
-unserved one. `check-oplog.py` remains the one that exercises a real
+limits, and the snapshot response. `php php-server/test-setup.php` covers what the
+installer checks before it will act: how the operator passphrase is read out
+of `setup.enable`, and its proof that the store is unreadable &ndash; which
+address it probes for which layout, and whether a fetch can tell a served
+directory from an unserved one. `check-oplog.py` remains the one that exercises a real
 installation on real web space.
 
 ## Installing
@@ -155,7 +156,13 @@ instead of blocked, and the `.htaccess` did not arrive.
 
 **3. Open the setup window.** Create a file `setup.enable` next to
 `setup.php`, containing a passphrase of your choosing (12 characters or
-more). Any text editor will do.
+more). Any text editor will do &ndash; surrounding whitespace and a leading
+UTF-8 byte order mark are both ignored, so Notepad's habit of adding three
+invisible bytes to the front of a file no longer turns the right passphrase
+into "Wrong passphrase." (setup tells you when it found one; the file keeps
+it until you save it differently.) A file saved as **UTF-16** is refused
+outright, with a message saying so: every character in it would carry a NUL
+byte and nothing you could type would ever match.
 
 Write access to the directory is what proves you are the operator. It is the
 one capability guaranteed on every shared host &ndash; it is how the code got
