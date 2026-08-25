@@ -120,15 +120,18 @@ the snapshot as authoritative and deleting whatever it does not mention &ndash;
 trades a visible, correctable annoyance for the silent loss of work that was
 never sent. A reappearing task is the better failure.
 
-Two test scripts cover this, neither of which needs anything installed:
+Three test scripts cover the server, none of which needs anything installed.
 `php php-server/test-oplog.php` calls the log functions directly against a
 throwaway store, which is how the awkward cases &ndash; a request killed
 between two writes, a segment holding operations on both sides of the snapshot
 point &ndash; get set up exactly. `php php-server/test-endpoints.php` starts
 PHP's own built-in server against a copy of `tc/` in a temporary directory and
 talks to it over HTTP, which is the only way to reach the routing, the size
-limits, and the snapshot response. `check-oplog.py` remains the one that
-exercises a real installation on real web space.
+limits, and the snapshot response. `php php-server/test-setup.php` covers the
+installer's proof that the store is unreadable &ndash; which address it probes
+for which layout, and whether a fetch can tell a served directory from an
+unserved one. `check-oplog.py` remains the one that exercises a real
+installation on real web space.
 
 ## Installing
 
@@ -163,11 +166,23 @@ press *Install*. Without `setup.enable`, or over plain HTTP, the page is a
 bare 404 and does nothing.
 
 Setup picks a location for the store, preferring one above the document root
-and falling back to a randomly named directory inside the web space. It then
-**proves** the store cannot be fetched over the web by writing a marker file
-and trying to retrieve it. If the marker comes back, or if the check cannot
-be completed, nothing is installed and it tells you why. Protection is
-demonstrated, never assumed.
+and falling back to a randomly named directory inside the web space. Either
+way it **proves** the store cannot be fetched over the web: it writes a marker
+file and tries to retrieve it, at every address that could plausibly reach it.
+A location whose marker comes back, or that could not be checked, is discarded
+and the next one tried; if none can be shown to be safe, nothing is installed
+and it says which addresses it asked.
+
+Before any of that it fetches a file from `tc/` itself, and stops if that
+fails. Without it, "the marker did not come back" would have two readings -
+the store is protected, or the wrong address was asked - and a rewrite rule,
+an alias or a proxy in front of the site all produce the second silently.
+
+The preferred location used to be taken on trust, on the grounds that two
+directories above `tc/` had to be outside the web space. That holds when `tc/`
+sits directly under the document root and fails the moment it does not: with
+`tc/` at `/apps/tc`, two levels up **is** the document root, and the store
+went there unprotected while setup reported success. Nothing is assumed now.
 
 **5. Create an account.** `setup.enable` is deleted after every change, so
 upload it again, then use *Create an account*.

@@ -75,3 +75,9 @@ jobs:
     # assembled by hand rather than through json_encode.
     - name: Run Endpoint Tests
       run: php php-server/test-endpoints.php
+
+    # The installer's proof that the store is not readable over the web. Also
+    # over HTTP, because what an outsider can fetch is the only form that
+    # question has an answer in.
+    - name: Run Installer Tests
+      run: php php-server/test-setup.php
