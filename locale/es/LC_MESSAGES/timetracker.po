@@ -865,11 +865,6 @@ msgstr "Cerrar sesión"
 msgid "Signed out on this device."
 msgstr "Sesión cerrada en este dispositivo."
 
-#: sl/SL_Menu.py:1970
-#, python-brace-format
-msgid "The server could not be reached ({reason})."
-msgstr "No se pudo contactar con el servidor ({reason})."
-
 #: sl/SL_Menu.py:1974
 msgid ""
 "Signing in stores an access token for this device only. It is kept outside "
@@ -3036,3 +3031,6 @@ msgstr "Error inesperado ({code})."
 
 #~ msgid "Refresh"
 #~ msgstr "Actualizar"
+
+#~ msgid "The server could not be reached ({reason})."
+#~ msgstr "No se pudo contactar con el servidor ({reason})."

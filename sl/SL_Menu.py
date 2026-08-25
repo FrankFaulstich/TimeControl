@@ -2019,9 +2019,16 @@ def view_settings():
                     # Expired, revoked elsewhere, or the account was switched
                     # off. The user's next move is the same in every case.
                     st.warning(_("This device is no longer signed in. Please sign in again."))
-                elif state['state'] == 'unreachable':
-                    st.error(_("The server could not be reached ({reason}).").format(
-                        reason=state.get('error', 'unreachable')))
+
+                # There is no branch for a server that could not be reached,
+                # and there should not be: `state` is worked out from the
+                # stored credential, which cannot know that. A dead connection
+                # reaches this screen through what the last cycle recorded and
+                # is reported further up, next to the other sync failures. An
+                # explicit check is what the Check connection button is for,
+                # and it answers in the feedback slot rather than here, so a
+                # failure on a train does not sit on the page after the
+                # connection comes back.
 
                 with st.form("sync_login_form"):
                     st.caption(_("Signing in stores an access token for this device only. "

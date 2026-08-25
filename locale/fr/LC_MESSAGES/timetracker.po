@@ -863,11 +863,6 @@ msgstr "Se déconnecter"
 msgid "Signed out on this device."
 msgstr "Déconnecté sur cet appareil."
 
-#: sl/SL_Menu.py:1970
-#, python-brace-format
-msgid "The server could not be reached ({reason})."
-msgstr "Le serveur est injoignable ({reason})."
-
 #: sl/SL_Menu.py:1974
 msgid ""
 "Signing in stores an access token for this device only. It is kept outside "
@@ -2994,3 +2989,6 @@ msgstr "Erreur inattendue ({code})."
 
 #~ msgid "Time Control"
 #~ msgstr "Contrôle du temps"
+
+#~ msgid "The server could not be reached ({reason})."
+#~ msgstr "Le serveur est injoignable ({reason})."

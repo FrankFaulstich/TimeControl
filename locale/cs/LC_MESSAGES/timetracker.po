@@ -846,11 +846,6 @@ msgstr "Odhlásit se"
 msgid "Signed out on this device."
 msgstr "Na tomto zařízení odhlášeno."
 
-#: sl/SL_Menu.py:1970
-#, python-brace-format
-msgid "The server could not be reached ({reason})."
-msgstr "Server není dostupný ({reason})."
-
 #: sl/SL_Menu.py:1974
 msgid ""
 "Signing in stores an access token for this device only. It is kept outside "
@@ -2837,3 +2832,6 @@ msgstr "Neočekávaná chyba ({code})."
 
 #~ msgid "Time Control"
 #~ msgstr "Kontrola času"
+
+#~ msgid "The server could not be reached ({reason})."
+#~ msgstr "Server není dostupný ({reason})."

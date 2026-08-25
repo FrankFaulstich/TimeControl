@@ -863,11 +863,6 @@ msgstr "Abmelden"
 msgid "Signed out on this device."
 msgstr "Auf diesem Gerät abgemeldet."
 
-#: sl/SL_Menu.py:1970
-#, python-brace-format
-msgid "The server could not be reached ({reason})."
-msgstr "Der Server ist nicht erreichbar ({reason})."
-
 #: sl/SL_Menu.py:1974
 msgid ""
 "Signing in stores an access token for this device only. It is kept outside "
@@ -2897,3 +2892,6 @@ msgstr "Unerwarteter Fehler ({code})."
 
 #~ msgid "Time Control"
 #~ msgstr "Zeitkontrolle"
+
+#~ msgid "The server could not be reached ({reason})."
+#~ msgstr "Der Server ist nicht erreichbar ({reason})."
