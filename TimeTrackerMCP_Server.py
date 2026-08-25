@@ -93,6 +93,55 @@ else:
 _STDIO_MODE = _config.get('mcp_transport', 'http') == 'stdio'
 
 
+# Synchronisation, from a headless entry point.
+#
+# Guarded: `requests` is an optional dependency, and a server that cannot
+# import the sync client must still serve everything else.
+try:
+    from tt import sync_engine
+    SYNC_AVAILABLE = True
+except ImportError:
+    SYNC_AVAILABLE = False
+
+
+def _synchronise(tracker):
+    """
+    Brings a freshly loaded tracker into step, and asks for the next round.
+
+    Runs on every call rather than in a place of its own, because this is the
+    moment the conditions hold: the document has just been read from disk and
+    this thread owns it. The worker is started here too - it used to be
+    started only by the interface, so a machine driven through this server
+    queued its changes correctly and then sat on them until somebody opened
+    the GUI.
+
+    Nothing here can fail the call it is attached to: bring_up_to_date()
+    never raises, and a nudge only sets a flag.
+
+    WHY NOT A SINGLE PUSH ON THE WAY OUT
+    ------------------------------------
+    Over stdio this process can be short-lived, and an interval of minutes
+    may never come round - so pushing once as the process exits looks like
+    the obvious answer. It is the wrong one twice over. Exit would then wait
+    on the network, and a server that has gone away would hold up the client
+    shutting this down for the length of the timeout. And it is not needed:
+    the nudge below has the worker run within a couple of seconds while the
+    process is still alive, and if it dies mid-push the operations are still
+    in the queue on disk, where the next run finds them. The server reports
+    a repeated push as a duplicate rather than applying it twice, which is
+    what makes an interrupted one safe to begin with.
+    """
+    if not SYNC_AVAILABLE or tracker.op_outbox is None:
+        return
+    outcome = sync_engine.bring_up_to_date(tracker, load_config())
+    if outcome['save_error']:
+        # stderr, never stdout - see the note on the stdio transport above.
+        print('Sync: incoming changes could not be saved: %s' % outcome['save_error'],
+              file=sys.stderr)
+    # The change this call is about to make should not wait out the interval.
+    sync_engine.nudge()
+
+
 def get_tracker():
     """
     Returns a freshly loaded TimeTracker instance.
@@ -101,8 +150,14 @@ def get_tracker():
     whole server process, so this always sees the latest state on disk -
     including changes made concurrently through the GUI or the SOAP
     interface - and so its own changes are picked up by them immediately too.
+
+    It is also where synchronisation gets its turn: this is the one function
+    every tool goes through, and the only moment at which the document has
+    just been loaded and is owned by this thread.
     """
-    return TimeTracker()
+    tracker = TimeTracker()
+    _synchronise(tracker)
+    return tracker
 
 
 def _call_protecting_stdio(fn, *args, **kwargs):

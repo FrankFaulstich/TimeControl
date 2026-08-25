@@ -370,55 +370,41 @@ if 'menu' not in st.session_state:
 # would be silently overwritten by the next thing the user did.
 if SYNC_AVAILABLE:
     try:
-        sync_log.configure(config)
+        # Rebound before the sequence below, and only here: this tracker
+        # lives across redraws, so a setting changed on the settings screen
+        # has to reach it. The servers build a fresh tracker per request and
+        # get their outbox from the constructor.
         st.session_state.tracker.op_outbox = default_outbox_if_enabled(config)
-        # Outside the check below on purpose: this call is what stops the
-        # worker as well as what starts it. Switching synchronisation off
-        # while the app is open has to actually end it, or the thread keeps
-        # talking to the server with the stored token and filing operations
-        # nothing will ever read.
-        sync_engine.ensure_started(config)
-        if st.session_state.tracker.op_outbox is not None:
-            # The notice from a previous run has been drawn by now, so it
-            # can go. Cleared here rather than where it is shown, because a
-            # run that draws it can still be abandoned by an st.rerun()
-            # further down the page, and a message consumed by such a run
-            # would have been seen by nobody.
-            if st.session_state.pop('sync_discarded_shown', False):
-                st.session_state.pop('sync_discarded', None)
-            # Before anything is applied: if data.json has been restored from
-            # a backup, the cursor has to come back with it.
-            sync_engine.align_cursor(st.session_state.tracker)
-            sync_engine.offer_document(st.session_state.tracker)
-            try:
-                _sync_summary = sync_engine.apply_pending(st.session_state.tracker)
-            except OSError as exc:
-                # The document could not be written - a full disk, or a data
-                # file on a share that has gone read-only. Nothing was
-                # consumed, so this will be retried; but staying silent would
-                # show the incoming changes on screen as though they had been
-                # saved, and they would vanish at the next restart.
-                _sync_summary = None
-                st.session_state.sync_apply_error = str(exc)
-            else:
-                st.session_state.pop('sync_apply_error', None)
-                if _sync_summary and _sync_summary['discarded_time']:
-                    st.session_state['sync_discarded'] = (
-                        st.session_state.get('sync_discarded', 0)
-                        + _sync_summary['discarded_time'])
-                # After applying, so it describes the document as it now
-                # stands - and only on this path, because a machine that
-                # could not write what it was given is not the one that
-                # should be telling the others what the log adds up to.
-                # Costs one state read on an ordinary redraw; the document
-                # is written out only on the rare pass where one is due.
-                sync_engine.offer_snapshot(st.session_state.tracker)
-            # A change of view is the moment the user is most likely to want
-            # current figures, so ask for a cycle then. It only wakes the
-            # worker - nothing here blocks on the answer.
-            if st.session_state.get('_synced_for_menu') != st.session_state.menu:
-                st.session_state._synced_for_menu = st.session_state.menu
-                sync_engine.nudge()
+
+        # The notice from a previous run has been drawn by now, so it can go.
+        # Cleared here rather than where it is shown, because a run that
+        # draws it can still be abandoned by an st.rerun() further down the
+        # page, and a message consumed by such a run would have been seen by
+        # nobody.
+        if st.session_state.pop('sync_discarded_shown', False):
+            st.session_state.pop('sync_discarded', None)
+
+        # The same sequence the MCP, REST and SOAP servers run; only what is
+        # done with the outcome differs, and that part is below.
+        _sync = sync_engine.bring_up_to_date(st.session_state.tracker, config)
+        if _sync['save_error']:
+            # Staying silent would show the incoming changes on screen as
+            # though they had been saved, and they would vanish at the next
+            # restart.
+            st.session_state.sync_apply_error = _sync['save_error']
+        else:
+            st.session_state.pop('sync_apply_error', None)
+            if _sync['applied'] and _sync['applied']['discarded_time']:
+                st.session_state['sync_discarded'] = (
+                    st.session_state.get('sync_discarded', 0)
+                    + _sync['applied']['discarded_time'])
+
+        # A change of view is the moment the user is most likely to want
+        # current figures, so ask for a cycle then. It only wakes the
+        # worker - nothing here blocks on the answer.
+        if st.session_state.get('_synced_for_menu') != st.session_state.menu:
+            st.session_state._synced_for_menu = st.session_state.menu
+            sync_engine.nudge()
     except Exception:
         # Synchronisation is an optional extra. Nothing about it may stop the
         # application from starting or a view from drawing.

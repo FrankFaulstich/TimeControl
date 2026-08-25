@@ -68,6 +68,16 @@ def config_dir():
     :return: Absolute path to the directory (not created by this call).
     :rtype: str
     """
+    # An explicit override, honoured before anything else. Two uses: running
+    # a second instance against a separate identity, and keeping a test run
+    # away from the directory the installed application is using. That second
+    # one is not hypothetical - this directory is per user, not per checkout,
+    # so a test that reaches it is writing into somebody's live cursor and
+    # credential.
+    override = os.environ.get('TC_CONFIG_DIR')
+    if override:
+        return override
+
     if os.name == 'nt':
         base = os.environ.get('APPDATA') or os.path.expanduser('~')
     else:
