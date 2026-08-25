@@ -202,7 +202,7 @@ def _add_tombstone(document, uid, kind, when):
     document["_deleted"].append({"uid": uid, "kind": kind, "at": when})
 
 
-def apply_ops(document, ops, on_conflict=None, now=None):
+def apply_ops(document, ops, on_conflict=None, now=None, unpushed=()):
     """
     Applies operations from the server to a document, in place.
 
@@ -219,9 +219,17 @@ def apply_ops(document, ops, on_conflict=None, now=None):
                         'discarded_time' when a time entry went with a deleted
                         task, 'auto_closed' when a session left running here
                         was ended because work began elsewhere.
+    :param unpushed: uids of time entries this machine has started and not yet
+                     sent. Only _settle() reads them, and only to work out
+                     which of two running sessions the log will end up
+                     calling the later one - see the note there.
     :return: A Report.
     """
     report = Report()
+    # Where the log put each session that this batch starts. The wall clock
+    # cannot answer that: it is naive local time on machines that are allowed
+    # to disagree.
+    placed = {}
     index = _Index(document)
     dead = _tombstones(document)
 
@@ -334,6 +342,11 @@ def apply_ops(document, ops, on_conflict=None, now=None):
                                 {'entry': uid, 'task': target_uid})
                 handled = False
             elif kind == "entry.add":
+                # Recorded whether or not the entry is new: a machine's own
+                # operation comes back to it carrying the sequence number the
+                # server gave it, and that is the one moment this machine
+                # learns where its own session sits in the order.
+                placed.setdefault(uid, seq)
                 if uid in index.entries:
                     index.move_entry(uid, task)
                 else:
@@ -386,7 +399,7 @@ def apply_ops(document, ops, on_conflict=None, now=None):
         else:
             report.ignored += 1
 
-    _settle(document, report, on_conflict)
+    _settle(document, report, on_conflict, placed, set(unpushed))
     return report
 
 
@@ -421,7 +434,16 @@ def reconcile(document, incoming, local=None, on_conflict=None, now=None):
                   order is already the order the server will give them.
     :return: A Report covering both passes.
     """
-    report = apply_ops(document, incoming, on_conflict=on_conflict, now=now)
+    # Which running sessions this machine has started and not yet sent. The
+    # server appends what it is sent, so these will land after everything in
+    # the log - which is what decides, when two sessions are running at once,
+    # that one of them is the later. Only reconcile() can know it: apply_ops
+    # sees the log, not the queue.
+    unpushed = {op.get('uid') for op in (local or [])
+                if op.get('op') == 'entry.add' and op.get('uid')}
+
+    report = apply_ops(document, incoming, on_conflict=on_conflict, now=now,
+                       unpushed=unpushed)
     if not local:
         return report
 
@@ -432,7 +454,8 @@ def reconcile(document, incoming, local=None, on_conflict=None, now=None):
         op['s'] = floor + position
         replay.append(op)
 
-    second = apply_ops(document, replay, on_conflict=on_conflict, now=now)
+    second = apply_ops(document, replay, on_conflict=on_conflict, now=now,
+                       unpushed=unpushed)
     return report.absorb(second)
 
 
@@ -548,7 +571,42 @@ def seed_operations(document):
     return ops
 
 
-def _settle(document, report, on_conflict=None):
+def _running_session_order(entry, placed, unpushed):
+    """
+    Where a running session sits in the order the server will settle on.
+
+    The clock cannot answer this. start_time is naive local time on two
+    machines that are allowed to disagree by minutes - a laptop woken from
+    sleep with no NTP is enough - and sorting by it closed whichever session
+    happened to carry the smaller number, which is not the same thing as
+    whichever started first. The server's sequence numbers do carry the true
+    order, and both machines compute the same answer from them.
+
+    Three cases, in the order they are asked:
+
+    Still in this machine's outgoing queue. The server appends what it is
+    sent, so this one will land after everything already in the log: it is
+    the later session, and the one that keeps running.
+
+    Placed by this batch. The sequence number says exactly where.
+
+    Neither. It reached the log before this batch - which is how a machine
+    sees its own session once the push that carried it has been acknowledged
+    - so it comes before anything this batch brought. Two of those cannot be
+    told apart here, and fall back to the clock; both are already in the log,
+    so neither is the newly started one this is really about.
+
+    :return: A sort key. Earliest first.
+    """
+    uid = entry.get("uid")
+    if uid in unpushed:
+        return (2, 0, entry.get("start_time") or "")
+    if uid in placed:
+        return (1, placed[uid], "")
+    return (0, 0, entry.get("start_time") or "")
+
+
+def _settle(document, report, on_conflict=None, placed=None, unpushed=frozenset()):
     """
     Puts the document back into a shape the rest of the app relies on.
 
@@ -560,10 +618,12 @@ def _settle(document, report, on_conflict=None):
 
     At most one time entry may be open. A running session is recognised as
     "the entry with no end_time"; two of them and the app stops the wrong
-    one, leaving the other running for ever. Whichever started earlier is
-    closed at the later one's start, so no stretch of time is counted twice.
-    This is also what the user asked for in so many words: starting a task on
-    the second machine should end the one still running on the first.
+    one, leaving the other running for ever. Whichever the log places earlier
+    is closed at the later one's start, so no stretch of time is counted
+    twice. This is also what the user asked for in so many words: starting a
+    task on the second machine should end the one still running on the first.
+    Which of them is "earlier" is decided by the order the server settled on
+    and not by the timestamps - see _running_session_order().
 
     And an open entry must be the LAST one in its task. Three places in the
     application - stopping work, showing what is running, and the per-task
@@ -589,9 +649,21 @@ def _settle(document, report, on_conflict=None):
         document["next_id"] = highest + 1
 
     if len(open_entries) > 1:
-        open_entries.sort(key=lambda e: e.get("start_time") or "")
+        placed = placed or {}
+        open_entries.sort(key=lambda e: _running_session_order(e, placed, unpushed))
         for earlier, later in zip(open_entries, open_entries[1:]):
             end = later.get("start_time")
+            start = earlier.get("start_time")
+            # Never before it began - the same rule entry.close applies, and
+            # for the same reason: durations are these two subtracted, and a
+            # negative one does not announce itself. It matters more here
+            # than it used to. Sorting by the clock could not produce one;
+            # sorting by the log can, because the session the log calls later
+            # may carry the smaller timestamp. That is the disagreement this
+            # ordering exists to ignore, and closing at its own start is the
+            # honest answer when the two clocks cannot say how long it ran.
+            if end and start and end < start:
+                end = start
             earlier["end_time"] = end
             report.auto_closed.append((earlier.get("uid"), end))
             if on_conflict:
