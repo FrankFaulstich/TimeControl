@@ -16,6 +16,7 @@ A simple, object-oriented Python application for tracking time spent on projects
   - [MCP Server 🤖](#mcp-server-)
   - [Synchronising Two Machines 🔄](#synchronising-two-machines-)
   - [Building the Documentation 📚](#building-the-documentation-)
+  - [Translations 🌍](#translations-)
   - [Data Storage 🗄️](#data-storage-️)
   - [Contributing 🤝](#contributing-)
   - [License 📜](#license-)
@@ -309,6 +310,24 @@ This project uses Sphinx to generate documentation from the docstrings in the so
     ```
 
     The generated documentation can be found in `docs/_build/html/index.html`.
+
+---
+
+## Translations 🌍
+
+The interface is available in English, German, French, Spanish and Czech. The catalogues live in `locale/<lang>/LC_MESSAGES/`.
+
+Only four files carry translatable text, and the extraction has to name all of them — a module left out keeps working and quietly stops being translated, which nothing reports:
+
+```bash
+xgettext --language=Python --keyword=_ --from-code=UTF-8 -o locale/timetracker.pot sl/SL_Menu.py tt/TimeTracker.py tt/sync_messages.py update.py
+```
+
+Add the new entries to each `.po` by hand rather than through `msgmerge`: it marks entries `#, fuzzy`, and `msgfmt` then drops them without a word, so a missing translation hides behind a clean build. Compile with the check enabled, and read the count — it should report neither fuzzy nor untranslated messages:
+
+```bash
+msgfmt --check-format --statistics -o locale/de/LC_MESSAGES/timetracker.mo locale/de/LC_MESSAGES/timetracker.po
+```
 
 ---
 

@@ -1889,6 +1889,28 @@ msgstr "Erfasst zwei Arten von Aufgaben: solche, deren letzter Zeiteintrag älte
 msgid "Never worked on, due {date}"
 msgstr "Nie bearbeitet, fällig am {date}"
 
+#: tt/sync_messages.py:54
+msgid "The server was dealing with something else. This one retries on its own."
+msgstr "Der Server war gerade anderweitig beschäftigt. Das versucht sich von selbst erneut."
+
+#: tt/sync_messages.py:62
+msgid "The stored copy of the data could not be fetched from the server, so catching up had to stop."
+msgstr "Die auf dem Server hinterlegte Kopie der Daten konnte nicht geholt werden, deshalb wurde das Aufholen abgebrochen."
+
+#: tt/sync_messages.py:67 tt/sync_messages.py:70
+msgid "This machine tried to send more at once than the server accepts. It will keep trying, but cannot get past this on its own."
+msgstr "Dieser Rechner wollte mehr auf einmal senden, als der Server annimmt. Er versucht es weiter, kommt hier aber von allein nicht durch."
+
+#: tt/sync_messages.py:88
+#, python-brace-format
+msgid "The server would not accept what this machine sent ({code}). The two are probably running different versions."
+msgstr "Der Server hat nicht angenommen, was dieser Rechner gesendet hat ({code}). Vermutlich laufen beide in unterschiedlichen Versionen."
+
+#: tt/sync_messages.py:104
+#, python-brace-format
+msgid "Unexpected error ({code})."
+msgstr "Unerwarteter Fehler ({code})."
+
 #~ msgid "Today View"
 #~ msgstr "Heute-Ansicht"
 

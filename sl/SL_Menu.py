@@ -12,6 +12,7 @@ import shutil
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from tt.TimeTracker import TimeTracker
+from tt.sync_messages import sign_in_error_message, sync_error_message
 from i18n import _
 
 try:
@@ -627,7 +628,7 @@ def render_sync_notice():
 
     failed_to_save = st.session_state.get('sync_apply_error')
     if failed_to_save:
-        st.error(_sync_error_message('local_io'))
+        st.error(sync_error_message('local_io'))
 
     try:
         snapshot = sync_engine.status_summary()
@@ -641,11 +642,12 @@ def render_sync_notice():
     # a sync that has been failing all week while the app looks perfectly
     # normal is how two machines quietly become two different documents.
     actionable = snapshot['error'] in ('not_signed_in', 'invalid_token', 'https_required',
-                                       'not_installed', 'bad_response', 'local_io')
+                                       'not_installed', 'bad_response', 'local_io',
+                                       'address_changed')
     if not actionable and int(snapshot.get('failures', 0)) < SYNC_QUIET_FAILURES:
         return
     st.warning(_("Synchronisation is paused: {reason}").format(
-        reason=_sync_error_message(snapshot['error'])))
+        reason=sync_error_message(snapshot['error'])))
 
 # --- Views ---
 
@@ -1577,38 +1579,6 @@ def view_reporting():
     if st.button(_("Back"), use_container_width=True):
         navigate_to('today_view')
 
-def _sync_error_message(code):
-    """
-    Turns a sync-client error code into something worth reading.
-
-    The distinction that matters is between "you typed something wrong" and
-    "the connection failed" - those call for completely different reactions,
-    and a single "sign-in failed" would leave the user guessing which one
-    they are looking at.
-    """
-    messages = {
-        'no_server': _("No server address is set. Enter one above and save it first."),
-        'https_required': _("The address must start with https:// - a token sent over "
-                            "plain HTTP could be read by anyone on the way."),
-        'missing_credentials': _("Please enter both a username and a password."),
-        'invalid_credentials': _("Wrong username or password."),
-        'too_many_attempts': _("Too many sign-in attempts on the server. Try again in a minute."),
-        'tls_failed': _("The server's certificate could not be verified."),
-        'timeout': _("The server did not answer in time."),
-        'unreachable': _("The server could not be reached. Check the address and your connection."),
-        'bad_response': _("The address answered, but not like a TimeControl sync server. "
-                          "Check that it points at the right directory."),
-        'not_installed': _("The server is reachable but has not been set up yet."),
-        # Reachable from the background sync rather than the sign-in form.
-        'not_signed_in': _("This device is not signed in to the server."),
-        'invalid_token': _("This device is no longer signed in. Please sign in again."),
-        'address_changed': _("The saved server address is not the one this device is "
-                             "signed in to. Sign in again to start using it."),
-        'local_io': _("The synchronisation files on this computer could not be written."),
-    }
-    return messages.get(code, _("Sign-in failed ({code}).").format(code=code or '?'))
-
-
 def view_settings():
     """
     Renders every application setting as a collapsible section in one view
@@ -2006,7 +1976,7 @@ def view_settings():
                 # context instead, next to the form that resolves it.
                 show_error = False
             if show_error:
-                st.warning(_sync_error_message(snapshot['error']))
+                st.warning(sync_error_message(snapshot['error']))
 
             if state['state'] == 'ok':
                 st.success(_("Signed in as {user}.").format(user=state.get('username')))
@@ -2027,7 +1997,7 @@ def view_settings():
                         if checked['state'] == 'ok':
                             set_feedback(_("The server answered."))
                         else:
-                            set_feedback(_sync_error_message(
+                            set_feedback(sync_error_message(
                                 checked.get('error') or checked['state']), 'error')
                         # Asked for explicitly, so this also lifts any pause
                         # a run of failures has put the worker into.
@@ -2069,7 +2039,7 @@ def view_settings():
                             sync_engine.nudge(force=True)
                             set_feedback(_("Signed in successfully."))
                         else:
-                            set_feedback(_sync_error_message(result.get('error')), 'error')
+                            set_feedback(sign_in_error_message(result.get('error')), 'error')
                         st.rerun()
 
             identity = sync_client.device_identity()
