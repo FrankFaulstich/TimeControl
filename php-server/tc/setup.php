@@ -25,6 +25,7 @@ umask(0077);
 
 require_once __DIR__ . '/lib/store.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/probe.php';
 
 ini_set('display_errors', '0');
 
@@ -91,11 +92,36 @@ function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
  *
  * Above the document root is preferred, but the host probe found that path
  * unavailable here, so the fallback is a randomly named directory inside the
- * web space. Placement is not the point - the canary is. The directory is
- * only accepted once a fetch of a file inside it has actually been refused.
+ * web space. Placement is not the point - the canary is. A directory is only
+ * accepted once a fetch of a file inside it has actually been refused.
+ *
+ * WHY EVERY LOCATION IS FETCHED FOR, INCLUDING THE ONE "OUTSIDE"
+ * --------------------------------------------------------------
+ * This used to check only the candidate inside the web directory, and take
+ * the other on trust: two levels above this script had to be outside the web
+ * space, so there was nothing to prove. That holds when tc/ sits directly
+ * under the document root, and fails as soon as it does not. With tc/ at
+ * /public_html/apps/tc, two levels up IS /public_html - so the store landed
+ * in the web space with no .htaccess, no index.html and no canary, and the
+ * installer said it was fine.
+ *
+ * The trust was in the wrong place: it was extended to exactly the layout
+ * where it is least obvious whether the store is exposed. So nothing is
+ * assumed now. Every candidate is fetched for, at every address that could
+ * plausibly reach it, and one that cannot be checked is passed over rather
+ * than used.
  */
 function tc_install($baseUrl)
 {
+    // Before anything is created. If this installer cannot fetch its own
+    // directory, then no "the canary did not come back" below would mean
+    // anything, and a store must not be placed on the strength of a question
+    // that was never actually asked.
+    $cannotCheck = tc_prove_fetching_works(__DIR__, $baseUrl);
+    if ($cannotCheck !== null) {
+        return [null, $cannotCheck];
+    }
+
     $candidates = [];
 
     // Above the web directory. Uses __DIR__ rather than DOCUMENT_ROOT: on
@@ -107,6 +133,7 @@ function tc_install($baseUrl)
     $inside = __DIR__ . '/store-' . bin2hex(random_bytes(6));
     $candidates[] = $inside;
 
+    $refused = [];
     foreach ($candidates as $path) {
         if (!tc_secure_mkdir($path)) {
             continue;
@@ -130,22 +157,11 @@ function tc_install($baseUrl)
         @file_put_contents($canaryPhp, 'tc-canary ' . $marker);
         @chmod($canaryPhp, 0600);
 
-        $verdict = 'unreachable-by-construction';
-        if ($isInside) {
-            $url     = $baseUrl . '/' . basename($path) . '/canary.txt';
-            $verdict = tc_fetch_verdict($url, $marker);
-            if ($verdict === 'leaked') {
-                tc_discard_dir($path);
-                return [null, 'The store directory is readable over the web at ' . $url
-                    . ' - .htaccess is not being honoured. Refusing to install.'];
-            }
-            if ($verdict === 'unknown') {
-                tc_discard_dir($path);
-                return [null, 'Could not verify that the store is protected (the server '
-                    . 'could not fetch ' . $url . ' itself). Open that URL in a browser: '
-                    . 'if you see the word tc-canary rather than "Forbidden", this host '
-                    . 'must not be used. Nothing has been installed.'];
-            }
+        $problem = tc_prove_unreadable($path, __DIR__, $baseUrl, $marker);
+        if ($problem !== null) {
+            tc_discard_dir($path);
+            $refused[] = $path . ': ' . $problem;
+            continue;
         }
         @unlink($canaryPhp);
 
@@ -165,6 +181,18 @@ function tc_install($baseUrl)
         // who gets as far as reading files on this account.
 
         return [$path, null];
+    }
+
+    if ($refused) {
+        // Named, because the two locations fail for different reasons and the
+        // fix differs with them: a store readable inside the web directory
+        // means .htaccess is not being honoured and this host cannot be used,
+        // while one readable above it means tc/ is nested deeper than the
+        // installer's guess and the operator can move it.
+        return [null, 'No store location could be shown to be safe, so nothing has been '
+            . 'installed. ' . implode('; ', $refused) . '. Open one of those addresses in '
+            . 'a browser: if you see the word tc-canary, that directory is being served '
+            . 'to the world and must not hold the store.'];
     }
     return [null, 'Could not create a store directory anywhere.'];
 }
@@ -212,29 +240,6 @@ function tc_rmtree($path, $store)
         }
     }
     return @rmdir($real);
-}
-
-/**
- * @return string 'protected' | 'leaked' | 'unknown'
- */
-function tc_fetch_verdict($url, $marker)
-{
-    $body = false;
-    if (function_exists('curl_init')) {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 8,
-            CURLOPT_FOLLOWLOCATION => false,
-        ]);
-        $body = curl_exec($ch);
-    } elseif (filter_var(ini_get('allow_url_fopen'), FILTER_VALIDATE_BOOLEAN)) {
-        $body = @file_get_contents($url);
-    }
-    if ($body === false) {
-        return 'unknown';
-    }
-    return (strpos((string)$body, $marker) !== false) ? 'leaked' : 'protected';
 }
 
 // ---------------------------------------------------------------------------
