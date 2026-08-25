@@ -1891,6 +1891,28 @@ msgstr "Couvre deux sortes de tâches : celles dont la dernière entrée de temp
 msgid "Never worked on, due {date}"
 msgstr "Jamais travaillée, échéance {date}"
 
+#: tt/sync_messages.py:54
+msgid "The server was dealing with something else. This one retries on its own."
+msgstr "Le serveur était occupé ailleurs. Cela est réessayé tout seul."
+
+#: tt/sync_messages.py:62
+msgid "The stored copy of the data could not be fetched from the server, so catching up had to stop."
+msgstr "La copie des données conservée sur le serveur n'a pas pu être récupérée ; la mise à jour a donc dû s'arrêter."
+
+#: tt/sync_messages.py:67 tt/sync_messages.py:70
+msgid "This machine tried to send more at once than the server accepts. It will keep trying, but cannot get past this on its own."
+msgstr "Cet ordinateur a tenté d'envoyer en une fois plus que ce que le serveur accepte. Il continuera d'essayer, mais ne peut pas s'en sortir seul."
+
+#: tt/sync_messages.py:88
+#, python-brace-format
+msgid "The server would not accept what this machine sent ({code}). The two are probably running different versions."
+msgstr "Le serveur n'a pas accepté ce que cet ordinateur a envoyé ({code}). Les deux exécutent probablement des versions différentes."
+
+#: tt/sync_messages.py:104
+#, python-brace-format
+msgid "Unexpected error ({code})."
+msgstr "Erreur inattendue ({code})."
+
 #~ msgid "Today View"
 #~ msgstr "Vue du jour"
 

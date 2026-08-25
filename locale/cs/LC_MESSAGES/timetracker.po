@@ -1860,6 +1860,28 @@ msgstr "Zahrnuje dva druhy úkolů: ty, jejichž poslední časový záznam je s
 msgid "Never worked on, due {date}"
 msgstr "Nikdy nezpracováno, termín {date}"
 
+#: tt/sync_messages.py:54
+msgid "The server was dealing with something else. This one retries on its own."
+msgstr "Server byl právě zaneprázdněn něčím jiným. Tento pokus se zopakuje sám."
+
+#: tt/sync_messages.py:62
+msgid "The stored copy of the data could not be fetched from the server, so catching up had to stop."
+msgstr "Uloženou kopii dat se nepodařilo ze serveru načíst, proto muselo dohánění skončit."
+
+#: tt/sync_messages.py:67 tt/sync_messages.py:70
+msgid "This machine tried to send more at once than the server accepts. It will keep trying, but cannot get past this on its own."
+msgstr "Tento počítač se pokusil odeslat najednou více, než server přijímá. Bude to zkoušet dál, ale sám se přes to nedostane."
+
+#: tt/sync_messages.py:88
+#, python-brace-format
+msgid "The server would not accept what this machine sent ({code}). The two are probably running different versions."
+msgstr "Server nepřijal to, co tento počítač odeslal ({code}). Pravděpodobně na nich běží různé verze."
+
+#: tt/sync_messages.py:104
+#, python-brace-format
+msgid "Unexpected error ({code})."
+msgstr "Neočekávaná chyba ({code})."
+
 #~ msgid "Today View"
 #~ msgstr "Dnes Zobrazit"
 

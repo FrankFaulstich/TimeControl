@@ -1805,3 +1805,25 @@ msgstr ""
 #, python-brace-format
 msgid "Never worked on, due {date}"
 msgstr ""
+
+#: tt/sync_messages.py:54
+msgid "The server was dealing with something else. This one retries on its own."
+msgstr ""
+
+#: tt/sync_messages.py:62
+msgid "The stored copy of the data could not be fetched from the server, so catching up had to stop."
+msgstr ""
+
+#: tt/sync_messages.py:67 tt/sync_messages.py:70
+msgid "This machine tried to send more at once than the server accepts. It will keep trying, but cannot get past this on its own."
+msgstr ""
+
+#: tt/sync_messages.py:88
+#, python-brace-format
+msgid "The server would not accept what this machine sent ({code}). The two are probably running different versions."
+msgstr ""
+
+#: tt/sync_messages.py:104
+#, python-brace-format
+msgid "Unexpected error ({code})."
+msgstr ""

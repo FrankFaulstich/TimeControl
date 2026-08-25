@@ -1863,6 +1863,28 @@ msgstr "Covers two kinds of task: those whose last time entry is older than this
 msgid "Never worked on, due {date}"
 msgstr "Never worked on, due {date}"
 
+#: tt/sync_messages.py:54
+msgid "The server was dealing with something else. This one retries on its own."
+msgstr "The server was dealing with something else. This one retries on its own."
+
+#: tt/sync_messages.py:62
+msgid "The stored copy of the data could not be fetched from the server, so catching up had to stop."
+msgstr "The stored copy of the data could not be fetched from the server, so catching up had to stop."
+
+#: tt/sync_messages.py:67 tt/sync_messages.py:70
+msgid "This machine tried to send more at once than the server accepts. It will keep trying, but cannot get past this on its own."
+msgstr "This machine tried to send more at once than the server accepts. It will keep trying, but cannot get past this on its own."
+
+#: tt/sync_messages.py:88
+#, python-brace-format
+msgid "The server would not accept what this machine sent ({code}). The two are probably running different versions."
+msgstr "The server would not accept what this machine sent ({code}). The two are probably running different versions."
+
+#: tt/sync_messages.py:104
+#, python-brace-format
+msgid "Unexpected error ({code})."
+msgstr "Unexpected error ({code})."
+
 #~ msgid "Today View"
 #~ msgstr "Today View"
 
