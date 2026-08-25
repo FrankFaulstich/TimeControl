@@ -3,7 +3,6 @@ import os
 import shutil
 import sys
 import tempfile
-import threading
 import time
 import unittest
 import unittest.mock
@@ -1967,6 +1966,17 @@ class TestOneSequenceForEveryEntryPoint(unittest.TestCase):
         self.config = {'sync': {'enabled': True, 'base_url': 'https://x/',
                                 'interval_minutes': 5}}
 
+        # No real worker anywhere in this class. Whether ensure_started puts a
+        # thread up is its own business and is tested where it lives; here a
+        # started worker outlives the test, because stop() deliberately does
+        # not wait for one - and it goes on calling config_dir() as it runs,
+        # which the next test class has by then pointed somewhere else. That
+        # is what turned three tests red on a slower machine while passing
+        # here: not the behaviour, the timing.
+        self._start_patch = unittest.mock.patch.object(sync_engine, 'ensure_started')
+        self.ensure_started = self._start_patch.start()
+        self.addCleanup(self._start_patch.stop)
+
     def tearDown(self):
         sync_engine.stop()
         sync_client.config_dir = self._real_config_dir
@@ -1989,19 +1999,26 @@ class TestOneSequenceForEveryEntryPoint(unittest.TestCase):
         """
         The reported failure in one line: this call is what gets queued
         changes off the machine, and only the interface used to make it.
+
+        Asserted as the call rather than by counting threads. What the worker
+        does once it exists belongs to ensure_started, and a thread count is
+        a race here - the previous test's worker may not have finished
+        stopping.
         """
         sync_engine.bring_up_to_date(self.tracker, self.config)
 
-        alive = [t for t in threading.enumerate() if t.name == 'tc-sync']
-        self.assertEqual(len(alive), 1)
+        self.ensure_started.assert_called_once_with(self.config)
 
     def test_synchronisation_switched_off_is_left_alone(self):
         self.tracker.op_outbox = None
 
-        outcome = sync_engine.bring_up_to_date(self.tracker, {'sync': {'enabled': False}})
+        switched_off = {'sync': {'enabled': False}}
+        outcome = sync_engine.bring_up_to_date(self.tracker, switched_off)
 
         self.assertEqual(outcome, {'applied': None, 'save_error': None})
-        self.assertEqual([t for t in threading.enumerate() if t.name == 'tc-sync'], [])
+        # Still called, and that matters: this is the call that stops a worker
+        # left running from before the setting was turned off.
+        self.ensure_started.assert_called_once_with(switched_off)
 
     def test_a_document_that_cannot_be_saved_is_reported_not_raised(self):
         """
