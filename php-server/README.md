@@ -21,6 +21,16 @@ This directory holds two things:
 
 Authentication, the operation log, and compaction.
 
+Accounts are created by hand, in `setup.php`. There is **no self-service
+registration**, and that is a decision rather than a gap: it would need rate
+limiting that cannot be turned into a lock-out of the people already using the
+server, some defence against automated sign-ups, an answer to whether a new
+account may be used before somebody approves it, and a way to be rid of the
+ones nobody ever came back to. None of those exist, and none of them is worth
+building while the server serves one person's own machines. The design, and
+what would have to be true before any of it were written, is in
+[`development-plan/open-registration.md`](../development-plan/open-registration.md).
+
 | Action | Method | Purpose |
 |---|---|---|
 | `?a=login` | POST | username + password + device id &rarr; token |
