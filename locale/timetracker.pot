@@ -825,11 +825,6 @@ msgstr ""
 msgid "Signed out on this device."
 msgstr ""
 
-#: sl/SL_Menu.py:1970
-#, python-brace-format
-msgid "The server could not be reached ({reason})."
-msgstr ""
-
 #: sl/SL_Menu.py:1974
 msgid ""
 "Signing in stores an access token for this device only. It is kept outside "
@@ -1827,3 +1822,6 @@ msgstr ""
 #, python-brace-format
 msgid "Unexpected error ({code})."
 msgstr ""
+
+#~ msgid "The server could not be reached ({reason})."
+#~ msgstr ""
