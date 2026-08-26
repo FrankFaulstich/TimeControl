@@ -317,9 +317,21 @@ msgstr "Upravit aktuální úkol"
 msgid "Show only open tasks"
 msgstr "Zobrazit pouze otevřené úkoly"
 
-#: sl/SL_Menu.py:1138
-msgid "Sort by priority"
-msgstr "Řadit podle priority"
+#: sl/SL_Menu.py:1162
+msgid "None"
+msgstr "Žádné"
+
+#: sl/SL_Menu.py:1163
+msgid "By priority"
+msgstr "Podle priority"
+
+#: sl/SL_Menu.py:1164
+msgid "Alphabetically"
+msgstr "Abecedně"
+
+#: sl/SL_Menu.py:1169
+msgid "Sort tasks"
+msgstr "Řadit úkoly"
 
 #: sl/SL_Menu.py:1210 sl/SL_Menu.py:2748 sl/SL_Menu.py:2920
 msgid "0 (lowest) to 9 (highest)"
