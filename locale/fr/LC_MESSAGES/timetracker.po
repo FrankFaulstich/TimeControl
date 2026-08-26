@@ -317,9 +317,21 @@ msgstr "Modifier la tâche actuelle"
 msgid "Show only open tasks"
 msgstr "Afficher uniquement les tâches ouvertes"
 
-#: sl/SL_Menu.py:1138
-msgid "Sort by priority"
-msgstr "Trier par priorité"
+#: sl/SL_Menu.py:1162
+msgid "None"
+msgstr "Aucun"
+
+#: sl/SL_Menu.py:1163
+msgid "By priority"
+msgstr "Par priorité"
+
+#: sl/SL_Menu.py:1164
+msgid "Alphabetically"
+msgstr "Alphabétique"
+
+#: sl/SL_Menu.py:1169
+msgid "Sort tasks"
+msgstr "Trier les tâches"
 
 #: sl/SL_Menu.py:1210 sl/SL_Menu.py:2748 sl/SL_Menu.py:2920
 msgid "0 (lowest) to 9 (highest)"

@@ -11,7 +11,14 @@ import shutil
 # Add parent directory to path to import modules from root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from tt.TimeTracker import TimeTracker
+from tt.TimeTracker import (
+    TimeTracker,
+    TASK_ORDER_NONE,
+    TASK_ORDER_PRIORITY,
+    TASK_ORDER_ALPHABETICAL,
+    TASK_ORDERS,
+    sort_tasks,
+)
 from tt.sync_messages import sign_in_error_message, sync_error_message
 from i18n import _
 
@@ -1128,11 +1135,11 @@ def _today_tasks_body():
 
     # A widget's own session-state entry (keyed via `key=`) is cleared by
     # Streamlit whenever the widget isn't instantiated during a script run
-    # (e.g. while the edit-task form is showing) - so the checkbox appears to
-    # "forget" its value on returning to this view. Persisting the value in a
-    # plain, non-widget-bound key survives that gap for the rest of the
-    # session, while still starting fresh (False) on the next app start.
-    col_show_only_open, col_sort_by_priority = st.columns(2)
+    # (e.g. while the edit-task form is showing) - so a control appears to
+    # "forget" its setting on returning to this view. Persisting the value in
+    # a plain, non-widget-bound key survives that gap for the rest of the
+    # session, while still starting fresh on the next app start.
+    col_show_only_open, col_task_order = st.columns(2)
     with col_show_only_open:
         if "today_show_only_open_value" not in st.session_state:
             st.session_state.today_show_only_open_value = False
@@ -1143,18 +1150,29 @@ def _today_tasks_body():
         )
         st.session_state.today_show_only_open_value = show_only_open
 
-    with col_sort_by_priority:
+    with col_task_order:
         # Same session-state-mirroring reasoning as today_show_only_open_value
-        # above: a plain checkbox key would forget its value across a trip to
+        # above: a plain widget key would forget its value across a trip to
         # the edit-task form and back.
-        if "today_sort_by_priority_value" not in st.session_state:
-            st.session_state.today_sort_by_priority_value = False
-        sort_by_priority = st.checkbox(
-            _("Sort by priority"),
-            value=st.session_state.today_sort_by_priority_value,
-            key="today_sort_by_priority",
+        #
+        # What is mirrored is the order's own name, not the label shown for
+        # it. The labels are translated, so storing one would tie the
+        # remembered choice to the language it was made in.
+        order_labels = {
+            TASK_ORDER_NONE: _("None"),
+            TASK_ORDER_PRIORITY: _("By priority"),
+            TASK_ORDER_ALPHABETICAL: _("Alphabetically"),
+        }
+        if st.session_state.get("today_task_order_value") not in TASK_ORDERS:
+            st.session_state.today_task_order_value = TASK_ORDER_NONE
+        task_order = st.selectbox(
+            _("Sort tasks"),
+            TASK_ORDERS,
+            index=TASK_ORDERS.index(st.session_state.today_task_order_value),
+            format_func=lambda order: order_labels[order],
+            key="today_task_order",
         )
-        st.session_state.today_sort_by_priority_value = sort_by_priority
+        st.session_state.today_task_order_value = task_order
 
     today_tasks = [t for t in today_tasks_all if t.get('status') != 'done'] if show_only_open else today_tasks_all
 
@@ -1167,13 +1185,12 @@ def _today_tasks_body():
                 today_tasks_grouped[main_proj] = []
             today_tasks_grouped[main_proj].append(task)
 
-        if sort_by_priority:
+        if task_order != TASK_ORDER_NONE:
             # Sorted within each project group rather than flattened across
             # all of them, so the existing per-project grouping/expanders
-            # stay intact - a stable sort keeps same-priority tasks in their
-            # original relative order.
-            for tasks_in_group in today_tasks_grouped.values():
-                tasks_in_group.sort(key=lambda t: t.get('priority', 0), reverse=True)
+            # stay intact.
+            for main_proj, tasks_in_group in today_tasks_grouped.items():
+                today_tasks_grouped[main_proj] = sort_tasks(tasks_in_group, task_order)
 
         # Each project's tasks are shown inside a collapsible expander so
         # projects with many tasks don't crowd out the rest of the list.
