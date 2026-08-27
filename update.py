@@ -55,6 +55,35 @@ MIN_EXE_BYTES = 5 * 1024 * 1024
 UPDATE_CHECK_DEADLINE = 15   # seconds - hard ceiling for the "is there a new release" request
 DOWNLOAD_DEADLINE = 65       # seconds - hard ceiling for opening the download connection
 
+# Exit code with which the application asks to be started again.
+#
+# Nothing in this module can restart the application itself. Every caller of
+# the two functions below now runs inside the Streamlit script process, which
+# is a child of TimeTrackerSL_GUI.py and does not know the command line that
+# started the application: Streamlit overwrites it on the way in with just
+# the script's own path (streamlit/web/bootstrap.py, _fix_sys_argv:
+# `sys.argv = [main_script_path, *args]`). Re-executing sys.argv from there
+# runs `python sl/SL_Menu.py` - the script on its own, with no Streamlit
+# server around it - which is not the application.
+#
+# So the request travels outwards instead: this process ends with this code,
+# and the launcher, which does know how it was started, acts on it.
+RESTART_EXIT_CODE = 17
+
+
+def request_restart():
+    """
+    Ends this process, asking the launcher to start the application again.
+
+    Does not return. os._exit is deliberate - the same abrupt end the Exit
+    button uses - because a Streamlit script cannot unwind to an exit from a
+    widget callback. It also skips flushing, hence the two lines above it:
+    without them the caller's last words are lost with the process.
+    """
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(RESTART_EXIT_CODE)
+
 
 def _call_with_deadline(func, deadline, *args, **kwargs):
     """
@@ -493,24 +522,30 @@ def restore_previous_exe(target=None):
 
 def apply_update(url):
     """
-    Downloads (if not already downloaded) and installs the given update,
-    then restarts the application in-place to run the new version.
+    Puts the given update in place to be installed, ready for a restart.
+
+    Downloading is all that happens now. Unpacking the zip over the .py files
+    of the process that is running them is the one thing this cannot do
+    safely, and it does not have to: the launcher already installs a waiting
+    update.zip on its way in, in a process that has not imported any of the
+    files being replaced. download_update() has always said so in as many
+    words - "the update will be installed on the next start" - and the caller
+    below turns "the next start" into "now".
 
     :param url: The download URL for the update, as returned by check_for_updates().
+    :return: True if the application should restart to pick the update up.
+        False means there is nothing to restart for, either because the
+        download failed or because this is a frozen build, which swaps its
+        own executable at the next start instead - see install_exe_update().
     """
-    # A frozen build only fetches here. The swap needs a moment when no
-    # second process is running from the same image, and that is the next
-    # start, not now - see install_exe_update().
     if is_frozen():
         download_exe_update(url)
-        return
+        return False
 
     if not os.path.exists(UPDATE_ZIP_FILE):
         if not download_update(url):
-            return
-    install_update()
-    print(_("Restarting application to apply the update..."))
-    os.execv(sys.executable, ['python'] + sys.argv)
+            return False
+    return True
 
 def install_update():
     """
@@ -589,12 +624,15 @@ def restore_previous_version():
     """
     Restores the application to the previous version from 'prev-version.zip'.
     'data.json' (user data) is explicitly NOT overwritten.
-    The application restarts after successful restoration.
+
+    :return: True if the files were restored and the application should
+        restart to run them. The code now in memory is still the version that
+        was just replaced, so until it does, nothing has visibly changed.
     """
     backup_zip_file = "prev-version.zip"
     if not os.path.exists(backup_zip_file):
         print(_("Error: No previous version backup '{filename}' found.").format(filename=backup_zip_file))
-        return
+        return False
 
     print(_("Restoring previous version from '{filename}'...").format(filename=backup_zip_file))
     try:
@@ -626,11 +664,11 @@ def restore_previous_version():
 
         print(_("Previous version restored successfully."))
         os.remove(backup_zip_file)
-        print(_("Restarting application to apply changes..."))
-        os.execv(sys.executable, ['python'] + sys.argv)
+        return True
     except Exception as e:
         print(_("Error during restoration: {error}").format(error=e))
         print(_("The backup file '{filename}' was not deleted.").format(filename=backup_zip_file))
+        return False
 
 if __name__ == "__main__":
     try:
