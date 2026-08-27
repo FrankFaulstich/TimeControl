@@ -1,11 +1,14 @@
 import unittest
 import unittest.mock
+import ast
 import hashlib
+import shutil
 import os
 import sys
 import tempfile
 import threading
 import time
+import zipfile
 
 # Add parent directory to path to import modules from root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -618,6 +621,143 @@ class TestRelaunchingAfterTheSwap(unittest.TestCase):
         with unittest.mock.patch('update.subprocess.Popen',
                                  side_effect=OSError("no such file")):
             self.assertFalse(update.relaunch_frozen(self.EXE))
+
+
+class TestAskingToBeStartedAgain(unittest.TestCase):
+    """
+    Nothing in update.py can restart the application, and it no longer tries.
+
+    Both of the functions below used to end with
+
+        os.execv(sys.executable, ['python'] + sys.argv)
+
+    which came from TimeTrackerCLI.py, where sys.argv really was the command
+    line that started the program. That file is gone. Every caller left runs
+    inside the Streamlit script process, and Streamlit replaces sys.argv on
+    the way in with just the script's own path (its web/bootstrap.py:
+    `sys.argv = [main_script_path, *args]`). So the line re-executed
+
+        python sl/SL_Menu.py
+
+    - the script with no Streamlit server around it. Session state does not
+    work there, and the run died on the first widget that reads it, which is
+    the traceback in issue #572. It also took the Streamlit server with it,
+    because execv replaces the process rather than starting another.
+    """
+
+    def test_the_module_never_re_executes_a_command_line(self):
+        """
+        Read from the syntax tree, not the text: the comment that explains
+        all this names sys.argv, and a grep would find its own explanation.
+        """
+        with open(update.__file__, encoding='utf-8') as handle:
+            tree = ast.parse(handle.read(), update.__file__)
+        found = [(node.attr, node.lineno) for node in ast.walk(tree)
+                 if isinstance(node, ast.Attribute)
+                 and node.attr in ('execv', 'execve', 'execvp', 'argv')]
+        self.assertEqual(found, [], 'update.py cannot know how the application '
+                                    'was started, so it must not act on a guess')
+
+    def test_the_request_cannot_be_confused_with_an_ordinary_ending(self):
+        self.assertNotIn(update.RESTART_EXIT_CODE, (0, 1, 2, None),
+                         'a plain success or failure must not read as a restart')
+        self.assertGreater(update.RESTART_EXIT_CODE, 0)
+
+    def test_requesting_a_restart_ends_the_process_with_that_code(self):
+        with unittest.mock.patch('update.os._exit') as ended:
+            with unittest.mock.patch('update.sys.stdout') as out:
+                update.request_restart()
+        ended.assert_called_once_with(update.RESTART_EXIT_CODE)
+        out.flush.assert_called_once_with()
+
+    # --- apply_update: stage it, do not install it here -------------------
+
+    def _apply(self, exists, frozen=False, downloaded=True):
+        with unittest.mock.patch('update.is_frozen', return_value=frozen), \
+             unittest.mock.patch('update.os.path.exists', return_value=exists), \
+             unittest.mock.patch('update.download_update',
+                                 return_value=downloaded) as download, \
+             unittest.mock.patch('update.download_exe_update') as download_exe, \
+             unittest.mock.patch('update.install_update') as install:
+            asked = update.apply_update('https://example.invalid/x.zip')
+        return asked, download, download_exe, install
+
+    def test_a_source_update_is_downloaded_and_left_for_the_next_start(self):
+        """
+        Unpacking the zip over the .py files of the process running them is
+        the one thing this cannot do safely - and does not have to, because
+        the launcher already installs a waiting update.zip on its way in.
+        """
+        asked, download, _exe, install = self._apply(exists=False)
+        self.assertTrue(asked, 'the application has to restart to pick it up')
+        download.assert_called_once()
+        install.assert_not_called()
+
+    def test_an_update_already_downloaded_is_not_fetched_again(self):
+        asked, download, _exe, install = self._apply(exists=True)
+        self.assertTrue(asked)
+        download.assert_not_called()
+        install.assert_not_called()
+
+    def test_a_failed_download_leaves_the_application_where_it_is(self):
+        asked, _download, _exe, install = self._apply(exists=False, downloaded=False)
+        self.assertFalse(asked, 'restarting would gain nothing and cost the session')
+        install.assert_not_called()
+
+    def test_a_frozen_build_only_fetches_and_stays_put(self):
+        """Its swap needs a start with no second process on the same image."""
+        asked, download, download_exe, install = self._apply(exists=False, frozen=True)
+        self.assertFalse(asked)
+        download_exe.assert_called_once()
+        download.assert_not_called()
+        install.assert_not_called()
+
+
+class TestRollingBackAsksForTheSameThing(unittest.TestCase):
+    """
+    The rollback button had the identical defect, unreported: it also called
+    into update.py and also ended in that execv. Restoring the files is only
+    half of it - the code already in memory is still the version being rolled
+    back from, so until the application starts again nothing has changed for
+    the user.
+    """
+
+    def setUp(self):
+        self.home = tempfile.mkdtemp()
+        self.previous = os.getcwd()
+        os.chdir(self.home)
+        self.addCleanup(shutil.rmtree, self.home, True)
+        self.addCleanup(os.chdir, self.previous)
+
+    def _backup(self, files):
+        with zipfile.ZipFile('prev-version.zip', 'w') as archive:
+            for name, body in files.items():
+                archive.writestr('TimeControl-old/' + name, body)
+
+    def test_a_restore_says_the_application_has_to_start_again(self):
+        self._backup({'marker.py': 'VERSION = "old"\n'})
+        self.assertTrue(update.restore_previous_version())
+        with open(os.path.join(self.home, 'marker.py'), encoding='utf-8') as f:
+            self.assertEqual(f.read(), 'VERSION = "old"\n')
+        self.assertFalse(os.path.exists('prev-version.zip'),
+                         'a consumed backup is removed, as before')
+
+    def test_the_user_s_data_is_still_left_alone(self):
+        with open(os.path.join(self.home, 'data.json'), 'w', encoding='utf-8') as f:
+            f.write('{"mine": true}')
+        self._backup({'data.json': '{"theirs": true}'})
+        self.assertTrue(update.restore_previous_version())
+        with open(os.path.join(self.home, 'data.json'), encoding='utf-8') as f:
+            self.assertEqual(f.read(), '{"mine": true}')
+
+    def test_nothing_to_restore_asks_for_no_restart(self):
+        self.assertFalse(update.restore_previous_version())
+
+    def test_a_broken_backup_asks_for_no_restart(self):
+        """Restarting into a half-written checkout is worse than not starting."""
+        with open(os.path.join(self.home, 'prev-version.zip'), 'wb') as f:
+            f.write(b'this is not a zip')
+        self.assertFalse(update.restore_previous_version())
 
 
 if __name__ == "__main__":

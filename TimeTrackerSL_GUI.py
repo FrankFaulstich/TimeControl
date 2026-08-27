@@ -15,10 +15,14 @@ from tt.TimeTracker import TimeTracker
 try:
     from update import (check_for_updates, download_update, install_update,
                         clear_update_leftovers, install_exe_update,
-                        pending_exe_update, relaunch_frozen)
+                        pending_exe_update, relaunch_frozen, RESTART_EXIT_CODE)
     UPDATE_AVAILABLE = True
 except ImportError:
     UPDATE_AVAILABLE = False
+    # Without the module nothing can ask for a restart. None rather than a
+    # number so it cannot be matched by accident - a process that was killed
+    # rather than exited reports None as its code.
+    RESTART_EXIT_CODE = None
 
 CONFIG_FILE = 'config.json'
 ICON_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sl', 'icon.png')
@@ -171,6 +175,17 @@ def _safe_window_position(x, y, width, height):
     except Exception:
         return None, None
 
+def _asked_for_restart(exit_code):
+    """
+    Whether the Streamlit process ended by asking to be started again.
+
+    A process that was killed rather than ended reports None, which must not
+    be read as a request - and is what RESTART_EXIT_CODE falls back to when
+    the update module is missing, so both halves of this check matter.
+    """
+    return exit_code is not None and exit_code == RESTART_EXIT_CODE
+
+
 def start_streamlit_server():
     """
     Initializes and runs the pywebview GUI for the Streamlit app.
@@ -184,6 +199,10 @@ def start_streamlit_server():
        server process terminates unexpectedly (e.g., via the Exit button).
     6. Starts the main `pywebview` event loop.
     7. Terminates the Streamlit subprocess when the `pywebview` window is closed.
+
+    :return: True if the application asked to be started again rather than
+        closed - see update.request_restart(). The Streamlit process cannot
+        do that itself; this is the process that knows how it was started.
     """
 
     port = 8501 # Default Streamlit port
@@ -291,9 +310,15 @@ def start_streamlit_server():
 
         webview.start()
 
-        if process.poll() is None:
+        # Asked once, so the decision to kill it and the decision to come
+        # back rest on the same observation. Polling again below could
+        # answer differently - the child is free to exit in between - and
+        # then the two would disagree about what just happened.
+        exit_code = process.poll()
+        if exit_code is None:
             process.terminate()
         stop_mcp_server()
+        return _asked_for_restart(exit_code)
     else:
         if not webview:
             print("Warning: 'webview' module not found. Opening in system browser instead.")
@@ -307,6 +332,7 @@ def start_streamlit_server():
                 process.terminate()
         finally:
             stop_mcp_server()
+        return _asked_for_restart(process.poll())
 
 if __name__ == '__main__':
     # Sentinel re-launches: see start_streamlit_server()'s cmd construction
@@ -353,12 +379,35 @@ if __name__ == '__main__':
         print("Update found. Installing...")
         install_update()
         print("Restarting application...")
+        # execv replaces this process without flushing what Python has
+        # buffered, so the line above would never reach the log it is
+        # meant to explain.
+        sys.stdout.flush()
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
     tt = TimeTracker()
     tt.initialize_dependencies()
 
-    start_streamlit_server()
+    restart_requested = start_streamlit_server()
+
+    # The application asked to come straight back rather than close - after
+    # staging an update, or after rolling one back. This is the only process
+    # that can do that: sys.argv here is still the command line the user
+    # started, which is not true inside the Streamlit process (see
+    # update.RESTART_EXIT_CODE). Coming back in means going past the
+    # install-a-waiting-update.zip block above, which is what makes a staged
+    # update take effect. execv does not return.
+    #
+    # Only a source checkout asks for this today; a frozen build's button
+    # downloads and says so, because swapping its .exe needs a start with no
+    # process running from that image. Should one ever ask, this is the wrong
+    # way to bring it back: a frozen image must hand nothing of its own
+    # unpacking to the process replacing it, which is what relaunch_frozen()
+    # is for (and what the block above the Streamlit server uses).
+    if restart_requested:
+        print("Restarting at the application's request...")
+        sys.stdout.flush()   # execv does not - see above
+        os.execv(sys.executable, [sys.executable] + sys.argv)
 
     if UPDATE_AVAILABLE and not _is_frozen():
         print("Checking for updates...")

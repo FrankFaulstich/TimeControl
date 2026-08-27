@@ -328,5 +328,75 @@ class TestStreamlitGUI(unittest.TestCase):
             TimeTrackerSL_GUI._set_macos_dock_icon()  # must not raise
 
 
+class TestCarryingOutARestart(unittest.TestCase):
+    """
+    The half of issue #572 that lives here.
+
+    The application cannot restart itself from inside the Streamlit process:
+    that process is a child, and Streamlit has replaced its sys.argv with the
+    script path alone, so the command line the user started is not knowable
+    there. It ends with a distinct exit code instead, and this process - the
+    one that does still hold that command line - acts on it.
+    """
+
+    def _run(self, exit_code, view_mode='webview'):
+        """start_streamlit_server() with a child that ended in a given way."""
+        child = unittest.mock.MagicMock()
+        child.poll.return_value = exit_code
+        child.returncode = exit_code
+        with unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists', return_value=True), \
+             unittest.mock.patch('TimeTrackerSL_GUI.json.load',
+                                 return_value={'view_mode': view_mode}), \
+             unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen',
+                                 return_value=child), \
+             unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window'), \
+             unittest.mock.patch('TimeTrackerSL_GUI.webview.start'), \
+             unittest.mock.patch('TimeTrackerSL_GUI.webbrowser.open'), \
+             unittest.mock.patch('TimeTrackerSL_GUI.time.sleep'):
+            return TimeTrackerSL_GUI.start_streamlit_server(), child
+
+    def test_the_request_is_passed_back_to_the_caller(self):
+        asked, _child = self._run(TimeTrackerSL_GUI.RESTART_EXIT_CODE)
+        self.assertTrue(asked)
+
+    def test_a_plain_exit_is_not_a_restart(self):
+        """The Exit button ends the same process with 0. It must stay closed."""
+        asked, _child = self._run(0)
+        self.assertFalse(asked)
+
+    def test_a_crash_is_not_a_restart(self):
+        asked, _child = self._run(1)
+        self.assertFalse(asked)
+
+    def test_closing_the_window_is_not_a_restart(self):
+        """
+        Then the child is still running and we kill it. None is what a
+        process that never exited reports - and it must not match.
+        """
+        asked, child = self._run(None)
+        self.assertFalse(asked)
+        child.terminate.assert_called_once_with()
+
+    def test_a_request_still_arrives_without_the_webview_window(self):
+        """The browser branch reaches the same end by a different route."""
+        asked, _child = self._run(TimeTrackerSL_GUI.RESTART_EXIT_CODE,
+                                  view_mode='browser')
+        self.assertTrue(asked)
+
+    def test_a_running_child_is_not_killed_when_it_asked_for_a_restart(self):
+        """It has already gone; terminate() would be aimed at nothing."""
+        _asked, child = self._run(TimeTrackerSL_GUI.RESTART_EXIT_CODE)
+        child.terminate.assert_not_called()
+
+    def test_nothing_can_ask_when_the_update_module_is_missing(self):
+        """
+        RESTART_EXIT_CODE falls back to None there, and None is exactly what
+        a killed child reports - so the fallback must not be matchable.
+        """
+        with unittest.mock.patch.object(TimeTrackerSL_GUI,
+                                        'RESTART_EXIT_CODE', None):
+            self.assertFalse(TimeTrackerSL_GUI._asked_for_restart(None))
+
+
 if __name__ == '__main__':
     unittest.main()

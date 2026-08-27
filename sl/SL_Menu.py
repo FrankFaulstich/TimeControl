@@ -25,7 +25,7 @@ from i18n import _
 try:
     from update import (restore_previous_version, check_for_updates, apply_update,
                         should_check_for_updates, download_exe_update,
-                        restore_previous_exe, PREVIOUS_EXE)
+                        restore_previous_exe, request_restart, PREVIOUS_EXE)
     UPDATE_MODULE_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
     UPDATE_MODULE_AVAILABLE = False
@@ -579,8 +579,15 @@ def render_header(title=None, subtitle=None):
                         'success' if downloaded else 'error')
                     st.rerun()
                 else:
-                    with st.spinner(_("Downloading and installing update...")):
-                        apply_update(update_check['url'])
+                    with st.spinner(_("Downloading update...")):
+                        restart = apply_update(update_check['url'])
+                    if restart:
+                        # Ends this process. The launcher installs the
+                        # downloaded zip on its way back in and comes up on
+                        # the new version - see update.request_restart().
+                        request_restart()
+                    set_feedback(_("The update could not be downloaded."), 'error')
+                    st.rerun()
     render_sync_notice()
     if title:
         st.title(title)
@@ -1276,7 +1283,15 @@ def _today_tasks_body():
                                 )
                                 st.rerun()
                 finally:
-                    st.session_state.today_view_expanded_projects[main_proj_name] = st.session_state[expander_key]
+                    # .get, because this runs while an exception may already
+                    # be on its way out - usually the one st.rerun() raises,
+                    # which is expected here. A KeyError raised in a finally
+                    # replaces that exception with itself, so bookkeeping
+                    # that failed would be reported instead of what actually
+                    # happened. Keeping the value we drew with is right in
+                    # either case: the widget did not report a new one.
+                    st.session_state.today_view_expanded_projects[main_proj_name] = (
+                        st.session_state.get(expander_key, is_expanded))
     elif show_only_open and today_tasks_all:
         st.info(_("No open tasks for today."))
     else:
@@ -1628,10 +1643,9 @@ def view_settings():
         elif getattr(sys, 'frozen', False):
             # For a frozen build the rollback is not an archive but the
             # executable the last update renamed aside, so putting it back is
-            # a rename rather than an unpack. It cannot restart the
-            # application either: this code runs in the Streamlit subprocess,
-            # and exiting that would take down the interface while leaving
-            # the application itself running.
+            # a rename rather than an unpack. It does not restart either: a
+            # running .exe cannot be swapped for the one just put back, so
+            # the next start is the earliest this can take effect anyway.
             previous = os.path.join(
                 os.path.dirname(os.path.abspath(sys.executable)), PREVIOUS_EXE)
             if not os.path.exists(previous):
@@ -1654,9 +1668,13 @@ def view_settings():
             st.warning(_("This will restore the application to the previously backed-up version. The application will then restart. You may need to manually refresh your browser if it does not reconnect automatically."))
             if st.button(_("Restore and Restart"), type="primary", use_container_width=True, key="settings_restore_btn"):
                 with st.spinner(_("Restoring and restarting...")):
-                    restore_previous_version()
-                # This code is unreachable due to os.execv in the called function
-                st.success(_("Restore complete. Please restart the application."))
+                    restored = restore_previous_version()
+                if restored:
+                    # Ends this process; the launcher brings the restored
+                    # version up. Nothing after this line runs.
+                    request_restart()
+                set_feedback(_("The previous version could not be restored."), 'error')
+                st.rerun()
 
     with _settings_section("storage", _("Change Data Storage Location")):
         current_path = st.session_state.tracker.file_path
