@@ -17,6 +17,7 @@ from tt.TimeTracker import (
     TASK_ORDER_PRIORITY,
     TASK_ORDER_ALPHABETICAL,
     TASK_ORDERS,
+    completion_counts,
     completion_ratio,
     month_grid,
     shift_month,
@@ -1119,6 +1120,79 @@ def _weekday_abbreviations():
             _("Sun")]
 
 
+def render_progress_css():
+    """
+    Turns the help icon beside the progress bar into the bar's own tooltip.
+
+    st.progress cannot carry a tooltip: it has no help= of its own, and its
+    text= prints a caption above the bar, which is the one thing the bar was
+    asked not to have. An empty st.markdown next to it does have help=, and
+    that is Streamlit's own tooltip - the same bubble as every button in this
+    app, rather than a second kind invented here.
+
+    What Streamlit draws for it, though, is a 16px question mark on a line of
+    its own below the bar. So the markdown is lifted out of the flow and laid
+    over the bar, its button stretched to the full width, and the question
+    mark itself hidden: what is left is the bar, with the figures appearing
+    when the pointer rests on it.
+
+    The hover target carries inline styles, hence the !important - a
+    stylesheet cannot outrank those any other way.
+    """
+    st.markdown("""
+        <style>
+        /* The box the tooltip target measures itself against. */
+        [class*="st-key-today_progress"] {
+            position: relative;
+            gap: 0 !important;
+        }
+        /* The markdown's slot keeps its place in the flow but is given no
+           height, so the bar's row does not grow a second line. */
+        [class*="st-key-today_progress"] > [data-testid="stElementContainer"]:last-child {
+            height: 0 !important;
+            overflow: visible;
+        }
+        /* An absolutely positioned box measures itself against its nearest
+           ancestor that establishes a containing block, and Streamlit puts
+           three of those between the tooltip target and the bar: the slot
+           and the label are `position: relative`, and the span around the
+           icon carries a `transform` that nudges it 1.6px - a transform
+           establishes one just as position does, which is the part that is
+           easy to miss. All three are zero-sized boxes sitting below the
+           bar. Standing them down leaves the container above as the frame.
+
+           The :not() matters: without it this rule also matches the target
+           itself - it is a span inside the markdown too - and being the more
+           specific of the two, its `position: static` would beat the
+           `position: absolute` set below. */
+        [class*="st-key-today_progress"] > [data-testid="stElementContainer"]:last-child,
+        [class*="st-key-today_progress"] .stMarkdown,
+        [class*="st-key-today_progress"] .stMarkdown span:not([data-testid="stTooltipHoverTarget"]),
+        [class*="st-key-today_progress"] [data-testid="stTooltipIcon"],
+        [class*="st-key-today_progress"] label {
+            position: static !important;
+            transform: none !important;
+        }
+        [class*="st-key-today_progress"] [data-testid="stTooltipHoverTarget"] {
+            position: absolute !important;
+            inset: 0 !important;
+            width: auto !important;
+            height: auto !important;
+        }
+        [class*="st-key-today_progress"] [data-testid="stTooltipHoverTarget"] button {
+            width: 100%;
+            height: 100%;
+            cursor: help;
+        }
+        /* The question mark would sit on top of the bar. The button around
+           it stays: that is the surface being hovered. */
+        [class*="st-key-today_progress"] [data-testid="stTooltipHoverTarget"] svg {
+            display: none;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+
 def render_calendar_css():
     """
     Makes the task buttons fit a calendar square.
@@ -1292,7 +1366,18 @@ def _today_tasks_body():
         # completion_ratio().
         done_ratio = completion_ratio(today_tasks_all)
         if done_ratio is not None:
-            st.progress(done_ratio)
+            done, total = completion_counts(today_tasks_all)
+            render_progress_css()
+            with st.container(key="today_progress"):
+                st.progress(done_ratio)
+                # The figures live in a tooltip rather than beside the bar.
+                # st.progress has no help= of its own and its text= prints
+                # above the bar, so the tooltip is borrowed from an empty
+                # markdown and stretched over the bar by render_progress_css()
+                # - which keeps Streamlit's own tooltip, the same one every
+                # button in this app uses, instead of inventing another.
+                st.markdown("", help=_("{done} of {total} tasks done").format(
+                    done=done, total=total))
 
     with col_done:
         if st.button("✓", help=_("Done"), disabled=not current_work or is_done, key="main_done_button"):

@@ -2995,3 +2995,7 @@ msgstr "Voriger Monat"
 #: sl/SL_Menu.py
 msgid "Next month"
 msgstr "Nächster Monat"
+
+#: sl/SL_Menu.py
+msgid "{done} of {total} tasks done"
+msgstr "{done} von {total} Aufgaben erledigt"

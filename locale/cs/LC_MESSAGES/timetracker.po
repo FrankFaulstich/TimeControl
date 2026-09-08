@@ -2935,3 +2935,7 @@ msgstr "Předchozí měsíc"
 #: sl/SL_Menu.py
 msgid "Next month"
 msgstr "Další měsíc"
+
+#: sl/SL_Menu.py
+msgid "{done} of {total} tasks done"
+msgstr "{done} z {total} úkolů hotovo"

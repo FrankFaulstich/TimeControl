@@ -123,6 +123,19 @@ def sort_tasks(tasks, order):
     return tasks
 
 
+def completion_counts(tasks):
+    """
+    How many of `tasks` are finished, and how many there are.
+
+    The one place either number is worked out, so the bar drawn from the
+    ratio below and the figures named beside it cannot disagree.
+
+    :return: (done, total).
+    """
+    tasks = list(tasks)
+    return sum(1 for task in tasks if task.get('status') == 'done'), len(tasks)
+
+
 def completion_ratio(tasks):
     """
     How much of `tasks` is done, as a fraction between 0 and 1.
@@ -135,11 +148,10 @@ def completion_ratio(tasks):
         the same thing as having nothing to do, and is the more discouraging
         of the two to be told wrongly.
     """
-    tasks = list(tasks)
-    if not tasks:
+    done, total = completion_counts(tasks)
+    if not total:
         return None
-    done = sum(1 for task in tasks if task.get('status') == 'done')
-    return done / len(tasks)
+    return done / total
 
 
 # One cell of a month grid: the day it stands for, whether that day belongs to
