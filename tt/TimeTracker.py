@@ -122,13 +122,32 @@ def sort_tasks(tasks, order):
     return tasks
 
 
+def completion_ratio(tasks):
+    """
+    How much of `tasks` is done, as a fraction between 0 and 1.
+
+    Counts what is finished, not what is left: a bar drawn from this fills up
+    as the day is worked through, which is what a reader expects of one.
+
+    :return: None when there is nothing to measure. An empty list has no
+        ratio - 0.0 would be a bar reading "none of it done", which is not
+        the same thing as having nothing to do, and is the more discouraging
+        of the two to be told wrongly.
+    """
+    tasks = list(tasks)
+    if not tasks:
+        return None
+    done = sum(1 for task in tasks if task.get('status') == 'done')
+    return done / len(tasks)
+
+
 class TimeTracker:
     """
     Manages time tracking for various main and sub-projects.
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.10"
+    VERSION = "4.11"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
