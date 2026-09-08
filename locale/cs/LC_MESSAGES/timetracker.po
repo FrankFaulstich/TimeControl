@@ -2847,3 +2847,91 @@ msgstr "Neočekávaná chyba ({code})."
 
 #~ msgid "The server could not be reached ({reason})."
 #~ msgstr "Server není dostupný ({reason})."
+
+#: sl/SL_Menu.py
+msgid "January"
+msgstr "leden"
+
+#: sl/SL_Menu.py
+msgid "February"
+msgstr "únor"
+
+#: sl/SL_Menu.py
+msgid "March"
+msgstr "březen"
+
+#: sl/SL_Menu.py
+msgid "April"
+msgstr "duben"
+
+#: sl/SL_Menu.py
+msgid "May"
+msgstr "květen"
+
+#: sl/SL_Menu.py
+msgid "June"
+msgstr "červen"
+
+#: sl/SL_Menu.py
+msgid "July"
+msgstr "červenec"
+
+#: sl/SL_Menu.py
+msgid "August"
+msgstr "srpen"
+
+#: sl/SL_Menu.py
+msgid "September"
+msgstr "září"
+
+#: sl/SL_Menu.py
+msgid "October"
+msgstr "říjen"
+
+#: sl/SL_Menu.py
+msgid "November"
+msgstr "listopad"
+
+#: sl/SL_Menu.py
+msgid "December"
+msgstr "prosinec"
+
+#: sl/SL_Menu.py
+msgid "Mon"
+msgstr "po"
+
+#: sl/SL_Menu.py
+msgid "Tue"
+msgstr "út"
+
+#: sl/SL_Menu.py
+msgid "Wed"
+msgstr "st"
+
+#: sl/SL_Menu.py
+msgid "Thu"
+msgstr "čt"
+
+#: sl/SL_Menu.py
+msgid "Fri"
+msgstr "pá"
+
+#: sl/SL_Menu.py
+msgid "Sat"
+msgstr "so"
+
+#: sl/SL_Menu.py
+msgid "Sun"
+msgstr "ne"
+
+#: sl/SL_Menu.py
+msgid "Calendar"
+msgstr "Kalendář"
+
+#: sl/SL_Menu.py
+msgid "Previous month"
+msgstr "Předchozí měsíc"
+
+#: sl/SL_Menu.py
+msgid "Next month"
+msgstr "Další měsíc"

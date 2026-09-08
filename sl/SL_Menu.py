@@ -5,7 +5,7 @@ import sys
 import re
 import time
 import contextlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import shutil
 
 # Add parent directory to path to import modules from root
@@ -18,6 +18,8 @@ from tt.TimeTracker import (
     TASK_ORDER_ALPHABETICAL,
     TASK_ORDERS,
     completion_ratio,
+    month_grid,
+    shift_month,
     sort_tasks,
 )
 from tt.sync_messages import sign_in_error_message, sync_error_message
@@ -806,22 +808,24 @@ def render_toolbar(return_to):
 # The key decides which tab opens, and switching tabs sets the key - so the
 # two stay mirrored and everything that returns here still lands where it
 # meant to.
-_WORK_ROUTES = ('today_view', 'task_planning')
+_WORK_ROUTES = ('today_view', 'task_planning', 'calendar')
 _WORK_TABS_KEY = 'work_tabs'
 
 
 def _work_tab_labels():
     """Translated at call time, like every other label in this file."""
-    return {'today_view': _("Today's Tasks"), 'task_planning': _("Task Planning")}
+    return {'today_view': _("Today's Tasks"),
+            'task_planning': _("Task Planning"),
+            'calendar': _("Calendar")}
 
 
 def view_work():
     """
-    The home screen: header, toolbar, and the two working views as tabs.
+    The home screen: header, toolbar, and the three working views as tabs.
 
     Only the open tab's body runs. `on_change="rerun"` is what makes that
     possible - without it Streamlit computes every tab on every redraw, and
-    these two are the most expensive screens in the app.
+    these are the most expensive screens in the app.
     """
     labels = _work_tab_labels()
     route_of = {label: route for route, label in labels.items()}
@@ -872,16 +876,18 @@ def view_work():
                 continue
             if route == 'today_view':
                 _today_tasks_body()
-            else:
+            elif route == 'task_planning':
                 _task_planning_body()
+            else:
+                _calendar_body()
 
 
 def _task_planning_body():
     """
     The task planning list: everything not closed, filtered by due date.
 
-    The header and the toolbar are not drawn here - this is one of two tabs
-    inside view_work(), which draws both once for the pair.
+    The header and the toolbar are not drawn here - this is one of three
+    tabs inside view_work(), which draws both once for all of them.
     """
 
     filter_options = [
@@ -1079,7 +1085,16 @@ def _task_planning_body():
                                     )
                                     st.rerun()
                     finally:
-                        st.session_state.task_planning_expanded_projects[main_proj_name] = st.session_state[expander_key]
+                        # .get, for the same reason as the today view's copy
+                        # of this line: an exception is normally already on
+                        # its way out here - the one st.rerun() raises - and
+                        # a KeyError thrown in a finally replaces it, so a
+                        # failure of the bookkeeping would be reported in
+                        # place of what actually happened. The state the
+                        # expander was drawn with is the honest fallback:
+                        # nothing told us it changed.
+                        st.session_state.task_planning_expanded_projects[main_proj_name] = (
+                            st.session_state.get(expander_key, is_expanded))
     else:
         st.info(_("No tasks found."))
 
@@ -1087,13 +1102,148 @@ def _task_planning_body():
     # the way out. It used to lead to whatever opened this screen, which is
     # now almost always the other tab.
 
+def _month_names():
+    """Translated at call time, like every other label in this file."""
+    return [_("January"), _("February"), _("March"), _("April"), _("May"),
+            _("June"), _("July"), _("August"), _("September"), _("October"),
+            _("November"), _("December")]
+
+
+def _weekday_abbreviations():
+    """
+    Monday first, matching the week the grid is built with.
+
+    Spelled out as their own translatable strings rather than cut from the
+    full names: two letters happens to be right for all five languages
+    shipped today, but that is a coincidence of these five and not a rule.
+    """
+    return [_("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"),
+            _("Sun")]
+
+
+def render_calendar_css():
+    """
+    Makes the task buttons fit a calendar square.
+
+    A square is about 44px wide, and Streamlit's default button is sized for
+    a sentence: 16px type that breaks mid-word when it runs out of room, so
+    "Angebot schreiben" comes out as "Angebot schreibe / n". Smaller type
+    breaking only at spaces, two lines at most, and the rest to an ellipsis -
+    the full name and its project are on the button's tooltip, which is what
+    that tooltip is for.
+
+    Only sizes and spacing, no colours, so both themes are left alone.
+    """
+    st.markdown("""
+        <style>
+        [class*="st-key-calendar_task_"] button {
+            padding: 0.15rem 0.35rem;
+            min-height: 0;
+            justify-content: flex-start;
+            text-align: left;
+        }
+        [class*="st-key-calendar_task_"] button p {
+            font-size: 0.72rem;
+            line-height: 1.2;
+            overflow-wrap: normal;
+            word-break: normal;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+
+def _calendar_body():
+    """
+    A month at a glance, with every task sitting on the day it falls due.
+
+    The header and the toolbar are not drawn here - this is one of three tabs
+    inside view_work(), which draws both once for all of them.
+    """
+    render_calendar_css()
+    today = date.today()
+
+    # Same session-state-mirroring reasoning as the today view's controls:
+    # Streamlit discards a widget's own state while the widget is not drawn,
+    # so without a plain key of our own, every trip to the edit form would
+    # snap the calendar back to the current month - and editing a task is the
+    # main thing this page is for.
+    if 'calendar_month_value' not in st.session_state:
+        st.session_state.calendar_month_value = (today.year, today.month)
+    year, month = st.session_state.calendar_month_value
+
+    col_back, col_label, col_forward, col_today = st.columns([1, 6, 1, 2])
+    with col_back:
+        if st.button("‹", key="calendar_prev_month", help=_("Previous month"),
+                     use_container_width=True):
+            st.session_state.calendar_month_value = shift_month(year, month, -1)
+            st.rerun()
+    with col_label:
+        st.markdown("### %s %d" % (_month_names()[month - 1], year))
+    with col_forward:
+        if st.button("›", key="calendar_next_month", help=_("Next month"),
+                     use_container_width=True):
+            st.session_state.calendar_month_value = shift_month(year, month, 1)
+            st.rerun()
+    with col_today:
+        # Without this, coming back from six months away means six clicks.
+        if st.button(_("Today"), key="calendar_this_month",
+                     use_container_width=True,
+                     disabled=(year, month) == (today.year, today.month)):
+            st.session_state.calendar_month_value = (today.year, today.month)
+            st.rerun()
+
+    # Finished tasks are kept (status_filter='open' excludes only closed
+    # ones), so a day that was worked through shows what was on it rather
+    # than emptying itself.
+    tasks = st.session_state.tracker.list_tasks(status_filter='open')
+
+    for column, name in zip(st.columns(7), _weekday_abbreviations()):
+        column.markdown("**%s**" % name)
+
+    for week in month_grid(year, month, tasks):
+        for column, day in zip(st.columns(7), week):
+            with column:
+                if day.date == today:
+                    number = "**%d**" % day.date.day
+                elif day.in_month:
+                    number = str(day.date.day)
+                else:
+                    # Dimmed by opacity rather than a colour, so it stays
+                    # readable in both the light and the dark theme.
+                    number = ("<span style='opacity:.4'>%d</span>"
+                              % day.date.day)
+                st.markdown(number, unsafe_allow_html=True)
+
+                for position, task in enumerate(day.tasks):
+                    name = task['task_name']
+                    done = task.get('status') == 'done'
+                    # The project and the full name go in the tooltip: a
+                    # square this narrow cuts the label off, and the name
+                    # alone does not always say which task is meant.
+                    if st.button(("✔ " if done else "") + name,
+                                 key="calendar_task_%s_%d" % (day.date.isoformat(),
+                                                              position),
+                                 help="%s / %s" % (task['main_project_name'], name),
+                                 use_container_width=True):
+                        st.session_state.context['selected_main'] = task['main_project_name']
+                        st.session_state.context['selected_task'] = name
+                        st.session_state.context['selected_task_id'] = task.get('id')
+                        st.session_state.context['return_to'] = 'calendar'
+                        navigate_to('edit_task_form')
+
+
 def _today_tasks_body():
     """
     Everything marked for today, plus the current work session and the Exit
     button - this is the app's home, so those live here.
 
-    The header and the toolbar are not drawn here - this is one of two tabs
-    inside view_work(), which draws both once for the pair.
+    The header and the toolbar are not drawn here - this is one of three
+    tabs inside view_work(), which draws both once for all of them.
     """
 
     st.session_state.tracker.cleanup_overdue_today_tasks()
@@ -3366,9 +3516,10 @@ def view_report_display():
 # --- Main Router ---
 
 menu_map = {
-    # Both keys reach the same screen; which tab opens is decided there.
+    # All three keys reach the same screen; which tab opens is decided there.
     'task_planning': view_work,
     'today_view': view_work,        # Default/home view - see view_work()
+    'calendar': view_work,
     'email_assignment': view_email_assignment,
     'project_management': view_project_management,
     'main_project_mgmt': view_main_project_mgmt,
