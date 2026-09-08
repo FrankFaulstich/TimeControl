@@ -2907,3 +2907,91 @@ msgstr "Unerwarteter Fehler ({code})."
 
 #~ msgid "The server could not be reached ({reason})."
 #~ msgstr "Der Server ist nicht erreichbar ({reason})."
+
+#: sl/SL_Menu.py
+msgid "January"
+msgstr "Januar"
+
+#: sl/SL_Menu.py
+msgid "February"
+msgstr "Februar"
+
+#: sl/SL_Menu.py
+msgid "March"
+msgstr "März"
+
+#: sl/SL_Menu.py
+msgid "April"
+msgstr "April"
+
+#: sl/SL_Menu.py
+msgid "May"
+msgstr "Mai"
+
+#: sl/SL_Menu.py
+msgid "June"
+msgstr "Juni"
+
+#: sl/SL_Menu.py
+msgid "July"
+msgstr "Juli"
+
+#: sl/SL_Menu.py
+msgid "August"
+msgstr "August"
+
+#: sl/SL_Menu.py
+msgid "September"
+msgstr "September"
+
+#: sl/SL_Menu.py
+msgid "October"
+msgstr "Oktober"
+
+#: sl/SL_Menu.py
+msgid "November"
+msgstr "November"
+
+#: sl/SL_Menu.py
+msgid "December"
+msgstr "Dezember"
+
+#: sl/SL_Menu.py
+msgid "Mon"
+msgstr "Mo"
+
+#: sl/SL_Menu.py
+msgid "Tue"
+msgstr "Di"
+
+#: sl/SL_Menu.py
+msgid "Wed"
+msgstr "Mi"
+
+#: sl/SL_Menu.py
+msgid "Thu"
+msgstr "Do"
+
+#: sl/SL_Menu.py
+msgid "Fri"
+msgstr "Fr"
+
+#: sl/SL_Menu.py
+msgid "Sat"
+msgstr "Sa"
+
+#: sl/SL_Menu.py
+msgid "Sun"
+msgstr "So"
+
+#: sl/SL_Menu.py
+msgid "Calendar"
+msgstr "Kalender"
+
+#: sl/SL_Menu.py
+msgid "Previous month"
+msgstr "Voriger Monat"
+
+#: sl/SL_Menu.py
+msgid "Next month"
+msgstr "Nächster Monat"

@@ -3,7 +3,12 @@ import os
 import unittest
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-TODAY_VIEW = os.path.join(REPO_ROOT, 'sl', 'SL_Menu.py')
+STREAMLIT_MODULE = os.path.join(REPO_ROOT, 'sl', 'SL_Menu.py')
+
+# Both tab bodies keep an expander's open/closed state the same way, and
+# both got the same defect with it. Checked as a pair, so a fix to one
+# and not the other cannot pass.
+EXPANDER_BODIES = ('_today_tasks_body', '_task_planning_body')
 
 
 def _function(name):
@@ -14,12 +19,12 @@ def _function(name):
     imported without starting a Streamlit session, which is the same reason
     the defect below could sit in it unnoticed.
     """
-    with open(TODAY_VIEW, encoding='utf-8') as handle:
-        tree = ast.parse(handle.read(), TODAY_VIEW)
+    with open(STREAMLIT_MODULE, encoding='utf-8') as handle:
+        tree = ast.parse(handle.read(), STREAMLIT_MODULE)
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == name:
             return node
-    raise AssertionError('%s() is not in %s any more' % (name, TODAY_VIEW))
+    raise AssertionError('%s() is not in %s any more' % (name, STREAMLIT_MODULE))
 
 
 def _session_state_reads(nodes):
@@ -44,7 +49,8 @@ def _session_state_reads(nodes):
 
 class TestTheExpanderBookkeepingCannotHideWhatWentWrong(unittest.TestCase):
     """
-    The traceback in issue #572 ends here.
+    The traceback in issue #572 ends in the today view's copy of this; the
+    planning view had the identical line, unreported, and was fixed with it.
 
     Each project's group of tasks is drawn inside an expander whose open or
     closed state is mirrored into a plain dict, and the mirror-update sits in
@@ -65,28 +71,33 @@ class TestTheExpanderBookkeepingCannotHideWhatWentWrong(unittest.TestCase):
     tell the truth.
     """
 
-    def _final_bodies(self, function):
+    def _final_bodies(self, name):
         bodies = []
-        for node in ast.walk(function):
+        for node in ast.walk(_function(name)):
             if isinstance(node, ast.Try) and node.finalbody:
                 bodies.append(node.finalbody)
         return bodies
 
-    def test_the_view_still_has_bookkeeping_in_a_finally(self):
+    def test_both_views_still_have_bookkeeping_in_a_finally(self):
         """
-        Guards the two tests below: if the `finally` is ever restructured
-        away they would pass by finding nothing, and stop meaning anything.
+        Guards the two tests below: if a `finally` is ever restructured away
+        they would pass by finding nothing, and stop meaning anything.
         """
-        self.assertTrue(self._final_bodies(_function('_today_tasks_body')),
-                        'no finally left in the today view - the tests below '
-                        'no longer check what they were written for')
+        for name in EXPANDER_BODIES:
+            with self.subTest(view=name):
+                self.assertTrue(self._final_bodies(name),
+                                'no finally left in %s - the tests below no '
+                                'longer check what they were written for' % name)
 
     def test_nothing_in_a_finally_indexes_session_state(self):
-        for body in self._final_bodies(_function('_today_tasks_body')):
-            self.assertEqual(
-                _session_state_reads(body), [],
-                'a missing key here raises in a finally, which throws away '
-                'the exception that was already unwinding - use .get()')
+        for name in EXPANDER_BODIES:
+            for body in self._final_bodies(name):
+                with self.subTest(view=name):
+                    self.assertEqual(
+                        _session_state_reads(body), [],
+                        'a missing key here raises in a finally, which throws '
+                        'away the exception that was already unwinding - '
+                        'use .get()')
 
     def test_the_mirror_falls_back_to_the_state_it_drew_with(self):
         """
@@ -95,23 +106,27 @@ class TestTheExpanderBookkeepingCannotHideWhatWentWrong(unittest.TestCase):
         stayed quiet. The value the expander was drawn with is the honest
         answer: nothing told us it changed.
         """
-        defaults_seen = 0
-        for body in self._final_bodies(_function('_today_tasks_body')):
-            for statement in body:
-                for node in ast.walk(statement):
-                    if (isinstance(node, ast.Call)
-                            and isinstance(node.func, ast.Attribute)
-                            and node.func.attr == 'get'
-                            and isinstance(node.func.value, ast.Attribute)
-                            and node.func.value.attr == 'session_state'):
-                        self.assertEqual(
-                            len(node.args), 2,
-                            'st.session_state.get() here needs the fallback '
-                            'value, not None')
-                        defaults_seen += 1
-        self.assertTrue(defaults_seen,
-                        'the mirror-update is not reading session state at '
-                        'all any more - this test is checking nothing')
+        for name in EXPANDER_BODIES:
+            defaults_seen = 0
+            for body in self._final_bodies(name):
+                for statement in body:
+                    for node in ast.walk(statement):
+                        if (isinstance(node, ast.Call)
+                                and isinstance(node.func, ast.Attribute)
+                                and node.func.attr == 'get'
+                                and isinstance(node.func.value, ast.Attribute)
+                                and node.func.value.attr == 'session_state'):
+                            with self.subTest(view=name):
+                                self.assertEqual(
+                                    len(node.args), 2,
+                                    'st.session_state.get() here needs the '
+                                    'fallback value, not None')
+                            defaults_seen += 1
+            with self.subTest(view=name):
+                self.assertTrue(defaults_seen,
+                                '%s is not reading session state in its '
+                                'finally at all any more - this test is '
+                                'checking nothing' % name)
 
 
 class TestTheProgressBarOverTodaysTasks(unittest.TestCase):
