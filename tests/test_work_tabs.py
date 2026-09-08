@@ -129,5 +129,64 @@ class TestTheCalendarSendsYouBackToTheCalendar(unittest.TestCase):
         self.assertEqual(ast.literal_eval(targets[0]), 'calendar')
 
 
+class TestTheCalendarShowsOnlyWhatIsStillOutstanding(unittest.TestCase):
+    """
+    Issue #610: the calendar is read to see what is still coming, so a
+    finished task no longer takes up a square.
+
+    It used to show them with a tick. Two things had to happen for that: the
+    finished ones are filtered out of the list the grid is built from, and
+    the tick itself is gone - with nothing finished left to draw, a branch
+    for it could never run again.
+
+    month_grid() itself still keeps whatever it is handed, tick or no tick;
+    which tasks belong on the page is the caller's decision, not the grid's.
+    """
+
+    def _done_comparisons(self):
+        for node in ast.walk(_function('_calendar_body')):
+            if (isinstance(node, ast.Compare)
+                    and len(node.ops) == 1
+                    and any(isinstance(c, ast.Constant) and c.value == 'done'
+                            for c in node.comparators)):
+                yield type(node.ops[0]).__name__
+
+    def test_finished_tasks_are_kept_off_the_page(self):
+        self.assertIn('NotEq', list(self._done_comparisons()),
+                      'nothing in the calendar filters finished tasks out')
+
+    def test_nothing_is_left_that_only_a_finished_task_could_reach(self):
+        """
+        A `== 'done'` here would be dead: the filter above means none get
+        this far. Dead branches read as coverage of a case that is in fact
+        handled elsewhere, which is how the settings screen grew one.
+        """
+        self.assertNotIn('Eq', list(self._done_comparisons()),
+                         'a branch for finished tasks can no longer run')
+
+    def test_it_is_the_filtered_list_that_reaches_the_grid(self):
+        """
+        Filtering into a variable and then handing the grid the unfiltered
+        one would put every finished task straight back on the page, and
+        nothing else would notice.
+        """
+        function = _function('_calendar_body')
+        filtered = [node.targets[0].id for node in ast.walk(function)
+                    if isinstance(node, ast.Assign)
+                    and isinstance(node.value, ast.ListComp)
+                    and len(node.targets) == 1
+                    and isinstance(node.targets[0], ast.Name)]
+        self.assertEqual(len(filtered), 1,
+                         'expected exactly one filtered task list here')
+        passed = []
+        for node in ast.walk(function):
+            if (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == 'month_grid'):
+                passed += [a.id for a in node.args if isinstance(a, ast.Name)]
+        self.assertIn(filtered[0], passed,
+                      'month_grid() is not being given the filtered list')
+
+
 if __name__ == '__main__':
     unittest.main()
