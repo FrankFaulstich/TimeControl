@@ -2335,6 +2335,14 @@ class TestMonthGrid(unittest.TestCase):
         self.assertEqual([day for day in self._flat(grid) if day.tasks], [])
 
     def test_a_finished_task_keeps_its_square(self):
+        """
+        The grid keeps whatever it is handed and judges nothing by status.
+
+        The calendar view does not show finished tasks (issue #610), but it
+        decides that by filtering before it calls here - which is where that
+        decision belongs, and what lets this stay a plain bucketing function
+        that any other caller can use differently.
+        """
         grid = month_grid(2026, 9, [self._task("erledigt", "2026-09-08", "done")])
         found = [day for day in self._flat(grid) if day.tasks][0]
         self.assertEqual(self._named(found), ["erledigt"])

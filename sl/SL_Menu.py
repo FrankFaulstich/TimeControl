@@ -1269,10 +1269,14 @@ def _calendar_body():
             st.session_state.calendar_month_value = (today.year, today.month)
             st.rerun()
 
-    # Finished tasks are kept (status_filter='open' excludes only closed
-    # ones), so a day that was worked through shows what was on it rather
-    # than emptying itself.
-    tasks = st.session_state.tracker.list_tasks(status_filter='open')
+    # Only what is still outstanding. status_filter='open' leaves out closed
+    # tasks but takes finished ones along, so those are dropped here: this
+    # page is read to see what is still coming, and squares filled with work
+    # already behind you crowd that out. It used to show them, marked with a
+    # tick - see issue #610.
+    tasks = [task
+             for task in st.session_state.tracker.list_tasks(status_filter='open')
+             if task.get('status') != 'done']
 
     for column, name in zip(st.columns(7), _weekday_abbreviations()):
         column.markdown("**%s**" % name)
@@ -1293,11 +1297,12 @@ def _calendar_body():
 
                 for position, task in enumerate(day.tasks):
                     name = task['task_name']
-                    done = task.get('status') == 'done'
-                    # The project and the full name go in the tooltip: a
-                    # square this narrow cuts the label off, and the name
+                    # No tick for finished tasks any more: none reach this
+                    # far, so the marker would be a branch that can never
+                    # run. The project and the full name go in the tooltip -
+                    # a square this narrow cuts the label off, and the name
                     # alone does not always say which task is meant.
-                    if st.button(("✔ " if done else "") + name,
+                    if st.button(name,
                                  key="calendar_task_%s_%d" % (day.date.isoformat(),
                                                               position),
                                  help="%s / %s" % (task['main_project_name'], name),
