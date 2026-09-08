@@ -14,6 +14,7 @@ from tt.TimeTracker import (
     TASK_ORDER_NONE,
     TASK_ORDER_PRIORITY,
     TASK_ORDER_ALPHABETICAL,
+    completion_counts,
     completion_ratio,
     due_on,
     month_grid,
@@ -2354,6 +2355,64 @@ class TestMonthGrid(unittest.TestCase):
         grid = month_grid(2026, 6, [])
         self.assertEqual(grid[0][0].date, date(2026, 6, 1))
         self.assertTrue(grid[0][0].in_month)
+
+
+class TestCompletionCounts(unittest.TestCase):
+    """
+    The figures the progress bar's tooltip names.
+
+    They come from here rather than being counted again at the point of use,
+    so the bar and the sentence beside it cannot end up telling the reader
+    two different things.
+    """
+
+    @staticmethod
+    def _tasks(*statuses):
+        return [{"task_name": "t%d" % i, "status": s}
+                for i, s in enumerate(statuses)]
+
+    def test_it_reports_how_many_are_done_and_how_many_there_are(self):
+        self.assertEqual(completion_counts(self._tasks("done", "open", "open")),
+                         (1, 3))
+
+    def test_a_day_not_started(self):
+        self.assertEqual(completion_counts(self._tasks("open", "open")), (0, 2))
+
+    def test_a_day_finished(self):
+        self.assertEqual(completion_counts(self._tasks("done", "done")), (2, 2))
+
+    def test_an_empty_day_counts_nothing_rather_than_refusing(self):
+        """Unlike the ratio, which has no answer, both figures are simply 0."""
+        self.assertEqual(completion_counts([]), (0, 0))
+
+    def test_a_task_without_a_status_is_not_finished(self):
+        self.assertEqual(completion_counts([{"task_name": "t"}]), (0, 1))
+
+    def test_closed_is_not_done(self):
+        self.assertEqual(completion_counts(self._tasks("closed", "done")), (1, 2))
+
+    def test_it_takes_anything_it_can_iterate(self):
+        """The view hands it a list; a generator must not come out as (0, 0)."""
+        self.assertEqual(
+            completion_counts(t for t in self._tasks("done", "open")), (1, 2))
+
+    def test_the_caller_s_list_is_left_alone(self):
+        tasks = self._tasks("done", "open")
+        completion_counts(tasks)
+        self.assertEqual(len(tasks), 2)
+
+    def test_the_bar_and_the_figures_always_agree(self):
+        """
+        The one property that matters: whatever the tooltip says, the bar has
+        to be drawn at that fraction. Checked over every mix of four tasks.
+        """
+        import itertools
+        for mix in itertools.product(("done", "open", "closed", None), repeat=4):
+            tasks = [{"task_name": "t", "status": s} if s else {"task_name": "t"}
+                     for s in mix]
+            done, total = completion_counts(tasks)
+            with self.subTest(mix=mix):
+                self.assertEqual(completion_ratio(tasks), done / total)
 
 
 # Run the tests if the file is called directly

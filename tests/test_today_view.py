@@ -151,8 +151,12 @@ class TestTheProgressBarOverTodaysTasks(unittest.TestCase):
     def test_the_bar_carries_no_figures(self):
         """
         Asked for explicitly: the bar and nothing else. st.progress' second
-        argument is a caption printed beside it, and the list below already
+        argument is a caption printed above it, and the list below already
         names every task and marks the finished ones.
+
+        The figures do get named now (issue #607), but on hover - see
+        TestTheProgressBarSaysItsFiguresOnHover below. Nothing is printed
+        beside the bar, which is what this still guards.
         """
         bar = self._progress_calls()[0]
         self.assertEqual(len(bar.args), 1, 'the value, and nothing else')
@@ -198,6 +202,79 @@ class TestTheProgressBarOverTodaysTasks(unittest.TestCase):
                  and isinstance(node.ctx, ast.Store)]
         self.assertEqual(len(built), 1,
                          'today_tasks_all is assembled in one place only')
+
+
+class TestTheProgressBarSaysItsFiguresOnHover(unittest.TestCase):
+    """
+    Issue #607: resting the pointer on the bar names how many of the day's
+    tasks are done.
+
+    st.progress has no help= of its own, so the tooltip is borrowed from an
+    empty st.markdown beside it and laid over the bar by a stylesheet. That
+    makes three separate things that have to stay together - the bar, the
+    markdown carrying the tooltip, and the stylesheet that moves it - and
+    losing any one of them fails quietly: the bar keeps working, it just
+    stops answering, or grows a stray question mark on a line of its own.
+    """
+
+    def _body(self):
+        return _function('_today_tasks_body')
+
+    def _calls(self, name, attribute=True):
+        for node in ast.walk(self._body()):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if attribute and isinstance(func, ast.Attribute) and func.attr == name:
+                yield node
+            elif not attribute and isinstance(func, ast.Name) and func.id == name:
+                yield node
+
+    def test_the_bar_has_a_tooltip(self):
+        with_help = [c for c in self._calls('markdown')
+                     if any(k.arg == 'help' for k in c.keywords)]
+        self.assertEqual(len(with_help), 1,
+                         'exactly one markdown here carries the tooltip')
+
+    def test_the_stylesheet_that_moves_it_is_actually_applied(self):
+        """
+        Without it Streamlit draws the tooltip as a question mark on its own
+        line under the bar, and hovering the bar does nothing.
+        """
+        self.assertTrue(list(self._calls('render_progress_css', attribute=False)),
+                        'render_progress_css() is never called')
+
+    def test_the_figures_come_from_the_same_count_as_the_bar(self):
+        """
+        Counting again at the point of use is how a tooltip ends up
+        disagreeing with the bar it sits on.
+        """
+        self.assertTrue(list(self._calls('completion_counts', attribute=False)),
+                        'the tooltip is not reading completion_counts()')
+
+    def test_the_bar_and_its_tooltip_stand_or_fall_together(self):
+        """
+        On a day with no tasks there is no bar - and there must be no lone
+        tooltip either, hovering over nothing.
+        """
+        paired = False
+        for node in ast.walk(self._body()):
+            if not isinstance(node, ast.If):
+                continue
+            inner = [n for statement in node.body for n in ast.walk(statement)]
+            hat_balken = any(isinstance(n, ast.Call)
+                             and isinstance(n.func, ast.Attribute)
+                             and n.func.attr == 'progress' for n in inner)
+            hat_tooltip = any(isinstance(n, ast.Call)
+                              and isinstance(n.func, ast.Attribute)
+                              and n.func.attr == 'markdown'
+                              and any(k.arg == 'help' for k in n.keywords)
+                              for n in inner)
+            if hat_balken and hat_tooltip:
+                paired = True
+        self.assertTrue(paired,
+                        'the bar and its tooltip must sit behind the same '
+                        'guard, or an empty day keeps one of them')
 
 
 if __name__ == '__main__':
