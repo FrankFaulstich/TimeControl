@@ -17,6 +17,7 @@ from tt.TimeTracker import (
     TASK_ORDER_PRIORITY,
     TASK_ORDER_ALPHABETICAL,
     TASK_ORDERS,
+    completion_ratio,
     sort_tasks,
 )
 from tt.sync_messages import sign_in_error_message, sync_error_message
@@ -1098,6 +1099,16 @@ def _today_tasks_body():
     st.session_state.tracker.cleanup_overdue_today_tasks()
     current_work = st.session_state.tracker.get_current_work()
 
+    # The tasks explicitly marked as 'today' (⭐). Read up here, before the
+    # list further down needs them, because the progress bar under the
+    # active-work box is drawn from the same set - asking twice would let the
+    # bar and the list it sits above disagree about what today holds.
+    # status_filter='open' takes finished tasks along too (it excludes only
+    # closed ones), which is what both of them want: a day's work is not
+    # measured against only the part of it still outstanding.
+    all_open = st.session_state.tracker.list_tasks(status_filter='open')
+    today_tasks_all = [t for t in all_open if t.get('today')]
+
     task_details = {}
     is_done = False
     if current_work:
@@ -1112,6 +1123,16 @@ def _today_tasks_body():
             st.info(f"**{_('Current Active Work')}:** {display_name} ({current_work['main_project_name']})")
         else:
             st.info(_("No active work session."))
+
+        # How much of today is behind you. Just the bar, no figure: the list
+        # below already names every task and marks the finished ones, so a
+        # number here would only repeat it. Drawn inside this column so it
+        # lines up with the box above rather than running on under the
+        # buttons beside it. Nothing at all on a day with no tasks - see
+        # completion_ratio().
+        done_ratio = completion_ratio(today_tasks_all)
+        if done_ratio is not None:
+            st.progress(done_ratio)
 
     with col_done:
         if st.button("✓", help=_("Done"), disabled=not current_work or is_done, key="main_done_button"):
@@ -1135,10 +1156,6 @@ def _today_tasks_body():
 
     with st.container(key="today_view_work_divider"):
         st.divider()
-
-    # Here we show tasks that are explicitly marked as 'today' (⭐)
-    all_open = st.session_state.tracker.list_tasks(status_filter='open')
-    today_tasks_all = [t for t in all_open if t.get('today')]
 
     # A widget's own session-state entry (keyed via `key=`) is cleared by
     # Streamlit whenever the widget isn't instantiated during a script run

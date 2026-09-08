@@ -114,5 +114,76 @@ class TestTheExpanderBookkeepingCannotHideWhatWentWrong(unittest.TestCase):
                         'all any more - this test is checking nothing')
 
 
+class TestTheProgressBarOverTodaysTasks(unittest.TestCase):
+    """
+    The bar under the active-work box. Everything it computes lives in
+    completion_ratio() and is tested there; what can only be checked here is
+    how the view uses it.
+    """
+
+    def _progress_calls(self):
+        calls = []
+        for node in ast.walk(_function('_today_tasks_body')):
+            if (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == 'progress'):
+                calls.append(node)
+        return calls
+
+    def test_the_view_draws_exactly_one_bar(self):
+        self.assertEqual(len(self._progress_calls()), 1)
+
+    def test_the_bar_carries_no_figures(self):
+        """
+        Asked for explicitly: the bar and nothing else. st.progress' second
+        argument is a caption printed beside it, and the list below already
+        names every task and marks the finished ones.
+        """
+        bar = self._progress_calls()[0]
+        self.assertEqual(len(bar.args), 1, 'the value, and nothing else')
+        self.assertEqual(bar.keywords, [], 'no text= beside the bar')
+
+    def test_no_bar_is_drawn_on_a_day_with_no_tasks(self):
+        """
+        completion_ratio() answers None then, and an unguarded st.progress
+        would raise on it - but the point is what a reader would see: a bar
+        sitting at zero on a day that asks nothing of them.
+        """
+        guarded = False
+        for node in ast.walk(_function('_today_tasks_body')):
+            if not isinstance(node, ast.If):
+                continue
+            test = node.test
+            looks_like_a_none_check = (
+                isinstance(test, ast.Compare)
+                and len(test.ops) == 1
+                and isinstance(test.ops[0], ast.IsNot)
+                and isinstance(test.comparators[0], ast.Constant)
+                and test.comparators[0].value is None)
+            if looks_like_a_none_check and any(
+                    isinstance(inner, ast.Call)
+                    and isinstance(inner.func, ast.Attribute)
+                    and inner.func.attr == 'progress'
+                    for statement in node.body
+                    for inner in ast.walk(statement)):
+                guarded = True
+        self.assertTrue(guarded,
+                        'st.progress has to sit behind an "is not None" check '
+                        'on the ratio')
+
+    def test_the_bar_is_read_from_the_same_list_as_the_tasks_below(self):
+        """
+        Both come from today_tasks_all, which is built once. Two reads of the
+        tracker could disagree, and then the bar would contradict the list it
+        sits directly above.
+        """
+        built = [node for node in ast.walk(_function('_today_tasks_body'))
+                 if isinstance(node, ast.Name)
+                 and node.id == 'today_tasks_all'
+                 and isinstance(node.ctx, ast.Store)]
+        self.assertEqual(len(built), 1,
+                         'today_tasks_all is assembled in one place only')
+
+
 if __name__ == '__main__':
     unittest.main()

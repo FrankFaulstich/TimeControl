@@ -14,6 +14,7 @@ from tt.TimeTracker import (
     TASK_ORDER_NONE,
     TASK_ORDER_PRIORITY,
     TASK_ORDER_ALPHABETICAL,
+    completion_ratio,
     sort_tasks,
 )
 from i18n import _
@@ -2159,6 +2160,56 @@ class TestSortTasks(unittest.TestCase):
         second = sort_tasks([self._task("Müller"), self._task("Muller")],
                             TASK_ORDER_ALPHABETICAL)
         self.assertEqual(self._names(first), self._names(second))
+
+
+class TestCompletionRatio(unittest.TestCase):
+    """What the progress bar over today's tasks is drawn from."""
+
+    @staticmethod
+    def _tasks(*statuses):
+        return [{"task_name": "t%d" % i, "status": s}
+                for i, s in enumerate(statuses)]
+
+    def test_a_day_not_started_is_empty(self):
+        self.assertEqual(completion_ratio(self._tasks("open", "open")), 0.0)
+
+    def test_a_day_finished_is_full(self):
+        self.assertEqual(completion_ratio(self._tasks("done", "done")), 1.0)
+
+    def test_it_counts_what_is_done_not_what_is_left(self):
+        """
+        The direction is the whole point: three of four finished has to read
+        as nearly full, not nearly empty.
+        """
+        self.assertEqual(
+            completion_ratio(self._tasks("done", "done", "done", "open")), 0.75)
+
+    def test_nothing_to_do_is_not_the_same_as_nothing_done(self):
+        """
+        An empty day has no ratio. Answering 0.0 would draw an empty bar,
+        which says the day is entirely unstarted.
+        """
+        self.assertIsNone(completion_ratio([]))
+
+    def test_a_task_without_a_status_counts_as_unfinished(self):
+        self.assertEqual(completion_ratio([{"task_name": "t"}]), 0.0)
+
+    def test_only_done_counts_as_finished(self):
+        """
+        'closed' is a different thing from 'done' and never reaches this view
+        anyway; if one ever did it must not be mistaken for work completed.
+        """
+        self.assertEqual(completion_ratio(self._tasks("closed", "done")), 0.5)
+
+    def test_the_caller_s_list_is_left_alone(self):
+        tasks = self._tasks("done", "open")
+        completion_ratio(tasks)
+        self.assertEqual(len(tasks), 2)
+
+    def test_it_takes_anything_it_can_iterate(self):
+        """The view hands it a list; a generator must not come out as zero."""
+        self.assertEqual(
+            completion_ratio(t for t in self._tasks("done", "open")), 0.5)
 
 
 # Run the tests if the file is called directly
