@@ -275,6 +275,54 @@ class TestTheProgressBarSaysItsFiguresOnHover(unittest.TestCase):
         self.assertTrue(paired,
                         'the bar and its tooltip must sit behind the same '
                         'guard, or an empty day keeps one of them')
+class TestTheActiveWorkButtonsMatchTheTaskRows(unittest.TestCase):
+    """
+    The three buttons behind the active-work box are meant to sit at the same
+    spacing as the three behind every task in the list below them.
+
+    That is not a matter of using the same weights. Streamlit gives a column
+    `flex: 1 1 calc(share% - 16px)` and these buttons are a fixed 40px, so the
+    gap between two of them comes out as the column width minus 24. The task
+    rows are drawn inside an expander, whose padding makes their row about
+    34px narrower than the active-work row - so an equal share of each gives
+    an unequal column. Dividing the wider row by one more takes that back
+    out; measured in the browser, the two gaps come to 14.3px and 14.7px.
+
+    Nothing about that survives a change to either row's weights, and nothing
+    about it fails loudly - the buttons just drift apart again. Hence this.
+    """
+
+    def _button_rows(self, function_name):
+        """Every st.columns([...]) in the function that ends in three 1s."""
+        for node in ast.walk(_function(function_name)):
+            if not (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == 'columns'
+                    and node.args
+                    and isinstance(node.args[0], ast.List)):
+                continue
+            weights = ast.literal_eval(node.args[0])
+            # The row is identified by how many trailing single-weight button
+            # columns it has, which both rows share.
+            if len(weights) >= 4 and weights[-3:] == [1, 1, 1]:
+                yield weights
+
+    def test_the_active_work_row_has_three_button_columns(self):
+        rows = list(self._button_rows('_today_tasks_body'))
+        self.assertTrue(rows, 'no row with three button columns left')
+
+    def test_the_two_rows_stay_one_apart(self):
+        rows = list(self._button_rows('_today_tasks_body'))
+        totals = sorted(sum(row) for row in rows)
+        self.assertEqual(len(set(totals)), 2,
+                         'expected exactly two kinds of row here: the '
+                         'active-work row and the task rows')
+        narrower, wider = totals[0], totals[-1]
+        self.assertEqual(wider, narrower + 1,
+                         'the active-work row is divided by one more than the '
+                         'task rows, to cancel out the expander padding that '
+                         'makes the task rows narrower - change one and the '
+                         'buttons stop lining up')
 
 
 if __name__ == '__main__':

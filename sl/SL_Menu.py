@@ -119,7 +119,7 @@ def render_icon_button_css():
         '[data-testid="stPopoverButton"]',
         '[class*="st-key-toolbar_email_btn"] button',
         '[class*="st-key-toolbar_start_btn"] button',
-        '[class*="st-key-toolbar_info_btn"] button',
+        '[class*="st-key-main_info_button"] button',
         '[class*="st-key-toolbar_stop_btn"] button',
         '[class*="st-key-toolbar_settings_btn"] button',
         '[class*="st-key-toolbar_export_btn"] button',
@@ -673,7 +673,10 @@ def render_toolbar(return_to):
     """
     current_work = st.session_state.tracker.get_current_work()
 
-    t_col_new, t_col_mgmt, t_col_email, t_col_start, t_col_info, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 4])
+    # "Show current work" is not here any more: it sits behind the box that
+    # says what the current work is, in the today view, where what it opens
+    # is what the reader is already looking at.
+    t_col_new, t_col_mgmt, t_col_email, t_col_start, t_col_stop, t_col_report, t_col_settings, _col = st.columns([1, 1, 1, 1, 1, 1, 1, 5])
     with t_col_new:
         with st.popover("+", help=_("New"), key="toolbar_new_popover"):
             if st.button(_("New Project"), use_container_width=True):
@@ -761,11 +764,6 @@ def render_toolbar(return_to):
         if st.button("▶", help=_("Start work on task"), key="toolbar_start_btn"):
             st.session_state.context['return_to'] = return_to
             navigate_to('start_work')
-
-    with t_col_info:
-        if st.button("i", help=_("Show current work"), key="toolbar_info_btn"):
-            st.session_state.context['return_to'] = return_to
-            navigate_to('show_current_work')
 
     with t_col_stop:
         if st.button("■", help=_("Stop current work"), key="toolbar_stop_btn", disabled=not current_work):
@@ -1340,7 +1338,19 @@ def _today_tasks_body():
         task_details = next((t for t in all_tasks if t['task_name'] == current_work['task_name']), {})
         is_done = task_details.get('status') == 'done'
 
-    col_info, col_done, col_edit = st.columns([10, 1, 1])
+    # Weighted 11 rather than 10 so the three buttons sit at the spacing of
+    # the three on every task row below.
+    #
+    # Matching that spacing is not just a matter of using the same weights.
+    # Streamlit gives each column `flex: 1 1 calc(share% - 16px)` and the
+    # buttons are a fixed 40px, so the gap between two of them works out as
+    # `16 + (row width / total weight - 12 - 40)`. The task rows use
+    # [7, 3, 1, 1, 1], the same 1/13 share - but they are drawn inside an
+    # expander, whose padding makes their row about 34px narrower, and a
+    # share of a narrower row is a narrower column. Dividing by 14 here
+    # instead of 13 takes that difference back out: measured, it brings the
+    # gap from 18px to within half a pixel of the task rows' 15.
+    col_info, col_done, col_edit, col_show = st.columns([11, 1, 1, 1])
     with col_info:
         if current_work:
             display_name = f"{current_work['task_name']} (done)" if is_done else current_work['task_name']
@@ -1388,6 +1398,14 @@ def _today_tasks_body():
             st.session_state.context['selected_task'] = current_work['task_name']
             st.session_state.context['return_to'] = 'today_view'
             navigate_to('edit_task_form')
+
+    with col_show:
+        # Moved here from the toolbar. Deliberately not disabled without a
+        # running session, as it was not in the toolbar either: what it opens
+        # says there is none, which is an answer to the question.
+        if st.button("i", help=_("Show current work"), key="main_info_button"):
+            st.session_state.context['return_to'] = 'today_view'
+            navigate_to('show_current_work')
 
     with st.container(key="today_view_work_divider"):
         st.divider()
