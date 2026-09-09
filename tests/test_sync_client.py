@@ -630,6 +630,69 @@ class TestWhatIsMeasuredIsWhatIsSent(unittest.TestCase):
         self.assertIsInstance(body, bytes)
         self.assertIn('Prüfstände', body.decode('utf-8'))
 
+class TestWhereAPasswordMayBeSent(unittest.TestCase):
+    """
+    login() refuses to put a password on the wire in the clear. The one
+    exception is a loopback address, because that is not a wire - and it is
+    the only way to sign the shipped client in to the real php-server/tc
+    code, which PHP's built-in server can only serve over plain http.
+
+    Relaxing this does not open a way in: index.php keeps its own, separate
+    refusal, so a deployment reached over http still turns the request away.
+    What it enables is the local check the sync work had been missing.
+    """
+
+    ERLAUBT = ('https://example.invalid/tc',
+               'https://example.invalid/tc/index.php',
+               'http://127.0.0.1:8000/tc',
+               'http://localhost:8000/tc',
+               'http://LOCALHOST:8000/tc',
+               'http://[::1]:8000/tc')
+
+    VERWEIGERT = ('http://example.invalid/tc',
+                  # Hosts that merely begin with a loopback name. The match is
+                  # exact for this reason: these are ordinary internet hosts.
+                  'http://127.0.0.1.example.invalid/tc',
+                  'http://localhost.example.invalid/tc',
+                  # Not http at all.
+                  'ftp://127.0.0.1/tc',
+                  'file:///etc/passwd')
+
+    def test_the_addresses_a_password_may_go_to(self):
+        for url in self.ERLAUBT:
+            with self.subTest(url=url):
+                self.assertTrue(sync_client._transport_is_safe(url))
+
+    def test_the_addresses_it_may_not(self):
+        for url in self.VERWEIGERT:
+            with self.subTest(url=url):
+                self.assertFalse(sync_client._transport_is_safe(url))
+
+    def test_login_says_so_rather_than_sending_anything(self):
+        """The point of the guard: nothing leaves before it has decided."""
+        with unittest.mock.patch('tt.sync_client.requests.post') as post:
+            result = sync_client.login('http://example.invalid/tc', 'u', 'p')
+        self.assertEqual(result, {'ok': False, 'error': 'https_required'})
+        post.assert_not_called()
+
+    def test_a_loopback_sign_in_is_attempted(self):
+        """
+        The other half: the guard must not simply be unreachable. Without
+        this, replacing _transport_is_safe with `return False` would still
+        pass every test above.
+        """
+        with unittest.mock.patch('tt.sync_client.requests.post') as post:
+            post.return_value = _Response({'ok': True, 'token': 't',
+                                           'device_uid': 'd'})
+            with unittest.mock.patch('tt.sync_client._write_private'):
+                sync_client.login('http://127.0.0.1:8000/tc', 'u', 'p')
+        post.assert_called_once()
+
+    def test_a_host_is_loopback_only_by_its_name_not_its_scheme(self):
+        self.assertTrue(sync_client.is_loopback('http://127.0.0.1/tc'))
+        self.assertTrue(sync_client.is_loopback('https://127.0.0.1/tc'))
+        self.assertFalse(sync_client.is_loopback('https://example.invalid/tc'))
+
 
 if __name__ == '__main__':
     unittest.main()

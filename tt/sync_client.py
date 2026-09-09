@@ -183,6 +183,37 @@ def _endpoint(base_url):
     return url + '/index.php'
 
 
+# Names that can only mean this machine. Matched exactly, so a host that
+# merely begins with one of them - 127.0.0.1.example.com - is not loopback.
+LOOPBACK_HOSTS = ('localhost', '127.0.0.1', '::1')
+
+
+def is_loopback(base_url):
+    """Whether the address reaches this machine and nothing beyond it."""
+    return (urlsplit(_endpoint(base_url)).hostname or '').lower() in LOOPBACK_HOSTS
+
+
+def _transport_is_safe(base_url):
+    """
+    Whether a password may be sent to this address.
+
+    https, or a loopback address. The rule exists so a password is never put
+    on a network in the clear; loopback is not a network, and it is the only
+    way to run the client against the real php-server/tc code - PHP's own
+    built-in server does no TLS - rather than only against a stand-in written
+    from the same reading of the contract as the client itself.
+
+    This does not open a way in from outside. The server keeps its own,
+    separate refusal (index.php: tc_is_https), so a real deployment reached
+    over plain http still turns the request away; getting past both takes the
+    deliberate test router in php-server/test-endpoints.php.
+    """
+    endpoint = _endpoint(base_url).lower()
+    if endpoint.startswith('https://'):
+        return True
+    return endpoint.startswith('http://') and is_loopback(base_url)
+
+
 def _canonical(base_url):
     """
     An address reduced to a form two spellings of the same server share.
@@ -311,7 +342,7 @@ def login(base_url, username, password):
         return {'ok': False, 'error': 'no_server'}
     if not username or not password:
         return {'ok': False, 'error': 'missing_credentials'}
-    if not _endpoint(base_url).lower().startswith('https://'):
+    if not _transport_is_safe(base_url):
         # The server refuses plain HTTP anyway; failing here saves sending
         # the password in the clear to find that out.
         return {'ok': False, 'error': 'https_required'}

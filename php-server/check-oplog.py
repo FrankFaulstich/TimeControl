@@ -14,10 +14,11 @@ bundle, which is also why the sync client will use it.
 """
 
 import getpass
-import os
 import json
 import secrets
 import sys
+
+from check_common import server_address
 
 try:
     import requests
@@ -25,27 +26,6 @@ except ImportError:
     sys.exit("requests is missing - pip install -r requirements.txt")
 
 BASE = None      # set in main(), see server_address()
-
-
-def server_address(suffix=""):
-    """
-    Where the server is, asked for rather than baked in.
-
-    This file lives in a public repository. A default here would publish the
-    address of somebody's private server, and would also be wrong for anyone
-    else who ran it.
-    """
-    url = os.environ.get('TC_SYNC_URL', '').strip()
-    if not url:
-        url = input("Server address (https://host/tc/): ").strip()
-    if not url:
-        sys.exit("No server address given. Set TC_SYNC_URL or type one.")
-    if not url.lower().startswith('https://'):
-        sys.exit("The address must start with https:// - the server refuses anything else.")
-    url = url.rstrip('/')
-    if suffix and not url.endswith(suffix):
-        url += '/' + suffix
-    return url
 
 
 passed = 0
@@ -203,6 +183,14 @@ def main():
           r.get("error") or "document differs")
     check("and names the point it covers", r.get("seq") == head, r.get("seq"))
 
+    # While the log has not moved: offering the very same point again is
+    # refused for having nothing new in it. This has to be asked here, before
+    # the push below, or the head has moved on and a different guard answers
+    # first - see the check at the end.
+    r = call("snapshot", document, token=a, params={"seq": head})
+    check("the same snapshot is not accepted twice",
+          r.get("error") == "not_newer", r.get("error"))
+
     r = call("pull", token=b, params={"since": 0})
     check("a machine below the point is sent to the snapshot",
           r.get("needs_snapshot") is True, r.get("needs_snapshot"))
@@ -222,9 +210,14 @@ def main():
           r.get("ops") and r["ops"][0]["s"] == head + 1,
           r["ops"][0]["s"] if r.get("ops") else None)
 
+    # The same offer once more, but the push above has moved the head. Two
+    # reasons to refuse now apply at once - it is stale, and it is not newer
+    # than the snapshot already held - and the server answers with the first:
+    # being behind the log is the more useful thing to be told, because it is
+    # what the client has to do something about.
     r = call("snapshot", document, token=a, params={"seq": head})
-    check("the same snapshot is not accepted twice",
-          r.get("error") == "not_newer", r.get("error"))
+    check("a stale offer is refused for being stale, not for being a repeat",
+          r.get("error") == "not_at_head", r.get("error"))
 
     print("\nSigning both devices out")
     call("logout", token=a)
