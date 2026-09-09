@@ -1,5 +1,6 @@
 import unittest
 import unittest.mock
+import io
 import json
 import os
 import subprocess
@@ -24,12 +25,16 @@ class TestTimeTracker(unittest.TestCase):
         # Ensure the file does not exist before the test
         if os.path.exists(TEST_FILE_PATH):
             os.remove(TEST_FILE_PATH)
+            if os.path.exists(TEST_FILE_PATH + ".lock"):
+                os.remove(TEST_FILE_PATH + ".lock")
         self.tracker = TimeTracker(file_path=TEST_FILE_PATH)
         
     def tearDown(self):
         """Runs after each test to delete the temporary file."""
         if os.path.exists(TEST_FILE_PATH):
             os.remove(TEST_FILE_PATH)
+            if os.path.exists(TEST_FILE_PATH + ".lock"):
+                os.remove(TEST_FILE_PATH + ".lock")
 
     # --- Helper Method Tests (Private Methods) ---
 
@@ -172,16 +177,22 @@ class TestTimeTracker(unittest.TestCase):
 
     def test_new_entities_get_a_uid_without_a_restart(self):
         """Projects, tasks and time entries are born with a uid, not given one later."""
+        # Fetched again after each change rather than held across it: a
+        # method that writes the document reads it back first (see
+        # TimeTracker.exclusive()), so anything looked up beforehand is a
+        # copy of how things were.
         self.tracker.add_main_project("Fresh Project")
         project = self.tracker.data["projects"][0]
         self.assertTrue(project.get("uid"))
 
         self.tracker.add_task("Fresh Project", "Fresh Task")
+        project = self.tracker.data["projects"][0]
         task = project["tasks"][0]
         self.assertTrue(task.get("uid"))
         self.assertNotEqual(task["uid"], project["uid"])
 
         self.tracker.start_work("Fresh Project", "Fresh Task")
+        task = self.tracker._get_task("Fresh Project", "Fresh Task")
         entry = task["time_entries"][0]
         self.assertTrue(entry.get("uid"))
         self.assertNotEqual(entry["uid"], task["uid"])
@@ -267,11 +278,16 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.add_main_project("P")
         self.tracker.add_task("P", "Same Name")
         self.tracker.add_task("P", "Same Name")
-        wanted = self.tracker.data["projects"][0]["tasks"][1]
-        other = self.tracker.data["projects"][0]["tasks"][0]
+        wanted_id = self.tracker.data["projects"][0]["tasks"][1]["id"]
 
-        self.assertTrue(self.tracker.start_work("P", "Same Name", task_id=wanted["id"]))
+        self.assertTrue(self.tracker.start_work("P", "Same Name", task_id=wanted_id))
 
+        # Looked up again rather than held across the call: start_work() reads
+        # the file back before it changes anything, so the dictionaries taken
+        # beforehand describe how things were, not how they are.
+        tasks = self.tracker.data["projects"][0]["tasks"]
+        wanted = next(t for t in tasks if t["id"] == wanted_id)
+        other = next(t for t in tasks if t["id"] != wanted_id)
         self.assertEqual(len(wanted["time_entries"]), 1)
         self.assertEqual(other["time_entries"], [])
 
@@ -288,6 +304,10 @@ class TestTimeTracker(unittest.TestCase):
         entry = self.tracker._get_task("P", "T")["time_entries"][-1]
         future_start = (datetime.now() + timedelta(hours=2)).isoformat()
         entry["start_time"] = future_start
+        # Written out, because stop_work() reads the file back before it
+        # changes anything - a document only altered in memory is not one
+        # another writer could ever have seen.
+        self.tracker._save_data()
 
         self.assertTrue(self.tracker.stop_work())
 
@@ -1162,7 +1182,7 @@ class TestTimeTracker(unittest.TestCase):
         stored task actually had due_date=None.
         """
         mock_exists.return_value = True
-        mock_open.return_value.__enter__.return_value.read.return_value = json.dumps({
+        config_json = json.dumps({
             "email": {
                 "enabled": True,
                 "imap_server": "imap.example.com",
@@ -1170,6 +1190,21 @@ class TestTimeTracker(unittest.TestCase):
                 "password": "secret",
             }
         })
+
+        # Only config.json is faked. Every method that writes the document now
+        # takes a lock, and the lock opens a file of its own - a blanket
+        # mock_open hands it a Mock whose fileno() the operating system cannot
+        # use. io.open is the real one: patching builtins.open rebinds the
+        # name, not the function object io holds.
+        real_open = io.open
+
+        def only_config(path, *args, **kwargs):
+            if path == 'config.json':
+                return unittest.mock.mock_open(read_data=config_json)(
+                    path, *args, **kwargs)
+            return real_open(path, *args, **kwargs)
+
+        mock_open.side_effect = only_config
 
         mock_mail = mock_imap_cls.return_value
         mock_mail.search.return_value = ("OK", [b"1"])
@@ -1532,6 +1567,7 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": (now - timedelta(weeks=1)).isoformat(),
             "end_time": (now - timedelta(days=1)).isoformat()
         })
+        self.tracker._save_data()
 
         # P2: Inactive project (stopped 5 weeks ago) -> should be listed (at 4 weeks threshold)
         self._create_mock_project_with_task("P2_Inactive", "T2_Old")
@@ -1539,12 +1575,14 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
             "end_time": (now - timedelta(weeks=5)).isoformat()
         })
+        self.tracker._save_data()
 
         # P3: Running project (should be ignored)
         self._create_mock_project_with_task("P3_Running", "T3_Open")
         self.tracker.data["projects"][2]["tasks"][0]["time_entries"].append({
             "start_time": (now - timedelta(days=1)).isoformat()
         })
+        self.tracker._save_data()
 
         # P4: 'done' task, inactive for 5 weeks -> SHOULD be listed (not yet closed).
         self._create_mock_project_with_task("P4_Done", "T4_Done")
@@ -1552,7 +1590,9 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
             "end_time": (now - timedelta(weeks=5)).isoformat()
         })
+        self.tracker._save_data()
         self.tracker.data["projects"][3]["tasks"][0]["status"] = self.tracker.STATUS_DONE
+        self.tracker._save_data()
 
         # P5: 'closed' task, inactive for 5 weeks -> should NOT be listed (already archived).
         self._create_mock_project_with_task("P5_Closed", "T5_Closed")
@@ -1560,7 +1600,9 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
             "end_time": (now - timedelta(weeks=5)).isoformat()
         })
+        self.tracker._save_data()
         self.tracker.data["projects"][4]["tasks"][0]["status"] = self.tracker.STATUS_CLOSED
+        self.tracker._save_data()
 
         # P6: inactive for 5 weeks but due today -> should NOT be listed (still scheduled).
         self._create_mock_project_with_task("P6_DueToday", "T6_DueToday")
@@ -1568,7 +1610,9 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
             "end_time": (now - timedelta(weeks=5)).isoformat()
         })
+        self.tracker._save_data()
         self.tracker.data["projects"][5]["tasks"][0]["due_date"] = date.today().isoformat()
+        self.tracker._save_data()
 
         # P7: inactive for 5 weeks but due in the future -> should NOT be listed (still scheduled).
         self._create_mock_project_with_task("P7_DueFuture", "T7_DueFuture")
@@ -1576,7 +1620,9 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
             "end_time": (now - timedelta(weeks=5)).isoformat()
         })
+        self.tracker._save_data()
         self.tracker.data["projects"][6]["tasks"][0]["due_date"] = (date.today() + timedelta(days=7)).isoformat()
+        self.tracker._save_data()
 
         # P8: inactive for 5 weeks and overdue (due date in the past) -> SHOULD still be listed.
         self._create_mock_project_with_task("P8_Overdue", "T8_Overdue")
@@ -1584,7 +1630,9 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
             "end_time": (now - timedelta(weeks=5)).isoformat()
         })
+        self.tracker._save_data()
         self.tracker.data["projects"][7]["tasks"][0]["due_date"] = (date.today() - timedelta(days=1)).isoformat()
+        self.tracker._save_data()
 
         # Save to ensure data consistency
         self.tracker._save_data()
@@ -1611,6 +1659,10 @@ class TestTimeTracker(unittest.TestCase):
             task["due_date"] = due_date.isoformat()
         if status is not None:
             task["status"] = status
+        # Written out: every method that changes the document reads the file
+        # back first, so a fixture only built in memory is discarded by the
+        # next call rather than being what the test set up.
+        self.tracker._save_data()
         return task
 
     def test_a_task_never_worked_on_is_listed_once_its_due_date_is_that_old(self):
@@ -1724,6 +1776,7 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": (now - timedelta(days=2)).isoformat(),
             "end_time": (now - timedelta(days=1)).isoformat()
         })
+        self.tracker._save_data()
 
         # P2: Inactive main project (last activity 5 weeks ago) -> should be listed (at 4 weeks threshold)
         self.tracker.add_main_project("P2_Inactive")
@@ -1732,6 +1785,7 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": (now - timedelta(weeks=5, days=1)).isoformat(),
             "end_time": (now - timedelta(weeks=5)).isoformat()
         })
+        self.tracker._save_data()
 
         # P3: Running main project (contains an open sub-entry) -> should be ignored
         self.tracker.add_main_project("P3_Running")
@@ -1739,6 +1793,7 @@ class TestTimeTracker(unittest.TestCase):
         self.tracker.data["projects"][2]["tasks"][0]["time_entries"].append({
             "start_time": (now - timedelta(days=1)).isoformat()
         })
+        self.tracker._save_data()
         
         # P4: Empty main project (no activity) -> should be ignored
         self.tracker.add_main_project("P4_Empty")
@@ -1770,6 +1825,7 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": now.replace(hour=8, minute=0, second=0, microsecond=0).isoformat(),
             "end_time": now.replace(hour=9, minute=30, second=0, microsecond=0).isoformat()
         })
+        self.tracker._save_data()
         
         # P2: 2.0 hours today
         self._create_mock_project_with_task("Report P2", "R_Sub2")
@@ -1777,6 +1833,7 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": now.replace(hour=10, minute=0, second=0, microsecond=0).isoformat(),
             "end_time": now.replace(hour=12, minute=0, second=0, microsecond=0).isoformat()
         })
+        self.tracker._save_data()
         
         # P3: Entry for yesterday (should be ignored)
         yesterday = now - timedelta(days=1)
@@ -1785,6 +1842,7 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": yesterday.replace(hour=8, minute=0, second=0, microsecond=0).isoformat(),
             "end_time": yesterday.replace(hour=9, minute=0, second=0, microsecond=0).isoformat()
         })
+        self.tracker._save_data()
         
         report = self.tracker.generate_daily_report(today_date)
         
@@ -1817,6 +1875,7 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": day1.replace(hour=9).isoformat(),
             "end_time": day1.replace(hour=10).isoformat()
         })
+        self.tracker._save_data()
         
         # P2: 2 hours on day 2
         self._create_mock_project_with_task("Range P2", "R_Sub2")
@@ -1824,6 +1883,7 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": day2.replace(hour=11).isoformat(),
             "end_time": day2.replace(hour=13).isoformat()
         })
+        self.tracker._save_data()
         
         # P3: Entry outside the range (should be ignored)
         self._create_mock_project_with_task("Range P3", "R_Sub3_Outside")
@@ -1831,6 +1891,7 @@ class TestTimeTracker(unittest.TestCase):
             "start_time": day_outside.replace(hour=9).isoformat(),
             "end_time": day_outside.replace(hour=10).isoformat()
         })
+        self.tracker._save_data()
         
         # Test: Generate report for the range from day 1 to day 2
         start_date = day1.date()
@@ -2093,7 +2154,8 @@ class TestReportsReadTheClockNotTheList(unittest.TestCase):
 
     def setUp(self):
         self.tracker = TimeTracker(file_path=self.FILE)
-        self.addCleanup(lambda: os.path.exists(self.FILE) and os.remove(self.FILE))
+        for pfad in (self.FILE, self.FILE + '.lock'):
+            self.addCleanup(lambda p=pfad: os.path.exists(p) and os.remove(p))
         self.tracker.add_main_project("Projekt")
         self.tracker.add_task("Projekt", "Aufgabe")
 

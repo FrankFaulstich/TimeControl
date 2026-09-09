@@ -11,3 +11,10 @@ data.json
 # Sphinx documentation build output
 /docs/_build/
 .DS_Store
+
+# The lock guarding data.json against the other writers. Created beside the
+# document it protects and never removed, because deleting it would let a
+# second process lock a file the first still holds open.
+data.json.lock
+# The same for the documents the tests write beside it.
+*.json.lock

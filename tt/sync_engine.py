@@ -744,32 +744,41 @@ def apply_pending(tracker):
             # over a newer one. The separate pass is what orders it: apply_ops
             # sorts by sequence number within a call and remembers nothing
             # between calls, so being applied first is the ordering.
-            report = Report()
-            for record in sorted(records, key=lambda r: int(r.get('base_seq', 0))):
-                if record.get('snapshot'):
-                    report.absorb(adopt_snapshot(tracker.data, record['snapshot']))
-            report.absorb(reconcile(tracker.data, incoming, local))
+            # The document itself, held against the other writers while it is
+            # read, changed and written back. Without this the interface or a
+            # server could save its own copy over what arrived here, and the
+            # incoming work would be gone with the records that carried it.
+            #
+            # Inside the inbox lock and outside the outgoing queue's, which is
+            # the order every writing method takes them in too: nothing anywhere
+            # takes them the other way round, so they cannot deadlock.
+            with tracker.exclusive():
+                report = Report()
+                for record in sorted(records, key=lambda r: int(r.get('base_seq', 0))):
+                    if record.get('snapshot'):
+                        report.absorb(adopt_snapshot(tracker.data, record['snapshot']))
+                report.absorb(reconcile(tracker.data, incoming, local))
 
-            # A session this machine had left running was ended because work
-            # began elsewhere. That was worked out here, from the order alone,
-            # so unless it is reported the other machines go on showing it as
-            # running. Queued before the document is saved and before the
-            # records are consumed: a machine switched off in between would
-            # otherwise have the closure in its own file, no way to re-derive
-            # it, and no way to pass it on.
-            for entry_uid, end in report.auto_closed:
-                tracker._emit('entry.close', uid=entry_uid, end=end)
+                # A session this machine had left running was ended because work
+                # began elsewhere. That was worked out here, from the order alone,
+                # so unless it is reported the other machines go on showing it as
+                # running. Queued before the document is saved and before the
+                # records are consumed: a machine switched off in between would
+                # otherwise have the closure in its own file, no way to re-derive
+                # it, and no way to pass it on.
+                for entry_uid, end in report.auto_closed:
+                    tracker._emit('entry.close', uid=entry_uid, end=end)
 
-            # Stamped into the document as well as into the state file. The
-            # two travel differently: restoring data.json from a backup takes
-            # the document back but leaves the state file where it was, and
-            # the machine would then never re-fetch what the restored copy is
-            # missing. align_cursor() below reads this back.
-            tracker.data['_sync_seq'] = reached
-            tracker._save_data()
-            write_state({'base_seq': reached}, required=True)
-            if settled:
-                outbox.drop(settled)
+                # Stamped into the document as well as into the state file. The
+                # two travel differently: restoring data.json from a backup takes
+                # the document back but leaves the state file where it was, and
+                # the machine would then never re-fetch what the restored copy is
+                # missing. align_cursor() below reads this back.
+                tracker.data['_sync_seq'] = reached
+                tracker._save_data()
+                write_state({'base_seq': reached}, required=True)
+                if settled:
+                    outbox.drop(settled)
     except LockTimeout:
         return None
 

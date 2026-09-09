@@ -1,12 +1,16 @@
+import functools
 import json
 import os
 import tempfile
+import threading
+from contextlib import contextmanager
 import imaplib
 import re
 import uuid
 import email
 from email.header import decode_header
 from i18n import _
+from tt.filelock import locked, LockTimeout
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta, date
 import calendar
@@ -31,6 +35,28 @@ try:
     from packaging.version import parse as parse_version
 except ImportError:
     parse_version = None
+
+
+def _exclusive(method):
+    """
+    Marks a method as one that changes the document.
+
+    Every such method reads the document, alters it and writes the whole
+    thing back. Five processes can be doing that at once - the interface, the
+    MCP, REST and SOAP servers, and a second browser tab - and _save_data()
+    does nothing to stop the last one overwriting the others. It is atomic
+    for readers, which is a different promise: nobody sees half a file, and
+    everybody's changes but one are still gone, with no error anywhere.
+
+    So the whole read-alter-write runs under one lock, and begins by reading
+    the file again - taking the lock without that would only put the losing
+    writes in order, not prevent them.
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        with self.exclusive():
+            return method(self, *args, **kwargs)
+    return wrapper
 
 
 class TimeTracker:
@@ -63,6 +89,13 @@ class TimeTracker:
     # (even slow) install so this only ever kicks in for that dead-network
     # case, where subprocess's timeout=<N> kills the pip child outright.
     PIP_INSTALL_TIMEOUT = 120
+    # How long a writer queues behind the others before giving up. One write
+    # is a read, a change and a save: on a document of a few megabytes that
+    # is under a tenth of a second, so this is some tens of operations' worth
+    # of waiting - far more than contention ever needs, and short enough that
+    # a writer that has stopped answering is reported rather than freezing
+    # the interface behind it.
+    SAVE_LOCK_TIMEOUT = 5.0
 
     # The task attributes that mean the same thing on every machine. Deliberately
     # excluded: 'uid' (it is the address, not a field), 'id' (a local counter that
@@ -139,6 +172,10 @@ class TimeTracker:
             except ImportError:
                 self.op_outbox = None
 
+        # Per thread, so two threads sharing this object cannot read each
+        # other's nesting as their own. See exclusive().
+        self._nesting = threading.local()
+
         self.data = self._load_data()
         if self._migrate_data_structure():
             # Migration is not a user action - it changes the shape of the
@@ -146,6 +183,57 @@ class TimeTracker:
             # as operations. The other machine performs the same migration on
             # its own copy.
             self._save_data()
+
+    def _lock_path(self):
+        """
+        The lock guarding this document.
+
+        Beside the data file rather than in the configuration directory,
+        because the data file can be moved (see the storage setting) and the
+        lock has to move with it - two writers pointed at one file must meet
+        on one lock whatever else differs between them. Not the data file
+        itself: _save_data() replaces that file, so a lock held on it would
+        be a lock on an inode nobody writes to any more.
+        """
+        return os.path.abspath(self.file_path) + '.lock'
+
+    @contextmanager
+    def exclusive(self, timeout=None):
+        """
+        Holds the document against every other writer for the block.
+
+        Reads the file again on the way in. That is the point: taking a lock
+        only around the save would put the losing writes in order rather than
+        prevent them, because each writer would still be saving a document it
+        read before the others changed it.
+
+        Nested calls do not re-lock or re-read - start_work() stops whatever
+        was running, and the inner call must not discard what the outer one
+        has done so far. The depth is per thread, so two threads sharing one
+        TimeTracker cannot mistake each other's nesting for their own.
+
+        Reading alone does not need this. os.replace() already means a reader
+        sees either the whole old file or the whole new one, and reload_data()
+        is called on every redraw - putting a lock there would make the
+        interface fail whenever a writer was slow.
+
+        :raises LockTimeout: if another writer held it past the deadline. Not
+            caught anywhere on purpose: the alternative is carrying on and
+            overwriting their work, which is the failure this exists to end.
+        """
+        if getattr(self._nesting, 'depth', 0):
+            yield
+            return
+        with locked(self._lock_path(), timeout=self.SAVE_LOCK_TIMEOUT
+                    if timeout is None else timeout):
+            self._nesting.depth = 1
+            try:
+                self.data = self._load_data()
+                if self._migrate_data_structure():
+                    self._save_data()
+                yield
+            finally:
+                self._nesting.depth = 0
 
     def _emit(self, op, **fields):
         """
@@ -576,6 +664,7 @@ class TimeTracker:
                     fallback_task = task
         return fallback_task
 
+    @_exclusive
     def add_main_project(self, main_project_name):
         """
         Adds a new main project.
@@ -679,6 +768,7 @@ class TimeTracker:
         for task in project.get("tasks", []):
             self._record_deletion(task, "task")
 
+    @_exclusive
     def delete_main_project(self, main_project_name):
         """
         Deletes a main project along with all associated tasks and time entries.
@@ -702,6 +792,7 @@ class TimeTracker:
             return True
         return False
 
+    @_exclusive
     def rename_main_project(self, old_name, new_name):
         """
         Renames a main project.
@@ -726,6 +817,7 @@ class TimeTracker:
             return True
         return False
 
+    @_exclusive
     def close_main_project(self, main_project_name):
         """
         Sets the status of a main project to 'closed'.
@@ -743,6 +835,7 @@ class TimeTracker:
             return True
         return False
 
+    @_exclusive
     def reopen_main_project(self, main_project_name):
         """
         Sets the status of a main project to 'open'.
@@ -760,6 +853,7 @@ class TimeTracker:
             return True
         return False
 
+    @_exclusive
     def add_task(self, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1, priority=0):
         """
         Adds a new task to a specified main project.
@@ -892,6 +986,7 @@ class TimeTracker:
                 })
         return results
 
+    @_exclusive
     def cleanup_overdue_today_tasks(self):
         """
         Removes the 'today' flag (⭐) from tasks that have a due date in the past.
@@ -932,6 +1027,7 @@ class TimeTracker:
             self._save_data()
         return changed
 
+    @_exclusive
     def set_today_flag_for_due_tasks(self):
         """
         Sets the 'today' flag (⭐) for tasks that have today's date as their due date
@@ -961,6 +1057,7 @@ class TimeTracker:
             self._save_data()
         return changed
 
+    @_exclusive
     def delete_task(self, main_project_name, task_name, task_id=None):
         """
         Deletes a task from a main project.
@@ -992,6 +1089,7 @@ class TimeTracker:
                 return True
         return False
 
+    @_exclusive
     def delete_all_closed_tasks(self):
         """
         Permanently deletes all tasks that have the status 'closed'.
@@ -1013,6 +1111,7 @@ class TimeTracker:
         
         return deleted_count
 
+    @_exclusive
     def close_task(self, main_project_name, task_name, task_id=None):
         """
         Sets the status of a task to 'closed'.
@@ -1033,6 +1132,7 @@ class TimeTracker:
             return True
         return False
 
+    @_exclusive
     def reopen_task(self, main_project_name, task_name, task_id=None):
         """
         Sets the status of a task to 'open'.
@@ -1053,6 +1153,7 @@ class TimeTracker:
             return True
         return False
 
+    @_exclusive
     def rename_task(self, main_project_name, old_task_name, new_task_name, task_id=None):
         """
         Renames a task within a given main project.
@@ -1078,6 +1179,7 @@ class TimeTracker:
                 return True
         return False
 
+    @_exclusive
     def update_task(self, main_project_name, old_task_name, new_task_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, priority=None, task_id=None, clear_due_date=False):
         """
         Updates a task's properties. Every field is left as it is unless a
@@ -1222,6 +1324,7 @@ class TimeTracker:
             
         return next_date.isoformat()
 
+    @_exclusive
     def move_task(self, old_main_project_name, task_name, new_main_project_name, task_id=None):
         """
         Moves a task from one main project to another.
@@ -1262,6 +1365,7 @@ class TimeTracker:
             return True, _("Task '{task_name}' moved successfully.").format(task_name=task_name)
         return False, _("Task '{task_name}' not found in '{main_name}'.").format(task_name=task_name, main_name=old_main_project_name)
 
+    @_exclusive
     def promote_task_to_project(self, main_project_name, task_name_to_promote, task_id=None):
         """
         Promotes a task to a new main project.
@@ -1367,6 +1471,7 @@ class TimeTracker:
         self._save_data()
         return True, _("Task '{task_name}' was promoted to a new main project.").format(task_name=task_name_to_promote)
 
+    @_exclusive
     def demote_main_project(self, main_project_to_demote_name, new_parent_main_project_name):
         """
         Demotes a main project to a sub-project of another main project.
@@ -1503,6 +1608,7 @@ class TimeTracker:
         """
         items.sort(key=lambda item: item.get("last_started") or "", reverse=True)
 
+    @_exclusive
     def start_work(self, main_project_name, task_name=None, task_id=None):
         """
         Starts a new time tracking session for a task by saving the start time.
@@ -1646,6 +1752,7 @@ class TimeTracker:
         except Exception as e:
             return 0, str(e)
 
+    @_exclusive
     def stop_work(self):
         """
         Stops the currently active time tracking session by adding the end time 

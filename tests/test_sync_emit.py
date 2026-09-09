@@ -39,12 +39,16 @@ class TestOperationsAreReported(unittest.TestCase):
     def setUp(self):
         if os.path.exists(TEST_FILE_PATH):
             os.remove(TEST_FILE_PATH)
+            if os.path.exists(TEST_FILE_PATH + ".lock"):
+                os.remove(TEST_FILE_PATH + ".lock")
         self.outbox = RecordingOutbox()
         self.tracker = TimeTracker(file_path=TEST_FILE_PATH, op_outbox=self.outbox)
 
     def tearDown(self):
         if os.path.exists(TEST_FILE_PATH):
             os.remove(TEST_FILE_PATH)
+            if os.path.exists(TEST_FILE_PATH + ".lock"):
+                os.remove(TEST_FILE_PATH + ".lock")
 
     def _project_uid(self, name):
         return self.tracker._get_project(name)['uid']
@@ -272,10 +276,14 @@ class TestSyncOffByDefault(unittest.TestCase):
     def setUp(self):
         if os.path.exists(TEST_FILE_PATH):
             os.remove(TEST_FILE_PATH)
+            if os.path.exists(TEST_FILE_PATH + ".lock"):
+                os.remove(TEST_FILE_PATH + ".lock")
 
     def tearDown(self):
         if os.path.exists(TEST_FILE_PATH):
             os.remove(TEST_FILE_PATH)
+            if os.path.exists(TEST_FILE_PATH + ".lock"):
+                os.remove(TEST_FILE_PATH + ".lock")
 
     def test_no_queue_means_no_recording_and_no_errors(self):
         """
@@ -323,15 +331,17 @@ class TestTheDailyTodaySweeps(unittest.TestCase):
 
     def setUp(self):
         for path in (TEST_FILE_PATH, OTHER_FILE_PATH):
-            if os.path.exists(path):
-                os.remove(path)
+            for leftover in (path, path + ".lock"):
+                if os.path.exists(leftover):
+                    os.remove(leftover)
         self.outbox = RecordingOutbox()
         self.tracker = TimeTracker(file_path=TEST_FILE_PATH, op_outbox=self.outbox)
 
     def tearDown(self):
         for path in (TEST_FILE_PATH, OTHER_FILE_PATH):
-            if os.path.exists(path):
-                os.remove(path)
+            for leftover in (path, path + ".lock"):
+                if os.path.exists(leftover):
+                    os.remove(leftover)
 
     def today_str(self):
         from datetime import date
@@ -389,7 +399,11 @@ class TestTheDailyTodaySweeps(unittest.TestCase):
         other_outbox = RecordingOutbox()
         other = TimeTracker(file_path=OTHER_FILE_PATH, op_outbox=other_outbox)
         # What the second machine already knows: the task has been completed.
+        # Written out, because every method that changes the document reads
+        # the file back first - a document altered only in memory is not one
+        # the next call would see.
         other.data['projects'][0]['tasks'][0]['status'] = TimeTracker.STATUS_DONE
+        other._save_data()
 
         # First machine's morning sweep, while it was still open there.
         self.outbox.reset()
@@ -404,6 +418,7 @@ class TestTheDailyTodaySweeps(unittest.TestCase):
                          "the sweep alone would have agreed, and the drift is not reproduced")
 
         apply_ops(other.data, [dict(emitted[0], s=1)])
+        other._save_data()
 
         self.assertTrue(other.data['projects'][0]['tasks'][0]['today'],
                         "the operation did not carry the flag across")
