@@ -2075,6 +2075,141 @@ class TestTimeTracker(unittest.TestCase):
 
 
 
+class TestReportsReadTheClockNotTheList(unittest.TestCase):
+    """
+    Issue #557: the stored order of time_entries is not chronological.
+
+    entry.add appends, nothing sorts, and a session that arrived from another
+    machine lands where the operation log put it. Three things were read from
+    the position in the list instead of from the times in it: the first entry,
+    the last activity, and whether a session is still running.
+
+    None of it needs synchronisation to go wrong - the entries below are
+    written straight into the document, exactly as an incoming operation
+    would leave them.
+    """
+
+    FILE = 'test_report_order.json'
+
+    def setUp(self):
+        self.tracker = TimeTracker(file_path=self.FILE)
+        self.addCleanup(lambda: os.path.exists(self.FILE) and os.remove(self.FILE))
+        self.tracker.add_main_project("Projekt")
+        self.tracker.add_task("Projekt", "Aufgabe")
+
+    def entries(self, *pairs):
+        """
+        Writes the sessions in the order given, however unchronological.
+
+        `None` for the end means a running session with no end_time key at
+        all - what start_work leaves behind. For the other shape, a key that
+        is present but empty, see entries_raw().
+        """
+        self.entries_raw(*({"start_time": start} if end is None
+                           else {"start_time": start, "end_time": end}
+                           for start, end in pairs))
+
+    def entries_raw(self, *records):
+        """The stored records verbatim, for shapes `entries()` cannot express."""
+        task = self.tracker._get_task("Projekt", "Aufgabe")
+        task["time_entries"] = list(records)
+
+    def report(self):
+        return self.tracker.generate_task_report("Projekt", "Aufgabe")
+
+    def line(self, text, needle):
+        found = [z.strip() for z in text.splitlines() if needle in z]
+        self.assertTrue(found, '%r is not in the report' % needle)
+        return found[0]
+
+    # -- the case in the issue ------------------------------------------
+
+    def test_the_first_entry_is_the_earliest_not_the_first_stored(self):
+        self.entries(("2026-09-10T12:30:00", "2026-09-10T13:00:00"),
+                     ("2026-09-10T09:00:00", "2026-09-10T10:00:00"))
+        self.assertIn("2026-09-10 09:00:00", self.line(self.report(), "First entry"))
+
+    def test_the_last_activity_is_the_latest_not_the_last_stored(self):
+        self.entries(("2026-09-10T12:30:00", "2026-09-10T13:00:00"),
+                     ("2026-09-10T09:00:00", "2026-09-10T10:00:00"))
+        self.assertIn("2026-09-10 13:00:00", self.line(self.report(), "Last activity"))
+
+    def test_a_days_sessions_are_listed_in_the_order_they_happened(self):
+        self.entries(("2026-09-10T12:30:00", "2026-09-10T13:00:00"),
+                     ("2026-09-10T09:00:00", "2026-09-10T10:00:00"),
+                     ("2026-09-10T15:00:00", "2026-09-10T15:30:00"))
+        zeilen = [z.strip() for z in self.report().splitlines()
+                  if z.strip().startswith('- ') and ' - ' in z]
+        self.assertEqual([z.split(' - ')[0].lstrip('- ') for z in zeilen],
+                         ['09:00:00', '12:30:00', '15:00:00'])
+
+    def test_the_days_themselves_stay_in_order_too(self):
+        self.entries(("2026-09-12T09:00:00", "2026-09-12T10:00:00"),
+                     ("2026-09-10T09:00:00", "2026-09-10T10:00:00"))
+        tage = [z.strip() for z in self.report().splitlines() if z.startswith('### ')]
+        self.assertEqual(tage, ['### 2026-09-10', '### 2026-09-12'])
+
+    # -- the same mistake, found while fixing it ------------------------
+
+    def test_a_running_session_counts_wherever_it_sits_in_the_list(self):
+        """
+        "Open" was decided by being last in the list. An entry that arrived
+        out of order left both reports saying the work was idle while the
+        clock was going.
+        """
+        running = (datetime.now() - timedelta(minutes=30)).isoformat(timespec='seconds')
+        self.entries((running, None),
+                     ("2026-09-10T09:00:00", "2026-09-10T10:00:00"))
+        self.assertIn("Active", self.line(self.report(), "Status"))
+        self.assertIn("Active", self.line(
+            self.tracker.generate_main_project_report("Projekt"), "Status"))
+
+    def test_a_running_session_last_in_the_list_still_counts(self):
+        """The case that always worked, so the fix cannot have traded one for the other."""
+        running = (datetime.now() - timedelta(minutes=30)).isoformat(timespec='seconds')
+        self.entries(("2026-09-10T09:00:00", "2026-09-10T10:00:00"),
+                     (running, None))
+        self.assertIn("Active", self.line(self.report(), "Status"))
+        self.assertIn("Active", self.line(
+            self.tracker.generate_main_project_report("Projekt"), "Status"))
+
+    def test_nothing_running_is_still_reported_as_idle(self):
+        self.entries(("2026-09-10T09:00:00", "2026-09-10T10:00:00"))
+        self.assertIn("Inactive", self.line(self.report(), "Status"))
+        self.assertIn("Inactive", self.line(
+            self.tracker.generate_main_project_report("Projekt"), "Status"))
+
+    def test_an_end_that_was_left_empty_does_not_take_the_report_down(self):
+        """
+        _settle() can write end_time as None when it closes a session it has
+        no better end for. The key is then present and the value unusable:
+        `"end_time" in entry` was true, and fromisoformat(None) raises - so
+        the report died on data the application itself produces.
+        """
+        self.entries_raw({"start_time": "2026-09-10T09:00:00", "end_time": None})
+        self.assertIn("Active", self.line(self.report(), "Status"))
+        self.assertIn("Active", self.line(
+            self.tracker.generate_main_project_report("Projekt"), "Status"))
+
+    def test_the_last_activity_is_the_latest_end_not_the_latest_start(self):
+        """
+        Sorting by start is not enough on its own. A long session that began
+        first can still end last, and then the entry sorted last is not the
+        one that finished last - which a plain assignment in the loop would
+        report instead of the maximum.
+        """
+        self.entries(("2026-09-10T09:00:00", "2026-09-10T18:00:00"),
+                     ("2026-09-10T10:00:00", "2026-09-10T11:00:00"))
+        self.assertIn("2026-09-10 18:00:00",
+                      self.line(self.report(), "Last activity"))
+
+    def test_one_session_reports_itself_as_both_ends(self):
+        self.entries(("2026-09-10T09:00:00", "2026-09-10T10:00:00"))
+        text = self.report()
+        self.assertIn("2026-09-10 09:00:00", self.line(text, "First entry"))
+        self.assertIn("2026-09-10 10:00:00", self.line(text, "Last activity"))
+
+
 # Run the tests if the file is called directly
 if __name__ == '__main__':
     unittest.main()

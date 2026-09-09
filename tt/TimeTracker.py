@@ -39,7 +39,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.13"
+    VERSION = "4.14"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -1968,32 +1968,46 @@ class TimeTracker:
         if not entries:
             return _("No time entries found for task '{task_name}'.").format(task_name=task_name)
 
+        # Read in order of the clock, not of the list. Nothing keeps
+        # time_entries chronological - entry.add appends, nothing sorts, and a
+        # session that arrived from another machine lands where the log put it
+        # rather than where it belongs in time. Taken from the ends of the
+        # list, "first entry" and "last activity" were whichever happened to
+        # be stored there, and each day's lines came out shuffled.
+        #
+        # An entry with no usable end is an open one. That, too, used to be
+        # decided by position - only the last entry could be running - so a
+        # session that arrived out of order left the report saying the task
+        # was idle while the clock was going.
+        sessions = []
+        for entry in entries:
+            start = datetime.fromisoformat(entry["start_time"])
+            raw_end = entry.get("end_time")
+            sessions.append((start,
+                             datetime.fromisoformat(raw_end) if raw_end else None))
+        sessions.sort(key=lambda session: session[0])
+
         total_duration = timedelta()
-        first_start_time = None
+        first_start_time = sessions[0][0]
         last_activity_time = None
         is_active = False
         daily_breakdown = {}
         weekday_durations = [timedelta() for _ in range(7)] # Mon-Sun
 
-        for i, entry in enumerate(entries):
-            start_time = datetime.fromisoformat(entry["start_time"])
-            if first_start_time is None:
-                first_start_time = start_time
-            
-            end_time = None
-            duration = timedelta() # Initialize duration here
+        for start_time, end_time in sessions:
+            duration = timedelta()
 
-            if "end_time" in entry:
-                end_time = datetime.fromisoformat(entry["end_time"])
+            if end_time is not None:
                 duration = end_time - start_time
                 total_duration += duration
-                last_activity_time = end_time
+                if last_activity_time is None or end_time > last_activity_time:
+                    last_activity_time = end_time
                 weekday_durations[start_time.weekday()] += duration
-            elif i == len(entries) - 1: # Last entry is open
+            else:
                 is_active = True
                 duration = datetime.now() - start_time
                 weekday_durations[start_time.weekday()] += duration
- 
+
             date_key = start_time.date()
             if date_key not in daily_breakdown:
                 daily_breakdown[date_key] = []
@@ -2074,21 +2088,30 @@ class TimeTracker:
             entries = t.get("time_entries", [])
             total_sessions += len(entries)
 
-            for i, entry in enumerate(entries):
+            for entry in entries:
                 start_time = datetime.fromisoformat(entry["start_time"])
                 if first_start_time is None or start_time < first_start_time:
                     first_start_time = start_time
                 if last_activity_time is None or start_time > last_activity_time:
                     last_activity_time = start_time
 
-                if "end_time" in entry:
-                    end_time = datetime.fromisoformat(entry["end_time"])
+                # First and last are already taken from the smallest and the
+                # largest here rather than from the ends of the list. What was
+                # still read from position is whether a session is running:
+                # only the last entry could be, so one that arrived out of
+                # order left this report calling the project idle while the
+                # clock was going. An entry is open when it has no usable end,
+                # wherever it sits - and `in` was not enough for that either,
+                # because _settle() can leave the key present and empty.
+                raw_end = entry.get("end_time")
+                if raw_end:
+                    end_time = datetime.fromisoformat(raw_end)
                     duration = end_time - start_time
                     t_duration += duration
                     weekday_durations[start_time.weekday()] += duration
                     if last_activity_time is None or end_time > last_activity_time:
                         last_activity_time = end_time
-                elif i == len(entries) - 1:  # Last entry is open
+                else:
                     is_active = True
                     active_task_name = t["task_name"]
             
