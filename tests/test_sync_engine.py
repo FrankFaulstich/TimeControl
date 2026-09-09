@@ -124,6 +124,10 @@ class EngineTestCase(unittest.TestCase):
     """Every test gets its own configuration directory and its own server."""
 
     def setUp(self):
+        # No test inherits another's nudge. stop() clears it too, but a
+        # test that calls nudge() without ever starting a worker would
+        # otherwise decide what the next test's worker does.
+        sync_engine._wake.clear()
         self.tmp = tempfile.mkdtemp()
         self._real_config_dir = sync_client.config_dir
         self._real_push = sync_client.push
@@ -2063,6 +2067,74 @@ class TestOneSequenceForEveryEntryPoint(unittest.TestCase):
             sync_engine.bring_up_to_date(self.tracker, self.config)
 
         self.assertEqual(captured.getvalue(), '')
+
+
+class TestStoppingLeavesNothingBehindForTheNextWorker(EngineTestCase):
+    """
+    A worker that has been stopped must not still be telling its successor
+    what to do.
+
+    stop() used to set the wake event. That woke nobody - the loop only reads
+    it, and it is stopping.set() that ends the wait - but it stayed set
+    afterwards, and the next worker read it as "run a cycle at once", skipping
+    both the interval and the backoff.
+
+    It surfaced as a test that passed here and failed on CI: the settings
+    screen tests write a state a worker should leave alone and then read it
+    back, and a worker that thought itself due overwrote it in the fifty
+    milliseconds between. Which machine won that race was the only difference
+    between the two runs.
+    """
+
+    def test_stopping_a_worker_clears_the_nudge_it_leaves(self):
+        """
+        Only a worker that was actually running is stopped - stop() returns
+        early when there is nothing to stop, and a nudge made while the
+        feature is off is left alone on purpose: it is the user asking, and
+        switching sync on should honour it.
+
+        The worker ticks every two seconds, so the nudge set here is still
+        pending when stop() is reached.
+        """
+        sync_engine.write_state({'last_ok': int(time.time())})
+        sync_engine.ensure_started({'sync': {'enabled': True,
+                                             'base_url': 'https://x/index.php'}})
+        sync_engine.nudge()
+        self.assertTrue(sync_engine._wake.is_set(),
+                        'nudge() is expected to set it - otherwise this test '
+                        'proves nothing')
+        sync_engine.stop()
+        self.assertFalse(sync_engine._wake.is_set())
+
+    def test_a_worker_has_no_reason_to_run_after_a_settled_start(self):
+        """
+        Without relying on timing: both of the things the loop consults
+        before running a cycle have to say no.
+        """
+        sync_engine.write_state({'last_ok': int(time.time())})
+        sync_engine.stop()
+        sync_engine.ensure_started({'sync': {'enabled': True,
+                                             'base_url': 'https://x/index.php'}})
+        self.assertFalse(sync_engine._wake.is_set(), 'a stale nudge is pending')
+        self.assertFalse(sync_engine._interval_elapsed(sync_engine.read_state()),
+                         'the interval is not being respected')
+
+    def test_and_leaves_a_freshly_cleared_state_alone(self):
+        """
+        The failure as it actually appeared, with a margin: with the bug the
+        worker had rewritten all three of these within fifty milliseconds.
+        """
+        sync_engine.write_state({'last_ok': int(time.time()),
+                                 'configured_url': 'https://old.example/tc/',
+                                 'last_error': 'unreachable', 'failures': 5,
+                                 'next_attempt': int(time.time()) + 1800})
+        sync_engine.ensure_started({'sync': {'enabled': True,
+                                             'base_url': 'https://new.example/tc/'}})
+        time.sleep(0.3)
+        state = sync_engine.read_state()
+        self.assertIsNone(state['last_error'])
+        self.assertEqual(state['failures'], 0)
+        self.assertEqual(state['next_attempt'], 0)
 
 
 if __name__ == '__main__':

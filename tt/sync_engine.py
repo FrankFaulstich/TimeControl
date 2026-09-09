@@ -1201,12 +1201,19 @@ def stop():
     if worker is None:
         return
     worker.stopping.set()
-    _wake.set()
     # Not joined for long. The thread may be inside a request, and the
     # interface must not wait out a network timeout to redraw; it is a daemon,
     # so an abandoned one dies with the process and every write it makes is
     # atomic on its own.
     worker.join(timeout=0.2)
+    # A pending nudge belonged to the worker that has just gone. Nothing waits
+    # on this event - the loop only reads it, and stopping.set() above is what
+    # ends its wait - so leaving it standing wakes nobody; it only tells the
+    # next worker to run a cycle at once, skipping both the interval and the
+    # backoff. That is how a settings screen that stops and starts the worker
+    # on every redraw could sync far more often than it was asked to, and how
+    # one test's teardown could decide what the next test's worker did.
+    _wake.clear()
 
 
 def status_summary():
