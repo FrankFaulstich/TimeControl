@@ -32,15 +32,26 @@ binaries = []
 # has to be named here or it is simply left out of the build. The sync
 # modules degrade quietly when missing (SL_Menu catches ImportError and sets
 # SYNC_AVAILABLE = False), which is exactly why their absence would go
-# unnoticed until somebody wondered why the packaged build never syncs.
+# unnoticed until somebody wondered why the packaged build never syncs. The
+# task_* modules are worse: SL_Menu imports those at the top, so a build
+# without them does not start at all.
+#
+# Kept as a plain list rather than worked out here, so that
+# tests/test_frozen_build.py can read it. That test walks the same imports
+# PyInstaller would and fails when this list has fallen behind SL_Menu -
+# which is the only reason the four names below are not still missing.
 hiddenimports = [
     'TimeTrackerMCP_Server',
     'tt.TimeTracker',
     'tt.sync_client',
     'tt.sync_engine',
     'tt.sync_apply',
+    'tt.sync_messages',
     'tt.sync_outbox',
     'tt.filelock',
+    'tt.task_calendar',
+    'tt.task_order',
+    'tt.task_progress',
 ]
 
 # collect_all() pulls in a package's submodules, data files (including its

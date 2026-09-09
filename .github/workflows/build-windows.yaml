@@ -72,7 +72,17 @@ jobs:
           Copy-Item "dist/TimeControl.exe" (Join-Path $testDir "TimeControl.exe")
 
           Push-Location $testDir
-          $proc = Start-Process -FilePath ".\TimeControl.exe" -PassThru
+          # Captured, because a 200 from Streamlit does not mean the script
+          # ran. Streamlit serves the page shell as soon as its server is up
+          # and only runs sl/SL_Menu.py when a session connects, so a build
+          # missing one of the modules that file imports answers below exactly
+          # like a healthy one, and says so only in its output. Checked
+          # earlier and more cheaply by tests/test_frozen_build.py; this is
+          # the same question asked of the thing that actually shipped.
+          $outLog = Join-Path $testDir "stdout.txt"
+          $errLog = Join-Path $testDir "stderr.txt"
+          $proc = Start-Process -FilePath ".\TimeControl.exe" -PassThru `
+                    -RedirectStandardOutput $outLog -RedirectStandardError $errLog
           $serverResponded = $false
           try {
             for ($i = 0; $i -lt 30; $i++) {
@@ -106,7 +116,27 @@ jobs:
             Write-Error "data.json was not created next to the executable."
             exit 1
           }
-          Write-Host "Smoke test passed: Streamlit responded and config.json/data.json were created next to the executable."
+
+          # An import that failed leaves a traceback here and nowhere else.
+          # It only gets that far once something opens a session, which the
+          # webview window this exe puts up does and Invoke-WebRequest above
+          # does not - so treat a clean log as "nothing seen", not as proof.
+          # The guarantee lives in tests/test_frozen_build.py, which needs no
+          # build and no session; this is the confirmation from the article
+          # that shipped.
+          $output = @()
+          foreach ($log in @($outLog, $errLog)) {
+            if (Test-Path $log) { $output += Get-Content $log }
+          }
+          $broke = $output | Select-String -Pattern 'ModuleNotFoundError','ImportError','Traceback \(most recent call last\)'
+          if ($broke) {
+            Write-Host "----- output from the executable -----"
+            $output | ForEach-Object { Write-Host $_ }
+            Write-Host "--------------------------------------"
+            Write-Error "The executable started, but something in it failed to import. A module sl/SL_Menu.py needs is most likely missing from hiddenimports in TimeControl.spec."
+            exit 1
+          }
+          Write-Host "Smoke test passed: Streamlit responded, config.json/data.json were created next to the executable, and nothing failed to import."
 
       # The step above proves the build runs. This one proves it can replace
       # itself, which is the half of the update that Windows makes awkward:
