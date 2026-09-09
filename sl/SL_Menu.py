@@ -11,18 +11,16 @@ import shutil
 # Add parent directory to path to import modules from root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from tt.TimeTracker import (
-    TimeTracker,
+from tt.TimeTracker import TimeTracker
+from tt.task_order import (
     TASK_ORDER_NONE,
     TASK_ORDER_PRIORITY,
     TASK_ORDER_ALPHABETICAL,
     TASK_ORDERS,
-    completion_counts,
-    completion_ratio,
-    month_grid,
-    shift_month,
     sort_tasks,
 )
+from tt.task_progress import completion_counts, completion_ratio
+from tt.task_calendar import month_grid, shift_month
 from tt.sync_messages import sign_in_error_message, sync_error_message
 from i18n import _
 

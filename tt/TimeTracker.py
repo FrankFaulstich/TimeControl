@@ -1,10 +1,8 @@
 import json
 import os
 import tempfile
-from collections import namedtuple
 import imaplib
 import re
-import unicodedata
 import uuid
 import email
 from email.header import decode_header
@@ -35,194 +33,13 @@ except ImportError:
     parse_version = None
 
 
-def _new_uid():
-    """
-    Returns a fresh identifier for a project, task or time entry.
-
-    This is deliberately NOT the same thing as a task's integer 'id'.
-    That one is a purely local counter (see next_id) and may legitimately
-    differ between two machines holding the very same task - it exists so
-    the GUI and the MCP/REST/SOAP interfaces have a short handle to pass
-    around. This identifier, by contrast, is generated randomly, so two
-    machines editing offline never produce the same one for different
-    objects. It is what an entity can be addressed by across machines.
-
-    16 hex characters are 64 bits of randomness. For the few tens of
-    thousands of entities a personal time tracker accumulates over years,
-    the chance of a collision is negligible, while keeping every stored
-    record half the length a full uuid4 would add.
-
-    :return: A 16-character hexadecimal identifier.
-    :rtype: str
-    """
-    return uuid.uuid4().hex[:16]
-
-
-# The task attributes that mean the same thing on every machine. Deliberately
-# excluded: 'uid' (it is the address, not a field), 'id' (a local counter that
-# is allowed to differ between machines) and 'time_entries' (carried by their
-# own operations, so a task and its entries can be reconciled independently).
-TASK_SYNC_FIELDS = (
-    "task_name", "status", "due_date", "today", "note",
-    "recurring", "frequency", "userdefined_days", "priority", "last_started",
-)
-
-
-def _task_fields(task):
-    """Returns the syncable attributes of a task."""
-    return {k: task.get(k) for k in TASK_SYNC_FIELDS if k in task}
-
-
-# The orders a list of tasks can be presented in. 'none' is what the data
-# already is - the order tasks were created in - and is the default, so a
-# view that offers no choice behaves as it always did.
-TASK_ORDER_NONE = "none"
-TASK_ORDER_PRIORITY = "priority"
-TASK_ORDER_ALPHABETICAL = "alphabetical"
-TASK_ORDERS = (TASK_ORDER_NONE, TASK_ORDER_PRIORITY, TASK_ORDER_ALPHABETICAL)
-
-
-def alphabetical_key(name):
-    """
-    Sort key that puts 'Ärger' under A rather than behind Z.
-
-    Comparing strings by code point is only alphabetical for unaccented
-    ASCII: 'Ä' is U+00C4, so it lands after 'Z' and the German, Czech and
-    Spanish translations all get a list that reads as unsorted. Decomposing
-    to NFKD and dropping the combining marks folds each accented letter onto
-    its base one, which is where a reader looks for it.
-
-    This is a folding, not full collation: Czech traditionally files 'ch'
-    after 'h', and that ordering needs a locale-aware collator this does not
-    pretend to be. Folding still puts 'č' next to 'c' instead of past 'z',
-    which is the error that actually looks broken.
-
-    The original string is the tie-break so that names differing only in
-    case or accent keep a stable, predictable order.
-    """
-    name = name or ""
-    folded = unicodedata.normalize("NFKD", name.casefold())
-    return ("".join(c for c in folded if not unicodedata.combining(c)), name)
-
-
-def sort_tasks(tasks, order):
-    """
-    Returns `tasks` in the requested order, without touching the original.
-
-    An unknown order leaves the list alone rather than raising: this drives a
-    display, and a stale value in a saved UI state should not take out the
-    whole view.
-    """
-    tasks = list(tasks)
-    if order == TASK_ORDER_PRIORITY:
-        # Descending, and stable, so tasks sharing a priority stay in the
-        # order they were created in.
-        tasks.sort(key=lambda t: t.get('priority') or 0, reverse=True)
-    elif order == TASK_ORDER_ALPHABETICAL:
-        tasks.sort(key=lambda t: alphabetical_key(t.get('task_name')))
-    return tasks
-
-
-def completion_counts(tasks):
-    """
-    How many of `tasks` are finished, and how many there are.
-
-    The one place either number is worked out, so the bar drawn from the
-    ratio below and the figures named beside it cannot disagree.
-
-    :return: (done, total).
-    """
-    tasks = list(tasks)
-    return sum(1 for task in tasks if task.get('status') == 'done'), len(tasks)
-
-
-def completion_ratio(tasks):
-    """
-    How much of `tasks` is done, as a fraction between 0 and 1.
-
-    Counts what is finished, not what is left: a bar drawn from this fills up
-    as the day is worked through, which is what a reader expects of one.
-
-    :return: None when there is nothing to measure. An empty list has no
-        ratio - 0.0 would be a bar reading "none of it done", which is not
-        the same thing as having nothing to do, and is the more discouraging
-        of the two to be told wrongly.
-    """
-    done, total = completion_counts(tasks)
-    if not total:
-        return None
-    return done / total
-
-
-# One cell of a month grid: the day it stands for, whether that day belongs to
-# the month being shown (a grid always starts and ends mid-week, so the first
-# and last rows carry days from the months either side), and what is due then.
-CalendarDay = namedtuple('CalendarDay', ('date', 'in_month', 'tasks'))
-
-
-def due_on(task):
-    """
-    The day a task is due, or None if it is not dated or the date is unusable.
-
-    Dropped rather than raised on: this feeds a calendar, and one task with a
-    date nothing can read should cost that task its square, not the month.
-    """
-    raw = task.get('due_date')
-    if not raw:
-        return None
-    try:
-        # Sliced, so a value that carries a time of day as well still lands
-        # on its day rather than being thrown away.
-        return date.fromisoformat(str(raw)[:10])
-    except ValueError:
-        return None
-
-
-def month_grid(year, month, tasks):
-    """
-    The given month as whole weeks, each day carrying the tasks due on it.
-
-    Weeks run Monday to Sunday, which is what the weekly overview in the
-    planning tab already assumes.
-
-    Days from the neighbouring months fill out the first and last week and
-    carry their own tasks: they are real days on this page, and leaving them
-    empty would say nothing is due when something is. `in_month` marks them so
-    the view can show them as the visitors they are.
-
-    :return: a list of weeks, each a list of seven CalendarDay.
-    """
-    due = {}
-    for task in tasks:
-        day = due_on(task)
-        if day is not None:
-            due.setdefault(day, []).append(task)
-    weeks = calendar.Calendar(firstweekday=0).monthdatescalendar(year, month)
-    return [[CalendarDay(day, (day.year, day.month) == (year, month),
-                         due.get(day, []))
-             for day in week]
-            for week in weeks]
-
-
-def shift_month(year, month, delta):
-    """
-    The (year, month) `delta` months away from the given one.
-
-    Counted in months since year 0 rather than by adjusting the two numbers
-    separately, so December to January carries the year with it and stepping
-    backwards past January needs no special case.
-    """
-    total = year * 12 + (month - 1) + delta
-    return total // 12, total % 12 + 1
-
-
 class TimeTracker:
     """
     Manages time tracking for various main and sub-projects.
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.12.1"
+    VERSION = "4.13"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -246,6 +63,46 @@ class TimeTracker:
     # (even slow) install so this only ever kicks in for that dead-network
     # case, where subprocess's timeout=<N> kills the pip child outright.
     PIP_INSTALL_TIMEOUT = 120
+
+    # The task attributes that mean the same thing on every machine. Deliberately
+    # excluded: 'uid' (it is the address, not a field), 'id' (a local counter that
+    # is allowed to differ between machines) and 'time_entries' (carried by their
+    # own operations, so a task and its entries can be reconciled independently).
+    TASK_SYNC_FIELDS = (
+        "task_name", "status", "due_date", "today", "note",
+        "recurring", "frequency", "userdefined_days", "priority", "last_started",
+    )
+
+    # Neither needs an instance, but both belong to this class and are
+    # used nowhere else - hence static rather than free-standing, and a
+    # classmethod where the constant above has to be reached.
+    @staticmethod
+    def _new_uid():
+        """
+        Returns a fresh identifier for a project, task or time entry.
+
+        This is deliberately NOT the same thing as a task's integer 'id'.
+        That one is a purely local counter (see next_id) and may legitimately
+        differ between two machines holding the very same task - it exists so
+        the GUI and the MCP/REST/SOAP interfaces have a short handle to pass
+        around. This identifier, by contrast, is generated randomly, so two
+        machines editing offline never produce the same one for different
+        objects. It is what an entity can be addressed by across machines.
+
+        16 hex characters are 64 bits of randomness. For the few tens of
+        thousands of entities a personal time tracker accumulates over years,
+        the chance of a collision is negligible, while keeping every stored
+        record half the length a full uuid4 would add.
+
+        :return: A 16-character hexadecimal identifier.
+        :rtype: str
+        """
+        return uuid.uuid4().hex[:16]
+
+    @classmethod
+    def _task_fields(cls, task):
+        """Returns the syncable attributes of a task."""
+        return {k: task.get(k) for k in cls.TASK_SYNC_FIELDS if k in task}
 
     def __init__(self, file_path=None, op_outbox=None):
         """
@@ -465,7 +322,7 @@ class TimeTracker:
 
             # Schema 2: a machine-independent identity (see _new_uid).
             if not project.get("uid"):
-                project["uid"] = _new_uid()
+                project["uid"] = self._new_uid()
                 data_changed = True
 
             for task in project.get("tasks", []):
@@ -506,12 +363,12 @@ class TimeTracker:
 
                 # Schema 2: identity, and the time entries below it.
                 if not task.get("uid"):
-                    task["uid"] = _new_uid()
+                    task["uid"] = self._new_uid()
                     data_changed = True
 
                 for entry in task.get("time_entries", []):
                     if not entry.get("uid"):
-                        entry["uid"] = _new_uid()
+                        entry["uid"] = self._new_uid()
                         data_changed = True
 
                 # Schema 2: 'last_started' will replace the implicit
@@ -727,7 +584,7 @@ class TimeTracker:
         :type main_project_name: str
         """
         new_project = {
-            "uid": _new_uid(),
+            "uid": self._new_uid(),
             "main_project_name": main_project_name,
             "tasks": [],
             "status": self.STATUS_OPEN,
@@ -928,7 +785,7 @@ class TimeTracker:
         project = self._get_project(main_project_name)
         if project:
             new_task = {
-                "uid": _new_uid(),
+                "uid": self._new_uid(),
                 "id": self.data["next_id"],
                 "task_name": task_name,
                 "time_entries": [],
@@ -945,7 +802,7 @@ class TimeTracker:
             self.data["next_id"] += 1
             project["tasks"].append(new_task)
             self._emit('task.create', uid=new_task["uid"],
-                       project=project.get("uid"), f=_task_fields(new_task))
+                       project=project.get("uid"), f=self._task_fields(new_task))
             self._save_data()
             return True
         return False
@@ -1254,7 +1111,7 @@ class TimeTracker:
                 # rather than by listing the fields again here. That keeps the
                 # two from drifting when a field is added later, and means
                 # nothing is sent when a save turns out to change nothing.
-                before = _task_fields(task)
+                before = self._task_fields(task)
 
                 # Handle recurring task generation
                 is_completing = (status == self.STATUS_DONE and task.get("status") != self.STATUS_DONE)
@@ -1298,7 +1155,7 @@ class TimeTracker:
                 if priority is not None:
                     task["priority"] = priority
 
-                after = _task_fields(task)
+                after = self._task_fields(task)
                 changed = {k: v for k, v in after.items() if before.get(k) != v}
                 if changed:
                     self._emit('task.set', uid=task.get("uid"), f=changed)
@@ -1317,7 +1174,7 @@ class TimeTracker:
         next_due = self._calculate_next_due_date(base_due, freq, ud_days)
 
         new_task = {
-            "uid": _new_uid(),
+            "uid": self._new_uid(),
             "id": self.data["next_id"],
             "task_name": task["task_name"],
             "time_entries": [], # Start with a fresh, empty list for the new instance
@@ -1334,7 +1191,7 @@ class TimeTracker:
         self.data["next_id"] += 1
         project["tasks"].append(new_task)
         self._emit('task.create', uid=new_task["uid"],
-                   project=project.get("uid"), f=_task_fields(new_task))
+                   project=project.get("uid"), f=self._task_fields(new_task))
 
     def _calculate_next_due_date(self, base_due_str, frequency, ud_days):
         if base_due_str:
@@ -1465,10 +1322,10 @@ class TimeTracker:
         starts = [e.get("start_time") for e in time_entries if e.get("start_time")]
         last_started = max(starts) if starts else None
         new_main_project = {
-            "uid": _new_uid(),
+            "uid": self._new_uid(),
             "main_project_name": task_name_to_promote,
             "tasks": [{
-                "uid": _new_uid(),
+                "uid": self._new_uid(),
                 "id": self.data["next_id"],
                 "task_name": _("General"),
                 "time_entries": time_entries,
@@ -1499,7 +1356,7 @@ class TimeTracker:
                    f={"name": task_name_to_promote, "status": self.STATUS_OPEN,
                       "last_started": last_started})
         self._emit('task.create', uid=general["uid"],
-                   project=new_main_project["uid"], f=_task_fields(general))
+                   project=new_main_project["uid"], f=self._task_fields(general))
         for entry in time_entries:
             if entry.get("uid"):
                 self._emit('entry.move', uid=entry["uid"], task=general["uid"])
@@ -1557,7 +1414,7 @@ class TimeTracker:
         #    time entries keep their existing uids.
         starts = [e.get("start_time") for e in all_time_entries if e.get("start_time")]
         new_task = {
-            "uid": _new_uid(),
+            "uid": self._new_uid(),
             "id": self.data["next_id"],
             "task_name": main_project_to_demote_name,
             "time_entries": all_time_entries,
@@ -1580,7 +1437,7 @@ class TimeTracker:
         # matters - re-homing the entries before their old task disappears is
         # what keeps tracked time from being caught by the deletion.
         self._emit('task.create', uid=new_task["uid"],
-                   project=new_parent_project.get("uid"), f=_task_fields(new_task))
+                   project=new_parent_project.get("uid"), f=self._task_fields(new_task))
         for entry in all_time_entries:
             if entry.get("uid"):
                 self._emit('entry.move', uid=entry["uid"], task=new_task["uid"])
@@ -1677,7 +1534,7 @@ class TimeTracker:
             # meaning anything once two machines hold their own copy.
             started_at = self._next_started_at()
             new_entry = {
-                "uid": _new_uid(),
+                "uid": self._new_uid(),
                 "start_time": started_at
             }
             task["time_entries"].append(new_entry)
