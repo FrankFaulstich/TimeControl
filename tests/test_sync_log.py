@@ -137,10 +137,14 @@ class TestItGivesNothingAwayThatWasTypedIn(LogTestCase):
         super().setUp()
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
 
     def tearDown(self):
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         super().tearDown()
 
     def test_a_whole_sync_names_nothing_the_user_typed(self):

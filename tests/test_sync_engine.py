@@ -478,11 +478,15 @@ class TestApplying(EngineTestCase):
         super().setUp()
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
 
     def tearDown(self):
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         super().tearDown()
 
     def test_nothing_pending_does_nothing(self):
@@ -587,11 +591,15 @@ class TestOfferingTheExistingDocument(EngineTestCase):
         super().setUp()
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
 
     def tearDown(self):
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         super().tearDown()
 
     def test_an_existing_document_is_offered_the_first_time(self):
@@ -733,11 +741,15 @@ class TestConsumingTheInbox(EngineTestCase):
         super().setUp()
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
 
     def tearDown(self):
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         super().tearDown()
 
     def test_a_record_filed_while_applying_is_not_swept_away_with_the_rest(self):
@@ -825,6 +837,8 @@ class TestTheQueueAndTheLogDisagreeing(EngineTestCase):
         super().setUp()
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
         self.device = sync_client.device_identity()['device_uid']
         self.server.device = self.device
@@ -832,6 +846,8 @@ class TestTheQueueAndTheLogDisagreeing(EngineTestCase):
     def tearDown(self):
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         super().tearDown()
 
     def test_an_operation_already_in_the_log_is_not_replayed_on_top(self):
@@ -1074,11 +1090,15 @@ class TestOfferingIsDoneOnce(EngineTestCase):
         super().setUp()
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
 
     def tearDown(self):
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         super().tearDown()
 
     def test_the_whole_document_is_queued_in_one_go(self):
@@ -1159,11 +1179,15 @@ class TestWhenTheDiskItselfMisbehaves(EngineTestCase):
         super().setUp()
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
 
     def tearDown(self):
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         super().tearDown()
 
     @contextlib.contextmanager
@@ -1313,11 +1337,15 @@ class TestTheCursorAndTheLogComingApart(EngineTestCase):
         super().setUp()
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
 
     def tearDown(self):
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         super().tearDown()
 
     def test_a_log_shorter_than_our_position_is_a_different_log(self):
@@ -1586,11 +1614,15 @@ class TestTheSnapshotReachesTheDocument(EngineTestCase):
         super().setUp()
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
 
     def tearDown(self):
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         super().tearDown()
 
     def test_a_fresh_machine_ends_up_with_the_snapshot_and_the_tail(self):
@@ -1660,6 +1692,8 @@ class TestOfferingASnapshot(EngineTestCase):
         super().setUp()
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
         self.tracker.data['projects'] = [
             {'uid': P1, 'main_project_name': 'Work', 'status': 'open',
@@ -1668,6 +1702,8 @@ class TestOfferingASnapshot(EngineTestCase):
     def tearDown(self):
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         super().tearDown()
 
     def caught_up(self, at=None, snapshot_at=0):
@@ -1965,6 +2001,8 @@ class TestOneSequenceForEveryEntryPoint(unittest.TestCase):
         sync_client.load_credentials = lambda: {'token': 't', 'base_url': 'https://x/index.php'}
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         self.outbox = Outbox()
         self.tracker = TimeTracker(file_path=self.DATA, op_outbox=self.outbox)
         self.config = {'sync': {'enabled': True, 'base_url': 'https://x/',
@@ -1987,6 +2025,8 @@ class TestOneSequenceForEveryEntryPoint(unittest.TestCase):
         sync_client.load_credentials = self._real_creds
         if os.path.exists(self.DATA):
             os.remove(self.DATA)
+            if os.path.exists(self.DATA + ".lock"):
+                os.remove(self.DATA + ".lock")
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_what_arrived_is_applied_and_reported(self):

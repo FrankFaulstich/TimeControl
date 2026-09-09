@@ -650,6 +650,8 @@ class TestTheResultIsUsable(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(self.PATH):
             os.remove(self.PATH)
+            if os.path.exists(self.PATH + ".lock"):
+                os.remove(self.PATH + ".lock")
 
     def test_a_document_built_only_from_operations_opens_and_works(self):
         import json
