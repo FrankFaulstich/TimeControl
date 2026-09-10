@@ -191,6 +191,7 @@ def start_streamlit_server():
     Initializes and runs the pywebview GUI for the Streamlit app.
 
     This function performs the following steps:
+
     1. Reads `config.json` to get the configured port and last window geometry.
     2. Starts the Streamlit server as a background subprocess.
     3. Creates a `pywebview` window pointing to the local Streamlit URL.
