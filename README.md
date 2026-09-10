@@ -115,7 +115,21 @@ The application will also attempt to self-install missing dependencies on first 
 
 ## Configuration ⚙️
 
-The application can be configured via the `config.json` file.
+The application is configured through `config.json` in the project
+directory. That file is **not** part of the repository: it is the live
+file the Settings screen writes, so tracking it would publish whatever
+you last configured - including, once, the address of your own sync
+server. What ships instead is `config.example.json`, which spells out
+the values the application uses when no configuration is present:
+
+```bash
+cp config.example.json config.json
+```
+
+Copying it is optional. Without it the application starts on exactly the
+same settings and writes its own `config.json` on first use, and it
+creates `data.json` for itself the same way - `data.example.json` is
+there to show the shape, not to be copied.
 
 ```json
 {
@@ -147,7 +161,7 @@ The application can be configured via the `config.json` file.
 - **`mcp_server_enabled`**: Whether `TimeTrackerSL_GUI.py` also starts the MCP server when `mcp_transport` is `"http"` (default: `false`). See [MCP Server](#mcp-server-).
 - **`mcp_transport`**: `"http"` or `"stdio"` (default: `"http"`). See [MCP Server](#mcp-server-).
 - **`mcp_port`**: The port on which the MCP server listens when using the `"http"` transport (default: 8700).
-- **`sync`**: Optional, and absent by default — which means off. `enabled` switches synchronisation on, `base_url` is the address of your own server, `interval_minutes` is how often it runs in the background (default: 5), and `log_enabled` turns on a diagnostic log (default: off). Changing `base_url` after signing in takes effect once you sign in again: the access token belongs to the server that issued it, so it is never sent to a different address. The settings screen shows which address is in use and says so when the two differ. Note that `config.json` is tracked in this repository: if you work on TimeControl itself, blank `base_url` before committing, or you publish the address of your own server. A test guards against it, but only once the commit exists. See [Synchronising Two Machines](#synchronising-two-machines-).
+- **`sync`**: Optional, and absent by default — which means off. `enabled` switches synchronisation on, `base_url` is the address of your own server, `interval_minutes` is how often it runs in the background (default: 5), and `log_enabled` turns on a diagnostic log (default: off). Changing `base_url` after signing in takes effect once you sign in again: the access token belongs to the server that issued it, so it is never sent to a different address. The settings screen shows which address is in use and says so when the two differ. See [Synchronising Two Machines](#synchronising-two-machines-).
 
 All of these MCP settings can also be changed from the GUI, under **Settings → MCP Server Settings**, and the sync settings under **Settings → Sync Server Settings**.
 

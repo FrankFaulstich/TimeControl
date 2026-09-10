@@ -13,6 +13,12 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 # either.
 EMAIL_FIELDS_THAT_MUST_BE_BLANK = ("imap_server", "user", "password")
 
+# The configuration that actually ships. config.json itself is no longer
+# tracked (issue #559) - it is the live file, written by the Settings
+# screen - so what a clone receives, and what these guards have to keep
+# clean, is the example beside it.
+SHIPPED_CONFIG = "config.example.json"
+
 # RFC 2606 reserves these for documentation, so an address under one of them
 # names nobody's machine and is safe to publish.
 PLACEHOLDER_HOSTS = ("example.com", "example.net", "example.org")
@@ -42,30 +48,51 @@ def _is_placeholder(url):
 
 def _committed(path):
     """
-    Returns the contents of a path as it exists in HEAD, or None.
+    Returns the contents of a path as the next commit would carry it.
 
-    Deliberately reads the committed blob rather than the working tree: the
-    point is to catch what would be published, and checking the working copy
+    The staged blob first, then HEAD. Deliberately not the working tree: the
+    point is to catch what would be published, and reading the working copy
     would instead fail throughout any legitimate local test with real
     settings entered - which is exactly when a noisy test suite is least
-    useful.
+    useful. The index comes first because that is what is about to be
+    published; waiting for HEAD would only report the leak once it had
+    already happened.
 
     :param path: Repository-relative path to read.
     :return: The file contents as text, or None if unavailable.
     """
+    for revision in (":%s" % path, "HEAD:%s" % path):
+        try:
+            result = subprocess.run(
+                ["git", "show", revision],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if result.returncode == 0:
+            return result.stdout
+    return None
+
+
+def _tracked(path):
+    """
+    Whether the next commit would contain `path` at all.
+
+    Asked of the index rather than of HEAD: a file removed with
+    `git rm --cached` is still in HEAD until that removal is committed, and
+    the question here is what the next commit carries.
+    """
     try:
         result = subprocess.run(
-            ["git", "show", "HEAD:%s" % path],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=15,
+            ["git", "ls-files", "--error-unmatch", "--", path],
+            cwd=REPO_ROOT, capture_output=True, text=True, timeout=15,
         )
     except (OSError, subprocess.SubprocessError):
         return None
-    if result.returncode != 0:
-        return None
-    return result.stdout
+    return result.returncode == 0
 
 
 class TestRepoHygiene(unittest.TestCase):
@@ -85,9 +112,10 @@ class TestRepoHygiene(unittest.TestCase):
     """
 
     def test_committed_config_has_no_email_credentials(self):
-        raw = _committed("config.json")
+        raw = _committed(SHIPPED_CONFIG)
         if raw is None:
-            self.skipTest("config.json is not retrievable from HEAD (no git checkout?)")
+            self.skipTest("%s is not retrievable from HEAD (no git checkout?)"
+                          % SHIPPED_CONFIG)
 
         email = json.loads(raw).get("email", {})
         populated = [f for f in EMAIL_FIELDS_THAT_MUST_BE_BLANK if email.get(f)]
@@ -95,20 +123,20 @@ class TestRepoHygiene(unittest.TestCase):
         self.assertEqual(
             populated,
             [],
-            "config.json in HEAD carries real email settings in %s.\n"
+            "%s in HEAD carries real email settings in %s.\n"
             "The repository is public, so committing this publishes it "
             "permanently.\n"
-            "Blank the fields in the Settings screen (or edit config.json), "
-            "then amend the commit - and remember that removing it in a later "
-            "commit does NOT remove it from the history."
-            % ", ".join(populated),
+            "Blank the fields before committing - and remember that removing "
+            "them in a later commit does NOT remove them from the history."
+            % (SHIPPED_CONFIG, ", ".join(populated)),
         )
 
     def test_committed_config_email_stays_disabled(self):
         """A shipped default must not have email import switched on."""
-        raw = _committed("config.json")
+        raw = _committed(SHIPPED_CONFIG)
         if raw is None:
-            self.skipTest("config.json is not retrievable from HEAD (no git checkout?)")
+            self.skipTest("%s is not retrievable from HEAD (no git checkout?)"
+                          % SHIPPED_CONFIG)
 
         email = json.loads(raw).get("email", {})
         self.assertFalse(
@@ -128,9 +156,10 @@ class TestRepoHygiene(unittest.TestCase):
         credential, which is presumably why it was not thought of, but it is
         the sort of thing that only has to be published once.
         """
-        raw = _committed("config.json")
+        raw = _committed(SHIPPED_CONFIG)
         if raw is None:
-            self.skipTest("config.json is not retrievable from HEAD (no git checkout?)")
+            self.skipTest("%s is not retrievable from HEAD (no git checkout?)"
+                          % SHIPPED_CONFIG)
 
         sync = json.loads(raw).get("sync") or {}
 
@@ -154,9 +183,10 @@ class TestRepoHygiene(unittest.TestCase):
         same reason email import must not: a fresh install would start
         reaching out on settings that are not its own.
         """
-        raw = _committed("config.json")
+        raw = _committed(SHIPPED_CONFIG)
         if raw is None:
-            self.skipTest("config.json is not retrievable from HEAD (no git checkout?)")
+            self.skipTest("%s is not retrievable from HEAD (no git checkout?)"
+                          % SHIPPED_CONFIG)
 
         sync = json.loads(raw).get("sync") or {}
         self.assertFalse(
@@ -263,6 +293,72 @@ class TestTheGuardsActuallyFire(unittest.TestCase):
         self.assertFalse(self.verdict(
             'test_committed_config_email_stays_disabled',
             {"email": {"enabled": True}}))
+
+
+class TestTheLiveFilesStayOutOfTheRepository(unittest.TestCase):
+    """
+    Issue #559: config.json and data.json used to be tracked.
+
+    They are the files the application writes - the Settings screen edits one
+    and every task edits the other - so tracking them meant a routine
+    `git add -A` published whatever was in them, permanently and to every
+    clone. .gitignore listed data.json and did nothing, because an entry
+    there has no effect on a file that is already tracked.
+
+    What ships now is an example of each. These two tests are what stops the
+    arrangement quietly coming undone: re-adding a live file, or forgetting
+    to commit an example, would otherwise leave the four guards above reading
+    a file that is not there and skipping in silence.
+    """
+
+    LIVE = ("config.json", "data.json")
+    SHIPPED = ("config.example.json", "data.example.json")
+
+    def test_the_files_the_application_writes_are_not_tracked(self):
+        for path in self.LIVE:
+            tracked = _tracked(path)
+            if tracked is None:
+                self.skipTest("git is not available here")
+            with self.subTest(path=path):
+                self.assertFalse(
+                    tracked,
+                    "%s is tracked again. It is the live file: whatever the "
+                    "application last wrote into it would be published, and "
+                    "the history would keep it. Ship %s.example.json instead."
+                    % (path, path[:-len(".json")]))
+
+    def test_the_examples_that_replace_them_are(self):
+        """
+        The other half. Without an example in the repository a fresh clone
+        has no configuration to start from - and the guards above would find
+        nothing to read and say nothing about it.
+        """
+        for path in self.SHIPPED:
+            tracked = _tracked(path)
+            if tracked is None:
+                self.skipTest("git is not available here")
+            with self.subTest(path=path):
+                self.assertTrue(tracked, "%s is not tracked" % path)
+
+    def test_the_shipped_example_is_readable_and_shaped_right(self):
+        """An example nobody can parse is worse than none."""
+        for path, expected in ((SHIPPED_CONFIG, "email"),
+                               ("data.example.json", "schema_version")):
+            raw = _committed(path)
+            if raw is None:
+                self.skipTest("%s is not retrievable (no git checkout?)" % path)
+            with self.subTest(path=path):
+                self.assertIn(expected, json.loads(raw))
+
+    def test_the_shipped_document_holds_nobody_s_work(self):
+        """
+        The point of replacing data.json: the example must be empty. A
+        forgotten project name in here would be published exactly as before.
+        """
+        raw = _committed("data.example.json")
+        if raw is None:
+            self.skipTest("data.example.json is not retrievable (no git checkout?)")
+        self.assertEqual(json.loads(raw).get("projects"), [])
 
 
 if __name__ == '__main__':

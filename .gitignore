@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 
 data.json
+config.json
 
 # PyInstaller build output (see TimeControl.spec)
 /build/
