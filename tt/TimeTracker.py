@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 import threading
+import time
 from contextlib import contextmanager
 import imaplib
 import re
@@ -96,6 +97,15 @@ class TimeTracker:
     # a writer that has stopped answering is reported rather than freezing
     # the interface behind it.
     SAVE_LOCK_TIMEOUT = 5.0
+    # How long a save keeps trying to swap the finished file into place.
+    #
+    # Windows will not replace a file that anyone has open, and this document
+    # is read without the lock on purpose - reload_data() runs on every
+    # redraw, and the servers read it too. So an ordinary read, lasting
+    # milliseconds, can meet a save and turn it into "access is denied". The
+    # same answer comes back while a virus scanner is looking at the file
+    # just written. Neither lasts; both used to lose the save outright.
+    REPLACE_RETRY_SECONDS = 1.0
 
     # The task attributes that mean the same thing on every machine. Deliberately
     # excluded: 'uid' (it is the address, not a field), 'id' (a local counter that
@@ -522,11 +532,39 @@ class TimeTracker:
         try:
             with os.fdopen(fd, 'w', encoding='utf-8') as f:
                 json.dump(self.data, f, indent=2)
-            os.replace(tmp_path, self.file_path)
+            self._replace_when_windows_lets_go(tmp_path)
         except BaseException:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
             raise
+
+    def _replace_when_windows_lets_go(self, tmp_path):
+        """
+        Swaps the finished file into place, waiting out a passing reader.
+
+        On POSIX this is one os.replace() and returns immediately. Windows
+        refuses while somebody has the destination open - a reader, or the
+        scanner looking at what was just written - and answers "access is
+        denied", which is indistinguishable from a real permission problem
+        except that it stops being true a few milliseconds later. So it is
+        retried for a moment, and only then given up on.
+
+        The retry is not conditional on the platform: a save that fails
+        because the file really cannot be written is rare, and reporting it
+        a second late is a smaller cost than a save silently lost on the one
+        platform where this happens.
+
+        :raises PermissionError: if it was still refused at the deadline.
+        """
+        deadline = time.monotonic() + self.REPLACE_RETRY_SECONDS
+        while True:
+            try:
+                os.replace(tmp_path, self.file_path)
+                return
+            except PermissionError:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.025)
 
     def _copy_to_clipboard(self, text):
         """
