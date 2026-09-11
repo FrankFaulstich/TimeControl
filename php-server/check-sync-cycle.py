@@ -216,7 +216,11 @@ def run(user, password, root):
     a.tracker.delete_task("Website", "Doomed")
     b.tracker.start_work("Website", "Doomed")
     b.tracker.stop_work()
-    discarded_uid = doomed['time_entries'][0]['uid']
+    # Read again rather than through `doomed`. Since issue #558 every mutator
+    # re-reads the document under the lock, so a dict held across one of them
+    # points into the copy that was replaced - and its time_entries is still
+    # the empty list it was before the hour was booked.
+    discarded_uid = task_of(b, "Doomed")['time_entries'][0]['uid']
 
     a.sync()
     _outcome, summary_b = b.sync()

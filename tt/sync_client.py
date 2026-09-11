@@ -468,7 +468,15 @@ def _authenticated(action, payload=None, params=None):
 
 
 def head():
-    """The cheap poll: how far the log has got, without transferring it."""
+    """
+    The cheap poll: how far the log has got, without transferring it.
+
+    Asked at the start of every cycle that has nothing of its own to send,
+    which is nearly all of them - see sync_engine._nothing_to_do(). The point
+    is not the size of the answer but what the server has to do to produce
+    it: this reads one small file, where a push takes the log's exclusive
+    lock and refuses rather than waits when another machine holds it.
+    """
     return _authenticated('head')
 
 

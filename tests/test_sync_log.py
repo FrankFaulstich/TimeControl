@@ -1,3 +1,4 @@
+import contextlib
 import os
 import shutil
 import sys
@@ -82,46 +83,93 @@ class TestWhatEndsUpInIt(LogTestCase):
         sync_log.log('x', detail='y' * 10000)
         self.assertLessEqual(len(sync_log.tail()[0]), sync_log.MAX_LINE)
 
+    @contextlib.contextmanager
+    def _server(self, head=1, push=None):
+        """
+        Stands in for the two calls a cycle makes, and for being signed in.
+
+        Both, because a cycle with nothing queued asks ?a=head first and only
+        pushes when the answer has moved - so a test that stubs the push
+        alone stubs the half that is never reached.
+        """
+        real = (sync_client.head, sync_client.push, sync_client.load_credentials)
+        sync_client.head = lambda: {'ok': True, 'head': head}
+        if push is not None:
+            sync_client.push = push
+        sync_client.load_credentials = lambda: {'token': 't', 'username': 'u',
+                                                'base_url': 'https://x/index.php'}
+        try:
+            yield
+        finally:
+            (sync_client.head, sync_client.push,
+             sync_client.load_credentials) = real
+
     def test_the_engine_records_what_it_did(self):
         """
         The point of the whole thing: after a sync, the log says what was
         sent, what came back and where the cursor got to.
         """
         self.on()
-        log = []
 
         def push(base_seq, ops):
             return {'ok': True, 'head': 1, 'assigned': [], 'dups': [],
                     'ops': [{'s': 1, 'op': 'project.create', 'dev': 'other',
                              'uid': 'p' * 16, 'f': {'name': 'Remote'}}],
                     'more': False}
-        real_push, real_creds = sync_client.push, sync_client.load_credentials
-        sync_client.push = push
-        sync_client.load_credentials = lambda: {'token': 't', 'username': 'u',
-                                                'base_url': 'https://x/index.php'}
-        try:
+
+        with self._server(head=1, push=push):
             sync_engine.run_cycle(Outbox())
-        finally:
-            sync_client.push, sync_client.load_credentials = real_push, real_creds
 
         written = '\n'.join(sync_log.tail())
+        self.assertIn('poll', written)
         self.assertIn('push', written)
         self.assertIn('filed', written)
         self.assertIn('cycle.ok', written)
 
+    def test_a_cycle_with_nothing_to_do_still_says_so(self):
+        """
+        Almost every cycle is this one. If it wrote nothing, the log of a
+        healthy installation would be empty - and empty is what a log looks
+        like when synchronisation has quietly stopped running at all.
+        """
+        self.on()
+        with self._server(head=0):
+            sync_engine.run_cycle(Outbox())
+
+        written = '\n'.join(sync_log.tail())
+        self.assertIn('cycle.idle', written)
+        self.assertNotIn('push', written, "it pushed anyway")
+
     def test_a_failure_says_what_went_wrong_and_how_long_it_will_wait(self):
         self.on()
-        real_push = sync_client.push
-        sync_client.push = lambda b, o: {'ok': False, 'error': 'tls_failed'}
-        try:
+        with self._server(head=1,
+                          push=lambda b, o: {'ok': False, 'error': 'tls_failed'}):
             sync_engine.run_cycle(Outbox())
-        finally:
-            sync_client.push = real_push
 
         written = '\n'.join(sync_log.tail())
         self.assertIn('tls_failed', written)
         self.assertIn('backoff', written)
         self.assertIn('terminal=True', written)
+
+    def test_a_poll_that_fails_is_reported_as_the_cycle_failing(self):
+        """
+        The other half of the one above. A cycle that could not even ask is
+        a cycle that failed, and has to read that way.
+        """
+        self.on()
+        real = sync_client.head, sync_client.load_credentials
+        sync_client.head = lambda: {'ok': False, 'error': 'timeout'}
+        sync_client.load_credentials = lambda: {'token': 't', 'username': 'u',
+                                                'base_url': 'https://x/index.php'}
+        try:
+            sync_engine.run_cycle(Outbox())
+        finally:
+            sync_client.head, sync_client.load_credentials = real
+
+        written = '\n'.join(sync_log.tail())
+        self.assertIn('poll.failed', written)
+        self.assertIn('timeout', written)
+        self.assertIn('backoff', written)
 
 
 class TestItGivesNothingAwayThatWasTypedIn(LogTestCase):

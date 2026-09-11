@@ -168,6 +168,21 @@ tc_check('a token is issued', $status === 200 && !empty($body['token']),
          $status . ' ' . json_encode($body));
 $token = $body['token'] ?? '';
 
+// The route every quiet cycle now takes, and the one this file never asked
+// for until issue #561 - the client half was pinned in the Python tests and
+// nothing had ever requested ?a=head over HTTP at all.
+print("\nThe cheap poll\n");
+[$status, $body] = tc_request($base, 'GET', ['a' => 'head'], null, $token);
+tc_check('an empty log reports zero',
+         $status === 200 && ($body['head'] ?? null) === 0,
+         $status . ' ' . json_encode($body));
+tc_check('and says when it answered', is_int($body['server_time'] ?? null));
+
+[$status, $body] = tc_request($base, 'GET', ['a' => 'head'], null, 'not-a-token');
+tc_check('without a usable token it refuses, like everything else',
+         $status === 401 && ($body['error'] ?? '') === 'invalid_token',
+         $status . ' ' . json_encode($body));
+
 print("\nFilling the log\n");
 $ops = [];
 for ($i = 1; $i <= 5; $i++) {
@@ -181,6 +196,11 @@ tc_check('five operations accepted', $status === 200 && $body['head'] === 5,
 tc_check('a log with no snapshot reports zero', ($body['snapshot_seq'] ?? null) === 0,
          var_export($body['snapshot_seq'] ?? null, true));
 tc_check('and does not ask for one', ($body['needs_snapshot'] ?? null) === false);
+
+[$status, $body] = tc_request($base, 'GET', ['a' => 'head'], null, $token);
+tc_check('the poll now says the same number the push did',
+         $status === 200 && ($body['head'] ?? null) === 5,
+         $status . ' ' . json_encode($body));
 
 print("\nOffering a snapshot\n");
 $document = ['schema_version' => 2, 'next_id' => 1, '_deleted' => [], 'projects' => [

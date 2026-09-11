@@ -255,19 +255,20 @@ class Outbox:
             os.replace(tmp, self.path)
         return len(done)
 
-    def clear(self):
-        """
-        Discards everything queued. Used when a machine is re-seeded.
-
-        The high-water mark is deliberately left alone: the server still
-        remembers the numbers this device has used, and starting over would
-        make everything sent afterwards look like a repeat.
-        """
-        with locked(self.lock_path):
-            try:
-                os.remove(self.path)
-            except OSError:
-                pass
+    # And deliberately no clear(). Issue #561: one used to sit here,
+    # described as being "for re-seeding a machine", and nothing outside the
+    # tests ever called it - the re-offer this app actually built works the
+    # other way round, by queueing the whole document on top of whatever is
+    # already waiting.
+    #
+    # Its absence is not a gap. Every place it looked like it belonged is a
+    # place where it would quietly delete work nobody could get back: until
+    # the server acknowledges an operation this file is the only record of
+    # it, and the queue is also what reconcile() replays to keep local edits
+    # on top of what arrives from elsewhere. drop() is the operation this
+    # class offers instead, and it takes the numbers the server has
+    # confirmed - which is the only thing that ever makes a queued operation
+    # safe to forget.
 
 
 def default_outbox_if_enabled(config):

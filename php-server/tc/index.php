@@ -125,7 +125,15 @@ switch ($action) {
 
     // -----------------------------------------------------------------
     // The cheap poll. A client that syncs every few minutes asks this first
-    // and only pushes or pulls when the answer has moved.
+    // whenever it has nothing of its own to send, and only pushes when the
+    // answer has moved.
+    //
+    // Cheap in what this has to do, rather than in what it sends back: one
+    // read of the state file, no lock. The push below takes the log's
+    // exclusive lock and reconciles before it discovers the batch is empty,
+    // and hands back 'busy' rather than waiting - so on a quiet installation
+    // that is a 503 and a client backoff earned by a cycle that had nothing
+    // to do. See tt/sync_engine.py _nothing_to_do().
     case 'head':
         $session = tc_token_check($store, tc_presented_token());
         if (!$session) {

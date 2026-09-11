@@ -76,15 +76,17 @@ class TestOutbox(unittest.TestCase):
                           highwater_path=self.box.highwater_path)
         self.assertEqual(reopened.append('task.set', uid='a' * 16), 2)
 
-    def test_clearing_does_not_reset_the_counter(self):
+    def test_emptying_the_queue_does_not_reset_the_counter(self):
         """
-        clear() is for re-seeding a machine. The server still remembers the
+        A successful sync drains the queue. The server still remembers the
         numbers this device has used, so starting over would make everything
-        sent afterwards look like a repeat.
+        sent afterwards look like a repeat - and be dropped, silently, for
+        ever after. That is what the separate high-water file is for.
         """
         self.box.append('task.set', uid='a' * 16)
         self.box.append('task.set', uid='a' * 16)
-        self.box.clear()
+        self.box.drop([1, 2])
+        self.assertEqual(self.box.pending(), [])
         self.assertEqual(self.box.append('task.set', uid='a' * 16), 3)
 
     def test_operations_are_read_back_in_numbered_order(self):
@@ -114,10 +116,18 @@ class TestOutbox(unittest.TestCase):
         self.box.drop([1, 3])
         self.assertEqual([e['lc'] for e in self.box.pending()], [2, 4])
 
-    def test_clearing_empties_the_queue(self):
-        self.box.append('task.set', uid='a' * 16)
-        self.box.clear()
-        self.assertEqual(self.box.pending(), [])
+    def test_there_is_no_way_to_discard_the_queue_wholesale(self):
+        """
+        Issue #561. Dropping takes the numbers the server has confirmed, and
+        that is the only reason a queued operation is ever safe to forget:
+        until then this file is the only record of the change, and it is
+        also what reconcile() replays to keep local edits on top of what
+        arrives from elsewhere. A method that emptied it without asking the
+        server would lose both, quietly.
+        """
+        self.assertFalse(hasattr(self.box, 'clear'),
+                         "something can empty the queue without an "
+                         "acknowledgement again")
 
     def test_a_damaged_line_costs_one_change_not_the_whole_queue(self):
         """

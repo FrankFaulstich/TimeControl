@@ -369,6 +369,76 @@ def _drop_inbox_for_reset():
         pass
 
 
+def _nothing_to_do(state, since, outbox):
+    """
+    The cheap poll, for a cycle with nothing of its own to send.
+
+    Nearly every cycle is this one: two or three machines belonging to one
+    person, waking every few minutes, almost always with nothing queued and
+    nothing new to collect. Asking `?a=head` first is what the server has
+    always expected of a client - it says so in the comment above its own
+    head case - and what makes the difference is not the bytes. `?a=head`
+    reads one small file. `?a=push` takes the log's exclusive lock and runs
+    its reconciliation pass before it discovers the batch is empty, and when
+    another machine holds that lock it does not wait, it answers 'busy' -
+    which arrives here as a failure and a backoff measured in minutes, for a
+    cycle that had nothing to do in the first place.
+
+    NOTHING THE PUSH REPLY CARRIES CAN MATTER HERE
+    ----------------------------------------------
+    Only in the case this returns an outcome for, where the log has not
+    moved. 'assigned' and 'dups' are built from the operations sent, and none
+    were. 'ops' and 'more' come from reading the log above `since`, which
+    yields nothing when `since` is already the head. And 'needs_snapshot'
+    cannot be set for a caller at head: the server takes a snapshot only from
+    a machine claiming a cursor equal to head, so the point one covers is
+    never above it.
+
+    The poll costs one extra request on the cycles where the log HAS moved.
+    That is the trade, and it is the right way round - those are the rare
+    ones, and the ones where something is happening anyway.
+
+    :return: The outcome of the cycle when it is over - whether that is
+             nothing to do, or a poll that failed - or None to carry on with
+             the full exchange.
+    """
+    polled = sync_client.head()
+    if not polled.get('ok'):
+        # Exactly what a failed push does, and for the same reasons: the
+        # codes are the same ones, and a cycle that could not ask is a cycle
+        # that failed.
+        sync_log.log('poll.failed', error=polled.get('error') or 'unreachable')
+        return _record_failure(polled.get('error') or 'unreachable')
+
+    head = int(polled.get('head', 0))
+    if head != since or _log_is_not_the_one_we_know(state, head):
+        # Either there is something to collect, or the cursor no longer
+        # refers to the log being answered from. The second is why the guard
+        # is asked here as well as in the push path: only half of it could
+        # fire - a head equal to `since` cannot be below base_seq - but the
+        # other half, a credential that now belongs to a different account,
+        # can, and skipping past it would leave this machine reporting
+        # success for ever while exchanging nothing.
+        sync_log.log('poll', head=head, since=since)
+        return None
+
+    write_state({
+        'last_ok': int(time.time()),
+        'last_error': None,
+        'failures': 0,
+        'next_attempt': 0,
+        'server_head': head,
+        'account': _current_account(),
+    })
+    # Still offered. A document the drawing thread staged is only ever sent
+    # by a cycle that reached head, and a machine with nothing to do is
+    # precisely a machine that is at head - so leaving this out would mean a
+    # quiet installation never published a snapshot at all.
+    _offer_staged_snapshot(head, outbox)
+    sync_log.log('cycle.idle', head=head)
+    return {'ok': True, 'sent': 0, 'received': 0, 'more': False}
+
+
 def _run_cycle_locked(outbox):
     state = read_state()
 
@@ -387,6 +457,12 @@ def _run_cycle_locked(outbox):
     since = _since(state)
 
     sending = outbox.pending()
+
+    if not sending:
+        quiet = _nothing_to_do(state, since, outbox)
+        if quiet is not None:
+            return quiet
+
     # By size, not just by count. The server reads a bounded amount of request
     # body and silently treats anything longer as an empty request - accepted,
     # acknowledged, and carrying nothing - so a batch that is too large does
