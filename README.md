@@ -309,21 +309,23 @@ The one thing it costs: a machine out of contact for more than ninety days can s
 This project uses Sphinx to generate documentation from the docstrings in the source code.
 
 1. **Install dependencies:**
-    Make sure you have installed the required packages for building the docs:
+    Sphinx itself, and the application's own dependencies as well - autodoc documents a module by importing it, so a missing package means a missing chapter:
 
     ```bash
-    pip install -r requirements.txt
+    pip install -r requirements.txt -r docs/requirements.txt
     ```
 
 2. **Build the HTML documentation:**
-    Navigate to the `docs` directory and use the `make` command:
 
     ```bash
-    cd docs
-    make html
+    sphinx-build -b html -W --keep-going docs docs/_build/html
     ```
 
     The generated documentation can be found in `docs/_build/html/index.html`.
+
+    `-W` turns Sphinx's warnings into errors, which is what CI does. Without it, a module autodoc cannot import is mentioned once in the log and the page is built without it, looking complete. `cd docs && make html` still works and is more forgiving.
+
+Every module the application is built from is listed in `docs/modules.rst`. `tests/test_documentation.py` fails if one is added and not listed there, or if a name listed there stops resolving to a module.
 
 ---
 
