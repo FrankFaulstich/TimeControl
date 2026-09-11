@@ -62,6 +62,19 @@ happened elsewhere are the same conversation. A push does not echo the
 caller's own operations back &ndash; it already holds their bodies and only
 needs to be told which sequence numbers they were given.
 
+**A cycle with nothing to send asks `?a=head` first.** That is the state of
+nearly every cycle: two or three machines belonging to one person, waking
+every few minutes, with nothing queued and nothing new to collect. `?a=head`
+reads one small file and takes no lock. `?a=push` takes the log's exclusive
+lock and reconciles before it discovers the batch is empty, and when another
+machine is holding that lock it answers `busy` rather than waiting &ndash;
+which the client records as a failure and waits minutes to retry, for a
+cycle that had nothing to do. One consequence worth knowing: the truncation
+described under *An interrupted append is discarded, not adopted* below used
+to happen on every idle cycle, because every cycle was a push. It now waits
+for the next real append or snapshot. Readers were never affected by those
+bytes either way &ndash; they ignore anything past the recorded length.
+
 **Repeating a push is safe.** Each operation carries a counter the client
 never reuses; the server keeps the high-water mark per device and reports
 anything at or below it as a duplicate instead of appending it again. A push

@@ -49,6 +49,18 @@ class FakeServer:
 
     # -- the endpoints -----------------------------------------------------
 
+    def head_reply(self):
+        """
+        ?a=head - the cheap poll, and all a cycle with nothing to send asks.
+
+        Named apart from the `head` property above, which is the number
+        itself and is read as one in a dozen places here.
+        """
+        self.calls.append(('head',))
+        if self.fail_with:
+            return {'ok': False, 'error': self.fail_with}
+        return {'ok': True, 'head': self.head, 'server_time': 0}
+
     def push(self, base_seq, ops):
         self.calls.append(('push', base_seq, len(ops)))
         if self.fail_with:
@@ -130,6 +142,7 @@ class EngineTestCase(unittest.TestCase):
         sync_engine._wake.clear()
         self.tmp = tempfile.mkdtemp()
         self._real_config_dir = sync_client.config_dir
+        self._real_head = sync_client.head
         self._real_push = sync_client.push
         self._real_pull = sync_client.pull
         self._real_creds = sync_client.load_credentials
@@ -138,6 +151,7 @@ class EngineTestCase(unittest.TestCase):
 
         sync_client.config_dir = lambda: self.tmp
         self.server = FakeServer()
+        sync_client.head = self.server.head_reply
         sync_client.push = self.server.push
         sync_client.pull = self.server.pull
         sync_client.load_credentials = lambda: {'token': 't', 'base_url': 'https://x/index.php'}
@@ -149,6 +163,7 @@ class EngineTestCase(unittest.TestCase):
     def tearDown(self):
         sync_engine.stop()
         sync_client.config_dir = self._real_config_dir
+        sync_client.head = self._real_head
         sync_client.push = self._real_push
         sync_client.pull = self._real_pull
         sync_client.load_credentials = self._real_creds
@@ -158,6 +173,17 @@ class EngineTestCase(unittest.TestCase):
 
     def queue(self, op, **fields):
         return self.outbox.append(op, **fields)
+
+    def empty_the_queue(self):
+        """
+        A queue with nothing in it, for tests that need a second phase.
+
+        Written out here rather than as a method on Outbox: issue #561 took
+        the one that was there away, because emptying the queue without the
+        server having acknowledged anything is precisely what the app must
+        never do. It is a test convenience, so it lives with the tests.
+        """
+        self.outbox.drop([int(e['lc']) for e in self.outbox.pending()])
 
 
 P1, T1, E1 = 'p' * 16, 't' * 16, 'e' * 16
@@ -227,6 +253,145 @@ class TestOneCycle(EngineTestCase):
         sync_engine.run_cycle(self.outbox)
         self.assertEqual(sync_engine.read_inbox(), [])
         self.assertIsNotNone(sync_engine.read_state()['last_ok'])
+
+
+class TestTheCheapPoll(EngineTestCase):
+    """
+    A cycle with nothing of its own to send asks ?a=head first.
+
+    Issue #561. The reason is not the bytes - both answers are tiny. ?a=head
+    reads one small file; ?a=push takes the log's exclusive lock and runs its
+    reconciliation before it discovers the batch is empty, and answers 'busy'
+    rather than waiting when another machine is holding it. That is a failure
+    and a backoff measured in minutes, earned by a cycle that had nothing to
+    do - and with two or three machines waking every few minutes, nearly
+    every cycle is that one.
+
+    So the poll has to be right about exactly one thing: when it says the log
+    has not moved, nothing the push would have returned can matter.
+    """
+
+    def actions(self):
+        return [call[0] for call in self.server.calls]
+
+    def test_a_quiet_cycle_asks_the_cheap_question_and_nothing_else(self):
+        result = sync_engine.run_cycle(self.outbox)
+
+        self.assertEqual(self.actions(), ['head'])
+        self.assertEqual((result['ok'], result['sent'], result['received']),
+                         (True, 0, 0))
+
+    def test_it_still_counts_as_a_successful_cycle(self):
+        """
+        Without this the interval never starts, and the worker would ask
+        again on every tick - every two seconds instead of every five
+        minutes.
+        """
+        sync_engine.run_cycle(self.outbox)
+        state = sync_engine.read_state()
+        self.assertIsNotNone(state['last_ok'])
+        self.assertIsNone(state['last_error'])
+        self.assertEqual(state['failures'], 0)
+        self.assertEqual(state['next_attempt'], 0)
+
+    def test_the_head_it_saw_is_recorded(self):
+        """
+        offer_snapshot() on the drawing thread gates on base_seq ==
+        server_head, and a cycle that failed leaves server_head where it was.
+        So the quiet cycle after one has to bring it up to date, or that
+        machine never stages a snapshot again.
+        """
+        self.server.add_foreign('project.create', uid=P1, f={'name': 'R'})
+        sync_engine.run_cycle(self.outbox)          # fetches it
+        # The document applied, but the record of where the server had got to
+        # left behind - which is what a failed cycle in between does.
+        sync_engine.write_state({'base_seq': 1, 'server_head': 0})
+        self.server.calls.clear()
+
+        sync_engine.run_cycle(self.outbox)
+        self.assertEqual(self.actions(), ['head'], "it pushed for nothing")
+        self.assertEqual(sync_engine.read_state()['server_head'], 1)
+
+    def test_a_quiet_cycle_leaves_the_cursor_and_the_inbox_alone(self):
+        self.server.add_foreign('project.create', uid=P1, f={'name': 'R'})
+        sync_engine.run_cycle(self.outbox)
+        before = (sync_engine.read_state()['base_seq'],
+                  [r['base_seq'] for r in sync_engine.read_inbox()])
+
+        sync_engine.run_cycle(self.outbox)          # nothing new since
+        self.assertEqual((sync_engine.read_state()['base_seq'],
+                          [r['base_seq'] for r in sync_engine.read_inbox()]),
+                         before)
+
+    def test_work_waiting_to_be_sent_is_never_polled_past(self):
+        """The poll is for cycles with nothing to say. This one has."""
+        self.queue('project.create', uid=P1, f={'name': 'Mine'})
+        sync_engine.run_cycle(self.outbox)
+
+        self.assertEqual(self.actions(), ['push'])
+        self.assertEqual(len(self.server.log), 1)
+        self.assertEqual(self.outbox.pending(), [])
+
+    def test_when_the_log_has_moved_the_cycle_carries_on(self):
+        """
+        The cost of the poll: one extra request on the cycles that have
+        something to do. What must not happen is the work being missed.
+        """
+        self.server.add_foreign('project.create', uid=P1, f={'name': 'Remote'})
+        sync_engine.run_cycle(self.outbox)
+
+        self.assertEqual(self.actions(), ['head', 'push'])
+        self.assertEqual(sync_engine.read_inbox()[0]['ops'][0]['uid'], P1)
+
+    def test_a_poll_that_fails_ends_the_cycle_the_way_a_push_would(self):
+        self.server.fail_with = 'timeout'
+        result = sync_engine.run_cycle(self.outbox)
+
+        self.assertEqual(self.actions(), ['head'],
+                         "it pushed anyway, after the poll had already failed")
+        self.assertEqual((result['ok'], result['error']), (False, 'timeout'))
+        state = sync_engine.read_state()
+        self.assertEqual(state['last_error'], 'timeout')
+        self.assertEqual(state['failures'], 1)
+        self.assertGreater(state['next_attempt'], 0)
+
+    def test_a_credential_that_now_belongs_to_somebody_else_is_not_skipped_past(self):
+        """
+        The one half of the reset guard that a poll can still trip. Head
+        equal to the cursor says nothing about whose log it is the head of,
+        and carrying on would leave this machine reporting success for ever
+        while exchanging nothing.
+        """
+        sync_client.load_credentials = lambda: {
+            'token': 't', 'username': 'somebody-new',
+            'base_url': 'https://x/index.php'}
+        sync_engine.write_state({'base_seq': 0, 'account': 'the-old-one',
+                                 'seeded': True})
+        sync_engine.run_cycle(self.outbox)
+
+        self.assertIn('push', self.actions(), "the reset never happened")
+        state = sync_engine.read_state()
+        self.assertFalse(state['seeded'], "it did not start again from scratch")
+        self.assertEqual(state['account'], 'somebody-new')
+
+    def test_a_staged_snapshot_is_still_offered_on_a_quiet_cycle(self):
+        """
+        A document is only ever offered by a cycle that reached head - and a
+        machine with nothing to do is exactly a machine that is at head. If
+        the quiet cycle skipped this, a quiet installation would never
+        publish a snapshot at all.
+        """
+        self.server.add_foreign('project.create', uid=P1, f={'name': 'R'})
+        sync_engine.run_cycle(self.outbox)
+        sync_engine.write_state({'base_seq': 1})
+        sync_engine._write_staged_snapshot({'projects': [{'uid': P1}]})
+        sync_engine.write_state({'snapshot_staged': 1})
+        self.server.calls.clear()
+
+        sync_engine.run_cycle(self.outbox)
+
+        self.assertEqual(self.actions(), ['head', 'put_snapshot'])
+        self.assertEqual(self.server.snapshot['seq'], 1)
 
 
 class TestRepeatedPush(EngineTestCase):
@@ -532,7 +697,7 @@ class TestApplying(EngineTestCase):
         self.tracker.start_work('P', 'Here')
         running = self.tracker._get_task('P', 'Here')['time_entries'][0]['uid']
         task_uid = self.tracker._get_task('P', 'Here')['uid']
-        self.outbox.clear()
+        self.empty_the_queue()
 
         self.server.add_foreign('entry.add', uid=E1, task=task_uid,
                                 start='2030-01-01 10:00:00')
@@ -554,7 +719,7 @@ class TestApplying(EngineTestCase):
         self.tracker.add_task('P', 'Doomed')
         task_uid = self.tracker._get_task('P', 'Doomed')['uid']
         self.tracker.delete_task('P', 'Doomed')
-        self.outbox.clear()
+        self.empty_the_queue()
 
         self.server.add_foreign('entry.add', uid=E1, task=task_uid,
                                 start='2026-08-10 09:00:00')
@@ -605,7 +770,7 @@ class TestOfferingTheExistingDocument(EngineTestCase):
     def test_an_existing_document_is_offered_the_first_time(self):
         self.tracker.add_main_project('Existing')
         self.tracker.add_task('Existing', 'Older work')
-        self.outbox.clear()
+        self.empty_the_queue()
 
         queued = sync_engine.offer_document(self.tracker)
 
@@ -617,7 +782,7 @@ class TestOfferingTheExistingDocument(EngineTestCase):
     def test_it_is_offered_only_once(self):
         self.tracker.add_main_project('Existing')
         sync_engine.offer_document(self.tracker)
-        self.outbox.clear()
+        self.empty_the_queue()
 
         self.assertEqual(sync_engine.offer_document(self.tracker), 0)
         self.assertEqual(self.outbox.pending(), [])
@@ -625,7 +790,7 @@ class TestOfferingTheExistingDocument(EngineTestCase):
     def test_nothing_is_offered_before_signing_in(self):
         sync_client.load_credentials = lambda: None
         self.tracker.add_main_project('Existing')
-        self.outbox.clear()
+        self.empty_the_queue()
         self.assertEqual(sync_engine.offer_document(self.tracker), 0)
 
     def test_a_document_offered_here_rebuilds_on_the_other_machine(self):
@@ -633,7 +798,7 @@ class TestOfferingTheExistingDocument(EngineTestCase):
         self.tracker.add_task('Website', 'Relaunch', priority=4)
         self.tracker.start_work('Website', 'Relaunch')
         self.tracker.stop_work()
-        self.outbox.clear()
+        self.empty_the_queue()
 
         sync_engine.offer_document(self.tracker)
         sync_engine.run_cycle(self.outbox)
@@ -804,7 +969,7 @@ class TestConsumingTheInbox(EngineTestCase):
         self.tracker.add_task('P', 'T')
         self.tracker.start_work('P', 'T')
         task_uid = self.tracker._get_task('P', 'T')['uid']
-        self.outbox.clear()
+        self.empty_the_queue()
 
         order = []
         real_save = self.tracker._save_data
@@ -1012,7 +1177,7 @@ class TestTheQueueAndTheLogDisagreeing(EngineTestCase):
         self.tracker.add_task('P', 'Doomed')
         task_uid = self.tracker._get_task('P', 'Doomed')['uid']
         self.tracker.delete_task('P', 'Doomed')
-        self.outbox.clear()
+        self.empty_the_queue()
 
         self.outbox.append('entry.add', uid=E1, task=task_uid,
                            start='2026-08-10 09:00:00')
@@ -1110,7 +1275,7 @@ class TestOfferingIsDoneOnce(EngineTestCase):
         self.tracker.add_main_project('P')
         for n in range(60):
             self.tracker.add_task('P', 'T%d' % n)
-        self.outbox.clear()
+        self.empty_the_queue()
 
         calls = {'n': 0}
         real_append = self.outbox.append
@@ -1145,7 +1310,7 @@ class TestOfferingIsDoneOnce(EngineTestCase):
         import threading as _t
         self.tracker.add_main_project('P')
         self.tracker.add_task('P', 'T')
-        self.outbox.clear()
+        self.empty_the_queue()
 
         counts = []
         barrier = _t.Barrier(2)
