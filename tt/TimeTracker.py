@@ -12,6 +12,7 @@ import email
 from email.header import decode_header
 from i18n import _
 from tt.filelock import locked, LockTimeout
+from tt.mail_subject import strip_prefixes
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta, date
 import calendar
@@ -66,7 +67,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.14"
+    VERSION = "4.15"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -1768,7 +1769,13 @@ class TimeTracker:
                     if isinstance(part, bytes):
                         subject += part.decode(encoding or "utf-8", errors="replace")
                     else: subject += part
-                
+
+                # A task made by forwarding a mail arrives called "WG: AW:
+                # Angebot Halle 3". The markers record how the message
+                # travelled, not what the task is about, and in a list of
+                # today's work they are what you read first.
+                subject = strip_prefixes(subject)
+
                 # Extract Body
                 body = ""
                 if msg.is_multipart():

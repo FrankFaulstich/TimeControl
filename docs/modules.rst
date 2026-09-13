@@ -27,6 +27,12 @@ File Locking
 .. automodule:: tt.filelock
    :members:
 
+Email Subjects
+~~~~~~~~~~~~~~
+
+.. automodule:: tt.mail_subject
+   :members:
+
 Task Presentation
 -----------------
 
