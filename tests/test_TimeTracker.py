@@ -1171,6 +1171,49 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn("start_time", general_task["time_entries"][0])
         self.assertIn("end_time", general_task["time_entries"][0])
 
+    EMAIL_CONFIG = json.dumps({
+        "email": {
+            "enabled": True,
+            "imap_server": "imap.example.com",
+            "user": "user@example.com",
+            "password": "secret",
+        }
+    })
+
+    def _import_one_email(self, mock_imap_cls, mock_open, mock_exists, raw):
+        """
+        Runs the import against a fake server holding one message.
+
+        Only config.json is faked. Every method that writes the document now
+        takes a lock, and the lock opens a file of its own - a blanket
+        mock_open hands it a Mock whose fileno() the operating system cannot
+        use. io.open is the real one: patching builtins.open rebinds the
+        name, not the function object io holds.
+
+        :param raw: The message, as RFC822 bytes.
+        :return: What fetch_emails_to_tasks() returned.
+        """
+        mock_exists.return_value = True
+        real_open = io.open
+
+        def only_config(path, *args, **kwargs):
+            if path == 'config.json':
+                return unittest.mock.mock_open(read_data=self.EMAIL_CONFIG)(
+                    path, *args, **kwargs)
+            return real_open(path, *args, **kwargs)
+
+        mock_open.side_effect = only_config
+
+        mock_mail = mock_imap_cls.return_value
+        mock_mail.search.return_value = ("OK", [b"1"])
+        mock_mail.fetch.return_value = ("OK", [(None, raw)])
+
+        return self.tracker.fetch_emails_to_tasks()
+
+    def _imported_tasks(self):
+        return self.tracker.list_tasks(
+            main_project_name=self.tracker.HIDDEN_PROJECT, status_filter='all')
+
     @unittest.mock.patch('tt.TimeTracker.os.path.exists')
     @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
     @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
@@ -1181,43 +1224,62 @@ class TestTimeTracker(unittest.TestCase):
         to only show up as a default in the GUI's date picker while the
         stored task actually had due_date=None.
         """
-        mock_exists.return_value = True
-        config_json = json.dumps({
-            "email": {
-                "enabled": True,
-                "imap_server": "imap.example.com",
-                "user": "user@example.com",
-                "password": "secret",
-            }
-        })
-
-        # Only config.json is faked. Every method that writes the document now
-        # takes a lock, and the lock opens a file of its own - a blanket
-        # mock_open hands it a Mock whose fileno() the operating system cannot
-        # use. io.open is the real one: patching builtins.open rebinds the
-        # name, not the function object io holds.
-        real_open = io.open
-
-        def only_config(path, *args, **kwargs):
-            if path == 'config.json':
-                return unittest.mock.mock_open(read_data=config_json)(
-                    path, *args, **kwargs)
-            return real_open(path, *args, **kwargs)
-
-        mock_open.side_effect = only_config
-
-        mock_mail = mock_imap_cls.return_value
-        mock_mail.search.return_value = ("OK", [b"1"])
-        mock_mail.fetch.return_value = ("OK", [(None, b"Subject: Test Email\r\n\r\nThis is the body.")])
-
-        count, error = self.tracker.fetch_emails_to_tasks()
+        count, error = self._import_one_email(
+            mock_imap_cls, mock_open, mock_exists,
+            b"Subject: Test Email\r\n\r\nThis is the body.")
 
         self.assertIsNone(error)
         self.assertEqual(count, 1)
 
-        tasks = self.tracker.list_tasks(main_project_name=self.tracker.HIDDEN_PROJECT, status_filter='all')
+        tasks = self._imported_tasks()
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0]['due_date'], date.today().isoformat())
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_drops_the_forwarding_markers(self, mock_imap_cls, mock_open, mock_exists):
+        """
+        Issue #619. A task made by forwarding a mail to oneself arrives
+        called "WG: AW: Angebot Halle 3".
+
+        tt/mail_subject.py is tested on its own; this is the other half of
+        the question - that the import calls it at all, and on the subject
+        rather than on anything else.
+        """
+        count, error = self._import_one_email(
+            mock_imap_cls, mock_open, mock_exists,
+            b"Subject: WG: AW: Angebot Halle 3\r\n\r\nWG: bleibt hier stehen.")
+
+        self.assertIsNone(error)
+        self.assertEqual(count, 1)
+
+        tasks = self._imported_tasks()
+        self.assertEqual([t['task_name'] for t in tasks], ['Angebot Halle 3'])
+        self.assertEqual(tasks[0]['note'], 'WG: bleibt hier stehen.',
+                         "the body was treated as a subject line")
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_strips_after_decoding_the_header(self, mock_imap_cls, mock_open, mock_exists):
+        """
+        A subject with an umlaut in it travels encoded, and the marker
+        travels inside the encoding with it. Stripping before decoding would
+        find nothing to strip and nothing would say so - the task would just
+        keep its "WG: ".
+
+        The header below is "WG: Angebot Halle 3 für Prüfung", base64 in
+        UTF-8, as any mail program would send it.
+        """
+        count, error = self._import_one_email(
+            mock_imap_cls, mock_open, mock_exists,
+            b"Subject: =?utf-8?B?V0c6IEFuZ2Vib3QgSGFsbGUgMyBmw7xyIFByw7xmdW5n?=\r\n"
+            b"\r\nBody.")
+
+        self.assertIsNone(error)
+        self.assertEqual([t['task_name'] for t in self._imported_tasks()],
+                         ['Angebot Halle 3 für Prüfung'])
 
     def test_promote_task_to_project_name_conflict(self):
         """Tests that promoting fails if a main project with the same name already exists."""
