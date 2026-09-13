@@ -33,6 +33,12 @@ Email Subjects
 .. automodule:: tt.mail_subject
    :members:
 
+The Notes Editor
+~~~~~~~~~~~~~~~~
+
+.. automodule:: tt.markdown_editor
+   :members:
+
 Task Presentation
 -----------------
 

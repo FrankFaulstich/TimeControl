@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import json
 import os
 import sys
@@ -22,6 +23,7 @@ from tt.task_order import (
 from tt.task_progress import completion_counts, completion_ratio
 from tt.task_calendar import month_grid, shift_month
 from tt.sync_messages import sign_in_error_message, sync_error_message
+from tt.markdown_editor import editor_html
 from i18n import _
 
 try:
@@ -1118,6 +1120,33 @@ def _weekday_abbreviations():
             _("Sun")]
 
 
+def render_markdown_editor(*keys):
+    """
+    Gives the named note fields list continuation, Tab indenting and colour.
+
+    Call it once per view, with the keys of every notes field on it. The
+    order does not matter: the script finds a field by the class Streamlit
+    writes its key into, and watches for the ones Streamlit has not drawn
+    yet - which is most of them, since a redraw replaces the page.
+
+    The component renders nothing of its own. Streamlit still gives an iframe
+    a slot in the layout, so the slot is taken back out below; without that
+    every notes field would sit under a blank strip.
+
+    See tt/markdown_editor.py for what the script does and why it has to be
+    a script at all.
+    """
+    st.markdown("""
+        <style>
+        /* The editor's own component: no height, no margin, no gap. */
+        [data-testid="stElementContainer"]:has(> [data-testid="stIFrame"][height="0"]) {
+            display: none !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    components.html(editor_html(keys), height=0)
+
+
 def render_progress_css():
     """
     Turns the help icon beside the progress bar into the bar's own tooltip.
@@ -1728,6 +1757,12 @@ def view_email_assignment():
                     else:
                         st.error(_("Error updating task details."))
     
+    # One call for the whole list: every imported email has a notes field of
+    # its own, and they are all on the page at once.
+    if hidden_tasks:
+        render_markdown_editor(*[f"email_task_note_{task['id']}"
+                                 for task in hidden_tasks])
+
     if st.button(_("Back"), use_container_width=True):
         if 'email_fetched' in st.session_state: del st.session_state.email_fetched
         if 'email_task_total' in st.session_state: del st.session_state.email_task_total
@@ -3138,6 +3173,7 @@ def view_add_task_form():
     tab_edit, tab_preview = st.tabs([_("Edit"), _("Preview")])
     with tab_edit:
         st.text_area(_("Notes (Markdown)"), key="new_task_note", label_visibility="collapsed")
+        render_markdown_editor("new_task_note")
     with tab_preview:
         st.markdown('<div class="note-preview-box">', unsafe_allow_html=True)
         st.markdown(st.session_state.new_task_note if st.session_state.new_task_note else f"*{_('No notes provided.')}*")
@@ -3311,6 +3347,7 @@ def view_edit_task_form():
     tab_edit, tab_preview = st.tabs([_("Edit"), _("Preview")])
     with tab_edit:
         st.text_area(_("Notes (Markdown)"), key="edit_task_note", label_visibility="collapsed")
+        render_markdown_editor("edit_task_note")
     with tab_preview:
         st.markdown('<div class="note-preview-box">', unsafe_allow_html=True)
         st.markdown(st.session_state.edit_task_note if st.session_state.edit_task_note else f"*{_('No notes provided.')}*")
