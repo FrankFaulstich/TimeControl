@@ -176,7 +176,8 @@ class TestTimeTrackerREST_Server(unittest.TestCase):
         })
         self.assertEqual(r.status_code, 200)
         self.mock_tracker.add_task.assert_called_once_with(
-            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 0
+            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 0,
+            start_date=None
         )
         self.assertEqual(r.json(), {"success": True})
 
@@ -185,7 +186,8 @@ class TestTimeTrackerREST_Server(unittest.TestCase):
         r = self.client.post("/projects/Main/tasks", json={"task_name": "Sub", "priority": 9})
         self.assertEqual(r.status_code, 200)
         self.mock_tracker.add_task.assert_called_once_with(
-            "Main", "Sub", None, False, "", False, "daily", 1, 9
+            "Main", "Sub", None, False, "", False, "daily", 1, 9,
+            start_date=None
         )
 
     def test_add_task_priority_out_of_range_rejected(self):
@@ -287,7 +289,8 @@ class TestTimeTrackerREST_Server(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.mock_tracker.update_task.assert_called_once_with(
             "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None, None,
-            task_id=None, clear_due_date=False
+            task_id=None, clear_due_date=False,
+            start_date=None, clear_start_date=False
         )
         self.assertEqual(r.json(), {"success": True})
 
@@ -297,7 +300,8 @@ class TestTimeTrackerREST_Server(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.mock_tracker.update_task.assert_called_once_with(
             "Main", "Old", None, None, None, None, None, None, None, None, 3,
-            task_id=None, clear_due_date=False
+            task_id=None, clear_due_date=False,
+            start_date=None, clear_start_date=False
         )
 
     def test_update_task_priority_out_of_range_rejected(self):

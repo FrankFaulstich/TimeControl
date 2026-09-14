@@ -67,7 +67,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.15"
+    VERSION = "4.16"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -113,7 +113,7 @@ class TimeTracker:
     # is allowed to differ between machines) and 'time_entries' (carried by their
     # own operations, so a task and its entries can be reconciled independently).
     TASK_SYNC_FIELDS = (
-        "task_name", "status", "due_date", "today", "note",
+        "task_name", "status", "start_date", "due_date", "today", "note",
         "recurring", "frequency", "userdefined_days", "priority", "last_started",
     )
 
@@ -147,6 +147,32 @@ class TimeTracker:
     def _task_fields(cls, task):
         """Returns the syncable attributes of a task."""
         return {k: task.get(k) for k in cls.TASK_SYNC_FIELDS if k in task}
+
+    @staticmethod
+    def _anchor_start_date(task):
+        """
+        A task with a start date is given a due date to match, if it has none.
+
+        The start date exists to say "from this day on, this belongs in
+        today's work", and the sweep that acts on it asks whether today falls
+        between the two dates. With only a start date that question has no
+        upper end: the task would be put back into today's list every morning
+        for the rest of its life, and the sweep that clears overdue flags -
+        which goes by the due date - would never take it out again.
+
+        So the start date becomes the due date as well: the task is wanted on
+        that one day, and from the day after it is overdue like any other.
+        Written into the document rather than worked out at each read, so the
+        two dates a person sees are the two dates the rule uses, and so the
+        other machines are told about it like any other change.
+
+        :return: Whether a due date was filled in.
+        :rtype: bool
+        """
+        if task.get("start_date") and not task.get("due_date"):
+            task["due_date"] = task["start_date"]
+            return True
+        return False
 
     def __init__(self, file_path=None, op_outbox=None):
         """
@@ -433,6 +459,9 @@ class TimeTracker:
                     data_changed = True
                 if "due_date" not in task:
                     task["due_date"] = None
+                    data_changed = True
+                if "start_date" not in task:
+                    task["start_date"] = None
                     data_changed = True
                 if "today" not in task:
                     task["today"] = False
@@ -893,7 +922,7 @@ class TimeTracker:
         return False
 
     @_exclusive
-    def add_task(self, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1, priority=0):
+    def add_task(self, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1, priority=0, start_date=None):
         """
         Adds a new task to a specified main project.
 
@@ -903,6 +932,14 @@ class TimeTracker:
         :type task_name: str
         :param due_date: Optional due date for the task (ISO string YYYY-MM-DD).
         :type due_date: str or None
+        :param start_date: Optional day the task becomes current (ISO string
+                           YYYY-MM-DD). From then until the due date,
+                           set_today_flag_for_due_tasks() marks it for today.
+                           Given without a due date, it becomes the due date
+                           as well - see _anchor_start_date(). Last in the
+                           signature so existing positional callers keep
+                           working.
+        :type start_date: str or None
         :param today: Whether the task is for today.
         :type today: bool
         :param note: Notes for the task (Markdown format).
@@ -923,6 +960,7 @@ class TimeTracker:
                 "task_name": task_name,
                 "time_entries": [],
                 "status": self.STATUS_OPEN,
+                "start_date": start_date,
                 "due_date": due_date,
                 "today": today,
                 "note": note,
@@ -932,6 +970,10 @@ class TimeTracker:
                 "priority": priority,
                 "last_started": None
             }
+            # Before the task is announced, so the other machines are told the
+            # due date this settled on rather than the absent one they were
+            # given.
+            self._anchor_start_date(new_task)
             self.data["next_id"] += 1
             project["tasks"].append(new_task)
             self._emit('task.create', uid=new_task["uid"],
@@ -1015,6 +1057,7 @@ class TimeTracker:
                     "main_project_name": project["main_project_name"],
                     "task_name": task["task_name"],
                     "status": status,
+                    "start_date": task.get("start_date"),
                     "due_date": task.get("due_date"),
                     "today": task.get("today", False),
                     "note": task.get("note", ""),
@@ -1069,14 +1112,19 @@ class TimeTracker:
     @_exclusive
     def set_today_flag_for_due_tasks(self):
         """
-        Sets the 'today' flag (⭐) for tasks that have today's date as their due date
-        and are not yet marked as 'today'.
+        Sets the 'today' flag (⭐) for every open task that is current.
+
+        Current means one of two things. A task with only a due date is
+        current on that day, as it always has been. A task that also carries a
+        start date is current for the whole stretch between the two, which is
+        what the start date is for: work that has to be picked up at some
+        point in a fortnight belongs in today's list for that fortnight, not
+        only on the last day of it.
 
         Sends what it changed, for the reason set out in
         cleanup_overdue_today_tasks above: the two machines do not reach the
         same conclusion on their own, because this sweep reads a task's status
-        as well as its due date and each machine runs it at a different
-        moment.
+        as well as its dates and each machine runs it at a different moment.
 
         :return: True if any task was updated and saved.
         :rtype: bool
@@ -1086,15 +1134,36 @@ class TimeTracker:
         for project in self.data.get("projects", []):
             for task in project.get("tasks", []):
                 # Only consider open tasks
-                if task.get('status') == self.STATUS_OPEN:
-                    # If due date is today and 'today' flag is not set
-                    if task.get('due_date') == today_str and not task.get('today'):
-                        task['today'] = True
-                        self._emit('task.set', uid=task.get("uid"), f={'today': True})
-                        changed = True
+                if task.get('status') != self.STATUS_OPEN or task.get('today'):
+                    continue
+                if self._is_current(task, today_str):
+                    task['today'] = True
+                    self._emit('task.set', uid=task.get("uid"), f={'today': True})
+                    changed = True
         if changed:
             self._save_data()
         return changed
+
+    @staticmethod
+    def _is_current(task, today_str):
+        """
+        Whether a task belongs in today's work on the given day.
+
+        A start date without a due date cannot reach here: _anchor_start_date
+        gives every task that has one the other as well, so the window always
+        has both ends. The check is written to hold anyway rather than to
+        assume it - this is read on every redraw, over a document that a
+        second machine, an older version of this application or a hand edit
+        may have written.
+        """
+        start = task.get('start_date')
+        due = task.get('due_date')
+        if start:
+            # Inclusive at both ends: the day the work may begin and the day
+            # it is wanted by are both days it belongs in the list. ISO dates
+            # compare correctly as text, which is why they are stored that way.
+            return start <= today_str and (not due or today_str <= due)
+        return due == today_str
 
     @_exclusive
     def delete_task(self, main_project_name, task_name, task_id=None):
@@ -1219,7 +1288,7 @@ class TimeTracker:
         return False
 
     @_exclusive
-    def update_task(self, main_project_name, old_task_name, new_task_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, priority=None, task_id=None, clear_due_date=False):
+    def update_task(self, main_project_name, old_task_name, new_task_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, priority=None, task_id=None, clear_due_date=False, start_date=None, clear_start_date=False):
         """
         Updates a task's properties. Every field is left as it is unless a
         value for it is actually passed, the due date included - removing a
@@ -1242,6 +1311,14 @@ class TimeTracker:
                                Takes precedence over due_date. Last in the
                                signature so existing positional callers keep
                                working.
+        :param start_date: New start date (optional, ISO string). None keeps
+                           the current one; use clear_start_date to remove it.
+                           A task left with a start date and no due date is
+                           given one - see _anchor_start_date() - so clearing
+                           only the due date of such a task puts the start
+                           date there instead of leaving it open-ended.
+        :param clear_start_date: Remove the task's start date (optional, bool).
+                                 Takes precedence over start_date.
         :return: True if successful.
         """
         project = self._get_project(main_project_name)
@@ -1274,6 +1351,16 @@ class TimeTracker:
                     task["due_date"] = None
                 elif due_date is not None:
                     task["due_date"] = due_date
+
+                if clear_start_date:
+                    task["start_date"] = None
+                elif start_date is not None:
+                    task["start_date"] = start_date
+
+                # After both dates have been settled, so that whichever of
+                # the two this call touched, the pair left behind is one the
+                # sweep can read.
+                self._anchor_start_date(task)
 
                 # Update today status if provided
                 if today is not None:
@@ -1320,6 +1407,8 @@ class TimeTracker:
             "task_name": task["task_name"],
             "time_entries": [], # Start with a fresh, empty list for the new instance
             "status": self.STATUS_OPEN,
+            "start_date": self._shift_start_date(task.get("start_date"),
+                                                 base_due, next_due),
             "due_date": next_due,
             "today": False,
             "note": note,
@@ -1333,6 +1422,38 @@ class TimeTracker:
         project["tasks"].append(new_task)
         self._emit('task.create', uid=new_task["uid"],
                    project=project.get("uid"), f=self._task_fields(new_task))
+
+    @staticmethod
+    def _shift_start_date(start_str, base_due_str, next_due_str):
+        """
+        Moves a start date along with the due date it belongs to.
+
+        The next instance of a recurring task is a fresh copy at a later due
+        date. Its start date has to travel the same distance: left where it
+        was it would be in the past for ever, and every future instance would
+        count as current from the day it was created - which is the opposite
+        of what someone who set a start date asked for.
+
+        The gap between the two dates is what is preserved, not the day of
+        the month, because the gap is the thing the person chose: "I need a
+        fortnight for this" stays a fortnight whether the next one falls in
+        February or in March.
+
+        :return: The new start date, or None when there is nothing to move.
+        :rtype: str or None
+        """
+        if not (start_str and base_due_str and next_due_str):
+            return None
+        try:
+            start = datetime.fromisoformat(start_str).date()
+            base_due = datetime.fromisoformat(base_due_str).date()
+            next_due = datetime.fromisoformat(next_due_str).date()
+        except ValueError:
+            # A date this cannot read is one it must not guess at. The new
+            # instance simply has no start date, which leaves it behaving the
+            # way every task did before start dates existed.
+            return None
+        return (next_due - (base_due - start)).isoformat()
 
     def _calculate_next_due_date(self, base_due_str, frequency, ud_days):
         if base_due_str:

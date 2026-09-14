@@ -20,7 +20,8 @@ def project(uid, name="P", tasks=None, status="open"):
 
 def task(uid, name="T", entries=None, tid=1, **extra):
     base = {"uid": uid, "id": tid, "task_name": name, "time_entries": entries or [],
-            "status": "open", "due_date": None, "today": False, "note": "",
+            "status": "open", "start_date": None, "due_date": None,
+            "today": False, "note": "",
             "recurring": False, "frequency": "daily", "userdefined_days": 1,
             "priority": 0, "last_started": None}
     base.update(extra)

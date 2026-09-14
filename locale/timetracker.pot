@@ -1825,3 +1825,12 @@ msgstr ""
 
 #~ msgid "The server could not be reached ({reason})."
 #~ msgstr ""
+
+msgid "Start date"
+msgstr ""
+
+msgid "From this day until the due date the task is listed under Today's Tasks."
+msgstr ""
+
+msgid "The start date cannot be after the due date."
+msgstr ""

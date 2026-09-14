@@ -2939,3 +2939,12 @@ msgstr "Další měsíc"
 #: sl/SL_Menu.py
 msgid "{done} of {total} tasks done"
 msgstr "{done} z {total} úkolů hotovo"
+
+msgid "Start date"
+msgstr "Datum zahájení"
+
+msgid "From this day until the due date the task is listed under Today's Tasks."
+msgstr "Od tohoto dne až do termínu se úkol zobrazuje v „Today's Tasks“."
+
+msgid "The start date cannot be after the due date."
+msgstr "Datum zahájení nesmí být pozdější než termín."

@@ -115,6 +115,7 @@ class TaskModel(ComplexModel):
     main_project_name = Unicode
     task_name = Unicode
     status = Unicode
+    start_date = Unicode(min_occurs=0, nillable=True)
     due_date = Unicode(min_occurs=0, nillable=True)
     today = Boolean
     note = Unicode
@@ -193,9 +194,11 @@ class TimeControlService(ServiceBase):
 
     # --- Task Management ---
 
-    @rpc(Unicode, Unicode, Unicode, Boolean, Unicode, Boolean, Unicode, Integer, Integer, _returns=Boolean)
-    def add_task(ctx, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1, priority=0):
-        return ctx.udc.add_task(main_project_name, task_name, due_date, today, note, recurring, frequency, userdefined_days, priority)
+    @rpc(Unicode, Unicode, Unicode, Boolean, Unicode, Boolean, Unicode, Integer, Integer, Unicode, _returns=Boolean)
+    def add_task(ctx, main_project_name, task_name, due_date=None, today=False, note="", recurring=False, frequency="daily", userdefined_days=1, priority=0, start_date=None):
+        # start_date last, for the same reason priority and clear_due_date sit
+        # at the end of update_task below: spyne dispatches by position.
+        return ctx.udc.add_task(main_project_name, task_name, due_date, today, note, recurring, frequency, userdefined_days, priority, start_date=start_date)
 
     @rpc(Unicode, Unicode, Unicode, _returns=Array(TaskModel))
     def list_tasks(ctx, main_project_name=None, status_filter='all', planning_filter=None):
@@ -235,8 +238,8 @@ class TimeControlService(ServiceBase):
             return ctx.udc.rename_task(main_project_name, old_name, new_name, task_id=task_id)
         return ctx.udc.rename_task(main_project_name, old_name, new_name)
 
-    @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, Unicode, Boolean, Unicode, Integer, Integer, Integer, Boolean, _returns=Boolean)
-    def update_task(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, task_id=None, priority=None, clear_due_date=None):
+    @rpc(Unicode, Unicode, Unicode, Unicode, Boolean, Unicode, Unicode, Boolean, Unicode, Integer, Integer, Integer, Boolean, Unicode, Boolean, _returns=Boolean)
+    def update_task(ctx, main_project_name, old_name, new_name=None, due_date=None, today=None, note=None, status=None, recurring=None, frequency=None, userdefined_days=None, task_id=None, priority=None, clear_due_date=None, start_date=None, clear_start_date=None):
         # priority and clear_due_date are appended after task_id (rather than
         # grouped with the other content fields before them) so existing
         # positional callers that already pass task_id as the 11th argument
@@ -246,8 +249,8 @@ class TimeControlService(ServiceBase):
         # a due date is requested with clear_due_date; spyne passes None for
         # any argument the caller left out, hence the bool().
         if task_id is not None:
-            return ctx.udc.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, priority=priority, task_id=task_id, clear_due_date=bool(clear_due_date))
-        return ctx.udc.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, priority=priority, clear_due_date=bool(clear_due_date))
+            return ctx.udc.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, priority=priority, task_id=task_id, clear_due_date=bool(clear_due_date), start_date=start_date, clear_start_date=bool(clear_start_date))
+        return ctx.udc.update_task(main_project_name, old_name, new_name, due_date, today, note, status, recurring, frequency, userdefined_days, priority=priority, clear_due_date=bool(clear_due_date), start_date=start_date, clear_start_date=bool(clear_start_date))
 
     @rpc(Unicode, Unicode, Unicode, Unicode, _returns=OperationResultModel)
     def move_task(ctx, old_main, task_name, new_main, task_id=None):
