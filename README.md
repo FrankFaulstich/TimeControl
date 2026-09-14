@@ -33,6 +33,8 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **Today's Tasks:** The app's default view. Shows every task marked for today, grouped by project, alongside the currently active work session with quick "done"/"edit" actions - no separate main menu to go through first.
 
+**Start Dates:** A task can carry a start date as well as a due date. From that day until the due date it is listed under Today's Tasks by itself, which is how work that has to be picked up somewhere inside a stretch of days stops having to be either remembered or parked in today's list from the moment it is written down. A start date given on its own becomes the due date too, so the stretch always has both ends. When a recurring task rolls over, the start date moves with the due date and keeps the same gap.
+
 **Reporting & Analysis:**
 
 - **Daily & Date Range Reports:** Generate detailed reports for specific days or periods.
@@ -77,7 +79,7 @@ The Streamlit GUI groups all actions behind a compact icon toolbar — hover ove
 ![Today's Tasks view](screenshots/today-view.png)
 ![Today's Tasks view filtered to open tasks](screenshots/today-view-filtered.png)
 
-**Adding a task:** set a due date, mark it for today, set a priority, and optionally make it recurring.
+**Adding a task:** set a start date and a due date, mark it for today, set a priority, and optionally make it recurring.
 
 ![Add task dialog](screenshots/add-task.png)
 
@@ -227,7 +229,7 @@ python TimeTrackerMCP_Server.py
 - **Email import:** `fetch_emails_to_tasks` (requires email import to be configured, see above).
 - **Misc:** `get_version`.
 
-`update_task` only changes the fields you actually pass — a task's due date included, so omitting it leaves it as it is. Removing a due date is a separate request: pass `clear_due_date`.
+`update_task` only changes the fields you actually pass — a task's dates included, so omitting them leaves them as they are. Removing one is a separate request: pass `clear_due_date` or `clear_start_date`.
 
 > ⚠️ **Destructive tools:** `delete_task`, `delete_all_closed_tasks`, and `delete_main_project` permanently delete data and cannot be undone. An MCP client should always confirm with you before calling them.
 

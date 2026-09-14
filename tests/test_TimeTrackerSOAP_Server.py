@@ -97,17 +97,20 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
             self.ctx, "Main", "Sub", "2025-12-24", True, "Note"
         )
         self.mock_tracker.add_task.assert_called_with(
-            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 0
+            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 0,
+            start_date=None
         )
         self.assertTrue(result)
 
     def test_add_task_with_priority(self):
         self.mock_tracker.add_task.return_value = True
         result = self.soap_server.TimeControlService.add_task(
-            self.ctx, "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 9
+            self.ctx, "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 9,
+            start_date=None
         )
         self.mock_tracker.add_task.assert_called_with(
-            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 9
+            "Main", "Sub", "2025-12-24", True, "Note", False, "daily", 1, 9,
+            start_date=None
         )
         self.assertTrue(result)
 
@@ -159,7 +162,8 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         )
         self.mock_tracker.update_task.assert_called_with(
             "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None,
-            priority=None, clear_due_date=False
+            priority=None, clear_due_date=False,
+            start_date=None, clear_start_date=False
         )
         self.assertTrue(result)
 
@@ -176,7 +180,8 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         )
         self.mock_tracker.update_task.assert_called_with(
             "Main", "Old", "New", "2025-01-01", True, "Note", "done", None, None, None,
-            priority=4, task_id=7, clear_due_date=False
+            priority=4, task_id=7, clear_due_date=False,
+            start_date=None, clear_start_date=False
         )
         self.assertTrue(result)
 

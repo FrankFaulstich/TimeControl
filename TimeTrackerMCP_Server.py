@@ -292,6 +292,7 @@ def add_task(
     frequency: str = "daily",
     userdefined_days: int = 1,
     priority: int = 0,
+    start_date: str | None = None,
 ) -> str:
     """
     Creates a new task inside an existing main project.
@@ -308,6 +309,9 @@ def add_task(
     :param frequency: 'daily', 'business_days', 'weekly', 'monthly', or 'userdefined'. Only used if recurring is true.
     :param userdefined_days: Number of days between occurrences. Only used if frequency is 'userdefined'.
     :param priority: Priority from 0 (lowest, default) to 9 (highest).
+    :param start_date: Optional day the task becomes current, in YYYY-MM-DD format.
+        From that day until the due date the task is marked for today
+        automatically. Given without a due date it becomes the due date too.
     """
     if not (0 <= priority <= 9):
         return "Error: priority must be between 0 and 9."
@@ -331,6 +335,7 @@ def add_task(
         frequency=frequency,
         userdefined_days=userdefined_days,
         priority=priority,
+        start_date=start_date,
     )
     return f"Task '{task_name}' created in project '{main_project_name}'."
 
@@ -431,6 +436,8 @@ def update_task(
     frequency: str | None = None,
     userdefined_days: int | None = None,
     priority: int | None = None,
+    start_date: str | None = None,
+    clear_start_date: bool = False,
 ) -> str:
     """
     Updates one or more properties of an existing task in one call. Only the
@@ -447,6 +454,9 @@ def update_task(
     :param frequency: 'daily', 'business_days', 'weekly', 'monthly', or 'userdefined'.
     :param userdefined_days: Number of days between occurrences, for 'userdefined' frequency.
     :param priority: Priority from 0 (lowest) to 9 (highest). Omit to keep the current one.
+    :param start_date: New start date in YYYY-MM-DD format. Omit to keep the current one.
+        From that day until the due date the task is marked for today automatically.
+    :param clear_start_date: Set to true to remove the start date entirely (overrides start_date).
     """
     if priority is not None and not (0 <= priority <= 9):
         return "Error: priority must be between 0 and 9."
@@ -471,6 +481,8 @@ def update_task(
         priority=priority,
         task_id=current_task.get('id'),
         clear_due_date=clear_due_date,
+        start_date=start_date,
+        clear_start_date=clear_start_date,
     )
     if success:
         return f"Task '{task_name}' updated."

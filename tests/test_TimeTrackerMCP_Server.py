@@ -92,6 +92,7 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
         self.mock_tracker.add_task.assert_called_once_with(
             "Acme", "Write docs", due_date=None, today=False, note="",
             recurring=False, frequency="daily", userdefined_days=1, priority=0,
+            start_date=None,
         )
         self.assertIn("created", result)
 
@@ -102,6 +103,7 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
         self.mock_tracker.add_task.assert_called_once_with(
             "Acme", "Write docs", due_date=None, today=False, note="",
             recurring=False, frequency="daily", userdefined_days=1, priority=9,
+            start_date=None,
         )
         self.assertIn("created", result)
 
@@ -329,6 +331,7 @@ class TestTimeTrackerMCP_Server(unittest.TestCase):
             note="Updated note", status=None, recurring=None,
             frequency=None, userdefined_days=None, priority=None, task_id=1,
             clear_due_date=False,
+            start_date=None, clear_start_date=False,
         )
         self.assertIn("updated", result)
 

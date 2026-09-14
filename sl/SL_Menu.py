@@ -135,6 +135,7 @@ def render_icon_button_css():
         '[class*="st-key-del_email_"] button',
         '[class*="st-key-clear_email_due_date_"] button',
         '[class*="st-key-edit_clear_due_date_btn"] button',
+        '[class*="st-key-edit_clear_start_date_btn"] button',
         '[class*="st-key-close_inactive_"] button',
     ]
     icon_buttons = ",\n        ".join(button_selectors)
@@ -212,6 +213,7 @@ def render_icon_button_css():
         [data-testid="column"]:has([class*="st-key-del_email_"]),
         [data-testid="column"]:has([class*="st-key-clear_email_due_date_"]),
         [data-testid="column"]:has([class*="st-key-edit_clear_due_date_btn"]),
+        [data-testid="column"]:has([class*="st-key-edit_clear_start_date_btn"]),
         [data-testid="column"]:has([class*="st-key-close_inactive_"]) {{
             flex: 0 0 44px !important;
             width: 44px !important;
@@ -232,6 +234,7 @@ def render_icon_button_css():
         [class*="st-key-del_email_"],
         [class*="st-key-clear_email_due_date_"],
         [class*="st-key-edit_clear_due_date_btn"],
+        [class*="st-key-edit_clear_start_date_btn"],
         [class*="st-key-close_inactive_"] {{
             width: 40px !important;
             min-width: 40px !important;
@@ -3134,9 +3137,20 @@ def view_add_task_form():
     if "new_task_note" not in st.session_state:
         st.session_state.new_task_note = ""
     
-    col_date, col_today, col_rec, col_prio = st.columns([2, 1, 1, 1])
+    # The two dates on a row of their own, and the flags below them. Squeezing
+    # the start date in beside the other three left "Recurring" wrapping onto
+    # a second line and the priority without its buttons.
+    col_start, col_date = st.columns(2)
+    with col_start:
+        # Empty by default: a start date is something you ask for, and a task
+        # that only has a due date behaves exactly as it always did.
+        start_date = st.date_input(
+            _("Start date"), value=None, format="YYYY-MM-DD",
+            help=_("From this day until the due date the task is listed under Today's Tasks."))
     with col_date:
         due_date = st.date_input(_("Due date"), value=datetime.now().date(), format="YYYY-MM-DD")
+
+    col_today, col_rec, col_prio = st.columns(3)
     with col_today:
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
         today = st.checkbox(_("Today"))
@@ -3146,7 +3160,11 @@ def view_add_task_form():
     with col_prio:
         priority = st.number_input(_("Priority"), min_value=0, max_value=9, value=0, step=1, help=_("0 (lowest) to 9 (highest)"))
 
-    validation_error = is_recurring and not due_date
+    # A start date after the due date describes a window that never opens,
+    # and nothing would ever be flagged for it. Caught here rather than in
+    # the tracker, because this is where the pair is chosen.
+    dates_out_of_order = bool(start_date and due_date and start_date > due_date)
+    validation_error = (is_recurring and not due_date) or dates_out_of_order
     if validation_error:
         st.markdown("""
             <style>
@@ -3180,7 +3198,9 @@ def view_add_task_form():
         st.markdown('</div>', unsafe_allow_html=True)
     
     st.divider()
-    if validation_error:
+    if dates_out_of_order:
+        st.error(_("The start date cannot be after the due date."))
+    elif validation_error:
         st.error(_("A due date is required for recurring tasks."))
 
     col_btn1, col_btn2 = st.columns(2)
@@ -3199,7 +3219,8 @@ def view_add_task_form():
                 recurring=is_recurring,
                 frequency=final_freq,
                 userdefined_days=ud_days,
-                priority=priority
+                priority=priority,
+                start_date=start_date.isoformat() if start_date else None
             ):
                 set_feedback(_("Task '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
                 if "new_task_note" in st.session_state: del st.session_state.new_task_note
@@ -3294,10 +3315,26 @@ def view_edit_task_form():
         curr_due = task_details.get('due_date')
         st.session_state.edit_due_date = datetime.fromisoformat(curr_due).date() if curr_due else None
 
+    if 'edit_start_date' not in st.session_state:
+        curr_start = task_details.get('start_date')
+        st.session_state.edit_start_date = datetime.fromisoformat(curr_start).date() if curr_start else None
+
     if 'edit_task_note' not in st.session_state:
         st.session_state.edit_task_note = task_details.get('note', '')
 
     new_name = st.text_input(_("Task Name"), value=task_name)
+
+    col_start, col_clear_start = st.columns([5, 1])
+    with col_start:
+        new_start = st.date_input(
+            _("Start Date"), value=st.session_state.edit_start_date, format="YYYY-MM-DD",
+            help=_("From this day until the due date the task is listed under Today's Tasks."))
+        st.session_state.edit_start_date = new_start
+    with col_clear_start:
+        st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
+        if st.button("×", use_container_width=True, help=_("Clear"), key="edit_clear_start_date_btn"):
+            st.session_state.edit_start_date = None
+            st.rerun()
 
     col_date, col_clear = st.columns([5, 1])
     with col_date:
@@ -3319,7 +3356,12 @@ def view_edit_task_form():
     with col_prio:
         priority = st.number_input(_("Priority"), min_value=0, max_value=9, value=task_details.get('priority', 0), step=1, help=_("0 (lowest) to 9 (highest)"))
 
-    validation_error = is_recurring and not st.session_state.edit_due_date
+    dates_out_of_order = bool(st.session_state.edit_start_date
+                              and st.session_state.edit_due_date
+                              and st.session_state.edit_start_date
+                              > st.session_state.edit_due_date)
+    validation_error = ((is_recurring and not st.session_state.edit_due_date)
+                        or dates_out_of_order)
     if validation_error:
         st.markdown("""
             <style>
@@ -3354,7 +3396,9 @@ def view_edit_task_form():
         st.markdown('</div>', unsafe_allow_html=True)
     
     st.divider()
-    if validation_error:
+    if dates_out_of_order:
+        st.error(_("The start date cannot be after the due date."))
+    elif validation_error:
         st.error(_("A due date is required for recurring tasks."))
 
     col_save, col_cancel = st.columns(2)
@@ -3362,6 +3406,7 @@ def view_edit_task_form():
         if st.button(_("Save Changes"), type="primary", use_container_width=True):
             if not validation_error: # Proceed only if no validation error
                 final_due = st.session_state.edit_due_date.isoformat() if st.session_state.edit_due_date else None
+                final_start = st.session_state.edit_start_date.isoformat() if st.session_state.edit_start_date else None
                 new_status = 'done' if is_done else 'open'
                 
                 if st.session_state.tracker.update_task(
@@ -3381,9 +3426,12 @@ def view_edit_task_form():
                     # date field is the user removing the due date rather than
                     # declining to change it.
                     clear_due_date=final_due is None,
+                    start_date=final_start,
+                    clear_start_date=final_start is None,
                 ):
                     set_feedback(_("Task updated successfully."))
                     if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
+                    if 'edit_start_date' in st.session_state: del st.session_state.edit_start_date
                     if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
                     st.session_state.context = {}
                     navigate_to(return_to)
@@ -3393,6 +3441,7 @@ def view_edit_task_form():
     with col_cancel:
         if st.button(_("Cancel"), use_container_width=True):
             if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
+            if 'edit_start_date' in st.session_state: del st.session_state.edit_start_date
             if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
             st.session_state.context = {}
             navigate_to(return_to)

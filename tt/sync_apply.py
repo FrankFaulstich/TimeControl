@@ -39,7 +39,7 @@ here, is gone. That is a deliberate choice, not an oversight.
 # the server stores operations without understanding them, so this is where a
 # malformed or hostile field would otherwise reach the document.
 TASK_FIELDS = frozenset((
-    "task_name", "status", "due_date", "today", "note",
+    "task_name", "status", "start_date", "due_date", "today", "note",
     "recurring", "frequency", "userdefined_days", "priority", "last_started",
 ))
 PROJECT_FIELDS = frozenset(("name", "status", "last_started"))
@@ -290,6 +290,7 @@ def apply_ops(document, ops, on_conflict=None, now=None, unpushed=()):
                         "task_name": "",
                         "time_entries": [],
                         "status": "open",
+                        "start_date": None,
                         "due_date": None,
                         "today": False,
                         "note": "",

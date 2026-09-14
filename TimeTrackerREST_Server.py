@@ -41,6 +41,7 @@ class Task(BaseModel):
     main_project_name: str
     task_name: str
     status: str
+    start_date: Optional[str] = None
     due_date: Optional[str] = None
     today: bool
     note: str
@@ -100,6 +101,7 @@ class DemoteRequest(BaseModel):
 
 class AddTaskRequest(BaseModel):
     task_name: str
+    start_date: Optional[str] = None
     due_date: Optional[str] = None
     today: bool = False
     note: str = ""
@@ -111,6 +113,7 @@ class AddTaskRequest(BaseModel):
 
 class UpdateTaskRequest(BaseModel):
     new_name: Optional[str] = None
+    start_date: Optional[str] = None
     due_date: Optional[str] = None
     today: Optional[bool] = None
     note: Optional[str] = None
@@ -120,8 +123,10 @@ class UpdateTaskRequest(BaseModel):
     userdefined_days: Optional[int] = None
     priority: Optional[int] = Field(default=None, ge=0, le=9)
     # A PATCH omits what it doesn't want to change, so an absent due_date
-    # cannot double as "remove the due date" - that needs its own field.
+    # cannot double as "remove the due date" - that needs its own field. The
+    # start date is removed the same way.
     clear_due_date: bool = False
+    clear_start_date: bool = False
 
 
 class MoveTaskRequest(BaseModel):
@@ -273,6 +278,7 @@ def add_task(main_project_name: str, body: AddTaskRequest, tracker: TimeTracker 
         body.frequency,
         body.userdefined_days,
         body.priority,
+        start_date=body.start_date,
     )
     return SuccessResult(success=created)
 
@@ -342,6 +348,8 @@ def update_task(main_project_name: str, task_name: str, body: UpdateTaskRequest,
         body.priority,
         task_id=task_id,
         clear_due_date=body.clear_due_date,
+        start_date=body.start_date,
+        clear_start_date=body.clear_start_date,
     )
     return SuccessResult(success=updated)
 

@@ -2999,3 +2999,12 @@ msgstr "Nächster Monat"
 #: sl/SL_Menu.py
 msgid "{done} of {total} tasks done"
 msgstr "{done} von {total} Aufgaben erledigt"
+
+msgid "Start date"
+msgstr "Startdatum"
+
+msgid "From this day until the due date the task is listed under Today's Tasks."
+msgstr "Von diesem Tag bis zum Fälligkeitsdatum steht die Aufgabe unter „Today's Tasks“."
+
+msgid "The start date cannot be after the due date."
+msgstr "Das Startdatum darf nicht nach dem Fälligkeitsdatum liegen."

@@ -3026,3 +3026,12 @@ msgstr "Next month"
 #: sl/SL_Menu.py
 msgid "{done} of {total} tasks done"
 msgstr "{done} of {total} tasks done"
+
+msgid "Start date"
+msgstr "Start date"
+
+msgid "From this day until the due date the task is listed under Today's Tasks."
+msgstr "From this day until the due date the task is listed under Today's Tasks."
+
+msgid "The start date cannot be after the due date."
+msgstr "The start date cannot be after the due date."
