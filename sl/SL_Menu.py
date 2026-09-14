@@ -1234,7 +1234,8 @@ def render_calendar_css():
     the full name and its project are on the button's tooltip, which is what
     that tooltip is for.
 
-    Only sizes and spacing, no colours, so both themes are left alone.
+    Only sizes, spacing and one step of transparency, no colours, so both
+    themes are left alone.
     """
     st.markdown("""
         <style>
@@ -1243,6 +1244,12 @@ def render_calendar_css():
             min-height: 0;
             justify-content: flex-start;
             text-align: left;
+        }
+        /* The days before the deadline, one shade back, so a stretch of
+           squares still reads as leading up to something. Not a colour:
+           opacity is the one way to say "less" that works in both themes. */
+        [class*="st-key-calendar_task_run_"] button p {
+            opacity: 0.55;
         }
         [class*="st-key-calendar_task_"] button p {
             font-size: 0.72rem;
@@ -1261,7 +1268,12 @@ def render_calendar_css():
 
 def _calendar_body():
     """
-    A month at a glance, with every task sitting on the day it falls due.
+    A month at a glance, with every task spread over the days it runs.
+
+    A task with only a due date sits on that one day. One that carries a start
+    date as well occupies every day from the start to the due date - the same
+    stretch that puts it into Today's Tasks - with the last of them, the day
+    it is wanted by, left the darker.
 
     The header and the toolbar are not drawn here - this is one of three tabs
     inside view_work(), which draws both once for all of them.
@@ -1325,17 +1337,26 @@ def _calendar_body():
                               % day.date.day)
                 st.markdown(number, unsafe_allow_html=True)
 
-                for position, task in enumerate(day.tasks):
+                for position, (task, is_due) in enumerate(day.tasks):
                     name = task['task_name']
                     # No tick for finished tasks any more: none reach this
                     # far, so the marker would be a branch that can never
                     # run. The project and the full name go in the tooltip -
                     # a square this narrow cuts the label off, and the name
-                    # alone does not always say which task is meant.
+                    # alone does not always say which task is meant. A task
+                    # that runs across several days says so there too; there
+                    # is no room for it on the button.
+                    tooltip = "%s / %s" % (task['main_project_name'], name)
+                    if task.get('start_date') and task.get('start_date') != task.get('due_date'):
+                        tooltip += " (%s - %s)" % (task['start_date'], task['due_date'])
+                    # The day it is wanted by is keyed apart from the days
+                    # leading up to it, which is what lets the stylesheet
+                    # keep the deadline the darker of the two.
                     if st.button(name,
-                                 key="calendar_task_%s_%d" % (day.date.isoformat(),
-                                                              position),
-                                 help="%s / %s" % (task['main_project_name'], name),
+                                 key="calendar_task_%s_%s_%d" % (
+                                     "due" if is_due else "run",
+                                     day.date.isoformat(), position),
+                                 help=tooltip,
                                  use_container_width=True):
                         st.session_state.context['selected_main'] = task['main_project_name']
                         st.session_state.context['selected_task'] = name

@@ -35,6 +35,8 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **Start Dates:** A task can carry a start date as well as a due date. From that day until the due date it is listed under Today's Tasks by itself, which is how work that has to be picked up somewhere inside a stretch of days stops having to be either remembered or parked in today's list from the moment it is written down. A start date given on its own becomes the due date too, so the stretch always has both ends. When a recurring task rolls over, the start date moves with the due date and keeps the same gap.
 
+The calendar tab draws the same stretch: a task appears on every day it runs, with the day it is wanted by left the darker of them, so a month shows how much room there is for a piece of work rather than only when it is over.
+
 **Reporting & Analysis:**
 
 - **Daily & Date Range Reports:** Generate detailed reports for specific days or periods.
