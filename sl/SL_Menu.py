@@ -821,6 +821,41 @@ def _work_tab_labels():
             'calendar': _("Calendar")}
 
 
+def task_marker(is_active, is_done):
+    """
+    What goes in front of a task in the lists you work from.
+
+    A hammer for the one being worked on, a tick for one that is finished,
+    and nothing at all for the rest. The dash that used to sit there, and the
+    fixed-width column it sat in, are both gone (issue #624): the dash said
+    only "this is an item in a list", which the list says for itself, and the
+    column held an empty space in front of nearly every name.
+
+    So a name with no marker begins at the margin, and one with a marker is
+    pushed along by it. That is the trade for having no indentation at all -
+    starting work on a task nudges its name to the right.
+
+    Not translated, and deliberately: these are pictures, not words.
+
+    One function rather than the three copies of the same three lines this
+    replaces - the lists are drawn in two places and a third would have been
+    written the same way, which is how one of them ends up keeping a marker
+    the others have lost.
+
+    :param is_active: Whether work is running on this task right now.
+    :param is_done: Whether it is finished.
+    :return: The whole prefix, separator included, so that the callers have
+             nothing left to decide - either a marker and the space after it,
+             or an empty string.
+    :rtype: str
+    """
+    if is_active:
+        return "🔨 "
+    if is_done:
+        return "✔ "
+    return ""
+
+
 def view_work():
     """
     The home screen: header, toolbar, and the three working views as tabs.
@@ -960,13 +995,8 @@ def _task_planning_body():
                             today_info = " ⭐" if task.get('today') else ""
                             recurring_info = " ↻" if task.get('recurring') else ""
                             priority_info = f" 🔺{task.get('priority', 0)}" if task.get('priority', 0) > 0 else ""
-                            if is_active:
-                                bullet = "🔨"
-                            elif is_done:
-                                bullet = "✔"
-                            else:
-                                bullet = "-"
-                            st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> **{task['main_project_name']}**: {display_name}{today_info}{recurring_info}{priority_info}", unsafe_allow_html=True)
+                            marker = task_marker(is_active, is_done)
+                            st.markdown(f"{marker}**{task['main_project_name']}**: {display_name}{today_info}{recurring_info}{priority_info}")
                         with col_start_btn:
                             if st.button("▶", key=f"start_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or task.get('status') == 'done'):
                                 st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -1044,13 +1074,8 @@ def _task_planning_body():
                                 today_info = " ⭐" if task.get('today') else ""
                                 recurring_info = " ↻" if task.get('recurring') else ""
                                 priority_info = f" 🔺{task.get('priority', 0)}" if task.get('priority', 0) > 0 else ""
-                                if is_active:
-                                    bullet = "🔨"
-                                elif is_done:
-                                    bullet = "✔"
-                                else:
-                                    bullet = "-"
-                                st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{today_info}{recurring_info}{priority_info}", unsafe_allow_html=True)
+                                marker = task_marker(is_active, is_done)
+                                st.markdown(f"{marker}{display_name}{due_info}{today_info}{recurring_info}{priority_info}")
                             with col_start_btn:
                                 if st.button("▶", key=f"start_task_planning_{main_proj_name}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
                                     st.session_state.tracker.start_work(task['main_project_name'], task_id=task.get('id'))
@@ -1560,13 +1585,8 @@ def _today_tasks_body():
                             due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
                             recurring_info = " ↻" if task.get('recurring') else ""
                             priority_info = f" 🔺{task.get('priority', 0)}" if task.get('priority', 0) > 0 else ""
-                            if is_active:
-                                bullet = "🔨"
-                            elif is_done:
-                                bullet = "✔"
-                            else:
-                                bullet = "-"
-                            st.markdown(f"<span style='display: inline-block; width: 2rem;'>{bullet}</span> {display_name}{due_info}{recurring_info}{priority_info}", unsafe_allow_html=True)
+                            marker = task_marker(is_active, is_done)
+                            st.markdown(f"{marker}{display_name}{due_info}{recurring_info}{priority_info}")
                         with col_priority:
                             new_priority = st.number_input(
                                 _("Priority"), min_value=0, max_value=9,
@@ -2699,7 +2719,7 @@ def view_list_closed_tasks():
                 found_any = True
                 st.markdown(f"**{mp_name}**")
                 for sp in closed_subs:
-                    st.markdown(f"- {sp['task_name']}")
+                    st.markdown(f"{sp['task_name']}")
     
     if not found_any:
         st.info(_("No closed tasks found."))
@@ -2734,7 +2754,7 @@ def view_delete_all_closed_tasks():
     
     with st.expander(_("Show projects to delete")):
         for mp, sp in to_delete:
-            st.markdown(f"- **{mp}** / {sp}")
+            st.markdown(f"**{mp}** / {sp}")
 
     if st.button(_("Delete All"), type="primary", use_container_width=True):
         deleted_count = 0
@@ -2806,7 +2826,7 @@ def view_list_main_projects():
     if projects:
         for p in projects:
             status = f"({_('closed')})" if p['status'] == 'closed' else ""
-            st.markdown(f"- **{p['main_project_name']}** {status}")
+            st.markdown(f"**{p['main_project_name']}** {status}")
     else:
         st.info(_("No projects found."))
     if st.button(_("Back"), use_container_width=True):
@@ -2873,7 +2893,7 @@ def view_list_tasks():
             display_name = f"{name} (done)" if t['status'] == 'done' else name
             recurring_info = " ↻" if t.get('recurring') else ""
             priority_info = f" 🔺{t.get('priority', 0)}" if t.get('priority', 0) > 0 else ""
-            st.markdown(f"- {display_name} {status_text}{recurring_info}{priority_info}")
+            st.markdown(f"{display_name} {status_text}{recurring_info}{priority_info}")
     else:
         st.info(_("No tasks found for '{name}'.").format(name=selected_main))
         
@@ -3031,7 +3051,7 @@ def view_list_inactive_main_projects():
     if inactive_list:
         st.markdown(_("Inactive Projects (> {weeks} weeks):").format(weeks=weeks))
         for item in inactive_list:
-            st.markdown(f"- **{item['main_project']}**")
+            st.markdown(f"**{item['main_project']}**")
             st.caption(f"{_('Last Activity')}: {item['last_activity']}")
     else:
         st.info(_("No projects found inactive for more than {weeks} weeks.").format(weeks=weeks))
@@ -3091,7 +3111,7 @@ def view_list_completed_main():
     if completed_projects:
         st.markdown(_("Projects with only closed or no tasks:"))
         for project_name in completed_projects:
-            st.markdown(f"- **{project_name}**")
+            st.markdown(f"**{project_name}**")
     else:
         st.info(_("No completed projects found."))
         

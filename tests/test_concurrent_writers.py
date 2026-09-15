@@ -243,9 +243,27 @@ class TestASaveSurvivesAPassingReader(unittest.TestCase):
         self.assertEqual(_tasks_of(self.data), ["T"])
 
     def test_and_one_refused_repeatedly_still_gets_through(self):
-        ersatz, _ = self._refuse_then_allow(8)
+        """
+        The budget is raised because it is not what this test is about.
+
+        Eight refusals are ridden out by eight naps of 25ms - a fifth of the
+        second the code allows itself, which sounds like room to spare. It is
+        not: a nap is a floor, not a promise, and on a build machine running
+        everything at once one of 25ms can come back after 150. Past a
+        fivefold overshoot the eight naps outlast the second, the save is
+        given up on, and the test reports a broken retry on a machine that
+        was merely busy. That is how it failed on CI.
+
+        So the deadline is put out of reach and the test asks only what it
+        means to ask: that eight refusals in a row are all ridden out. The
+        thirty seconds are never spent - the ninth call succeeds - and a
+        retry that has stopped working still fails at once.
+        """
+        self.tracker.REPLACE_RETRY_SECONDS = 30
+        ersatz, zaehler = self._refuse_then_allow(8)
         with unittest.mock.patch('tt.TimeTracker.os.replace', ersatz):
             self.tracker.add_task("P", "T")
+        self.assertEqual(zaehler['n'], 8, 'the refusals were not staged')
         self.assertEqual(_tasks_of(self.data), ["T"])
 
     def test_a_refusal_that_never_lifts_is_reported(self):
