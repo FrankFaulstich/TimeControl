@@ -1667,14 +1667,6 @@ msgstr "No time tracked between {start_date} and {end_date}."
 msgid "# Detailed Daily Report: {date}"
 msgstr "# Detailed Daily Report: {date}"
 
-#: update.py:101
-msgid ""
-"Warning: Update check skipped. 'github_repo' not found in config.json or "
-"file is invalid."
-msgstr ""
-"Warning: Update check skipped. 'github_repo' not found in config.json or "
-"file is invalid."
-
 #: update.py:121
 msgid "Error: Download URL for the new version not found."
 msgstr "Error: Download URL for the new version not found."
@@ -3035,3 +3027,6 @@ msgstr "From this day until the due date the task is listed under Today's Tasks.
 
 msgid "The start date cannot be after the due date."
 msgstr "The start date cannot be after the due date."
+
+msgid "Update check skipped: no repository is configured."
+msgstr "Update check skipped: no repository is configured."

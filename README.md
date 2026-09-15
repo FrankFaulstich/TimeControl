@@ -158,7 +158,7 @@ there to show the shape, not to be copied.
 }
 ```
 
-- **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions.
+- **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions. Optional: left out, the application asks about its own releases, which is what the Windows build needs — it ships as a single `.exe` and writes itself a `config.json` that has no repository in it. Set it to point a fork somewhere else, or to `""` to switch the update check off entirely.
 - **`language`**: The user interface language ("en", "de", "fr", "es", "cs").
 - **`soap_port`**: The port on which the SOAP server listens (default: 8600).
 - **`rest_port`**: The port on which the REST server listens (default: 8800). See [examples/REST](examples/REST) for runnable client examples.

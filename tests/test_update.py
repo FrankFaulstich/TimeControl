@@ -189,6 +189,111 @@ def _fake_github(exe_bytes=b"", checksum=None, checksum_status=200):
     return fake_get
 
 
+class TestWhichRepositoryIsAsked(unittest.TestCase):
+    """
+    Where the update check gets the repository from.
+
+    This is what stopped the Windows build ever noticing a new version. The
+    repository was read from config.json and nowhere else, and a Windows
+    installation is one .exe in an otherwise empty directory: the config.json
+    the application writes for itself on first start holds a language and
+    nothing more. Every check found no repository, said so on a console that
+    a windowed application does not have, and reported "no update available"
+    for the life of the installation.
+
+    The tests run in a directory of their own, because the file being read is
+    "config.json" relative to the working directory - the same reason the
+    defect only ever showed itself where nobody had put one there.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.here = os.getcwd()
+        self.addCleanup(os.chdir, self.here)
+        os.chdir(self.tmp)
+
+    def _config(self, **contents):
+        import json
+        with open('config.json', 'w', encoding='utf-8') as handle:
+            json.dump(contents, handle)
+
+    def test_a_fresh_installation_knows_where_to_look(self):
+        """
+        The regression itself: nothing but the application, and the check
+        still has a repository to ask.
+        """
+        self.assertEqual(update._get_github_repo_from_config(),
+                         update.DEFAULT_GITHUB_REPO)
+
+    def test_and_so_does_one_whose_config_says_nothing_about_updates(self):
+        """What the first start actually writes: a language, and no more."""
+        self._config(language="en")
+        self.assertEqual(update._get_github_repo_from_config(),
+                         update.DEFAULT_GITHUB_REPO)
+
+    def test_the_default_is_this_project(self):
+        """
+        A build is made from a repository; there is nothing here for a user
+        to decide, which is why there can be a default at all.
+        """
+        self.assertEqual(update.DEFAULT_GITHUB_REPO,
+                         "FrankFaulstich/TimeControl")
+
+    def test_a_configured_repository_still_wins(self):
+        """Somebody running a fork has to be able to say so."""
+        self._config(update={"github_repo": "somebody/fork"})
+        self.assertEqual(update._get_github_repo_from_config(), "somebody/fork")
+
+    def test_an_empty_one_switches_the_check_off(self):
+        """
+        The way out for anyone who does not want the application talking to
+        GitHub at all. Deliberately not the same as saying nothing.
+        """
+        self._config(update={"github_repo": ""})
+        self.assertIsNone(update._get_github_repo_from_config())
+        self.assertEqual(update.check_for_updates("1.0"), (False, None, None))
+
+    def test_whitespace_is_not_a_repository_either(self):
+        self._config(update={"github_repo": "   "})
+        self.assertIsNone(update._get_github_repo_from_config())
+
+    def test_a_value_that_is_not_a_name_is_not_replaced_by_a_guess(self):
+        self._config(update={"github_repo": 7})
+        self.assertIsNone(update._get_github_repo_from_config())
+
+    def test_an_unreadable_config_falls_back_rather_than_giving_up(self):
+        """
+        The repository is neither a secret nor a preference. Refusing to look
+        for updates because of a stray comma helps nobody.
+        """
+        with open('config.json', 'w', encoding='utf-8') as handle:
+            handle.write('{ this is not json')
+        self.assertEqual(update._get_github_repo_from_config(),
+                         update.DEFAULT_GITHUB_REPO)
+
+    def test_a_config_that_is_not_an_object_at_all(self):
+        with open('config.json', 'w', encoding='utf-8') as handle:
+            handle.write('[1, 2, 3]')
+        self.assertEqual(update._get_github_repo_from_config(),
+                         update.DEFAULT_GITHUB_REPO)
+
+    @unittest.mock.patch('update.requests.get')
+    def test_the_check_now_reaches_the_network_on_a_fresh_installation(self, mock_get):
+        """
+        The end of the chain: with a repository to ask, a fresh installation
+        makes the request it never used to make, and reports the new version.
+        """
+        response = unittest.mock.MagicMock()
+        response.raise_for_status = unittest.mock.MagicMock()
+        response.json.return_value = {"tag_name": "v99.0", "zipball_url": "http://x/z"}
+        mock_get.return_value = response
+
+        self.assertEqual(update.check_for_updates("1.0"), (True, "99.0", "http://x/z"))
+        asked = mock_get.call_args[0][0]
+        self.assertIn(update.DEFAULT_GITHUB_REPO, asked)
+
+
 class TestFrozenAssetSelection(unittest.TestCase):
     """
     A frozen build has to be offered the published .exe, not the source zip

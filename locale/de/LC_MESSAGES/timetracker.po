@@ -1685,14 +1685,6 @@ msgstr "Keine Zeit zwischen {start_date} und {end_date} erfasst."
 msgid "# Detailed Daily Report: {date}"
 msgstr "# Detaillierter Tagesbericht: {date}"
 
-#: update.py:101
-msgid ""
-"Warning: Update check skipped. 'github_repo' not found in config.json or "
-"file is invalid."
-msgstr ""
-"Warnung: Update-Prüfung übersprungen. 'github_repo' nicht in config.json "
-"gefunden oder Datei ist ungültig."
-
 #: update.py:121
 msgid "Error: Download URL for the new version not found."
 msgstr "Fehler: Download-URL für die neue Version nicht gefunden."
@@ -3008,3 +3000,6 @@ msgstr "Von diesem Tag bis zum Fälligkeitsdatum steht die Aufgabe unter „Toda
 
 msgid "The start date cannot be after the due date."
 msgstr "Das Startdatum darf nicht nach dem Fälligkeitsdatum liegen."
+
+msgid "Update check skipped: no repository is configured."
+msgstr "Update-Prüfung übersprungen: Es ist kein Repository konfiguriert."
