@@ -1661,14 +1661,6 @@ msgstr "Mezi {start_date} a {end_date} nebyl zaznamenán žádný čas."
 msgid "# Detailed Daily Report: {date}"
 msgstr "# Podrobná denní zpráva: {date}"
 
-#: update.py:101
-msgid ""
-"Warning: Update check skipped. 'github_repo' not found in config.json or "
-"file is invalid."
-msgstr ""
-"Varování: Kontrola aktualizací přeskočena. 'github_repo' nebylo nalezeno v "
-"config.json nebo je soubor neplatný."
-
 #: update.py:121
 msgid "Error: Download URL for the new version not found."
 msgstr "Chyba: Adresa URL pro stažení nové verze nebyla nalezena."
@@ -2948,3 +2940,6 @@ msgstr "Od tohoto dne až do termínu se úkol zobrazuje v „Today's Tasks“."
 
 msgid "The start date cannot be after the due date."
 msgstr "Datum zahájení nesmí být pozdější než termín."
+
+msgid "Update check skipped: no repository is configured."
+msgstr "Kontrola aktualizací přeskočena: není nastaven žádný repozitář."

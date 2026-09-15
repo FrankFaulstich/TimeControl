@@ -1603,12 +1603,6 @@ msgstr ""
 msgid "# Detailed Daily Report: {date}"
 msgstr ""
 
-#: update.py:101
-msgid ""
-"Warning: Update check skipped. 'github_repo' not found in config.json or "
-"file is invalid."
-msgstr ""
-
 #: update.py:121
 msgid "Error: Download URL for the new version not found."
 msgstr ""
@@ -1833,4 +1827,7 @@ msgid "From this day until the due date the task is listed under Today's Tasks."
 msgstr ""
 
 msgid "The start date cannot be after the due date."
+msgstr ""
+
+msgid "Update check skipped: no repository is configured."
 msgstr ""

@@ -15,6 +15,22 @@ UPDATE_ZIP_FILE = "update.zip"
 CONFIG_FILE = "config.json"
 PROTECTED_FILES = ["data.json", "config.json"] # Files that should not be overwritten during an update if they already exist
 
+# Where the releases come from, when the configuration does not say.
+#
+# This is a property of the application rather than of an installation: this
+# build was made from this repository and there is nothing for a user to
+# decide. Reading it from config.json ALONE is what made the update check
+# silently do nothing on Windows - the published release is one .exe, so a
+# fresh installation is a directory holding that .exe and nothing else, and
+# the config.json the application then writes for itself has a language in it
+# and no repository. Every check found no repository to ask, said so on a
+# console nobody sees, and reported "no update available" for ever.
+#
+# config.json still overrides it, which is what someone running a fork needs.
+# An empty value there is a deliberate "do not check at all" and is honoured
+# as such; only an absent one falls back here.
+DEFAULT_GITHUB_REPO = "FrankFaulstich/TimeControl"
+
 # --- Frozen (PyInstaller) build ---------------------------------------------
 #
 # A frozen build cannot be updated the way a source install is: there are no
@@ -138,15 +154,32 @@ def should_check_for_updates(session_state, current_menu):
     return session_state.get('_update_checked_for_menu') != current_menu
 
 def _get_github_repo_from_config():
-    """Reads the GitHub repository slug from config.json."""
-    if not os.path.exists(CONFIG_FILE):
-        return None
-    try:
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-            return config.get("update", {}).get("github_repo")
-    except (json.JSONDecodeError, IOError):
-        return None
+    """
+    The repository to ask about new releases.
+
+    The configured one when config.json names it, and the application's own
+    otherwise - see DEFAULT_GITHUB_REPO for why the fallback has to exist.
+    A configured empty value is not "unset": it is somebody switching the
+    update check off, and it comes back as None so the check stops.
+
+    An unreadable config.json also falls back rather than giving up. The
+    repository is not a secret and not a preference; refusing to look for
+    updates because of a stray comma helps nobody.
+    """
+    config = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r') as f:
+                config = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            config = {}
+    if not isinstance(config, dict):
+        config = {}
+    update_section = config.get("update")
+    if not isinstance(update_section, dict) or "github_repo" not in update_section:
+        return DEFAULT_GITHUB_REPO
+    configured = update_section.get("github_repo")
+    return configured.strip() or None if isinstance(configured, str) else None
 
 def check_for_updates(current_version_str):
     """
@@ -157,7 +190,9 @@ def check_for_updates(current_version_str):
     """
     github_repo = _get_github_repo_from_config()
     if not github_repo:
-        print(_("Warning: Update check skipped. 'github_repo' not found in config.json or file is invalid."))
+        # Only reachable now by writing an empty 'github_repo' into
+        # config.json, which is how the check is switched off.
+        print(_("Update check skipped: no repository is configured."))
         return False, None, None
 
     api_url = f"https://api.github.com/repos/{github_repo}/releases/latest"
