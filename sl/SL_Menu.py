@@ -35,6 +35,17 @@ except (ImportError, ModuleNotFoundError):
     UPDATE_MODULE_AVAILABLE = False
 
 try:
+    # Its own import and its own flag, deliberately apart from the block
+    # below. This one pulls in `cryptography`, which synchronisation itself
+    # does not need - folding it into that try would mean a missing optional
+    # dependency switching off the whole sync screen and explaining itself
+    # with the wrong reason entirely.
+    from tt import sync_secret
+    E2EE_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    E2EE_AVAILABLE = False
+
+try:
     from tt import sync_client, sync_engine, sync_log
     from tt.sync_outbox import default_outbox_if_enabled
     SYNC_AVAILABLE = True
@@ -655,6 +666,279 @@ def render_sync_notice():
         return
     st.warning(_("Synchronisation is paused: {reason}").format(
         reason=sync_error_message(snapshot['error'])))
+
+
+def render_encryption_settings(config):
+    """
+    The end-to-end encryption block of the sync settings.
+
+    Off by default and off for almost everybody, so this draws as little as it
+    can in that state: a line saying what it would do and the form that turns
+    it on. Everything louder is reserved for the states where the user has to
+    act before synchronisation can carry on at all.
+
+    Kept as a function of its own rather than inline in the settings screen
+    for the reason the rest of this file's logic is: what it decides can be
+    read out of the source and tested, which a Streamlit script cannot be by
+    running it.
+
+    :param config: The parsed config.json. Saved here when it changes.
+    """
+    st.markdown("**" + _("End-to-end encryption") + "**")
+
+    if not E2EE_AVAILABLE:
+        st.info(_("Encryption is unavailable because the 'cryptography' package "
+                  "is missing. Synchronisation itself is unaffected."))
+        return
+
+    state = sync_secret.status(config)[0]
+
+    if state == sync_secret.READY:
+        # Two different truths, and saying the first one while the second
+        # holds would be a false promise about the data that matters most:
+        # everything written before the switch is still in the server's log
+        # exactly as it was. A sealed snapshot is what takes those segments
+        # out of it, and until one has gone up this says so.
+        if sync_engine.history_is_still_readable():
+            st.warning(_("On for everything from now on. What was synchronised "
+                         "before is still on the server in plain text: it goes "
+                         "as soon as this device has sent an encrypted summary, "
+                         "which happens by itself on one of the next few syncs."))
+        else:
+            st.success(_("On. The server stores only ciphertext it cannot read."))
+        st.caption(_("Key fingerprint: {fingerprint}").format(
+            fingerprint=sync_secret.fingerprint_of(config)))
+        st.caption(_("This must read the same on every device of this account, "
+                     "unless the passphrase has just been changed on one of them."))
+        _render_key_from_elsewhere(config)
+        _render_change_passphrase(config)
+        _render_encryption_off_buttons(config)
+        return
+
+    if state == sync_secret.NOT_SIGNED_IN:
+        # The account name is sealed into every operation, so it has to be
+        # known before anything can be encrypted - and both machines learn it
+        # the same way, by signing in.
+        st.info(_("Sign in above first. Encryption is tied to the account, so "
+                  "it cannot be set up before this device knows which one it is."))
+        return
+
+    if state == sync_secret.NO_SALT:
+        st.error(_("Encryption is switched on for this account, but the settings "
+                   "carry no salt to derive the key from. Copy config.json from "
+                   "the device that has it, or switch encryption off and on "
+                   "again to start over - which makes the data already on the "
+                   "server unreadable."))
+        return
+
+    if state in (sync_secret.LOCKED, sync_secret.STALE):
+        if state == sync_secret.LOCKED:
+            st.warning(_("On for this account, but this device does not have the "
+                         "key yet. Nothing is being synchronised until you enter "
+                         "the passphrase."))
+        else:
+            st.warning(_("The key stored here does not belong to these settings - "
+                         "the salt or the account has changed since it was made. "
+                         "Enter the passphrase again."))
+        with st.form("e2ee_unlock_form"):
+            passphrase = st.text_input(_("Passphrase"), type="password",
+                                       key="e2ee_unlock_pass")
+            if st.form_submit_button(_("Unlock this device"), use_container_width=True):
+                if not passphrase:
+                    set_feedback(_("Please enter the passphrase."), 'error')
+                else:
+                    with st.spinner(_("Deriving the key...")):
+                        sync_secret.unlock(config, passphrase)
+                    # Deliberately not "correct" or "wrong": nothing here can
+                    # tell. A mistyped passphrase yields a perfectly valid key
+                    # that simply is not the right one, and the only honest
+                    # check is the fingerprint, compared against the other
+                    # device by the one person who can see both.
+                    set_feedback(_("Key stored. Check that the fingerprint matches "
+                                   "your other device."))
+                    sync_engine.nudge(force=True)
+                st.rerun()
+        return
+
+    if sync_secret.is_set_up(config):
+        # Off, but this account has been encrypted before and its salt is
+        # still in the settings. Switching it back on must keep that salt: a
+        # new one would leave everything already sealed on the server
+        # unreadable to everybody, which is why there is a button here and
+        # not the passphrase form below.
+        st.info(_("Off. This account has been encrypted before, so switching it "
+                  "back on uses the same passphrase as then - nothing is asked "
+                  "for again. What is on the server from the meantime was sent "
+                  "unencrypted."))
+        if st.button(_("Switch encryption back on"), use_container_width=True,
+                     key="e2ee_resume_btn"):
+            updated, result = sync_secret.enable(config)
+            save_config(updated)
+            if result == sync_secret.READY:
+                set_feedback(_("Encryption is on again."))
+            elif result == sync_secret.LOCKED:
+                set_feedback(_("Encryption is on again. This device no longer "
+                               "has the key - enter the passphrase."))
+            else:
+                set_feedback(sync_error_message(result), 'error')
+            sync_engine.nudge(force=True)
+            st.rerun()
+        return
+
+    # Off and never set up: the state nearly every installation is in.
+    st.caption(_("Project and task names, notes and times are stored on the sync "
+                 "server in plain text. Switching this on seals them on this "
+                 "device first, so the server only ever holds ciphertext."))
+    st.caption(_("The passphrase is not your account password, and it is never "
+                 "sent to the server. Nobody can recover it for you: if it is "
+                 "lost, so is everything the server holds."))
+    with st.form("e2ee_enable_form"):
+        first = st.text_input(_("Passphrase"), type="password", key="e2ee_new_pass")
+        again = st.text_input(_("Repeat the passphrase"), type="password",
+                              key="e2ee_new_pass_repeat")
+        st.caption(_("Update your other devices and the sync server first. An "
+                     "older version does not recognise encrypted data: the "
+                     "server refuses it outright, and an older device would "
+                     "quietly stop receiving anything."))
+        st.caption(_("Your other devices then need this same passphrase, and "
+                     "the config.json from this one - it carries the salt."))
+        if st.form_submit_button(_("Switch encryption on"), use_container_width=True):
+            if not first:
+                set_feedback(_("Please enter a passphrase."), 'error')
+            elif first != again:
+                # Checked because there is no way back from a typing mistake:
+                # whatever was typed becomes the key, and the data sealed with
+                # it can only be opened by typing the same mistake again.
+                set_feedback(_("The two passphrases are not the same."), 'error')
+            else:
+                with st.spinner(_("Deriving the key...")):
+                    updated, result = sync_secret.enable(config, first)
+                if result == sync_secret.READY:
+                    save_config(updated)
+                    set_feedback(_("Encryption is on. Write the passphrase down "
+                                   "somewhere safe - it cannot be recovered."))
+                    sync_engine.nudge(force=True)
+                else:
+                    set_feedback(sync_error_message(result), 'error')
+            st.rerun()
+
+
+def _render_key_from_elsewhere(config):
+    """
+    The way back in when somebody changed the passphrase on another device.
+
+    This machine still holds a perfectly good key - the old one - so the key
+    store calls it ready and the screen draws the ready view. Only the last
+    cycle knows better, and without this there would be nowhere at all to type
+    the new passphrase: the form for that lives in the branch for a machine
+    with no key, which this is not. The one control that was reachable is the
+    one that forgets the key, and that cannot be undone.
+    """
+    try:
+        last = sync_engine.status_summary().get('error')
+    except Exception:
+        return
+    if last != 'e2ee_unknown_key':
+        return
+
+    st.warning(sync_error_message('e2ee_unknown_key'))
+    with st.form("e2ee_add_key_form"):
+        passphrase = st.text_input(_("New passphrase"), type="password",
+                                   key="e2ee_add_pass")
+        if st.form_submit_button(_("Add this passphrase"), use_container_width=True):
+            if not passphrase:
+                set_feedback(sync_error_message('no_passphrase'), 'error')
+            else:
+                with st.spinner(_("Deriving the key...")):
+                    sync_secret.unlock(config, passphrase)
+                # Added beside the key already here, never in place of it:
+                # the log still holds work sealed with the older one.
+                set_feedback(_("Key added. The older one is kept, so what was "
+                               "synchronised before stays readable."))
+                sync_engine.nudge(force=True)
+            st.rerun()
+
+
+def _render_change_passphrase(config):
+    """
+    Changing the passphrase, which either happens completely or not at all.
+
+    Behind an expander because it is rare and because the screen above it is
+    the one people came for. The work is sync_engine's: it has to seal the
+    whole document with the new key and have the server accept it before the
+    key becomes this machine's, or there would be a stretch of time in which
+    the account could only be opened with a passphrase nobody has been told.
+    """
+    with st.expander(_("Change the passphrase")):
+        st.caption(_("The new one has to reach your other devices as well. Until "
+                     "it does, they stop synchronising and say so - nothing is "
+                     "lost, and the old passphrase is not needed again."))
+        with st.form("e2ee_change_form"):
+            first = st.text_input(_("New passphrase"), type="password",
+                                  key="e2ee_change_pass")
+            again = st.text_input(_("Repeat the new passphrase"), type="password",
+                                  key="e2ee_change_repeat")
+            if st.form_submit_button(_("Change it"), use_container_width=True):
+                if not first:
+                    set_feedback(sync_error_message('no_passphrase'), 'error')
+                elif first != again:
+                    set_feedback(_("The two passphrases are not the same."), 'error')
+                else:
+                    with st.spinner(_("Sealing everything with the new key...")):
+                        done = sync_engine.change_passphrase(
+                            st.session_state.tracker, config, first)
+                    if done.get('ok'):
+                        set_feedback(_("The passphrase has been changed. Its "
+                                       "fingerprint is {fingerprint} - enter the new "
+                                       "passphrase on your other devices and check "
+                                       "that theirs matches.").format(
+                                           fingerprint=done.get('fingerprint')))
+                    else:
+                        set_feedback(sync_error_message(done.get('error')), 'error')
+                st.rerun()
+
+
+def _render_encryption_off_buttons(config):
+    """
+    Switching encryption off, and the separate business of forgetting the key.
+
+    Two actions rather than one, because they are not the same size. Switching
+    off only stops new work being sealed; the key stays, so what is already on
+    the server can still be read and turning it back on costs nothing.
+    Forgetting the key cannot be undone from here, so it asks first.
+    """
+    if 'confirm_forget_e2ee_key' not in st.session_state:
+        st.session_state.confirm_forget_e2ee_key = False
+
+    col_off, col_forget = st.columns(2)
+    with col_off:
+        if st.button(_("Switch off"), use_container_width=True, key="e2ee_off_btn"):
+            save_config(sync_secret.disable(config))
+            set_feedback(_("Encryption off. New changes are sent unencrypted; the "
+                           "key is kept so what is already on the server stays "
+                           "readable."))
+            st.rerun()
+    with col_forget:
+        if st.button(_("Forget key"), use_container_width=True, key="e2ee_forget_btn"):
+            st.session_state.confirm_forget_e2ee_key = True
+
+    if st.session_state.confirm_forget_e2ee_key:
+        st.warning(_("Forgetting the key on this device cannot be undone. Without "
+                     "the passphrase, everything this account has on the server "
+                     "becomes unreadable here."))
+        col_yes, col_no = st.columns(2)
+        with col_yes:
+            if st.button(_("Yes, forget it"), use_container_width=True,
+                         key="e2ee_forget_yes"):
+                sync_secret.forget_key()
+                st.session_state.confirm_forget_e2ee_key = False
+                set_feedback(_("The key has been removed from this device."))
+                st.rerun()
+        with col_no:
+            if st.button(_("No, keep it"), use_container_width=True,
+                         key="e2ee_forget_no"):
+                st.session_state.confirm_forget_e2ee_key = False
+                st.rerun()
 
 # --- Views ---
 
@@ -2421,6 +2705,13 @@ def view_settings():
                         else:
                             set_feedback(sign_in_error_message(result.get('error')), 'error')
                         st.rerun()
+
+            # After the sign-in block rather than beside the switches above:
+            # encryption is tied to the account, so the form that turns it on
+            # is useless until this device knows which account it is - and
+            # reading downwards, that is the order the two are done in.
+            st.divider()
+            render_encryption_settings(config)
 
             identity = sync_client.device_identity()
             st.caption(_("This device: {name} ({uid})").format(

@@ -2943,3 +2943,179 @@ msgstr "Datum zahájení nesmí být pozdější než termín."
 
 msgid "Update check skipped: no repository is configured."
 msgstr "Kontrola aktualizací přeskočena: není nastaven žádný repozitář."
+
+# --- End-to-end encryption (issue: E2EE) ---
+
+msgid "End-to-end encryption"
+msgstr "Koncové šifrování"
+
+msgid "Encryption is unavailable because the 'cryptography' package is missing. Synchronisation itself is unaffected."
+msgstr "Šifrování není k dispozici, protože chybí balíček „cryptography“. Samotná synchronizace tím není dotčena."
+
+msgid "On. The server stores only ciphertext it cannot read."
+msgstr "Zapnuto. Server ukládá jen šifrovaný text, který nedokáže přečíst."
+
+msgid "Key fingerprint: {fingerprint}"
+msgstr "Otisk klíče: {fingerprint}"
+
+
+msgid "Sign in above first. Encryption is tied to the account, so it cannot be set up before this device knows which one it is."
+msgstr "Nejprve se přihlaste výše. Šifrování je vázáno na účet a nelze je nastavit dříve, než toto zařízení ví, o který účet jde."
+
+msgid "Encryption is switched on for this account, but the settings carry no salt to derive the key from. Copy config.json from the device that has it, or switch encryption off and on again to start over - which makes the data already on the server unreadable."
+msgstr "Šifrování je pro tento účet zapnuté, ale nastavení neobsahuje sůl, ze které by se klíč odvodil. Zkopírujte config.json ze zařízení, které ji má, nebo šifrování vypněte a znovu zapněte a začněte znovu – tím se data již uložená na serveru stanou nečitelnými."
+
+msgid "On for this account, but this device does not have the key yet. Nothing is being synchronised until you enter the passphrase."
+msgstr "Pro tento účet zapnuto, ale toto zařízení zatím nemá klíč. Dokud nezadáte heslo, nic se nesynchronizuje."
+
+msgid "The key stored here does not belong to these settings - the salt or the account has changed since it was made. Enter the passphrase again."
+msgstr "Zde uložený klíč k těmto nastavením nepatří – sůl nebo účet se od jeho vytvoření změnily. Zadejte heslo znovu."
+
+msgid "Passphrase"
+msgstr "Heslo"
+
+msgid "Unlock this device"
+msgstr "Odemknout toto zařízení"
+
+msgid "Please enter the passphrase."
+msgstr "Zadejte prosím heslo."
+
+msgid "Deriving the key..."
+msgstr "Odvozuji klíč…"
+
+msgid "Key stored. Check that the fingerprint matches your other device."
+msgstr "Klíč uložen. Zkontrolujte, zda se otisk shoduje s vaším druhým zařízením."
+
+msgid "Project and task names, notes and times are stored on the sync server in plain text. Switching this on seals them on this device first, so the server only ever holds ciphertext."
+msgstr "Názvy projektů a úkolů, poznámky a časy jsou na synchronizačním serveru uloženy v čitelné podobě. Zapnutím se nejprve zapečetí na tomto zařízení, takže server drží už jen šifrovaný text."
+
+msgid "The passphrase is not your account password, and it is never sent to the server. Nobody can recover it for you: if it is lost, so is everything the server holds."
+msgstr "Heslo není heslem vašeho účtu a nikdy se neodesílá na server. Nikdo vám je nedokáže obnovit: pokud je ztratíte, ztratíte i vše, co server drží."
+
+msgid "Repeat the passphrase"
+msgstr "Zopakujte heslo"
+
+
+msgid "Switch encryption on"
+msgstr "Zapnout šifrování"
+
+msgid "Please enter a passphrase."
+msgstr "Zadejte prosím heslo."
+
+msgid "The two passphrases are not the same."
+msgstr "Obě hesla se neshodují."
+
+msgid "Encryption is on. Write the passphrase down somewhere safe - it cannot be recovered."
+msgstr "Šifrování je zapnuté. Poznamenejte si heslo na bezpečné místo – nelze je obnovit."
+
+msgid "Switch off"
+msgstr "Vypnout"
+
+msgid "Encryption off. New changes are sent unencrypted; the key is kept so what is already on the server stays readable."
+msgstr "Šifrování vypnuto. Nové změny se odesílají nešifrovaně; klíč zůstává zachován, aby to, co už je na serveru, zůstalo čitelné."
+
+msgid "Forget key"
+msgstr "Zapomenout klíč"
+
+msgid "Forgetting the key on this device cannot be undone. Without the passphrase, everything this account has on the server becomes unreadable here."
+msgstr "Zapomenutí klíče na tomto zařízení nelze vzít zpět. Bez hesla se vše, co má tento účet na serveru, stane zde nečitelným."
+
+msgid "Yes, forget it"
+msgstr "Ano, zapomenout"
+
+msgid "The key has been removed from this device."
+msgstr "Klíč byl z tohoto zařízení odstraněn."
+
+msgid "No, keep it"
+msgstr "Ne, ponechat"
+
+msgid "End-to-end encryption is switched on for this account, but this device does not have the key yet. Enter the passphrase in the settings."
+msgstr "Koncové šifrování je pro tento účet zapnuté, ale toto zařízení zatím nemá klíč. Zadejte heslo v nastavení."
+
+msgid "The stored key does not belong to these settings - the salt or the account has changed since it was made. Enter the passphrase again in the settings."
+msgstr "Uložený klíč k těmto nastavením nepatří – sůl nebo účet se od jeho vytvoření změnily. Zadejte heslo znovu v nastavení."
+
+msgid "End-to-end encryption is switched on, but the settings carry no salt to derive the key from. Switch it off and on again, or copy the settings from the device that has it."
+msgstr "Koncové šifrování je zapnuté, ale nastavení neobsahuje sůl, ze které by se klíč odvodil. Vypněte je a znovu zapněte, nebo zkopírujte nastavení ze zařízení, které ji má."
+
+msgid "The server holds encrypted data, but end-to-end encryption is switched off on this device. Nothing has been changed here. Switch it on and enter the passphrase."
+msgstr "Na serveru jsou šifrovaná data, ale na tomto zařízení je koncové šifrování vypnuté. Zde se nic nezměnilo. Zapněte je a zadejte heslo."
+
+msgid "Encrypted data arrived that this device could not read. Nothing has been changed here. Check that the passphrase is the same one the other device uses."
+msgstr "Dorazila šifrovaná data, která toto zařízení nedokázalo přečíst. Zde se nic nezměnilo. Zkontrolujte, zda je heslo stejné jako na druhém zařízení."
+
+msgid "On for everything from now on. What was synchronised before is still on the server in plain text: it goes as soon as this device has sent an encrypted summary, which happens by itself on one of the next few syncs."
+msgstr "Od této chvíle zapnuto pro vše. Co bylo synchronizováno dříve, je na serveru stále v čitelné podobě: zmizí, jakmile toto zařízení odešle šifrovaný souhrn, což se samo stane při některé z příštích synchronizací."
+
+msgid "Update your other devices and the sync server first. An older version does not recognise encrypted data: the server refuses it outright, and an older device would quietly stop receiving anything."
+msgstr "Nejprve aktualizujte ostatní zařízení a synchronizační server. Starší verze šifrovaná data nezná: server je rovnou odmítne a starší zařízení by tiše přestalo přijímat cokoli."
+
+msgid "Your other devices then need this same passphrase, and the config.json from this one - it carries the salt."
+msgstr "Vaše ostatní zařízení pak potřebují stejné heslo a soubor config.json z tohoto zařízení – obsahuje sůl."
+
+msgid "Off. This account has been encrypted before, so switching it back on uses the same passphrase as then - nothing is asked for again. What is on the server from the meantime was sent unencrypted."
+msgstr "Vypnuto. Tento účet již byl šifrován; při opětovném zapnutí platí stejné heslo jako tehdy – na nic se znovu neptáme. Co mezitím šlo na server, bylo odesláno nešifrovaně."
+
+msgid "Switch encryption back on"
+msgstr "Znovu zapnout šifrování"
+
+msgid "Encryption is on again."
+msgstr "Šifrování je opět zapnuté."
+
+msgid "Encryption is on again. This device no longer has the key - enter the passphrase."
+msgstr "Šifrování je opět zapnuté. Toto zařízení již nemá klíč – zadejte heslo."
+
+msgid "The address redirects somewhere else. Enter the address it points to instead - this device will not follow a redirect, because that could send its access token on to an unencrypted one."
+msgstr "Adresa přesměrovává jinam. Zadejte místo ní adresu, na kterou ukazuje – toto zařízení žádné přesměrování nenásleduje, protože by tím mohlo předat svůj přístupový token na nešifrovanou adresu."
+
+msgid "This must read the same on every device of this account, unless the passphrase has just been changed on one of them."
+msgstr "Na všech zařízeních tohoto účtu musí být stejný – ledaže bylo heslo na některém z nich právě změněno."
+
+msgid "New passphrase"
+msgstr "Nové heslo"
+
+msgid "Add this passphrase"
+msgstr "Přidat toto heslo"
+
+msgid "Key added. The older one is kept, so what was synchronised before stays readable."
+msgstr "Klíč přidán. Starší zůstává zachován, aby to, co bylo synchronizováno dříve, zůstalo čitelné."
+
+msgid "Change the passphrase"
+msgstr "Změnit heslo"
+
+msgid "The new one has to reach your other devices as well. Until it does, they stop synchronising and say so - nothing is lost, and the old passphrase is not needed again."
+msgstr "Nové heslo se musí dostat i na vaše ostatní zařízení. Dokud se tak nestane, synchronizaci zastaví a řeknou to – nic se neztratí a staré heslo už nebude potřeba."
+
+msgid "Repeat the new passphrase"
+msgstr "Zopakujte nové heslo"
+
+msgid "Change it"
+msgstr "Změnit"
+
+msgid "Sealing everything with the new key..."
+msgstr "Vše se pečetí novým klíčem…"
+
+msgid "The passphrase has been changed. Its fingerprint is {fingerprint} - enter the new passphrase on your other devices and check that theirs matches."
+msgstr "Heslo bylo změněno. Jeho otisk je {fingerprint} – zadejte nové heslo i na svých dalších zařízeních a zkontrolujte, zda se jejich otisk shoduje."
+
+msgid "Data arrived that was sealed with a key this device does not have. Usually that means the passphrase was changed on another device. Enter the new one here as well - nothing has been changed or lost."
+msgstr "Dorazila data zapečetěná klíčem, který toto zařízení nemá. Obvykle to znamená, že heslo bylo změněno na jiném zařízení. Zadejte nové i zde – nic se nezměnilo ani neztratilo."
+
+msgid "End-to-end encryption is switched off for this account."
+msgstr "Koncové šifrování je pro tento účet vypnuté."
+
+msgid "This device has to be fully synchronised before the passphrase can be changed, because the change is only complete once the server has accepted a document sealed with the new one. Let it synchronise and try again."
+msgstr "Toto zařízení musí být plně synchronizováno, než lze heslo změnit – změna je dokončena teprve tehdy, když server přijme dokument zapečetěný novým heslem. Nechte je zsynchronizovat a zkuste to znovu."
+
+msgid "That is the passphrase this account already uses."
+msgstr "To je heslo, které tento účet už používá."
+
+msgid "There is nothing to seal yet. Create a project first."
+msgstr "Zatím není co pečetit. Nejprve vytvořte projekt."
+
+msgid "The server says a change came from a different device than the one that actually made it. Nothing has been applied here. If this does not clear up, the server is not doing what it should."
+msgstr "Server tvrdí, že změna pochází z jiného zařízení, než které ji skutečně provedlo. Zde se nic nepoužilo. Pokud to nepřestane, server nedělá, co má."
+
+msgid "The server sent a change that had already been received, or sent two of them the wrong way round. Nothing has been applied here. If this does not clear up, the server is not doing what it should."
+msgstr "Server poslal změnu, která už byla přijata, nebo dvě z nich v opačném pořadí. Zde se nic nepoužilo. Pokud to nepřestane, server nedělá, co má."
+

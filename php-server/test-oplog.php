@@ -420,5 +420,251 @@ tc_test('killed after deleting files, before the list was written', function ($s
     tc_assert_same(0, count($state['retired']), 'and clears the list');
 });
 
+// ---------------------------------------------------------------------------
+// What a batch has to look like to be accepted at all.
+//
+// tc_ops_validate had no coverage here before end-to-end encryption needed a
+// verb of its own. It is the gate every operation passes through, and what it
+// lets past is handed to every other machine as the truth - so a rule quietly
+// lost here would not be noticed until two machines had stopped agreeing.
+// ---------------------------------------------------------------------------
+
+/** One sealed operation, shaped as tt/sync_crypto.py seals them. */
+function tc_sealed($lc = 1)
+{
+    return ['op' => TC_OP_SEALED, 'lc' => $lc,
+            'f' => ['v' => 1, 'k' => 'a1b2c3d4', 'c' => 'Zm9vYmFy']];
+}
+
+tc_test('a sealed operation is accepted', function ($store, $uid) {
+    tc_assert_same(null, tc_ops_validate([tc_sealed()]),
+                   'the placeholder verb was refused');
+});
+
+tc_test('an unknown verb is still refused', function ($store, $uid) {
+    tc_assert_same('unknown_op',
+                   tc_ops_validate([['op' => 'task.explode', 'lc' => 1]]),
+                   'the list stopped being a list');
+});
+
+tc_test('a sealed operation without its payload is refused', function ($store, $uid) {
+    // It carries no operation at all: the verb, the identifiers and the
+    // fields are all inside the payload. The machine receiving it could only
+    // stop, so it is turned away here instead.
+    tc_assert_same('bad_fields',
+                   tc_ops_validate([['op' => TC_OP_SEALED, 'lc' => 1]]),
+                   'an empty envelope was accepted');
+});
+
+tc_test('a sealed operation still needs a counter', function ($store, $uid) {
+    $op = tc_sealed();
+    unset($op['lc']);
+    tc_assert_same('bad_lc', tc_ops_validate([$op]), 'the counter became optional');
+});
+
+tc_test('a sealed operation names no objects, and is not asked to', function ($store, $uid) {
+    // uid, project and task are inside the ciphertext, so they are absent
+    // from the envelope. The check on their shape only applies when they are
+    // there - if that ever became mandatory, every sealed push would fail.
+    $op = tc_sealed();
+    tc_assert(!isset($op['uid']), 'the envelope should carry no uid');
+    tc_assert_same(null, tc_ops_validate([$op]), 'an absent uid was treated as a bad one');
+});
+
+tc_test('a sealed operation is stored and handed back whole', function ($store, $uid) {
+    $result = tc_log_append($store, $uid, 'dev0000000000001', [tc_sealed(7)]);
+    tc_assert($result !== null, 'the append failed');
+    tc_assert_same(1, $result['head'], 'it was not recorded');
+
+    $read = tc_log_read($store, $uid, 0, 10);
+    tc_assert_same(1, count($read['ops']), 'it did not come back');
+    $back = $read['ops'][0];
+    tc_assert_same(TC_OP_SEALED, $back['op'], 'the verb changed on the way');
+    tc_assert_same('Zm9vYmFy', $back['f']['c'], 'the payload changed on the way');
+    tc_assert_same(1, $back['s'], 'it got no place in the order');
+    tc_assert_same('dev0000000000001', $back['dev'], 'the device was not stamped on');
+});
+
+tc_test('the server learns nothing from a sealed operation', function ($store, $uid) {
+    // The whole point, stated as a test: what reaches the disk holds no verb
+    // but the placeholder and no field of the operation it stands for.
+    tc_log_append($store, $uid, 'dev0000000000001', [tc_sealed(3)]);
+    $state = tc_log_state($store, $uid);
+    $segment = tc_log_dir($store, $uid) . '/' . $state['segments'][0]['f'];
+    $written = file_get_contents($segment);
+    foreach (['task.set', 'task_name', 'project.delete', 'entry.add'] as $absent) {
+        tc_assert(strpos($written, $absent) === false,
+                  sprintf('%s reached the segment file', $absent));
+    }
+    tc_assert(strpos($written, TC_OP_SEALED) !== false,
+              'the placeholder should be there');
+});
+
+tc_test('sealed and plain operations can share a log', function ($store, $uid) {
+    // The state an account is in while it is being changed over: one machine
+    // already sealing, another not yet.
+    $mixed = [tc_sealed(1), ['op' => 'task.set', 'lc' => 2,
+                             'uid' => sprintf('%016x', 2), 'f' => ['priority' => 3]]];
+    tc_assert_same(null, tc_ops_validate($mixed), 'the mixture was refused');
+    $result = tc_log_append($store, $uid, 'dev0000000000001', $mixed);
+    tc_assert_same(2, $result['head'], 'both should have been recorded');
+    $ops = tc_log_read($store, $uid, 0, 10)['ops'];
+    tc_assert_same(TC_OP_SEALED, $ops[0]['op'], 'the sealed one changed');
+    tc_assert_same('task.set', $ops[1]['op'], 'the plain one changed');
+});
+
+// ---------------------------------------------------------------------------
+// A snapshot from an encrypted account.
+// ---------------------------------------------------------------------------
+
+/** A sealed document, shaped as tt/sync_crypto.py seal_document() makes them. */
+function tc_sealed_document()
+{
+    return json_encode([TC_SNAPSHOT_SEALED => [
+        'v' => 1, 'k' => 'a1b2c3d4', 'c' => 'Zm9vYmFyYmF6']]);
+}
+
+tc_test('a sealed document is accepted as a snapshot', function ($store, $uid) {
+    tc_assert_same(null, tc_snapshot_validate(tc_sealed_document()),
+                   'a sealed document was refused');
+});
+
+tc_test('a readable document is judged exactly as before', function ($store, $uid) {
+    // The sealed case must not have loosened anything for the plain one: an
+    // emptied data.json offered as the truth is still the mistake this
+    // refuses, and the codes are what the client's messages are written for.
+    tc_assert_same('snapshot_empty', tc_snapshot_validate(''), 'empty');
+    tc_assert_same('snapshot_not_json', tc_snapshot_validate('not json'), 'not json');
+    tc_assert_same('snapshot_shape', tc_snapshot_validate('{"a":1}'), 'no projects');
+    tc_assert_same('snapshot_shape', tc_snapshot_validate('{"projects":"x"}'),
+                   'projects not a list');
+    tc_assert_same('snapshot_has_no_projects', tc_snapshot_validate('{"projects":[]}'),
+                   'empty projects');
+    tc_assert_same(null, tc_snapshot_validate(tc_document()), 'a real document');
+});
+
+tc_test('a sealed document still has to be JSON and within the limit', function ($store, $uid) {
+    // Both survive the new branch, and both must: the size because the store
+    // is not a dumping ground, and the JSON because index.php splices the
+    // stored bytes straight into its reply.
+    tc_assert_same('snapshot_not_json',
+                   tc_snapshot_validate('e2ee: yes'), 'not json');
+    tc_assert_same('snapshot_too_large',
+                   tc_snapshot_validate(str_repeat('x', TC_SNAPSHOT_MAX_BYTES + 1)),
+                   'too large');
+});
+
+tc_test('the envelope is recognised by presence, not by its contents', function ($store, $uid) {
+    // Presence only - the shape inside is the clients' business, and a server
+    // that learned it would need updating whenever it changed.
+    tc_assert_same(null, tc_snapshot_validate('{"e2ee":{"anything":1}}'),
+                   'the server started reading the envelope');
+    // But it does have to be an object: a scalar there is not an envelope,
+    // and the plain checks must then still apply.
+    tc_assert_same('snapshot_shape', tc_snapshot_validate('{"e2ee":"nope"}'),
+                   'a scalar passed as an envelope');
+});
+
+tc_test('a sealed snapshot is stored and handed back byte for byte', function ($store, $uid) {
+    $head = tc_fill($store, $uid, 'dev0000000000001', 3);
+    $raw = tc_sealed_document();
+    $result = tc_snapshot_put($store, $uid, 'dev0000000000001', $head, $raw);
+    tc_assert(empty($result['error']), 'the snapshot was not accepted');
+
+    $snap = tc_snapshot_meta($store, $uid);
+    $stored = file_get_contents(tc_snapshot_file($store, $uid, $snap));
+    $body = substr($stored, strlen(TC_GUARD));
+    tc_assert_same($raw, $body, 'the stored bytes are not the ones sent');
+
+    $back = json_decode($body, true);
+    tc_assert(isset($back[TC_SNAPSHOT_SEALED]['c']), 'the envelope did not survive');
+    foreach (['projects', 'task_name', 'tasks'] as $absent) {
+        tc_assert(strpos($body, $absent) === false,
+                  sprintf('%s reached the stored snapshot', $absent));
+    }
+});
+
+// ---------------------------------------------------------------------------
+// How the server decides a request arrived over TLS.
+//
+// The whole API sits behind this one answer - index.php asks it before it
+// will say anything at all - so a mistake here is either a server that
+// refuses every request or one that accepts a credential over plain HTTP.
+// ---------------------------------------------------------------------------
+
+require_once __DIR__ . '/tc/lib/http.php';
+
+/** Runs one decision against a made-up request environment. */
+function tc_tls_with($mode, array $server)
+{
+    $saved = $_SERVER;
+    foreach (['HTTPS', 'SERVER_PORT', 'HTTP_X_FORWARDED_PROTO'] as $key) {
+        unset($_SERVER[$key]);
+    }
+    $_SERVER = array_merge($_SERVER, $server);
+    try {
+        return tc_transport_is_tls($mode);
+    } finally {
+        $_SERVER = $saved;
+    }
+}
+
+tc_test('auto is what every installation had before the setting', function () {
+    tc_assert_same(true, tc_tls_with('auto', ['HTTPS' => 'on']), 'HTTPS on');
+    tc_assert_same(true, tc_tls_with('auto', ['HTTPS' => '1']), 'HTTPS 1');
+    tc_assert_same(false, tc_tls_with('auto', ['HTTPS' => 'off', 'SERVER_PORT' => '80']),
+                   'HTTPS off on port 80');
+    tc_assert_same(true, tc_tls_with('auto', ['SERVER_PORT' => '443']), 'port 443');
+    tc_assert_same(false, tc_tls_with('auto', ['SERVER_PORT' => '8080']), 'port 8080');
+    tc_assert_same(false, tc_tls_with('auto', []), 'nothing to go on');
+});
+
+tc_test('strict does not guess from the port', function () {
+    // The whole point of it: a plaintext request arriving on 443 passes under
+    // 'auto' and must not here.
+    tc_assert_same(false, tc_tls_with('strict', ['SERVER_PORT' => '443']),
+                   'the port was still believed');
+    tc_assert_same(true, tc_tls_with('strict', ['HTTPS' => 'on']), 'HTTPS on');
+    tc_assert_same(false, tc_tls_with('strict', ['HTTPS' => 'off']), 'HTTPS off');
+});
+
+tc_test('proxy believes the front end, in both directions', function () {
+    tc_assert_same(true, tc_tls_with('proxy', ['HTTP_X_FORWARDED_PROTO' => 'https']),
+                   'the proxy said https');
+    tc_assert_same(true, tc_tls_with('proxy', ['HTTP_X_FORWARDED_PROTO' => 'HTTPS']),
+                   'case should not matter');
+    // More than one hop: the first entry is what the client itself spoke.
+    tc_assert_same(true, tc_tls_with('proxy', ['HTTP_X_FORWARDED_PROTO' => 'https, http']),
+                   'a list of hops');
+    tc_assert_same(false, tc_tls_with('proxy', ['HTTP_X_FORWARDED_PROTO' => 'http',
+                                                'SERVER_PORT' => '443']),
+                   'the proxy said http and was not believed');
+});
+
+tc_test('proxy without the header falls back rather than refusing', function () {
+    // A front end that speaks TLS onwards as well sets HTTPS instead, and
+    // turning that away would be wrong.
+    tc_assert_same(true, tc_tls_with('proxy', ['HTTPS' => 'on']), 'HTTPS on');
+    tc_assert_same(false, tc_tls_with('proxy', ['SERVER_PORT' => '80']), 'nothing at all');
+});
+
+tc_test('the header is ignored unless it was asked for', function () {
+    // Under 'auto' and 'strict' it is the client talking about itself.
+    foreach (['auto', 'strict'] as $mode) {
+        tc_assert_same(false,
+            tc_tls_with($mode, ['HTTP_X_FORWARDED_PROTO' => 'https', 'SERVER_PORT' => '80']),
+            $mode . ' believed a header it should not');
+    }
+});
+
+tc_test('a typo in the setting does not lock everybody out', function () {
+    // A server that refuses every request because of a misspelt mode would
+    // look broken, and the way out of it is not obvious from the outside.
+    tc_assert_same(true, tc_tls_with('Proxy', ['HTTPS' => 'on']), 'wrong case');
+    tc_assert_same(true, tc_tls_with('', ['HTTPS' => 'on']), 'empty');
+    tc_assert_same(true, tc_tls_with('nonsense', ['SERVER_PORT' => '443']),
+                   'unknown mode should behave as auto');
+});
+
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
 exit($GLOBALS['tc_failed'] === 0 ? 0 : 1);

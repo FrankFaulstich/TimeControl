@@ -128,11 +128,34 @@ def main():
     check("nothing appended", r.get("assigned") == [], r.get("assigned"))
     check("sequence did not move", r.get("head") == after_b, (after_b, r.get("head")))
 
+    print("\nA sealed operation travels whole")
+    # What an account with end-to-end encryption switched on actually sends:
+    # one placeholder verb, the counter, and a payload the server is not meant
+    # to understand. Worth checking against a real installation rather than
+    # only offline, because this is the one shape whose rejection would be
+    # silent from the user's side - the push simply never succeeds.
+    sealed = {"op": "op.sealed", "lc": 2,
+              "f": {"v": 1, "k": "a1b2c3d4", "c": "Zm9vYmFyYmF6"}}
+    r = call("push", {"base_seq": after_b, "ops": [sealed]}, token=b)
+    check("accepted by this server", r.get("ok"), r.get("error", ""))
+    sealed_seq = r["assigned"][0][1] if r.get("assigned") else 0
+
+    r = call("pull", token=a, params={"since": sealed_seq - 1})
+    got = [o for o in r.get("ops", []) if o.get("s") == sealed_seq]
+    check("comes back unchanged",
+          got and got[0]["op"] == "op.sealed"
+          and got[0]["f"] == sealed["f"], got[0] if got else None)
+    check("carries no trace of what it was",
+          got and set(got[0]) <= {"s", "op", "dev", "lc", "f"},
+          sorted(got[0]) if got else None)
+
     print("\nMalformed input is refused")
     for label, ops_in, expected in [
         ("unknown verb", [{"op": "task.explode", "uid": uid_t, "lc": 50}], "unknown_op"),
         ("uid with path characters", [{"op": "task.set", "uid": "../../etc", "lc": 51}], "bad_uid"),
         ("missing counter", [{"op": "task.set", "uid": uid_t}], "bad_lc"),
+        ("sealed but with nothing in it",
+         [{"op": "op.sealed", "lc": 52}], "bad_fields"),
     ]:
         r = call("push", {"base_seq": after_b, "ops": ops_in}, token=a)
         check(label, r.get("error") == expected, r.get("error"))

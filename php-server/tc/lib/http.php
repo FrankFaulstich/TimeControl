@@ -113,15 +113,81 @@ function tc_presented_token()
 /**
  * True when the request arrived over TLS.
  *
- * Checked directly rather than trusting a forwarding header: the probe showed
- * REMOTE_ADDR is the real client address on this host, so there is no proxy
- * whose X-Forwarded-Proto would be authoritative - which means anything
- * claiming to be one is the client talking about itself.
+ * There is no way to work this out that is right everywhere, because the
+ * answer depends on what sits in front of PHP - and only whoever installed
+ * this knows that. So it is a setting: `https` in tc/config.php, one of
+ *
+ *   'auto'    the default, and what every installation had before the setting
+ *             existed. $_SERVER['HTTPS'] when the server sets it, and failing
+ *             that, port 443. The port is an indication rather than a proof -
+ *             a plaintext request arriving on 443 passes - which is why the
+ *             other two exist.
+ *
+ *   'strict'  $_SERVER['HTTPS'] alone. Correct wherever the server sets it,
+ *             and the right choice for anyone who wants no guessing at all.
+ *             It refuses a genuinely encrypted request on a server that does
+ *             not set the variable, which is why it is not the default.
+ *
+ *   'proxy'   X-Forwarded-Proto, for a front end that terminates TLS and
+ *             speaks to PHP in the clear. Without this such an installation
+ *             answers 403 to everything for ever, which looks like a broken
+ *             server rather than a setting. Only choose it when something
+ *             really does sit in front: the header is the client's to invent
+ *             otherwise, and a proxy that does not strip an incoming copy
+ *             hands that invention straight through.
+ *
+ * @return bool
  */
 function tc_is_https()
 {
+    $mode = 'auto';
+    // Guarded because setup.php reaches this before a store exists, and a
+    // fresh installation has no config.php at all.
+    if (function_exists('tc_config')) {
+        $config = tc_config();
+        if (is_array($config) && !empty($config['https'])) {
+            $mode = (string)$config['https'];
+        }
+    }
+    return tc_transport_is_tls($mode);
+}
+
+/**
+ * The decision itself, with the mode handed in.
+ *
+ * Split out so it can be tested against made-up $_SERVER values without a
+ * config.php, and so setup.php can ask the same question the API asks - it
+ * used to carry its own copy of this, which is exactly the sort of pair that
+ * drifts apart and leaves one door open after the other has been shut.
+ *
+ * @param string $mode One of 'auto', 'strict', 'proxy'. Anything else is
+ *                     treated as 'auto': a typo in a setting must not be the
+ *                     thing that makes a server refuse every request.
+ * @return bool
+ */
+function tc_transport_is_tls($mode)
+{
+    if ($mode === 'proxy') {
+        // A list when the request crossed more than one hop; the first entry
+        // is what the client itself spoke.
+        $parts = explode(',', $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '');
+        $spoke = strtolower(trim($parts[0]));
+        if ($spoke === 'https') {
+            return true;
+        }
+        if ($spoke === 'http') {
+            // The front end saying plainly that the client hop was not
+            // encrypted. Believed, and refused.
+            return false;
+        }
+        // No header at all: fall through. A proxy that speaks TLS onwards as
+        // well sets HTTPS here instead, and refusing that would be wrong.
+    }
     if (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') {
         return true;
+    }
+    if ($mode === 'strict') {
+        return false;
     }
     return (int)($_SERVER['SERVER_PORT'] ?? 0) === 443;
 }

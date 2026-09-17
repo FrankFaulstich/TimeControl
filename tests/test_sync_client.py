@@ -694,5 +694,64 @@ class TestWhereAPasswordMayBeSent(unittest.TestCase):
         self.assertFalse(sync_client.is_loopback('https://example.invalid/tc'))
 
 
+class TestARedirectIsNotFollowed(unittest.TestCase):
+    """
+    The token travels in X-TC-Token, which requests knows nothing about: it
+    strips Authorization when a redirect changes host, and would carry this
+    one onwards untouched - to plain http, if that is where the redirect
+    pointed. So the redirect is refused rather than followed, and the address
+    that caused it is reported as the thing to correct.
+    """
+
+    def _call(self, status):
+        with unittest.mock.patch('tt.sync_client.requests.post') as post:
+            post.return_value = _Response(None, status=status)
+            result = sync_client._post('https://example.invalid/tc', 'login',
+                                       {'username': 'u'}, token='secret-token')
+        return result, post
+
+    def test_every_redirect_is_reported_as_one(self):
+        for status in (301, 302, 303, 307, 308):
+            result, _post = self._call(status)
+            self.assertEqual(result.get('error'), 'address_redirects',
+                             '%d was not recognised as a redirect' % status)
+            self.assertFalse(result.get('ok'))
+
+    def test_requests_is_told_not_to_follow_it_itself(self):
+        """
+        The report above is the second line of defence. The first is that the
+        request never goes to the redirect's target at all - by the time a
+        response came back from there, the token would already have been sent.
+        """
+        _result, post = self._call(302)
+        self.assertIs(post.call_args.kwargs.get('allow_redirects'), False)
+
+    def test_the_same_holds_for_a_plain_get(self):
+        with unittest.mock.patch('tt.sync_client.requests.get') as get:
+            get.return_value = _Response(None, status=301)
+            result = sync_client._post('https://example.invalid/tc', 'head',
+                                       token='secret-token')
+        self.assertEqual(result.get('error'), 'address_redirects')
+        self.assertIs(get.call_args.kwargs.get('allow_redirects'), False)
+
+    def test_an_ordinary_answer_is_untouched(self):
+        with unittest.mock.patch('tt.sync_client.requests.post') as post:
+            post.return_value = _Response({'ok': True, 'head': 7})
+            result = sync_client._post('https://example.invalid/tc', 'push', {})
+        self.assertEqual(result, {'ok': True, 'head': 7})
+
+    def test_a_not_modified_is_not_mistaken_for_a_redirect(self):
+        """304 is a 3xx that redirects nothing, and says so by carrying a body."""
+        with unittest.mock.patch('tt.sync_client.requests.post') as post:
+            post.return_value = _Response({'ok': True}, status=304)
+            result = sync_client._post('https://example.invalid/tc', 'push', {})
+        self.assertEqual(result, {'ok': True})
+
+    def test_the_code_has_something_to_say_for_itself(self):
+        from tt.sync_messages import sync_error_message
+        message = sync_error_message('address_redirects')
+        self.assertNotIn('Unexpected error', message)
+
+
 if __name__ == '__main__':
     unittest.main()
