@@ -48,6 +48,7 @@ from datetime import datetime
 from tt import sync_client
 from tt.filelock import locked, LockTimeout
 from tt import sync_log
+from tt import sync_crypto, sync_secret
 from tt.sync_apply import Report, adopt_snapshot, reconcile, seed_operations
 from tt.sync_outbox import Outbox
 
@@ -74,7 +75,261 @@ TERMINAL_ERRORS = frozenset((
     # The address in the settings is not the one the token belongs to. Only
     # signing in again resolves that, so asking again sooner changes nothing.
     'address_changed',
+    # Encryption is switched on for this account but this machine cannot take
+    # part. Every one of these waits on a person - typing the passphrase,
+    # correcting a setting - so retrying sooner would only fill the log.
+    'e2ee_locked', 'e2ee_stale', 'e2ee_no_salt',
+    # Something sealed arrived that this machine cannot read. Carrying on
+    # would mean applying nothing and moving the cursor past it anyway, which
+    # is how a machine silently stops receiving and nobody finds out.
+    'e2ee_sealed_but_off', 'e2ee_cannot_open',
+    # Sealed with a key this machine does not hold at all - which almost
+    # always means the passphrase was changed somewhere else. Its own code
+    # because the answer differs: not "something is broken" but "type the new
+    # passphrase here too".
+    'e2ee_unknown_key',
+    # The server's account of what happened does not match what the sealing
+    # device said about itself, or an operation has come round a second time.
+    # Neither happens by accident, and neither clears itself.
+    'e2ee_wrong_device', 'e2ee_out_of_order',
 ))
+
+
+# The configuration, as ensure_started() last saw it. A cycle runs on a worker
+# thread that is never handed the settings, and the encryption needs them - the
+# same arrangement _interval_minutes below already uses, for the same reason.
+#
+# The configuration rather than the key: status() is asked afresh every cycle,
+# so a passphrase typed in the settings takes effect on the next round without
+# anything having to be restarted, and a key that stops being valid stops being
+# used just as promptly.
+_config_seen = None
+
+# What to report when the key store cannot supply a key. The cycle spells
+# these out one by one so the message-coverage test can find them in the
+# source; this is for the paths that return a code rather than record one.
+_E2EE_NOT_READY = {
+    sync_secret.LOCKED: 'e2ee_locked',
+    sync_secret.STALE: 'e2ee_stale',
+    sync_secret.NO_SALT: 'e2ee_no_salt',
+    sync_secret.NOT_SIGNED_IN: 'not_signed_in',
+    sync_secret.OFF: 'e2ee_off',
+}
+
+
+def _sealing():
+    """
+    What this cycle may do about encryption, and with what.
+
+    :return: (state, key, account). The key is None unless the state is READY;
+             see tt/sync_secret.py for what the other states mean.
+    :rtype: tuple
+    """
+    state, key = sync_secret.status(_config_seen)
+    return state, key, sync_secret.account_context()
+
+
+def _open_with_any(attempt, named):
+    """
+    Tries every key this machine holds, and says which kind of failure it was.
+
+    The identifier an envelope carries is a hint and nothing more - it travels
+    outside the ciphertext and nothing authenticates it - so it is not used to
+    pick a key, only to explain a failure once every key has been tried. That
+    distinction matters to the person reading the message: "somebody changed
+    the passphrase" and "this arrived damaged" want entirely different moves,
+    and one of the moves available to them cannot be undone.
+
+    :param attempt: Called with one key; raises OpenError when it will not do.
+    :param named: The identifier the envelope carries, if any.
+    :raises _SealedButUnreadable: carrying the code that fits what happened.
+    """
+    for key in sync_secret.keyring(_config_seen):
+        try:
+            return attempt(key)
+        except sync_crypto.OpenError:
+            continue
+    if not sync_secret.holds_key_named(_config_seen, named):
+        raise _SealedButUnreadable('e2ee_unknown_key')
+    raise _SealedButUnreadable('e2ee_cannot_open')
+
+
+def _note_where_sealing_began(state):
+    """
+    Records the point in the log below which everything is still readable.
+
+    Switching encryption on does not reach back. Everything this account sent
+    before it stays in the log exactly as it was, and a snapshot is the only
+    thing that takes those segments out of the reading path - so until one
+    covers them, "encrypted" is true of what is being written and false of
+    what is already there.
+
+    Written once, on the first cycle that can seal. Zero for an account that
+    was encrypted before it ever synchronised, which is the honest answer for
+    that case: there is no readable history to be rid of.
+    """
+    if state.get('sealed_from') is not None:
+        return int(state['sealed_from'])
+    began = int(state.get('base_seq', 0))
+    write_state({'sealed_from': began})
+    sync_log.log('e2ee.began', below=began)
+    return began
+
+
+def history_is_still_readable(state=None):
+    """
+    Whether the server still holds this account's earlier work in the clear.
+
+    The settings screen asks this so that it can say what is actually true.
+    "The server stores only ciphertext" is a promise about the future the
+    moment encryption is switched on, and only a promise about the past once
+    a sealed snapshot has taken the old segments out of the log.
+
+    :rtype: bool
+    """
+    if not sync_secret.is_enabled(_config_seen):
+        return False
+    state = read_state() if state is None else state
+    began = state.get('sealed_from')
+    if not began:
+        # None: no cycle has been able to seal yet, so nothing has been
+        # promised. Zero: encrypted before this account ever synchronised,
+        # and there is no readable past to be rid of.
+        return False
+    return int(state.get('snapshot_seq') or 0) < int(began)
+
+
+def _seal_batch(wire, key, account):
+    """
+    Wraps a batch for a server that is not allowed to read it.
+
+    Applied to the wire projection rather than the queued operation, so the
+    envelope carries no trace of the queue's own bookkeeping - and applied
+    before the batch is measured, because what has to fit inside the server's
+    body limit is the sealed form, which is about a third larger.
+
+    Each operation is also told which device sealed it, inside the ciphertext.
+    The server stamps that outside as well, but its stamp is its own word: it
+    is not covered by any signature, so a server minded to could relabel one
+    machine's work as another's. Nothing about the content would give that
+    away, and the duplicate counters are kept per device - so a relabelled
+    stream reads as gaps and repeats in two devices at once. Sealed in, the
+    two can be held against each other on arrival.
+    """
+    try:
+        mine = sync_client.device_identity()['device_uid']
+    except Exception:
+        # Without an identity there is nothing to claim. Sealing without it is
+        # what every operation did before this existed, and the check on the
+        # other side only applies when a claim is actually there.
+        mine = None
+    return [sync_crypto.seal(dict(op, dev=mine) if mine else op, key, account)
+            for op in wire]
+
+
+def _open_incoming(ops, key, account):
+    """
+    Turns what the server handed back into operations this machine can apply.
+
+    Plain operations pass through untouched. That is not laxity: while an
+    account is being switched over, a machine that has not been given the
+    passphrase yet still sends plain text, and refusing it would lose that
+    work rather than protect it. The direction that matters is the other one,
+    and it is refused - see below.
+
+    The server stamps `s` and `dev` onto every entry as it stores it
+    (php-server/tc/lib/oplog.php:159-164), outside anything that was sealed.
+    They are carried across onto the opened operation because the order and
+    the recognition of this machine's own work both depend on them.
+
+    :raises _SealedButUnreadable: something sealed arrived that this machine
+            cannot read. Raised rather than skipped: an operation quietly
+            dropped here would take the cursor past it, and the machine would
+            go on syncing while never receiving anything again.
+    """
+    out = []
+    for op in ops:
+        if not sync_crypto.is_sealed(op):
+            out.append(op)
+            continue
+        if key is None:
+            raise _SealedButUnreadable('e2ee_sealed_but_off')
+        opened = _open_with_any(
+            lambda k: sync_crypto.open_sealed(op, k, account),
+            sync_crypto.sealed_key_id(op))
+
+        # The sealer named its own device; the server stamped one too. They
+        # have to agree. Only operations sealed before this existed carry no
+        # claim, and those are simply taken as they always were.
+        claimed, stamped = opened.get('dev'), op.get('dev')
+        if claimed is not None and stamped is not None and claimed != stamped:
+            raise _SealedButUnreadable('e2ee_wrong_device')
+
+        for carried in ('s', 'dev'):
+            if carried in op:
+                opened[carried] = op[carried]
+        out.append(opened)
+    return out
+
+
+def _check_device_sequence(ops, seen):
+    """
+    Holds each device's counter to the one rule it can be held to.
+
+    WHAT IS ENFORCED, AND WHY ONLY THIS
+    -----------------------------------
+    A device's `lc` rises strictly and never repeats - that is the whole basis
+    of the server's duplicate suppression - and a device pushes in that order,
+    so within one device the server's numbering runs the same way. A counter
+    that comes back level or lower is therefore an operation being played a
+    second time, or two being swapped round. Neither can happen by accident,
+    so both stop the cycle.
+
+    A GAP IS NOT AN ALARM. It looks like the strongest signal there is -
+    something was withheld - and it is the one thing here that cannot be told
+    apart from ordinary life. The queue raises its counter before it writes
+    the line, so a write that fails burns a number for good; the comment in
+    tt/sync_outbox.py says so in as many words. Treating that as tampering
+    would stop synchronising over a full disk, and a false accusation that
+    halts the sync is worse than the thing it claims to prevent. Gaps are
+    written to the diagnostic log and left at that.
+
+    WHAT NONE OF THIS REACHES
+    -------------------------
+    The order BETWEEN devices. Which of two machines' edits wins is decided by
+    the sequence number, and the server hands those out - there is no ordering
+    the clients can compute for themselves to hold it to. Nor does it catch a
+    server that simply never delivers another device's work at all: absence of
+    something you were never told about leaves no trace to find.
+
+    :param seen: {device: highest lc applied}. Not modified.
+    :return: The map as it stands after these operations.
+    :raises _SealedButUnreadable: on a repeat or a swap.
+    """
+    updated = dict(seen)
+    for op in ops:
+        device, lc = op.get('dev'), op.get('lc')
+        if not isinstance(device, str) or not isinstance(lc, int):
+            continue
+        highest = updated.get(device)
+        if highest is not None:
+            if lc <= highest:
+                sync_log.log('device.out_of_order', dev=device[:8],
+                             lc=lc, highest=highest)
+                raise _SealedButUnreadable('e2ee_out_of_order')
+            if lc > highest + 1:
+                sync_log.log('device.gap', dev=device[:8],
+                             lc=lc, after=highest)
+        updated[device] = lc
+    return updated
+
+
+class _SealedButUnreadable(Exception):
+    """Carries the failure code for a cycle that must stop where it is."""
+
+    def __init__(self, code):
+        super().__init__(code)
+        self.code = code
 
 
 def state_path():
@@ -126,6 +381,21 @@ _DEFAULT_STATE = {
     'snapshot_seq': 0,      # the point the server's snapshot covers, 0 for none
     'snapshot_staged': 0,   # a document waiting to be offered, by sequence number
     'snapshot_tried': 0,    # epoch seconds of the last offer, successful or not
+    # The point in the log below which this account's work is still readable:
+    # where it had got to when encryption was first switched on. None until
+    # a cycle has been able to seal; 0 for an account that was encrypted
+    # before it ever synchronised, which has no readable past to be rid of.
+    'sealed_from': None,
+    # Which key the server's snapshot is sealed with, as the envelope named
+    # it. None for a snapshot in plain text, and for no snapshot at all.
+    # Only ever a hint - the identifier is not authenticated - so nothing is
+    # refused on the strength of it; it decides when a fresh snapshot is
+    # worth making, and a wrong answer costs one upload.
+    'snapshot_key': None,
+    # The highest counter applied from each device, {device: lc}. What makes a
+    # replayed or reordered operation recognisable - see
+    # _check_device_sequence() for what that does and does not cover.
+    'device_lc': {},
     # The address the settings ask for, recorded by ensure_started. Kept here
     # rather than read from config.json because this half of the module never
     # opens that file - and because every process that runs a cycle has to
@@ -454,6 +724,24 @@ def _run_cycle_locked(outbox):
         sync_log.log('address.changed')
         return _record_failure('address_changed')
 
+    # Before anything is sent or asked for. An account that is meant to be
+    # encrypted and a machine that cannot take part must not talk to the
+    # server at all: pushing would put readable operations into a log the
+    # other machines expect to be sealed, and pulling would fetch sealed ones
+    # this machine could only throw away. Each of these waits on a person, so
+    # each is terminal and the interface says which.
+    sealing, key, account = _sealing()
+    if sealing == sync_secret.LOCKED:
+        return _record_failure('e2ee_locked')
+    if sealing == sync_secret.STALE:
+        return _record_failure('e2ee_stale')
+    if sealing == sync_secret.NO_SALT:
+        return _record_failure('e2ee_no_salt')
+    if sealing == sync_secret.NOT_SIGNED_IN:
+        return _record_failure('not_signed_in')
+    if key is not None:
+        _note_where_sealing_began(state)
+
     since = _since(state)
 
     sending = outbox.pending()
@@ -468,6 +756,8 @@ def _run_cycle_locked(outbox):
     # acknowledged, and carrying nothing - so a batch that is too large does
     # not fail, it disappears.
     wire = [_wire(op) for op in sending]
+    if key is not None:
+        wire = _seal_batch(wire, key, account)
     fitted = sync_client.fit_batch(wire)
     batch = sending[:len(fitted)]
 
@@ -487,7 +777,11 @@ def _run_cycle_locked(outbox):
                      head=int(result.get('head', 0)),
                      why='head_behind_cursor' if int(result.get('head', 0)) <
                          int(state.get('base_seq', 0)) else 'different_account')
+        # The counters go with it. They describe positions in a log this is
+        # no longer reading, and carried over they would meet the same numbers
+        # again from the start and call every one of them a replay.
         state = write_state({'base_seq': 0, 'seeded': False,
+                             'device_lc': {},
                              'account': _current_account()})
         _drop_inbox_for_reset()
         since = 0
@@ -504,7 +798,14 @@ def _run_cycle_locked(outbox):
     # that survives, because that part begins in the middle - so taking the
     # snapshot is the only way anything after it makes sense.
     if result.get('needs_snapshot') or int(result.get('snapshot_seq') or 0) > since:
-        taken = _take_server_snapshot(since)
+        try:
+            taken = _take_server_snapshot(since)
+        except _SealedButUnreadable as blocked:
+            # Same rule as for operations: stop where we are rather than carry
+            # on past something this machine cannot read. Nothing has been
+            # filed and the cursor has not moved.
+            sync_log.log('e2ee.blocked', error=blocked.code, where='snapshot')
+            return _record_failure(blocked.code)
         if taken is None:
             return _record_failure('snapshot_unavailable')
         if taken:
@@ -559,6 +860,21 @@ def _run_cycle_locked(outbox):
             if seq:
                 incoming.append(dict(_wire(op), s=seq))
 
+    # Opened here, before anything is filed, so that the inbox on disk holds
+    # operations in the same plain form it always has - and so that a batch
+    # this machine cannot read stops the cycle without having moved the
+    # cursor over it.
+    try:
+        incoming = _open_incoming(incoming, key, account)
+        # Only for a sealed account. Without encryption the device stamp is
+        # the server's unsupported word, and holding anything to it would be
+        # holding it to a claim nobody made.
+        counters = (_check_device_sequence(incoming, state.get('device_lc') or {})
+                    if key is not None else None)
+    except _SealedButUnreadable as blocked:
+        sync_log.log('e2ee.blocked', error=blocked.code, ops=len(incoming))
+        return _record_failure(blocked.code)
+
     # The cursor may only advance as far as we were actually given.
     highest_seen = max([int(op.get('s', 0)) for op in incoming] or [0])
     complete = not truncated and failure is None
@@ -566,6 +882,12 @@ def _run_cycle_locked(outbox):
 
     if incoming or reached > since:
         _append_inbox({'base_seq': reached, 'ops': incoming})
+        # Recorded only once what they describe is safely on disk. Raised
+        # before that, a failure to file would leave the counters believing
+        # they had seen operations that are about to arrive again - and the
+        # next cycle would report its own retry as a replay.
+        if counters is not None:
+            write_state({'device_lc': counters})
         sync_log.log('filed', reached=reached, ops=len(incoming),
                      complete=complete)
 
@@ -650,6 +972,36 @@ def _take_server_snapshot(since):
         sync_log.log('snapshot.unusable', seq=seq, since=since)
         return 0
 
+    # Opened here, and everything checked here, because the next thing that
+    # happens is clear_inbox(): from that line on this document is the only
+    # truth this machine has, and anything found wrong with it afterwards
+    # costs the queue that was already fetched.
+    sealing, key, account = _sealing()
+    if sync_crypto.is_sealed_document(document):
+        if key is None:
+            raise _SealedButUnreadable('e2ee_sealed_but_off')
+        # The sequence number the server claims is bound into the seal, so
+        # this is also what stops it offering an old document under a new
+        # number - the one claim the client otherwise has to take on trust
+        # before throwing its own queue away.
+        sealed = document
+        document = _open_with_any(
+            lambda k: sync_crypto.open_document(sealed, k, account, seq),
+            sync_crypto.sealed_document_key_id(sealed))
+    elif sealing != sync_secret.OFF:
+        # Plain text arriving for an account that is meant to be encrypted.
+        # Harmless while an account is being changed over - the other machine
+        # simply has not switched yet - so it is taken, and noted.
+        sync_log.log('snapshot.was_not_sealed', seq=seq)
+
+    # What the server used to refuse on everybody's behalf, and cannot any
+    # more once it is handed ciphertext: a document with nothing in it, which
+    # is the shape of a data.json that was emptied or replaced. Adopting one
+    # would replace this machine's document with nothing at all.
+    if not document.get('projects'):
+        sync_log.log('snapshot.empty', seq=seq)
+        return 0
+
     try:
         # Whatever was already waiting sits below this point, and applying it
         # after the snapshot would put older values on top of newer ones. The
@@ -665,6 +1017,92 @@ def _take_server_snapshot(since):
     sync_log.log('snapshot.taken', seq=seq,
                  projects=len(document.get('projects') or []))
     return seq
+
+
+def change_passphrase(tracker, config, passphrase):
+    """
+    Changes the account's passphrase, or changes nothing at all.
+
+    WHY THIS IS NOT "DERIVE A KEY AND CARRY ON"
+    -------------------------------------------
+    The obvious shape - make the new key current, let the next snapshot catch
+    up - leaves a window in which the server's newest document is sealed with
+    the old passphrase while new work is sealed with the new one. The window
+    is not short: a snapshot is only accepted at head, another machine pushing
+    loses the race, and each lost attempt costs six hours. During it the only
+    thing that can read the account's history is a key nobody has been told
+    about any more - the old passphrase is out of the user's head by then, and
+    the key exists only as a file on the machines that happen to hold it. A
+    laptop replaced in that window takes the history with it.
+
+    So the new passphrase does not become this machine's until a document
+    sealed with it is on the server. The order is: derive, seal, upload, and
+    only then adopt. Interrupted anywhere before the last step, nothing has
+    changed and the old passphrase is still the account's.
+
+    That is why it insists on being caught up first. A machine that is not at
+    head cannot have a snapshot accepted, so it could not finish, and starting
+    would leave exactly the window this exists to avoid.
+
+    :param tracker: The TimeTracker whose document this is. Read, not changed.
+    :param config: The parsed config.json.
+    :param passphrase: The new one. The old is not asked for - whoever is at
+                       this machine already holds the key in a file here, so
+                       requiring it would keep nobody out.
+    :return: {'ok': True, 'fingerprint': ...} or {'ok': False, 'error': code}.
+    :rtype: dict
+    """
+    state, current, account = _sealing()
+    if state != sync_secret.READY:
+        return {'ok': False, 'error': _E2EE_NOT_READY.get(state, 'e2ee_locked')}
+
+    try:
+        fresh = sync_secret.derive(config, passphrase)
+    except sync_crypto.SealError:
+        return {'ok': False, 'error': 'no_passphrase'}
+    if fresh == current:
+        return {'ok': False, 'error': 'passphrase_unchanged'}
+
+    at = read_state()
+    head = int(at.get('server_head') or 0)
+    if head <= 0 or int(at.get('base_seq') or 0) != head:
+        return {'ok': False, 'error': 'not_caught_up'}
+    if read_inbox():
+        return {'ok': False, 'error': 'not_caught_up'}
+    try:
+        if tracker.op_outbox is None or tracker.op_outbox.pending():
+            return {'ok': False, 'error': 'not_caught_up'}
+    except Exception:
+        return {'ok': False, 'error': 'not_caught_up'}
+
+    document = tracker.data
+    if not isinstance(document, dict) or not document.get('projects'):
+        # The same refusal offer_snapshot makes, for the same reason: an empty
+        # document offered as the truth would be handed to every other machine.
+        return {'ok': False, 'error': 'nothing_to_seal'}
+
+    try:
+        sealed = sync_crypto.seal_document(document, fresh, account, head)
+    except sync_crypto.SealError:
+        return {'ok': False, 'error': 'nothing_to_seal'}
+
+    reply = sync_client.put_snapshot(head, sealed)
+    if not reply.get('ok'):
+        # Nothing has been adopted, so the account is exactly as it was and
+        # the old passphrase still opens everything. Trying again after a sync
+        # is the whole of the remedy.
+        sync_log.log('e2ee.rekey_refused', error=reply.get('error') or 'unreachable',
+                     seq=head)
+        return {'ok': False, 'error': reply.get('error') or 'unreachable'}
+
+    resulting = sync_secret.adopt(config, fresh)
+    write_state({'snapshot_seq': int(reply.get('snapshot_seq') or head),
+                 'snapshot_key': sync_crypto.key_id(fresh)})
+    sync_log.log('e2ee.rekeyed', seq=head, was=sync_crypto.key_id(current),
+                 now=sync_crypto.key_id(fresh))
+    if resulting != sync_secret.READY:
+        return {'ok': False, 'error': _E2EE_NOT_READY.get(resulting, 'e2ee_locked')}
+    return {'ok': True, 'fingerprint': sync_crypto.fingerprint(fresh)}
 
 
 def _read_staged_snapshot():
@@ -728,6 +1166,35 @@ def _offer_staged_snapshot(head, outbox):
 
     document = _read_staged_snapshot()
     if document is None:
+        _discard_staged_snapshot()
+        return
+
+    # Sealed here rather than when it was staged, and by what the settings say
+    # now rather than what they said then. A document prepared before
+    # encryption was switched on is sealed on its way out; one prepared while
+    # it was on and sent after it was switched off goes plainly. Both are what
+    # the switch means at the moment of sending, which is the moment that
+    # matters - and the staged file stays in the one format everything else on
+    # this disk is in.
+    #
+    # Before put_snapshot() rather than inside it: that is where the four
+    # megabyte limit is measured, and the size that has to fit is the sealed
+    # one. Sealing afterwards would leave the check measuring something the
+    # server never sees.
+    sealing, key, account = _sealing()
+    if key is not None:
+        try:
+            document = sync_crypto.seal_document(document, key, account, staged)
+        except sync_crypto.SealError:
+            sync_log.log('snapshot.seal_failed', seq=staged)
+            _discard_staged_snapshot()
+            return
+    elif sealing != sync_secret.OFF:
+        # Encryption is on for this account but this machine cannot take part.
+        # The cycle that got here should have stopped long before, so this is
+        # belt and braces - but the one thing that must not happen is the
+        # whole document going up in the clear from a machine in that state.
+        sync_log.log('snapshot.not_sealable', state=sealing)
         _discard_staged_snapshot()
         return
 
@@ -1019,7 +1486,16 @@ def offer_snapshot(tracker):
     head = int(state.get('server_head', 0))
     if base <= 0 or base != head:
         return 0                                  # not caught up
-    if head - int(state.get('snapshot_seq') or 0) < SNAPSHOT_EVERY:
+    # Normally a snapshot is worth the upload only once the log has run a long
+    # way past the last one. There is one case where it is worth it at once:
+    # an account that has just been encrypted, whose earlier work is still
+    # lying in the log in the clear. A sealed snapshot is what takes those
+    # segments out of the reading path, and waiting two thousand operations
+    # for it - a fortnight of ordinary use - would mean a fortnight of the
+    # settings screen saying the server holds only ciphertext while it holds
+    # the whole history.
+    if (head - int(state.get('snapshot_seq') or 0) < SNAPSHOT_EVERY
+            and not history_is_still_readable(state)):
         return 0                                  # the log has not run far enough
     if int(time.time()) - int(state.get('snapshot_tried') or 0) < SNAPSHOT_RETRY_SECONDS:
         return 0
@@ -1201,9 +1677,13 @@ def ensure_started(config=None):
     redraw; the guard lives here instead, in a module, which is imported once
     per process however many times the script above it runs.
     """
-    global _worker, _interval_minutes
+    global _worker, _interval_minutes, _config_seen
 
     if config is not None:
+        # Kept before the switch below, so that a cycle already in flight on
+        # the worker sees the current encryption settings even on the redraw
+        # that turns synchronisation off.
+        _config_seen = config
         sync_cfg = config.get('sync') if isinstance(config, dict) else None
         if not isinstance(sync_cfg, dict) or not sync_cfg.get('enabled'):
             stop()

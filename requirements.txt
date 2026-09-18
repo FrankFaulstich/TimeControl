@@ -11,3 +11,7 @@ uvicorn
 # via a version-detecting import - see its top-of-file comment - so no upper
 # bound is needed here anymore.
 mcp; python_version >= "3.10"
+# tt/sync_crypto.py: AES-256-GCM for the optional end-to-end
+# encryption of synchronised data. The key derivation next to it
+# uses hashlib.scrypt and needs nothing extra.
+cryptography

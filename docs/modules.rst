@@ -97,6 +97,18 @@ Sync Log
 .. automodule:: tt.sync_log
    :members:
 
+End-to-End Encryption
+~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: tt.sync_crypto
+   :members:
+
+Passphrase and Key
+~~~~~~~~~~~~~~~~~~
+
+.. automodule:: tt.sync_secret
+   :members:
+
 Error Messages
 ~~~~~~~~~~~~~~
 

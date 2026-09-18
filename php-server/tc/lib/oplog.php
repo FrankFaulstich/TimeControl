@@ -17,13 +17,33 @@
 
 require_once __DIR__ . '/store.php';
 
-// The twelve intentions a client may express. The server does not act on
+// The one verb that says nothing.
+//
+// An account with end-to-end encryption switched on seals each operation
+// whole - the verb along with everything else - because the verbs alone are
+// already a readable diary: an entry.add with a start time and an entry.close
+// with an end time are a timesheet, accurate to the second, however
+// unreadable the names in it. So every sealed operation shows this same
+// placeholder instead, and what it really was sits inside the payload where
+// only the machines holding the passphrase can reach it.
+//
+// The server treats it exactly like the others: it stores it and hands it on.
+// See tt/sync_crypto.py for what is inside.
+const TC_OP_SEALED = 'op.sealed';
+
+// The key under which a sealed document sits. A snapshot from an encrypted
+// account is one of these instead of a readable document; the server stores
+// it the same way and understands it no better. See tt/sync_crypto.py.
+const TC_SNAPSHOT_SEALED = 'e2ee';
+
+// The thirteen intentions a client may express. The server does not act on
 // them, but it refuses anything outside the list: an unknown verb would
 // travel to the other machine and confuse a client that has no rule for it.
 const TC_OPS = [
     'project.create', 'project.set', 'project.delete',
     'task.create', 'task.set', 'task.move', 'task.delete',
     'entry.add', 'entry.close', 'entry.set', 'entry.move', 'entry.delete',
+    TC_OP_SEALED,
 ];
 
 const TC_SEG_MAX_OPS   = 1000;
@@ -399,6 +419,27 @@ function tc_snapshot_validate($raw)
     if (!is_array($doc)) {
         return 'snapshot_not_json';
     }
+    // A sealed document. Everything below this line is about a document the
+    // server can read, and it cannot read this one - so the checks that look
+    // inside are skipped and only the ones above still apply: it is not
+    // empty, it is within the size limit, and it is JSON, which it has to be
+    // because the stored bytes are spliced straight into the reply to a GET
+    // (index.php:250).
+    //
+    // Presence only, as with a sealed operation. The shape of what is inside
+    // the envelope is the clients' business; a server that learned it would
+    // have to be updated whenever it changed.
+    //
+    // What is given up here is real and worth naming: the refusal below of a
+    // document with no projects in it. That guard exists because an emptied
+    // data.json offered as a snapshot would be handed to every other machine
+    // as the truth, and the server can no longer tell. The same check is made
+    // on the client before one is ever prepared - see offer_snapshot() in
+    // tt/sync_engine.py - and for a sealed account that is now the only place
+    // it can be made.
+    if (isset($doc[TC_SNAPSHOT_SEALED]) && is_array($doc[TC_SNAPSHOT_SEALED])) {
+        return null;
+    }
     if (!isset($doc['projects']) || !is_array($doc['projects'])) {
         return 'snapshot_shape';
     }
@@ -598,6 +639,18 @@ function tc_ops_validate($ops)
             }
         }
         if (isset($op['f']) && !is_array($op['f'])) {
+            return 'bad_fields';
+        }
+        // A sealed operation is nothing but its payload - the verb, the
+        // identifiers and the fields are all inside it. One arriving without
+        // that payload carries no operation at all, and the machine that
+        // received it could only stop. Refused here for the same reason an
+        // unknown verb is: whatever is accepted will be handed onwards.
+        //
+        // Presence only. What is inside the payload is the clients' business,
+        // and a server that learned its shape would have to be updated every
+        // time that shape changed.
+        if ($op['op'] === TC_OP_SEALED && !isset($op['f'])) {
             return 'bad_fields';
         }
     }

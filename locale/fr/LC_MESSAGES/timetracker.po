@@ -3100,3 +3100,179 @@ msgstr "La date de début ne peut pas être postérieure à la date d'échéance
 
 msgid "Update check skipped: no repository is configured."
 msgstr "Vérification des mises à jour ignorée : aucun dépôt n'est configuré."
+
+# --- End-to-end encryption (issue: E2EE) ---
+
+msgid "End-to-end encryption"
+msgstr "Chiffrement de bout en bout"
+
+msgid "Encryption is unavailable because the 'cryptography' package is missing. Synchronisation itself is unaffected."
+msgstr "Le chiffrement n'est pas disponible car le paquet « cryptography » est manquant. La synchronisation elle-même n'est pas affectée."
+
+msgid "On. The server stores only ciphertext it cannot read."
+msgstr "Activé. Le serveur ne stocke que du texte chiffré qu'il ne peut pas lire."
+
+msgid "Key fingerprint: {fingerprint}"
+msgstr "Empreinte de la clé : {fingerprint}"
+
+
+msgid "Sign in above first. Encryption is tied to the account, so it cannot be set up before this device knows which one it is."
+msgstr "Connectez-vous d'abord ci-dessus. Le chiffrement est lié au compte et ne peut pas être configuré avant que cet appareil sache duquel il s'agit."
+
+msgid "Encryption is switched on for this account, but the settings carry no salt to derive the key from. Copy config.json from the device that has it, or switch encryption off and on again to start over - which makes the data already on the server unreadable."
+msgstr "Le chiffrement est activé pour ce compte, mais les réglages ne contiennent aucun sel permettant de dériver la clé. Copiez le fichier config.json depuis l'appareil qui le possède, ou désactivez puis réactivez le chiffrement pour repartir de zéro – ce qui rendra illisibles les données déjà sur le serveur."
+
+msgid "On for this account, but this device does not have the key yet. Nothing is being synchronised until you enter the passphrase."
+msgstr "Activé pour ce compte, mais cet appareil n'a pas encore la clé. Rien n'est synchronisé tant que vous n'avez pas saisi la phrase secrète."
+
+msgid "The key stored here does not belong to these settings - the salt or the account has changed since it was made. Enter the passphrase again."
+msgstr "La clé enregistrée ici ne correspond pas à ces réglages : le sel ou le compte a changé depuis sa création. Saisissez à nouveau la phrase secrète."
+
+msgid "Passphrase"
+msgstr "Phrase secrète"
+
+msgid "Unlock this device"
+msgstr "Déverrouiller cet appareil"
+
+msgid "Please enter the passphrase."
+msgstr "Veuillez saisir la phrase secrète."
+
+msgid "Deriving the key..."
+msgstr "Dérivation de la clé…"
+
+msgid "Key stored. Check that the fingerprint matches your other device."
+msgstr "Clé enregistrée. Vérifiez que l'empreinte correspond à celle de votre autre appareil."
+
+msgid "Project and task names, notes and times are stored on the sync server in plain text. Switching this on seals them on this device first, so the server only ever holds ciphertext."
+msgstr "Les noms de projets et de tâches, les notes et les temps sont stockés en clair sur le serveur de synchronisation. En activant ceci, ils sont d'abord scellés sur cet appareil, de sorte que le serveur ne détient plus que du texte chiffré."
+
+msgid "The passphrase is not your account password, and it is never sent to the server. Nobody can recover it for you: if it is lost, so is everything the server holds."
+msgstr "La phrase secrète n'est pas le mot de passe de votre compte et n'est jamais envoyée au serveur. Personne ne peut la récupérer pour vous : si elle est perdue, tout ce que détient le serveur l'est aussi."
+
+msgid "Repeat the passphrase"
+msgstr "Répéter la phrase secrète"
+
+
+msgid "Switch encryption on"
+msgstr "Activer le chiffrement"
+
+msgid "Please enter a passphrase."
+msgstr "Veuillez saisir une phrase secrète."
+
+msgid "The two passphrases are not the same."
+msgstr "Les deux phrases secrètes ne correspondent pas."
+
+msgid "Encryption is on. Write the passphrase down somewhere safe - it cannot be recovered."
+msgstr "Le chiffrement est activé. Notez la phrase secrète en lieu sûr : elle ne peut pas être récupérée."
+
+msgid "Switch off"
+msgstr "Désactiver"
+
+msgid "Encryption off. New changes are sent unencrypted; the key is kept so what is already on the server stays readable."
+msgstr "Chiffrement désactivé. Les nouvelles modifications sont envoyées en clair ; la clé est conservée afin que ce qui se trouve déjà sur le serveur reste lisible."
+
+msgid "Forget key"
+msgstr "Oublier la clé"
+
+msgid "Forgetting the key on this device cannot be undone. Without the passphrase, everything this account has on the server becomes unreadable here."
+msgstr "Oublier la clé sur cet appareil est irréversible. Sans la phrase secrète, tout ce que ce compte possède sur le serveur devient illisible ici."
+
+msgid "Yes, forget it"
+msgstr "Oui, oublier"
+
+msgid "The key has been removed from this device."
+msgstr "La clé a été supprimée de cet appareil."
+
+msgid "No, keep it"
+msgstr "Non, la conserver"
+
+msgid "End-to-end encryption is switched on for this account, but this device does not have the key yet. Enter the passphrase in the settings."
+msgstr "Le chiffrement de bout en bout est activé pour ce compte, mais cet appareil n'a pas encore la clé. Saisissez la phrase secrète dans les réglages."
+
+msgid "The stored key does not belong to these settings - the salt or the account has changed since it was made. Enter the passphrase again in the settings."
+msgstr "La clé enregistrée ne correspond pas à ces réglages : le sel ou le compte a changé depuis sa création. Saisissez à nouveau la phrase secrète dans les réglages."
+
+msgid "End-to-end encryption is switched on, but the settings carry no salt to derive the key from. Switch it off and on again, or copy the settings from the device that has it."
+msgstr "Le chiffrement de bout en bout est activé, mais les réglages ne contiennent aucun sel permettant de dériver la clé. Désactivez-le puis réactivez-le, ou copiez les réglages depuis l'appareil qui le possède."
+
+msgid "The server holds encrypted data, but end-to-end encryption is switched off on this device. Nothing has been changed here. Switch it on and enter the passphrase."
+msgstr "Le serveur contient des données chiffrées, mais le chiffrement de bout en bout est désactivé sur cet appareil. Rien n'a été modifié ici. Activez-le et saisissez la phrase secrète."
+
+msgid "Encrypted data arrived that this device could not read. Nothing has been changed here. Check that the passphrase is the same one the other device uses."
+msgstr "Des données chiffrées sont arrivées, que cet appareil n'a pas pu lire. Rien n'a été modifié ici. Vérifiez que la phrase secrète est la même que sur l'autre appareil."
+
+msgid "On for everything from now on. What was synchronised before is still on the server in plain text: it goes as soon as this device has sent an encrypted summary, which happens by itself on one of the next few syncs."
+msgstr "Activé pour tout ce qui suit. Ce qui a été synchronisé auparavant se trouve encore en clair sur le serveur : cela disparaîtra dès que cet appareil aura envoyé un résumé chiffré, ce qui se produit tout seul lors d'une des prochaines synchronisations."
+
+msgid "Update your other devices and the sync server first. An older version does not recognise encrypted data: the server refuses it outright, and an older device would quietly stop receiving anything."
+msgstr "Mettez d'abord à jour vos autres appareils et le serveur de synchronisation. Une version plus ancienne ne reconnaît pas les données chiffrées : le serveur les refuse purement et simplement, et un appareil plus ancien cesserait discrètement de recevoir quoi que ce soit."
+
+msgid "Your other devices then need this same passphrase, and the config.json from this one - it carries the salt."
+msgstr "Vos autres appareils auront ensuite besoin de la même phrase secrète et du fichier config.json de celui-ci : il contient le sel."
+
+msgid "Off. This account has been encrypted before, so switching it back on uses the same passphrase as then - nothing is asked for again. What is on the server from the meantime was sent unencrypted."
+msgstr "Désactivé. Ce compte a déjà été chiffré : en le réactivant, la même phrase secrète qu'alors s'applique, rien n'est redemandé. Ce qui est parti vers le serveur entre-temps a été envoyé en clair."
+
+msgid "Switch encryption back on"
+msgstr "Réactiver le chiffrement"
+
+msgid "Encryption is on again."
+msgstr "Le chiffrement est de nouveau activé."
+
+msgid "Encryption is on again. This device no longer has the key - enter the passphrase."
+msgstr "Le chiffrement est de nouveau activé. Cet appareil n'a plus la clé : saisissez la phrase secrète."
+
+msgid "The address redirects somewhere else. Enter the address it points to instead - this device will not follow a redirect, because that could send its access token on to an unencrypted one."
+msgstr "L'adresse redirige ailleurs. Saisissez plutôt l'adresse vers laquelle elle pointe : cet appareil ne suit aucune redirection, car son jeton d'accès pourrait ainsi être transmis à une adresse non chiffrée."
+
+msgid "This must read the same on every device of this account, unless the passphrase has just been changed on one of them."
+msgstr "Elle doit être identique sur chaque appareil de ce compte, sauf si la phrase secrète vient d'être changée sur l'un d'eux."
+
+msgid "New passphrase"
+msgstr "Nouvelle phrase secrète"
+
+msgid "Add this passphrase"
+msgstr "Ajouter cette phrase secrète"
+
+msgid "Key added. The older one is kept, so what was synchronised before stays readable."
+msgstr "Clé ajoutée. L'ancienne est conservée, afin que ce qui a été synchronisé auparavant reste lisible."
+
+msgid "Change the passphrase"
+msgstr "Changer la phrase secrète"
+
+msgid "The new one has to reach your other devices as well. Until it does, they stop synchronising and say so - nothing is lost, and the old passphrase is not needed again."
+msgstr "La nouvelle doit aussi parvenir à vos autres appareils. Tant que ce n'est pas fait, ils interrompent la synchronisation et le signalent : rien n'est perdu, et l'ancienne phrase secrète ne sera plus nécessaire."
+
+msgid "Repeat the new passphrase"
+msgstr "Répéter la nouvelle phrase secrète"
+
+msgid "Change it"
+msgstr "Changer"
+
+msgid "Sealing everything with the new key..."
+msgstr "Scellement de tout avec la nouvelle clé…"
+
+msgid "The passphrase has been changed. Its fingerprint is {fingerprint} - enter the new passphrase on your other devices and check that theirs matches."
+msgstr "La phrase secrète a été changée. Son empreinte est {fingerprint} : saisissez la nouvelle phrase secrète sur vos autres appareils et vérifiez que la leur correspond."
+
+msgid "Data arrived that was sealed with a key this device does not have. Usually that means the passphrase was changed on another device. Enter the new one here as well - nothing has been changed or lost."
+msgstr "Des données sont arrivées, scellées avec une clé que cet appareil ne possède pas. Cela signifie généralement que la phrase secrète a été changée sur un autre appareil. Saisissez la nouvelle ici également : rien n'a été modifié ni perdu."
+
+msgid "End-to-end encryption is switched off for this account."
+msgstr "Le chiffrement de bout en bout est désactivé pour ce compte."
+
+msgid "This device has to be fully synchronised before the passphrase can be changed, because the change is only complete once the server has accepted a document sealed with the new one. Let it synchronise and try again."
+msgstr "Cet appareil doit être entièrement synchronisé avant de pouvoir changer la phrase secrète : le changement n'est complet qu'une fois que le serveur a accepté un document scellé avec la nouvelle. Laissez-le se synchroniser et réessayez."
+
+msgid "That is the passphrase this account already uses."
+msgstr "C'est déjà la phrase secrète de ce compte."
+
+msgid "There is nothing to seal yet. Create a project first."
+msgstr "Il n'y a encore rien à sceller. Créez d'abord un projet."
+
+msgid "The server says a change came from a different device than the one that actually made it. Nothing has been applied here. If this does not clear up, the server is not doing what it should."
+msgstr "Le serveur affirme qu'une modification provient d'un autre appareil que celui qui l'a réellement faite. Rien n'a été appliqué ici. Si cela ne se résout pas, le serveur ne fait pas ce qu'il devrait."
+
+msgid "The server sent a change that had already been received, or sent two of them the wrong way round. Nothing has been applied here. If this does not clear up, the server is not doing what it should."
+msgstr "Le serveur a envoyé une modification déjà reçue, ou deux d'entre elles dans le mauvais ordre. Rien n'a été appliqué ici. Si cela ne se résout pas, le serveur ne fait pas ce qu'il devrait."
+

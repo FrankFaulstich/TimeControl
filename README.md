@@ -298,6 +298,42 @@ handing them a list of everything you worked on. It lives beside the other
 per-machine sync files, caps itself at about a megabyte, and the settings
 screen shows the recent entries with buttons to save or clear them.
 
+Two failures have a cause that is not in the log, because it is in how the server is reached:
+
+**Every request answers `https_required`, although the address is https.** The server decides whether a request arrived over TLS from `$_SERVER['HTTPS']`, or failing that from the port. Behind a front end that terminates TLS and speaks to PHP in the clear, neither says so, and the server refuses everything. Set `'https' => 'proxy'` in `tc/config.php` and it will believe `X-Forwarded-Proto` instead — but only do that with a real proxy in front, because otherwise that header is the client's to invent. The other way, `'strict'`, turns off the guess by port: the tightest setting, and right wherever the server sets the variable itself. `'auto'` is the default and what every installation had before the setting existed.
+
+**The client reports that the address redirects.** It will not follow one. The access token travels in a header `requests` does not recognise as a credential, so it would be carried on to wherever the redirect pointed, plain http included. Enter the address the redirect points to — usually a missing `www.`, or `http` where `https` was meant.
+
+### End-to-end encryption 🔐
+
+Off by default. Without it, everything the sync server holds — project and task names, notes, the times you worked — sits on its disk as readable JSON. File permissions and an `.htaccess` keep the web out, but not the hosting account, and not whoever runs the machine. On shared hosting that is a real audience.
+
+Switched on, the client seals every operation before it leaves, and the server stores and hands on something it cannot read. It never learns the passphrase and never could: the key is derived on your own machines.
+
+**Before you switch it on,** update the sync server and every device. An older server refuses encrypted data outright, which is loud and harmless. An older *device* is the dangerous one — it does not recognise the sealed operations and would quietly stop receiving anything at all.
+
+**Setting it up.** Sign in first (the account name is sealed into every operation, so it has to be known). Then, in *Sync Server Settings → End-to-end encryption*, choose a passphrase and type it twice. It is **not** your account password, and it is never sent anywhere.
+
+For a second device: copy `config.json` across — it carries the salt, which is not secret but has to be the same everywhere — and enter the same passphrase there. Then compare the **key fingerprint** shown on both. Nothing on either machine can tell a mistyped passphrase from a correct one; it simply produces a different key. The fingerprint is the only check there is, and comparing it takes a second.
+
+**There is no recovery.** Lose the passphrase and everything the server holds is lost with it. Nobody — not the server, not the hosting provider, not us — can get it back. Write it down somewhere safe before you switch this on.
+
+**What it does not hide.** The server still sees how many projects, tasks and time entries exist, and when you worked: the timestamps travel in the clear because the ordering depends on them. It sees which device did what and when each one last called in, and your device name and IP address. A curious host can reconstruct your working hours in detail — just not what you were working on.
+
+**What it holds the server to.** Encryption stops the server reading; it does not by itself stop it meddling. Two things it might try are caught. Each operation says inside its own ciphertext which device sealed it, so relabelling one machine's work as another's no longer passes. And each device's counter has to keep rising, so an operation played a second time, or two swapped round, are refused — the cycle stops without applying anything and without moving its cursor.
+
+Two things are deliberately *not* treated as attacks. A gap in a device's counters is not one: the queue raises its number before writing the line, so a failed write burns one for good, and stopping the sync over a full disk would be worse than the withholding it would claim to detect. Gaps go to the diagnostic log and no further. And the order *between* devices is not checked at all, because there is nothing to check it against — which of two machines' edits wins is decided by the sequence number, and the server hands those out. A server that simply never passes another device's work on is likewise invisible: absence of something you were never told about leaves no trace.
+
+**Switching over an existing account.** Turning it on does not reach back. Everything synchronised before stays in the server's log exactly as it was, and only a sealed summary of the whole document takes those segments out of it. The client does that by itself within the next few syncs, and the settings screen says plainly which of the two states you are in. Two caveats: the old segments are then out of the reading path but stay on the server's disk for at least seven days, and the identifiers of objects that already existed do not change — anyone who kept a copy of the old log can still tell which encrypted object is which, and what it used to be called. Encryption protects what you write from here on; it cannot un-publish what was already there.
+
+**Switching it off** stops new work being sealed and keeps both the key and the account's salt, so what is already on the server stays readable to you. Switching it back on therefore asks for nothing: the same passphrase as before still applies, and anything sent while it was off stays unencrypted where it is. Forgetting the key is a separate, deliberate action, and it cannot be undone.
+
+**Changing the passphrase** is in the same place, under *Change the passphrase*. It either happens completely or not at all: the device seals the whole document with the new key and waits for the server to accept it, and only then does the new passphrase become the account's. If anything goes wrong — the server is unreachable, another machine pushed in between — nothing has changed and the old passphrase still applies. That is why it asks you to be fully synchronised first.
+
+Afterwards, enter the new passphrase on your other devices too. Until you do, they stop synchronising and say why; nothing is lost while they wait. They keep their old key alongside the new one, because the log still holds work sealed with it — including their own.
+
+Starting over with a *forgotten* passphrase is a different thing and means removing the `e2ee` block from `config.json` by hand. That is deliberately out of reach of a stray click, because it makes everything already on the server unreadable to everybody.
+
 ### Limitations worth knowing
 
 All four entry points drive synchronisation now — the GUI, and the MCP, REST and SOAP servers. Each brings the document up to date and starts the background worker when it loads the document for a request, so a machine driven only through Claude Desktop no longer waits for somebody to open the GUI before its changes leave.

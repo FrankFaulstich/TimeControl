@@ -25,6 +25,7 @@ umask(0077);
 
 require_once __DIR__ . '/lib/store.php';
 require_once __DIR__ . '/lib/auth.php';
+require_once __DIR__ . '/lib/http.php';
 require_once __DIR__ . '/lib/probe.php';
 
 ini_set('display_errors', '0');
@@ -53,11 +54,14 @@ if (strlen($expected) < 12) {
 }
 
 // Everything below sends a passphrase and then a password over the wire.
-if (empty($_SERVER['HTTPS']) || strtolower($_SERVER['HTTPS']) === 'off') {
-    if ((int)($_SERVER['SERVER_PORT'] ?? 0) !== 443) {
-        header('Content-Type: text/plain; charset=utf-8');
-        exit("Refusing to run over plain HTTP - the passphrase would travel in the clear.\n");
-    }
+//
+// Asked of the same function the API uses rather than worked out again here.
+// The two used to carry the same few lines separately, which is the shape a
+// hole takes later: somebody tightens one and the other quietly stays open.
+if (!tc_is_https()) {
+    header('Content-Type: text/plain; charset=utf-8');
+    exit("Refusing to run over plain HTTP - the passphrase would travel in the clear.\n"
+       . "If a proxy in front terminates TLS, set 'https' => 'proxy' in tc/config.php.\n");
 }
 
 // setup.enable holds the operator passphrase in plain text, and it has to sit
@@ -186,8 +190,25 @@ function tc_install($baseUrl)
         }
         tc_write_json(tc_users_file($path), ['users' => (object)[]]);
 
-        $config = "<?php\n// Written by setup.php. Do not edit by hand.\nreturn "
-            . var_export(['store' => $path, 'installed' => date('c')], true) . ";\n";
+        // 'store' and 'installed' are setup's to write and nobody else's.
+        // 'https' is the one line meant to be changed by hand, and it is
+        // spelled out here rather than left to the documentation: an
+        // installation behind a TLS-terminating proxy refuses every request
+        // until it is set, and the person reading this file at that moment
+        // is looking for exactly this sentence.
+        $config = "<?php\n"
+            . "// Written by setup.php.\n"
+            . "//\n"
+            . "// 'https' decides how this server recognises a TLS request, and it is\n"
+            . "// yours to set - the rest is not:\n"
+            . "//   'auto'   (default) the HTTPS variable, failing that port 443\n"
+            . "//   'strict' the HTTPS variable alone, no guessing by port\n"
+            . "//   'proxy'  X-Forwarded-Proto, for a front end that terminates TLS\n"
+            . "//            and speaks to PHP in the clear. Only with a real proxy\n"
+            . "//            in front: otherwise the header is the client's to invent.\n"
+            . "return "
+            . var_export(['store' => $path, 'installed' => date('c'),
+                          'https' => 'auto'], true) . ";\n";
         if (!tc_write_secure(__DIR__ . '/config.php', $config)) {
             return [null, 'Could not write config.php.'];
         }

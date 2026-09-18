@@ -50,6 +50,10 @@ def _messages():
         'unreachable': _("The server could not be reached. Check the address and your connection."),
         'bad_response': _("The address answered, but not like a TimeControl sync server. "
                           "Check that it points at the right directory."),
+        'address_redirects': _("The address redirects somewhere else. Enter the address "
+                               "it points to instead - this device will not follow a "
+                               "redirect, because that could send its access token on "
+                               "to an unencrypted one."),
         'not_installed': _("The server is reachable but has not been set up yet."),
         'busy': _("The server was dealing with something else. This one retries on its own."),
 
@@ -58,6 +62,47 @@ def _messages():
         'invalid_token': _("This device is no longer signed in. Please sign in again."),
         'address_changed': _("The saved server address is not the one this device is "
                              "signed in to. Sign in again to start using it."),
+        # --- end-to-end encryption, when this machine cannot take part ---
+        'e2ee_locked': _("End-to-end encryption is switched on for this account, but "
+                         "this device does not have the key yet. Enter the passphrase "
+                         "in the settings."),
+        'e2ee_stale': _("The stored key does not belong to these settings - the salt "
+                        "or the account has changed since it was made. Enter the "
+                        "passphrase again in the settings."),
+        'e2ee_no_salt': _("End-to-end encryption is switched on, but the settings "
+                          "carry no salt to derive the key from. Switch it off and "
+                          "on again, or copy the settings from the device that has "
+                          "it."),
+        'e2ee_sealed_but_off': _("The server holds encrypted data, but end-to-end "
+                                 "encryption is switched off on this device. Nothing "
+                                 "has been changed here. Switch it on and enter the "
+                                 "passphrase."),
+        'e2ee_cannot_open': _("Encrypted data arrived that this device could not read. "
+                              "Nothing has been changed here. Check that the passphrase "
+                              "is the same one the other device uses."),
+        'e2ee_unknown_key': _("Data arrived that was sealed with a key this device does "
+                              "not have. Usually that means the passphrase was changed "
+                              "on another device. Enter the new one here as well - "
+                              "nothing has been changed or lost."),
+        'e2ee_off': _("End-to-end encryption is switched off for this account."),
+        'e2ee_wrong_device': _("The server says a change came from a different device "
+                               "than the one that actually made it. Nothing has been "
+                               "applied here. If this does not clear up, the server "
+                               "is not doing what it should."),
+        'e2ee_out_of_order': _("The server sent a change that had already been "
+                               "received, or sent two of them the wrong way round. "
+                               "Nothing has been applied here. If this does not clear "
+                               "up, the server is not doing what it should."),
+
+        # --- changing the passphrase ---
+        'not_caught_up': _("This device has to be fully synchronised before the "
+                           "passphrase can be changed, because the change is only "
+                           "complete once the server has accepted a document sealed "
+                           "with the new one. Let it synchronise and try again."),
+        'passphrase_unchanged': _("That is the passphrase this account already uses."),
+        'no_passphrase': _("Please enter a passphrase."),
+        'nothing_to_seal': _("There is nothing to seal yet. Create a project first."),
+
         'local_io': _("The synchronisation files on this computer could not be written."),
         'snapshot_unavailable': _("The stored copy of the data could not be fetched from "
                                   "the server, so catching up had to stop."),

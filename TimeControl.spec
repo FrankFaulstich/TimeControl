@@ -48,6 +48,8 @@ hiddenimports = [
     'tt.sync_apply',
     'tt.sync_messages',
     'tt.sync_outbox',
+    'tt.sync_crypto',
+    'tt.sync_secret',
     'tt.filelock',
     'tt.markdown_editor',
     'tt.task_calendar',

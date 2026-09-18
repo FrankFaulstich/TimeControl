@@ -44,6 +44,14 @@ try:
 except ImportError:
     _call_with_deadline = None
 
+# The answers that mean "go and ask somewhere else". Read from the status
+# code rather than from requests' own is_redirect, which also wants a Location
+# header and is a property of its response object: this check has to hold for
+# anything that answers like a response, which is what the tests hand it.
+# 304 is deliberately not here - it is a 3xx that redirects nothing, and
+# nothing in this client sends a conditional request that could earn one.
+REDIRECT_CODES = frozenset((301, 302, 303, 307, 308))
+
 # Every call gets one. update.py established the idiom, and a sync that can
 # hang indefinitely would freeze the interface it runs behind.
 TIMEOUT = 20
@@ -291,9 +299,21 @@ def _post(base_url, action, payload=None, token=None, params=None):
     query = {'a': action}
     query.update(params or {})
 
+    # Not followed, and not by accident.
+    #
+    # requests follows a redirect on its own and strips the Authorization
+    # header when the host changes - but it knows nothing about X-TC-Token,
+    # which is this application's bearer credential and would be sent on to
+    # wherever the redirect pointed, including plain http.
+    #
+    # Following only https targets would close that, but the better answer is
+    # simpler: the address is a setting, entered once. If it redirects, the
+    # setting is wrong, and correcting it beats paying for a redirect on every
+    # request for ever. So the redirect is reported and the token stays here.
     def _send():
         if payload is None:
-            return requests.get(url, params=query, headers=headers, timeout=TIMEOUT)
+            return requests.get(url, params=query, headers=headers, timeout=TIMEOUT,
+                                allow_redirects=False)
         # Encoded here rather than handed over as a str, and without ASCII
         # escaping. Two reasons, both about the byte count: requests encodes a
         # str body as latin-1, which German task names are not, and fit_batch
@@ -303,7 +323,7 @@ def _post(base_url, action, payload=None, token=None, params=None):
         # server turns an over-long body into an empty one.
         body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
         return requests.post(url, params=query, headers=headers,
-                             data=body, timeout=TIMEOUT)
+                             data=body, timeout=TIMEOUT, allow_redirects=False)
 
     try:
         # requests' own timeout does not cover the DNS lookup that runs
@@ -323,6 +343,13 @@ def _post(base_url, action, payload=None, token=None, params=None):
         return {'ok': False, 'error': 'timeout'}
     except requests.exceptions.RequestException:
         return {'ok': False, 'error': 'unreachable'}
+
+    if getattr(response, 'status_code', 0) in REDIRECT_CODES:
+        # Reported in its own right rather than as a malformed answer, because
+        # the two need entirely different things from the user: one is a
+        # server having a bad day, this is an address that wants correcting.
+        return {'ok': False, 'error': 'address_redirects',
+                'status': response.status_code}
 
     try:
         return response.json()
