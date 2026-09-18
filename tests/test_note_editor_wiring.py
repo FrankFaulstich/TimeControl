@@ -48,18 +48,39 @@ def _note_areas(tree):
     Found by the key rather than by the label, because the label is
     translated and a German installation would read "Notizen (Markdown)".
     """
+    def spelled_out(value):
+        if isinstance(value, ast.Constant):
+            return value.value if isinstance(value.value, str) else None
+        if isinstance(value, ast.JoinedStr):
+            # An f-string, one field per imported email. The literal parts are
+            # enough to recognise it.
+            return ''.join(part.value for part in value.values
+                           if isinstance(part, ast.Constant))
+        return None
+
+    # A key can be put in a local first and handed over by name. Following
+    # that is not tidiness: a field whose key this cannot read is a field this
+    # stops watching, and it would go on passing while the editor quietly came
+    # off it.
+    by_name = {}
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Assign) and len(node.targets) == 1
+                and isinstance(node.targets[0], ast.Name)):
+            written = spelled_out(node.value)
+            if written:
+                by_name[node.targets[0].id] = written
+
     keys = []
     for call in _calls(tree, 'text_area'):
         for keyword in call.keywords:
             if keyword.arg != 'key':
                 continue
-            if isinstance(keyword.value, ast.Constant):
-                keys.append(keyword.value.value)
-            elif isinstance(keyword.value, ast.JoinedStr):
-                # An f-string, one field per imported email. The literal
-                # parts are enough to recognise it.
-                keys.append(''.join(part.value for part in keyword.value.values
-                                    if isinstance(part, ast.Constant)))
+            if isinstance(keyword.value, ast.Name):
+                found = by_name.get(keyword.value.id)
+            else:
+                found = spelled_out(keyword.value)
+            if found:
+                keys.append(found)
     return [key for key in keys if 'note' in key]
 
 

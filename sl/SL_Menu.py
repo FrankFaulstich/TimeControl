@@ -668,6 +668,45 @@ def render_sync_notice():
         reason=sync_error_message(snapshot['error'])))
 
 
+_NOT_SEEN_YET = object()
+
+
+def follow_stored_value(widget_key, stored):
+    """
+    Keeps a widget in step with what is on disk, without discarding an edit.
+
+    Streamlit's `value=` is only the value a widget *starts* with. Once the
+    widget exists its key owns the value, and `value=` is ignored on every
+    redraw after the first. A form that reads the stored value each time,
+    passes it to `value=`, and then saves whatever differs therefore has the
+    comparison backwards: what it saves is the widget's own stale copy,
+    written over whatever changed in the meantime - and, where the field
+    synchronises, sent to the other machine as a change somebody made.
+
+    That is what made Today flags come and go. The daily sweep sets one, or
+    the star is pressed in another view, or the other machine sends one; this
+    form still holds the value it was drawn with, notices the difference, and
+    puts it back.
+
+    So the stored value is remembered beside the widget. When it changes while
+    the widget did not, the widget is moved to it. When somebody typed
+    something, theirs stands. When both happened at once the stored value
+    wins - a conflict either way, and taking what is on disk at least invents
+    nothing.
+
+    Call it before creating the widget, and give the widget no `value=`.
+
+    :param widget_key: The key the widget is created with.
+    :param stored: The value as it currently is in the document.
+    :return: `stored`, so the caller can compare the widget against it.
+    """
+    seen_key = widget_key + '__seen'
+    if st.session_state.get(seen_key, _NOT_SEEN_YET) != stored:
+        st.session_state[seen_key] = stored
+        st.session_state[widget_key] = stored
+    return stored
+
+
 def render_encryption_settings(config):
     """
     The end-to-end encryption block of the sync settings.
@@ -2029,35 +2068,52 @@ def view_email_assignment():
                 current_task_name = task.get('task_name', '')
                 current_note = task.get('note', '')
 
-                new_task_name = st.text_input(_("Task Name"), value=current_task_name, key=f"email_task_name_{task['id']}")
+                # Every field below follows what is on disk rather than being
+                # handed it as a starting value - see follow_stored_value()
+                # for why the difference is the whole bug. None of them may
+                # carry `value=` any more: it would be ignored on every redraw
+                # but the first, which is exactly the trap.
+                name_key = f"email_task_name_{task['id']}"
+                date_key = f"email_task_due_date_{task['id']}"
+                today_key = f"email_task_today_{task['id']}"
+                note_key = f"email_task_note_{task['id']}"
 
-                # Session state for interactive date handling
-                if f'email_due_{task["id"]}' not in st.session_state:
-                    st.session_state[f'email_due_{task["id"]}'] = current_due_date_obj
-                
+                follow_stored_value(name_key, current_task_name)
+                new_task_name = st.text_input(_("Task Name"), key=name_key)
+
+                # A task with no due date shows today's, and saving it that
+                # way is what this form has always done. Left as it is: it is
+                # a decision about the form, not the fault being fixed here.
+                follow_stored_value(date_key, current_due_date_obj)
+
                 col_date, col_clear_date, col_today = st.columns([5, 1, 2])
                 with col_date:
                     new_due_date = st.date_input(
-                        _("Due Date"), 
-                        value=st.session_state[f'email_due_{task["id"]}'], 
+                        _("Due Date"),
                         format="YYYY-MM-DD",
-                        key=f"email_task_due_date_{task['id']}"
+                        key=date_key,
                     )
-                    st.session_state[f'email_due_{task["id"]}'] = new_due_date
                 with col_clear_date:
                     st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
                     if st.button("×", key=f"clear_email_due_date_{task['id']}", use_container_width=True, help=_("Clear")):
-                        st.session_state[f'email_due_{task["id"]}'] = None
+                        # Emptying the field is an edit like any other: the
+                        # widget is cleared and the save below sees it differ
+                        # from the stored date.
+                        st.session_state[date_key] = None
                         st.rerun()
                 with col_today:
                     st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-                    new_today_flag = st.checkbox(_("Today"), value=current_today_flag, key=f"email_task_today_{task['id']}")
+                    follow_stored_value(today_key, current_today_flag)
+                    new_today_flag = st.checkbox(_("Today"), key=today_key)
 
-                new_note = st.text_area(_("Notes (Markdown)"), value=current_note, key=f"email_task_note_{task['id']}", height=150)
+                follow_stored_value(note_key, current_note)
+                new_note = st.text_area(_("Notes (Markdown)"), key=note_key, height=150)
 
-                # No explicit "Save" button: as soon as any field's current
-                # widget value differs from what's actually stored, persist
-                # it right away.
+                # No explicit "Save" button: as soon as a field differs from
+                # what is stored, it is persisted right away. That only means
+                # "somebody edited it" because the widgets above are kept in
+                # step with the document - without that, a value changed
+                # anywhere else reads as an edit here and is put back.
                 final_due_date = new_due_date.isoformat() if new_due_date else None
                 if (new_task_name != current_task_name
                         or final_due_date != current_due_date_str
@@ -2078,9 +2134,9 @@ def view_email_assignment():
                         clear_due_date=final_due_date is None,
                     ):
                         set_feedback(_("Task details updated successfully."))
-                        # Clear session state for this task's date input to ensure fresh load next time
-                        if f'email_due_{task["id"]}' in st.session_state:
-                            del st.session_state[f'email_due_{task["id"]}']
+                        # Nothing to clear here any more. The separate mirror
+                        # of the date is gone, and the widgets pick the saved
+                        # values up by themselves on the next redraw.
                         st.rerun()
                     else:
                         st.error(_("Error updating task details."))
