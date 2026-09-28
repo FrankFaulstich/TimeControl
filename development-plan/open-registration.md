@@ -53,11 +53,16 @@ path handling, which is one worry that can be set aside.
 
 ## 1. Rate limiting that cannot lock out existing users
 
-This is the sharpest of the four requirements, and the current code does not meet it &ndash;
-for login, today, with one user. Exhausting `tc_hash_budget_take()` makes `?a=login` answer
-`too_many_attempts` to everybody, the owner included. With registration reachable by anyone,
-exhausting it stops being a minute's nuisance and becomes a cheap, permanent denial of the
-owner's own synchronisation.
+This is the sharpest of the four requirements. For login it is now met, by issue #585: when
+`tc_hash_budget_take()` is spent, a device that has signed in to that same account before may
+still draw on a small reserve (`TC_HASH_RESERVE_PER_MINUTE`), decided before any password is
+hashed. The owner can therefore recover an expired or signed-out machine through a flood; only a
+machine signing in for the very first time has to wait it out. See `php-server/README.md`.
+
+What is left is the registration half below. With registration reachable by anyone, the thing to
+prevent is registration eating into the login budget at all &ndash; otherwise the reserve would
+be the only thing standing between the owner and a cheap, permanent denial of their own
+synchronisation, and it was sized for recovery, not for that.
 
 **Registration must not draw on the login budget.** Two counters, and they must not be
 fungible:

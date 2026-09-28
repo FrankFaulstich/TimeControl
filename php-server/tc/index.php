@@ -66,7 +66,14 @@ switch ($action) {
             tc_fail(400, 'missing_credentials', 'username and password are required.');
         }
 
-        if (!tc_hash_budget_take($store)) {
+        // The general allowance first. Only when it is spent does it matter
+        // who is asking - and then a device this account has signed in from
+        // before may still draw on a reserve nobody flooding the endpoint can
+        // reach. Everybody else gets the same answer they always did, so
+        // neither path says anything about which usernames or devices exist.
+        if (!tc_hash_budget_take($store)
+                && !(tc_login_from_known_device($store, $username, $deviceUid)
+                     && tc_hash_reserve_take($store))) {
             tc_fail(429, 'too_many_attempts', 'Too many sign-in attempts right now. Try again shortly.');
         }
 
