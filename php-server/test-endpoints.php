@@ -18,6 +18,9 @@
  */
 
 require_once __DIR__ . '/tc/lib/store.php';
+// For TC_HASH_BUDGET_PER_MINUTE, which the sign-in tests below spend: read from
+// the server's own definition so they go on meaning something if it changes.
+require_once __DIR__ . '/tc/lib/auth.php';
 
 const TC_BCRYPT_COST_TEST = 4;   // this is a test, not a password store
 
@@ -298,6 +301,74 @@ $bigPush = json_encode(['base_seq' => 0, 'ops' => [
 [$status, $body] = tc_request($base, 'POST', ['a' => 'push'], $bigPush, $token);
 tc_check('a push past the ordinary limit still is too',
          $status === 413 && ($body['error'] ?? '') === 'body_too_large',
+         $status . ' ' . json_encode($body));
+
+// Issue #585. The password-checking allowance is one counter for the whole
+// installation, and anybody who can reach ?a=login can spend it. What that used
+// to cost was the owner being unable to sign in at all until it refilled.
+print("\nSigning in while somebody else has spent the allowance\n");
+
+// Spent by writing the counter rather than by making thirty requests: each of
+// those would be a real bcrypt, and a run that crossed a minute boundary would
+// find the counter reset and test nothing. Written again just before each
+// request for the same reason, and nudged clear of the boundary first.
+if (time() % 60 > 55) {
+    sleep(61 - time() % 60);
+}
+$spend = function () use ($store) {
+    tc_write_json($store . '/rate.dat.php',
+                  ['win' => intdiv(time(), 60), 'n' => TC_HASH_BUDGET_PER_MINUTE]);
+};
+
+$spend();
+[$status, $body] = tc_request($base, 'POST', ['a' => 'login'], json_encode([
+    'username' => 'tester', 'password' => 'secret',
+    'device_uid' => bin2hex(random_bytes(8)), 'device_name' => 'new',
+]));
+tc_check('a device this account has never seen is still turned away',
+         $status === 429 && ($body['error'] ?? '') === 'too_many_attempts',
+         $status . ' ' . json_encode($body));
+
+$spend();
+[$status, $body] = tc_request($base, 'POST', ['a' => 'login'], json_encode([
+    'username' => 'tester', 'password' => 'secret',
+    'device_uid' => $device, 'device_name' => 'test',
+]));
+tc_check('the device that signed in before gets through anyway',
+         $status === 200 && !empty($body['token']),
+         $status . ' ' . json_encode($body));
+
+$spend();
+[$status, $body] = tc_request($base, 'POST', ['a' => 'login'], json_encode([
+    'username' => 'tester', 'password' => 'not the password',
+    'device_uid' => $device, 'device_name' => 'test',
+]));
+tc_check('and it still has to know the password',
+         $status === 401 && ($body['error'] ?? '') === 'invalid_credentials',
+         $status . ' ' . json_encode($body));
+
+$spend();
+[$status, $body] = tc_request($base, 'POST', ['a' => 'login'], json_encode([
+    'username' => 'somebody-else', 'password' => 'secret',
+    'device_uid' => $device, 'device_name' => 'test',
+]));
+tc_check('a known device under a name it never used is turned away like a stranger',
+         $status === 429 && ($body['error'] ?? '') === 'too_many_attempts',
+         $status . ' ' . json_encode($body));
+
+// The reserve has to end as well. It is still a password check, and a known
+// device is not necessarily its owner's any more - a stolen laptop is one. Were
+// the reserve drawn on without being counted, that laptop could guess at the
+// password without limit during a flood it caused itself.
+$spend();
+tc_write_json($store . '/rate-reserve.dat.php',
+              ['win' => intdiv(time(), 60), 'n' => TC_HASH_RESERVE_PER_MINUTE]);
+[$status, $body] = tc_request($base, 'POST', ['a' => 'login'], json_encode([
+    'username' => 'tester', 'password' => 'secret',
+    'device_uid' => $device, 'device_name' => 'test',
+]));
+tc_check('and once the reserve is spent too, so is the known device',
+         $status === 429 && ($body['error'] ?? '') === 'too_many_attempts',
          $status . ' ' . json_encode($body));
 
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);

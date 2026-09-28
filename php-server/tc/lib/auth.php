@@ -31,6 +31,25 @@ const TC_IDLE_TTL  = 2592000;  // 30 days
 // cannot be inflated and cannot lock out a specific account by name.
 const TC_HASH_BUDGET_PER_MINUTE = 30;
 
+// What that one counter costs: anybody who can reach ?a=login can spend it, and
+// once it is spent the owner cannot sign in either - not to add a machine, and
+// not to recover one whose token has expired or been revoked. (Synchronising is
+// untouched throughout; push, pull, head and snapshot never hash a password.)
+//
+// So there is a reserve beside it, drawn on only when the allowance above is
+// gone, and only by a device this account has signed in from before. That is
+// the one thing an attacker flooding the endpoint does not have: a device id is
+// 64 random bits, known to the device and the server and sent nowhere else, and
+// the server only ever records one after a correct password. Recording it is
+// also what the owner's machines already have - the entry outlives the token,
+// through expiry and through signing out - so the reserve reaches exactly the
+// two cases the lockout hurt.
+//
+// Still one global file, for the reason above: nothing about it is keyed on
+// what the caller sends, so it cannot be made to create files. And small,
+// because it is a lever too, only one that fewer hands can reach.
+const TC_HASH_RESERVE_PER_MINUTE = 10;
+
 function tc_users_file($store)   { return $store . '/users.dat.php'; }
 function tc_users_lock($store)   { return $store . '/users.lock'; }
 function tc_tokens_dir($store)   { return $store . '/tokens'; }
@@ -105,8 +124,73 @@ function tc_user_find($store, $username)
  */
 function tc_hash_budget_take($store)
 {
-    $path = $store . '/rate.dat.php';
-    $lock = tc_lock($store . '/rate.lock');
+    return tc_budget_take($store, 'rate', TC_HASH_BUDGET_PER_MINUTE);
+}
+
+/**
+ * Consumes one unit of the reserve, for a sign-in the allowance turned away.
+ *
+ * Only ever called for a device tc_login_from_known_device() recognised, and
+ * only once tc_hash_budget_take() has said no - see the constant for why.
+ *
+ * @return bool False when the reserve for this minute is used up as well.
+ */
+function tc_hash_reserve_take($store)
+{
+    return tc_budget_take($store, 'rate-reserve', TC_HASH_RESERVE_PER_MINUTE);
+}
+
+/**
+ * Whether a sign-in comes from a device this account has signed in from before.
+ *
+ * Decided before any password is hashed, and cheaply: two small reads, no
+ * bcrypt. That ordering is the whole point - a check that cost as much as the
+ * hash it guards would be no help against somebody spending hashes.
+ *
+ * It says nothing about whether the password is right. It only decides who
+ * may queue for the reserve; the password is still checked in full after.
+ *
+ * A disabled account is not recognised, so switching one off still closes it
+ * completely rather than leaving it a door the flood cannot reach.
+ *
+ * @param string $username  As the caller typed it.
+ * @param string $deviceUid As the caller sent it. Anything not shaped like a
+ *                          device id is simply not one of ours.
+ * @return bool
+ */
+function tc_login_from_known_device($store, $username, $deviceUid)
+{
+    if (!is_string($deviceUid) || !preg_match('/^[a-f0-9]{16}$/', $deviceUid)) {
+        return false;
+    }
+    $user = tc_user_find($store, (string)$username);
+    if (!$user || empty($user['uid']) || !empty($user['disabled'])) {
+        return false;
+    }
+    $record = tc_read_json(tc_user_dir($store, $user['uid']) . '/user.dat.php');
+    if (!is_array($record) || !is_array($record['devices'] ?? null)) {
+        return false;
+    }
+    foreach ($record['devices'] as $device) {
+        if (is_array($device) && ($device['device_uid'] ?? null) === $deviceUid) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * One per-minute allowance, kept in its own file.
+ *
+ * @param string $name  The file's stem. 'rate' is the name the allowance has
+ *                      always had, and every existing installation has one.
+ * @param int    $limit How many a minute.
+ * @return bool False when the allowance for this minute is used up.
+ */
+function tc_budget_take($store, $name, $limit)
+{
+    $path = $store . '/' . $name . '.dat.php';
+    $lock = tc_lock($store . '/' . $name . '.lock');
     if (!$lock) {
         // Refusing rather than waving it through: the budget exists to stop
         // this endpoint being used to burn the host's CPU, and an unenforced
@@ -120,7 +204,7 @@ function tc_hash_budget_take($store)
         if (!is_array($state) || ($state['win'] ?? null) !== $window) {
             $state = ['win' => $window, 'n' => 0];
         }
-        if ($state['n'] >= TC_HASH_BUDGET_PER_MINUTE) {
+        if ($state['n'] >= $limit) {
             return false;
         }
         $state['n']++;

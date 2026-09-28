@@ -666,5 +666,149 @@ tc_test('a typo in the setting does not lock everybody out', function () {
                    'unknown mode should behave as auto');
 });
 
+// ---------------------------------------------------------------------------
+// Signing in during a flood (issue #585).
+//
+// The password-checking allowance is one global counter, and whoever reaches
+// ?a=login can spend it. These are the pieces that keep the owner able to sign
+// in anyway: a reserve, and the one fact that decides who may draw on it.
+// ---------------------------------------------------------------------------
+
+/** An account with a real password hash, as setup.php writes one. */
+function tc_account($store, $uid, $username = 'frank', $disabled = false)
+{
+    $record = ['uid' => $uid, 'pass' => password_hash('richtig', PASSWORD_BCRYPT,
+                                                       ['cost' => 4])];
+    if ($disabled) {
+        $record['disabled'] = true;
+    }
+    tc_write_json(tc_users_file($store), ['users' => [$username => $record]]);
+    tc_secure_mkdir(tc_tokens_dir($store));
+    tc_secure_mkdir(tc_user_dir($store, $uid));
+}
+
+tc_test('the allowance counts, and refuses at its limit', function ($store, $uid) {
+    for ($i = 0; $i < 3; $i++) {
+        tc_assert_same(true, tc_budget_take($store, 'probe', 3), 'take ' . ($i + 1));
+    }
+    tc_assert_same(false, tc_budget_take($store, 'probe', 3), 'the fourth was allowed');
+});
+
+tc_test('a new minute starts the count again', function ($store, $uid) {
+    tc_write_json($store . '/probe.dat.php', ['win' => intdiv(time(), 60) - 1, 'n' => 99]);
+    tc_assert_same(true, tc_budget_take($store, 'probe', 3),
+                   'last minute\'s count was still held against this one');
+});
+
+tc_test('the reserve and the allowance do not share a count', function ($store, $uid) {
+    // The reserve is only any use if spending the allowance leaves it alone.
+    tc_write_json($store . '/rate.dat.php',
+                  ['win' => intdiv(time(), 60), 'n' => TC_HASH_BUDGET_PER_MINUTE]);
+    tc_assert_same(false, tc_hash_budget_take($store), 'the allowance was not spent');
+    tc_assert_same(true, tc_hash_reserve_take($store), 'the reserve went with it');
+});
+
+tc_test('the reserve runs out too', function ($store, $uid) {
+    // It is a lever as well, only one fewer hands can reach - so it has an end.
+    for ($i = 0; $i < TC_HASH_RESERVE_PER_MINUTE; $i++) {
+        tc_hash_reserve_take($store);
+    }
+    tc_assert_same(false, tc_hash_reserve_take($store), 'the reserve had no limit');
+});
+
+tc_test('a device this account signed in from is recognised', function ($store, $uid) {
+    tc_account($store, $uid);
+    tc_token_issue($store, $uid, 'a1b2c3d4e5f60718', 'laptop');
+    tc_assert_same(true, tc_login_from_known_device($store, 'frank', 'a1b2c3d4e5f60718'),
+                   'the device that signed in was not recognised');
+});
+
+tc_test('and it stays recognised once its token has expired', function ($store, $uid) {
+    // One of the two cases the lockout hurt: recovering after expiry. The
+    // token file goes; the device entry has to outlive it.
+    tc_account($store, $uid);
+    $issued = tc_token_issue($store, $uid, 'a1b2c3d4e5f60718', 'laptop');
+    $tokenId = explode('.', $issued['token'])[1];
+    $file = tc_tokens_dir($store) . '/' . $tokenId . '.dat.php';
+    $record = tc_read_json($file);
+    $record['exp'] = time() - 1;
+    tc_write_json($file, $record);
+    tc_assert_same(null, tc_token_check($store, $issued['token']), 'the token did not expire');
+
+    tc_assert_same(true, tc_login_from_known_device($store, 'frank', 'a1b2c3d4e5f60718'),
+                   'an expired token took the device with it');
+});
+
+tc_test('and once it has signed out', function ($store, $uid) {
+    // The other case: somebody signed out on purpose and wants back in.
+    tc_account($store, $uid);
+    $issued = tc_token_issue($store, $uid, 'a1b2c3d4e5f60718', 'laptop');
+    tc_token_revoke($store, explode('.', $issued['token'])[1]);
+    tc_assert_same(true, tc_login_from_known_device($store, 'frank', 'a1b2c3d4e5f60718'),
+                   'signing out made the device a stranger');
+});
+
+tc_test('a device this account never signed in from is not', function ($store, $uid) {
+    tc_account($store, $uid);
+    tc_token_issue($store, $uid, 'a1b2c3d4e5f60718', 'laptop');
+    tc_assert_same(false, tc_login_from_known_device($store, 'frank', 'ffffffffffffffff'),
+                   'a guessed device id was let into the reserve');
+});
+
+tc_test('a known device under the wrong account is not', function ($store, $uid) {
+    // Recognition is per account. Otherwise a device of one user would be a
+    // way past the flood into somebody else's.
+    tc_account($store, $uid);
+    tc_token_issue($store, $uid, 'a1b2c3d4e5f60718', 'laptop');
+    tc_assert_same(false, tc_login_from_known_device($store, 'nobody', 'a1b2c3d4e5f60718'),
+                   'the device was recognised for a name it never used');
+});
+
+tc_test('a disabled account recognises nothing', function ($store, $uid) {
+    // Switching an account off has to close it completely, not leave it one
+    // door the flood cannot reach.
+    tc_account($store, $uid);
+    tc_token_issue($store, $uid, 'a1b2c3d4e5f60718', 'laptop');
+    tc_account($store, $uid, 'frank', true);
+    tc_assert_same(false, tc_login_from_known_device($store, 'frank', 'a1b2c3d4e5f60718'),
+                   'a disabled account still let a device into the reserve');
+});
+
+tc_test('anything not shaped like a device id is nobody', function ($store, $uid) {
+    tc_account($store, $uid);
+    tc_token_issue($store, $uid, 'a1b2c3d4e5f60718', 'laptop');
+    foreach (['', 'short', '../../etc/passwd', 'A1B2C3D4E5F60718', null, 17] as $bad) {
+        tc_assert_same(false, tc_login_from_known_device($store, 'frank', $bad),
+                       'a malformed device id was recognised: ' . var_export($bad, true));
+    }
+});
+
+tc_test('a malformed id is refused even when the stored list holds one', function ($store, $uid) {
+    // The shape check looks redundant - a device id only ever matches by exact
+    // comparison against ids the server wrote itself. It stops being so the
+    // moment the list is not what the server wrote: user.dat.php edited by
+    // hand, restored from somewhere, or damaged. Then an entry like the one
+    // below is there to be matched, and only the check keeps it out.
+    tc_account($store, $uid);
+    tc_write_json(tc_user_dir($store, $uid) . '/user.dat.php',
+                  ['devices' => [['device_uid' => '../../etc']]]);
+    tc_assert_same(false, tc_login_from_known_device($store, 'frank', '../../etc'),
+                   'a malformed id matched a malformed entry');
+});
+
+tc_test('recognising a device hashes nothing', function ($store, $uid) {
+    // The whole reason it can stand in front of the hash: a check as costly
+    // as the thing it guards would be no help against somebody spending those.
+    tc_account($store, $uid);
+    tc_token_issue($store, $uid, 'a1b2c3d4e5f60718', 'laptop');
+    $start = microtime(true);
+    for ($i = 0; $i < 50; $i++) {
+        tc_login_from_known_device($store, 'frank', 'a1b2c3d4e5f60718');
+    }
+    $each = (microtime(true) - $start) / 50;
+    tc_assert($each < 0.01, sprintf('each check took %.1f ms - that is a hash, not a read',
+                                     $each * 1000));
+});
+
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
 exit($GLOBALS['tc_failed'] === 0 ? 0 : 1);

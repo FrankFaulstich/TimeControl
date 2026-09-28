@@ -237,8 +237,24 @@ than adding one. A client whose response got lost can simply retry.
 **Password checking is rate limited to 30 attempts per minute in total** &ndash;
 one global budget, not one per account or per IP address. Per-account
 counters let anyone lock you out by name, and per-IP counters let an attacker
-fill the disk with small files. The trade-off is real and deliberate: while
-the budget is exhausted, your own sign-in is refused too, for up to a minute.
+fill the disk with small files.
+
+The price of one global budget is that anyone who can reach the server can
+spend it. What that denies is signing *in* &ndash; synchronising goes on
+throughout, because it uses a token and never checks a password. So when the
+budget is spent there is a small **reserve of 10 a minute**, and only a device
+that has signed in to that same account before may draw on it. That is the one
+thing somebody flooding the server does not have: a device id is 64 random bits
+that only the device and the server know, and the server records one only
+after a correct password. The record outlives the device's token, so the
+reserve covers both cases a lockout hurts: a token that has expired, and a
+device that was signed out on purpose.
+
+A machine signing in for the very first time has no such record, and waits
+out a flood like anybody else &ndash; at most a minute. The reserve still asks
+for the password in full, and it runs out too, so a device that is no longer
+its owner's &ndash; a stolen laptop &ndash; gains a steady trickle of guesses
+at most, never a flood of them.
 
 **Stored files carry a PHP guard line.** If a directory's `.htaccess` ever
 stops being honoured, the files are executed rather than served and yield
