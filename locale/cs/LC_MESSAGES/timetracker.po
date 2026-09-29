@@ -3119,3 +3119,6 @@ msgstr "Server tvrdí, že změna pochází z jiného zařízení, než které j
 msgid "The server sent a change that had already been received, or sent two of them the wrong way round. Nothing has been applied here. If this does not clear up, the server is not doing what it should."
 msgstr "Server poslal změnu, která už byla přijata, nebo dvě z nich v opačném pořadí. Zde se nic nepoužilo. Pokud to nepřestane, server nedělá, co má."
 
+msgid "This account has used up its storage on the sync server, so new changes are kept on this device until there is room. Nothing is lost. A device that is fully synchronised frees space on its next sync; if none is, the server's limit has to be raised."
+msgstr "Tento účet vyčerpal své místo na synchronizačním serveru, proto nové změny zůstávají na tomto zařízení, dokud nebude místo. Nic se neztratí. Plně synchronizované zařízení uvolní místo při příští synchronizaci; pokud žádné takové není, je nutné zvýšit limit serveru."
+

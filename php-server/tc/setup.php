@@ -27,6 +27,9 @@ require_once __DIR__ . '/lib/store.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/http.php';
 require_once __DIR__ . '/lib/probe.php';
+// For the storage figures in "Show status": how much each account's log takes
+// up, read from its own bookkeeping.
+require_once __DIR__ . '/lib/oplog.php';
 
 ini_set('display_errors', '0');
 
@@ -396,6 +399,22 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $notices[] = 'Accounts: ' . ($names ? implode(', ', $names) : '(none)');
                 $tokens = glob(tc_tokens_dir($config['store']) . '/*.dat.php');
                 $notices[] = 'Live tokens: ' . ($tokens ? count($tokens) : 0);
+
+                // What each account takes up against its limit. The one place
+                // an operator can see an account filling before it is refused -
+                // by then the client says so too, but only to its owner.
+                $mib = function ($bytes) { return sprintf('%.1f MiB', $bytes / 1048576); };
+                foreach ($names as $name) {
+                    $uid = $data['users'][$name]['uid'] ?? null;
+                    if (!is_string($uid) || $uid === '') {
+                        continue;
+                    }
+                    $used = tc_account_usage(tc_log_state($config['store'], $uid));
+                    $notices[] = sprintf('Storage for %s: %s of %s (%d%%)%s',
+                        $name, $mib($used), $mib(TC_ACCOUNT_QUOTA_BYTES),
+                        (int)round(100 * $used / TC_ACCOUNT_QUOTA_BYTES),
+                        $used >= TC_ACCOUNT_QUOTA_BYTES ? ' - FULL, pushes are refused' : '');
+                }
             }
         } else {
             $errors[] = 'Unknown action.';

@@ -64,7 +64,54 @@ const TC_SNAPSHOT_MAX_BYTES = 4194304;   // 4 MiB
 // a week of storage.
 const TC_SEG_GRACE_SECONDS = 604800;     // 7 days
 
+// How much one account may keep in the store, in bytes (issue #586).
+//
+// Nothing capped it before. Shared hosting sells a few hundred megabytes, the
+// compaction that keeps a log bounded is driven by the client, and a client
+// that never offers a snapshot simply appends for ever. When the disk fills,
+// every account on the server stops synchronising, not just the one that
+// filled it - so the limit is per account, and it is the operator's quota it
+// protects rather than the account's own.
+//
+// Counted as what is actually on disk for the account's log: the live
+// segments, the retired ones still waiting out their grace, and both
+// snapshots. That is what the host is paying for.
+//
+// Fifty megabytes is roomy on purpose. One person's time tracking is a
+// document of a megabyte or two and a log that is compacted every couple of
+// thousand operations; the limit sits well clear of that, and of the two
+// four-megabyte snapshots an account may hold at the most, so that it only
+// ever bites on something that has gone wrong. Change it here for a host with
+// more space or less.
+const TC_ACCOUNT_QUOTA_BYTES = 52428800;   // 50 MiB
+
 function tc_log_dir($store, $uid)   { return tc_user_dir($store, $uid) . '/log'; }
+
+/**
+ * How many bytes an account's log takes up, from its own bookkeeping.
+ *
+ * Read from the state rather than by asking the filesystem for every file:
+ * the state already records the size of each segment and each snapshot, the
+ * append path holds it anyway, and a directory walk on every push would be a
+ * cost paid for a question this can answer in a loop over a few numbers.
+ *
+ * @return int
+ */
+function tc_account_usage(array $state)
+{
+    $total = 0;
+    foreach (['segments', 'retired'] as $list) {
+        foreach ((array)($state[$list] ?? []) as $segment) {
+            $total += (int)($segment['bytes'] ?? 0);
+        }
+    }
+    foreach (['snapshot', 'snapshot_previous'] as $which) {
+        if (is_array($state[$which] ?? null)) {
+            $total += (int)($state[$which]['bytes'] ?? 0);
+        }
+    }
+    return $total;
+}
 function tc_log_lock_path($store, $uid) { return tc_user_dir($store, $uid) . '/log.lock'; }
 function tc_log_state_path($store, $uid) { return tc_log_dir($store, $uid) . '/state.dat.php'; }
 
@@ -195,6 +242,20 @@ function tc_log_append($store, $uid, $deviceUid, array $ops)
         }
 
         if ($lines !== '') {
+            // Before anything reaches the disk, and measured with what is
+            // about to be added: a check afterwards would have let the write
+            // through that crossed the line.
+            //
+            // The whole batch or none of it. Nothing has been stored, so the
+            // client gets no sequence numbers and its counter here does not
+            // move - it keeps the operations and offers them again later,
+            // which is exactly what a refused push should leave it doing.
+            $usage = tc_account_usage($state);
+            if ($usage + strlen($lines) > TC_ACCOUNT_QUOTA_BYTES) {
+                return ['error' => 'quota_exceeded', 'usage' => $usage,
+                        'quota' => TC_ACCOUNT_QUOTA_BYTES, 'head' => (int)$state['head']];
+            }
+
             $seg = tc_log_current_segment($state, $head - count($assigned) + 1);
             $path = $dir . '/' . $seg['f'];
             if ((int)($seg['n'] ?? 0) === 0) {
@@ -533,7 +594,13 @@ function tc_snapshot_put($store, $uid, $deviceUid, $seq, $raw)
         //    has now been superseded twice over. Unlinking a file that is
         //    already gone costs nothing, so being killed part-way through
         //    leaves the next call to finish the job.
-        $deleted = tc_snapshot_sweep($state, $dir);
+        //
+        //    An account over its quota does not get the week's grace: the
+        //    snapshot it just sent is its only way back under, and a sweep
+        //    that kept everything the snapshot replaced would leave it as
+        //    full as before. See tc_snapshot_sweep().
+        $full = tc_account_usage($state) > TC_ACCOUNT_QUOTA_BYTES;
+        $deleted = tc_snapshot_sweep($state, $dir, $full);
         if (is_array($superseded) && !empty($superseded['f'])) {
             @unlink($dir . '/' . $superseded['f']);
         }
@@ -586,7 +653,7 @@ function tc_snapshot_retire(array &$state, $seq)
  * @param array $state Modified: swept segments leave the retired list.
  * @return int How many files were removed.
  */
-function tc_snapshot_sweep(array &$state, $dir)
+function tc_snapshot_sweep(array &$state, $dir, $now_regardless = false)
 {
     $now = time();
     $keep = [];
@@ -595,7 +662,14 @@ function tc_snapshot_sweep(array &$state, $dir)
         if (empty($segment['f'])) {
             continue;
         }
-        if ($now - (int)($segment['at'] ?? $now) >= TC_SEG_GRACE_SECONDS) {
+        // The grace period is a safety margin for a snapshot that turns out
+        // to be wrong, and it is worth a week of disk - unless the account
+        // is out of space. Then keeping a week of what the snapshot has just
+        // replaced would leave the account full after it compacted, still
+        // refusing every push, and the grace would have cost the one thing
+        // it exists to protect: the account's ability to synchronise at all.
+        if ($now_regardless
+                || $now - (int)($segment['at'] ?? $now) >= TC_SEG_GRACE_SECONDS) {
             @unlink($dir . '/' . $segment['f']);
             $deleted++;
         } else {

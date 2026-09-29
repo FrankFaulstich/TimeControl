@@ -50,6 +50,11 @@ def _messages():
         'unreachable': _("The server could not be reached. Check the address and your connection."),
         'bad_response': _("The address answered, but not like a TimeControl sync server. "
                           "Check that it points at the right directory."),
+        'quota_exceeded': _("This account has used up its storage on the sync server, so "
+                            "new changes are kept on this device until there is room. "
+                            "Nothing is lost. A device that is fully synchronised frees "
+                            "space on its next sync; if none is, the server's limit has "
+                            "to be raised."),
         'address_redirects': _("The address redirects somewhere else. Enter the address "
                                "it points to instead - this device will not follow a "
                                "redirect, because that could send its access token on "

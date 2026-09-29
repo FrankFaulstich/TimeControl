@@ -558,6 +558,37 @@ class TestFailures(EngineTestCase):
         self.assertEqual(len(self.outbox.pending()), 1,
                          "a change was dropped although it never reached the server")
 
+    def test_a_full_account_keeps_every_change_queued(self):
+        """
+        Issue #586. The server stored nothing, so there is nothing to
+        acknowledge - and a change dropped here would exist nowhere but in the
+        document of this one machine.
+        """
+        self.queue('project.create', uid=P1, f={'name': 'P'})
+        self.queue('task.create', uid=T1, project=P1, f={'task_name': 'T'})
+        self.server.fail_with = 'quota_exceeded'
+
+        result = sync_engine.run_cycle(self.outbox)
+
+        self.assertEqual(result.get('error'), 'quota_exceeded')
+        self.assertEqual(len(self.outbox.pending()), 2,
+                         "changes were dropped although the server stored none")
+
+    def test_a_full_account_waits_the_longest_interval(self):
+        """
+        Space comes back only when a caught-up device sends a snapshot or the
+        operator raises the limit. Asking again in a minute brings neither
+        closer, so it waits as long as it ever does - and says why meanwhile.
+        """
+        self.queue('project.create', uid=P1, f={'name': 'P'})
+        self.server.fail_with = 'quota_exceeded'
+        sync_engine.run_cycle(self.outbox)
+
+        state = sync_engine.read_state()
+        self.assertEqual(state['last_error'], 'quota_exceeded')
+        self.assertGreaterEqual(state['next_attempt'] - int(time.time()),
+                                sync_engine.BACKOFF_MAX_SECONDS - 5)
+
     def test_repeated_failures_back_off_instead_of_hammering(self):
         self.server.fail_with = 'unreachable'
         delays = []

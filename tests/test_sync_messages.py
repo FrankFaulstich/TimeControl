@@ -124,6 +124,8 @@ class TestEveryReachableCodeIsExplained(unittest.TestCase):
             'body_too_large', 'bad_json', 'method_not_allowed', 'unknown_action',
             'ops_not_a_list', 'too_many_ops', 'op_not_an_object', 'unknown_op',
             'bad_lc', 'bad_uid', 'bad_fields',
+            # Issue #586: a push to an account that has used up its storage.
+            'quota_exceeded',
         ], 'the sync server')
 
 
