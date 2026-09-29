@@ -810,5 +810,126 @@ tc_test('recognising a device hashes nothing', function ($store, $uid) {
                                      $each * 1000));
 });
 
+// ---------------------------------------------------------------------------
+// How much one account may keep (issue #586).
+//
+// Filling fifty megabytes for real would make every run slow. Usage is read
+// from the account's own bookkeeping, so it is steered here by planting a
+// retired segment with a large size in the state. Retired segments are out of
+// the reading path, so nothing else notices it is not really there - which is
+// also why the sweep can delete it harmlessly.
+// ---------------------------------------------------------------------------
+
+/** Makes the account look this many bytes full, as a retired segment. */
+function tc_plant_usage($store, $uid, $bytes, $at = null)
+{
+    $state = tc_log_state($store, $uid);
+    $state['retired'][] = ['f' => 'seg-planted.log.php', 'first' => 0, 'last' => 0,
+                           'bytes' => $bytes, 'n' => 0, 'at' => $at ?? time()];
+    tc_secure_mkdir(tc_log_dir($store, $uid));
+    tc_write_json(tc_log_state_path($store, $uid), $state);
+}
+
+tc_test('usage counts every part of the log that is on disk', function ($store, $uid) {
+    tc_assert_same(0, tc_account_usage(['segments' => []]), 'an empty log');
+    tc_assert_same(18, tc_account_usage([
+        'segments' => [['bytes' => 5], ['bytes' => 3]],
+        'retired' => [['bytes' => 4]],
+        'snapshot' => ['bytes' => 2],
+        'snapshot_previous' => ['bytes' => 4],
+    ]), 'live, retired and both snapshots together');
+});
+
+tc_test('an append that fits is taken', function ($store, $uid) {
+    $result = tc_log_append($store, $uid, 'dev0000000000001', tc_ops(3));
+    tc_assert(empty($result['error']), 'a small append was refused');
+    tc_assert_same(3, $result['head'], 'it was not recorded');
+});
+
+tc_test('an append that would cross the limit is refused whole', function ($store, $uid) {
+    tc_fill($store, $uid, 'dev0000000000001', 2);
+    tc_plant_usage($store, $uid, TC_ACCOUNT_QUOTA_BYTES - 10);
+
+    $result = tc_log_append($store, $uid, 'dev0000000000001', tc_ops(3, 100));
+    tc_assert_same('quota_exceeded', $result['error'] ?? null, 'the append went through');
+    tc_assert_same(TC_ACCOUNT_QUOTA_BYTES, $result['quota'], 'the limit was not reported');
+    tc_assert($result['usage'] >= TC_ACCOUNT_QUOTA_BYTES - 10, 'the usage was not reported');
+});
+
+tc_test('what is about to be written counts, not only what is there', function ($store, $uid) {
+    // Just under the limit, with room for less than one operation. A check of
+    // the usage alone would find the account not yet full and let the write
+    // through that takes it over - so the new bytes have to be in the sum.
+    tc_plant_usage($store, $uid, TC_ACCOUNT_QUOTA_BYTES - 5);
+    tc_assert(tc_account_usage(tc_log_state($store, $uid)) < TC_ACCOUNT_QUOTA_BYTES,
+              'the account should start just under its limit');
+
+    $result = tc_log_append($store, $uid, 'dev0000000000001', tc_ops(1));
+    tc_assert_same('quota_exceeded', $result['error'] ?? null,
+                   'the write that crosses the limit was let through');
+});
+
+tc_test('a refused append leaves nothing behind', function ($store, $uid) {
+    // No sequence numbers handed out, no counter moved: the client has to be
+    // able to offer exactly these operations again once there is room, and
+    // have them land as new rather than be waved away as duplicates.
+    tc_fill($store, $uid, 'dev0000000000001', 2);
+    $before = tc_log_state($store, $uid);
+    tc_plant_usage($store, $uid, TC_ACCOUNT_QUOTA_BYTES);
+
+    tc_log_append($store, $uid, 'dev0000000000001', tc_ops(3, 100));
+    $after = tc_log_state($store, $uid);
+    tc_assert_same((int)$before['head'], (int)$after['head'], 'head moved');
+    tc_assert_same((int)$before['devices']['dev0000000000001']['max_lc'],
+                   (int)$after['devices']['dev0000000000001']['max_lc'],
+                   'the duplicate counter moved for work that was not stored');
+    tc_assert_same(2, count(tc_read_all($store, $uid, 0)), 'something was written');
+});
+
+tc_test('a batch of nothing but repeats is not refused', function ($store, $uid) {
+    // Nothing would be written, so there is nothing to refuse - and refusing
+    // would stop a client from learning that its earlier push had landed.
+    tc_fill($store, $uid, 'dev0000000000001', 3);
+    tc_plant_usage($store, $uid, TC_ACCOUNT_QUOTA_BYTES * 2);
+    $result = tc_log_append($store, $uid, 'dev0000000000001', tc_ops(3));
+    tc_assert(empty($result['error']), 'repeats were refused as if they took space');
+    tc_assert_same([1, 2, 3], $result['dups'], 'the repeats were not reported as such');
+});
+
+tc_test('a snapshot is accepted even when the account is full', function ($store, $uid) {
+    // It is the only thing that makes an account smaller. Refusing it for
+    // being over the limit would leave a full account full for good.
+    $head = tc_fill($store, $uid, 'dev0000000000001', 4);
+    tc_plant_usage($store, $uid, TC_ACCOUNT_QUOTA_BYTES * 2);
+    $result = tc_snapshot_put($store, $uid, 'dev0000000000001', $head, tc_document());
+    tc_assert(is_array($result) && empty($result['error']), 'a full account could not compact');
+});
+
+tc_test('and a full account gets its space back at once, not in a week', function ($store, $uid) {
+    // With the ordinary grace the segments the snapshot replaced would stay
+    // for seven days, the account would stay over its limit, and every push
+    // in that week would still be refused.
+    $head = tc_fill($store, $uid, 'dev0000000000001', 4);
+    tc_plant_usage($store, $uid, TC_ACCOUNT_QUOTA_BYTES * 2);
+    tc_snapshot_put($store, $uid, 'dev0000000000001', $head, tc_document());
+
+    $state = tc_log_state($store, $uid);
+    tc_assert_same(0, count($state['retired']), 'retired segments were kept for their grace');
+    tc_assert(tc_account_usage($state) < TC_ACCOUNT_QUOTA_BYTES,
+              'the account is still over its limit after compacting');
+
+    $again = tc_log_append($store, $uid, 'dev0000000000001', tc_ops(2, 500));
+    tc_assert(empty($again['error']), 'pushes are still refused after compacting');
+});
+
+tc_test('an account with room keeps the week of grace', function ($store, $uid) {
+    // The grace is a safety margin for a snapshot that turns out to be wrong.
+    // Giving it up is only worth it when there is no space for it.
+    $head = tc_fill($store, $uid, 'dev0000000000001', 4);
+    tc_snapshot_put($store, $uid, 'dev0000000000001', $head, tc_document());
+    tc_assert(count(tc_log_state($store, $uid)['retired']) > 0,
+              'an account with plenty of room lost its grace period');
+});
+
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
 exit($GLOBALS['tc_failed'] === 0 ? 0 : 1);

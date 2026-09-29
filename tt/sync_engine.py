@@ -75,6 +75,12 @@ TERMINAL_ERRORS = frozenset((
     # The address in the settings is not the one the token belongs to. Only
     # signing in again resolves that, so asking again sooner changes nothing.
     'address_changed',
+    # The account is full on the server. Space comes back only when a device
+    # that is caught up sends a snapshot, or the operator raises the limit -
+    # neither of which a retry a minute from now brings any closer. The
+    # operations stay queued throughout; nothing was stored, so nothing is
+    # acknowledged and nothing is dropped.
+    'quota_exceeded',
     # Encryption is switched on for this account but this machine cannot take
     # part. Every one of these waits on a person - typing the passphrase,
     # correcting a setting - so retrying sooner would only fill the log.

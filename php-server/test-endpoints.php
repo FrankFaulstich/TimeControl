@@ -21,6 +21,8 @@ require_once __DIR__ . '/tc/lib/store.php';
 // For TC_HASH_BUDGET_PER_MINUTE, which the sign-in tests below spend: read from
 // the server's own definition so they go on meaning something if it changes.
 require_once __DIR__ . '/tc/lib/auth.php';
+// For the storage limit below: its value, and the log's own bookkeeping.
+require_once __DIR__ . '/tc/lib/oplog.php';
 
 const TC_BCRYPT_COST_TEST = 4;   // this is a test, not a password store
 
@@ -370,6 +372,48 @@ tc_write_json($store . '/rate-reserve.dat.php',
 tc_check('and once the reserve is spent too, so is the known device',
          $status === 429 && ($body['error'] ?? '') === 'too_many_attempts',
          $status . ' ' . json_encode($body));
+
+// Issue #586. The account is made to look full through its bookkeeping - a
+// retired segment with a large size - rather than by writing fifty megabytes.
+print("\nAn account that has used up its storage\n");
+
+// A fresh token. The sign-in tests above signed this same device in again,
+// which replaces its token, so the one from the start of the file is gone -
+// and they spent both allowances on purpose, so those are cleared first.
+@unlink($store . '/rate.dat.php');
+@unlink($store . '/rate-reserve.dat.php');
+[$status, $body] = tc_request($base, 'POST', ['a' => 'login'], json_encode([
+    'username' => 'tester', 'password' => 'secret',
+    'device_uid' => $device, 'device_name' => 'test',
+]));
+$token = $body['token'] ?? '';
+tc_check('signed in again for this part', $status === 200 && $token !== '',
+         $status . ' ' . json_encode($body));
+
+$state = tc_log_state($store, $uid);
+$state['retired'][] = ['f' => 'seg-planted.log.php', 'first' => 0, 'last' => 0,
+                       'bytes' => TC_ACCOUNT_QUOTA_BYTES, 'n' => 0, 'at' => time()];
+tc_write_json(tc_log_state_path($store, $uid), $state);
+
+// A counter higher than anything this device has sent above. An old one would
+// be a repeat, and a repeat writes nothing - so it is rightly not refused,
+// and would pass for a full account that had stopped refusing anything.
+[$status, $body] = tc_request($base, 'POST', ['a' => 'push'], json_encode([
+    'base_seq' => 0, 'ops' => [
+        ['op' => 'task.set', 'lc' => 999999, 'uid' => sprintf('%016x', 9),
+         'f' => ['note' => 'one more']]]]), $token);
+tc_check('a push is refused with Insufficient Storage',
+         $status === 507 && ($body['error'] ?? '') === 'quota_exceeded',
+         $status . ' ' . json_encode($body));
+tc_check('and says how full, not only that it is',
+         ($body['quota'] ?? null) === TC_ACCOUNT_QUOTA_BYTES
+         && (int)($body['usage'] ?? 0) >= TC_ACCOUNT_QUOTA_BYTES,
+         json_encode($body));
+
+// Signing in and asking where the log stands still work: a full account can
+// still find out what is going on, and still be put right.
+[$status, $body] = tc_request($base, 'GET', ['a' => 'head'], null, $token);
+tc_check('the cheap poll still answers', $status === 200, $status . ' ' . json_encode($body));
 
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
 exit($GLOBALS['tc_failed'] === 0 ? 0 : 1);

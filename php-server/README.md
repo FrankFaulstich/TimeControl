@@ -256,6 +256,31 @@ for the password in full, and it runs out too, so a device that is no longer
 its owner's &ndash; a stolen laptop &ndash; gains a steady trickle of guesses
 at most, never a flood of them.
 
+**Each account may keep 50 MiB.** When the disk of a shared host fills up,
+every account stops synchronising, not only the one that filled it &ndash; so
+the limit is per account, and it is the host's space it protects. It counts
+what is actually on disk for the account's log: the live segments, the ones a
+snapshot has retired but not yet deleted, and both snapshots. Change
+`TC_ACCOUNT_QUOTA_BYTES` in `tc/lib/oplog.php` for a host with more room or
+less. *Show status* in `setup.php` lists each account against it.
+
+A push that would cross the limit is refused whole, with `507 Insufficient
+Storage`. Nothing of it is stored, so the client keeps those changes queued and
+offers them again later; nothing is lost. Snapshots are never refused for the
+limit, because a snapshot is what makes an account smaller &ndash; and when the
+account is full, a snapshot deletes the segments it replaces straight away
+instead of keeping them for the usual week, or the account would stay full
+after compacting.
+
+One case it cannot get out of by itself: a snapshot is only sent by a device
+with nothing left to send, and a device whose pushes are being refused always
+has something. So a full account recovers through another of its devices that
+is caught up, or through the limit being raised. For an ordinary account the
+limit is far out of reach &ndash; one person's time tracking is a document of a
+megabyte or two, compacted every couple of thousand changes &ndash; so reaching
+it means snapshots have been failing for a long time, and that is worth
+knowing about anyway.
+
 **Stored files carry a PHP guard line.** If a directory's `.htaccess` ever
 stops being honoured, the files are executed rather than served and yield
 nothing. The marker file used during installation deliberately does *not*

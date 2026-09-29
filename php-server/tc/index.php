@@ -178,6 +178,15 @@ switch ($action) {
         if ($result === null) {
             tc_fail(503, 'busy', 'The log is locked right now. Retry.');
         }
+        if (isset($result['error'])) {
+            // 507 Insufficient Storage: the request was fine, the account is
+            // full. Usage and quota travel with it so the client can say how
+            // full, rather than only that it is.
+            tc_json(507, ['ok' => false, 'error' => $result['error'],
+                          'usage' => $result['usage'], 'quota' => $result['quota'],
+                          'head' => $result['head'],
+                          'message' => 'This account has used up its storage on the server.']);
+        }
 
         $read = tc_log_read($store, $session['uid'], $baseSeq, TC_PULL_MAX_OPS, $session['device_uid']);
         tc_ok([

@@ -3318,3 +3318,6 @@ msgstr "El servidor afirma que un cambio procede de un dispositivo distinto del 
 msgid "The server sent a change that had already been received, or sent two of them the wrong way round. Nothing has been applied here. If this does not clear up, the server is not doing what it should."
 msgstr "El servidor envió un cambio que ya se había recibido, o dos de ellos en el orden equivocado. Aquí no se ha aplicado nada. Si esto no se aclara, el servidor no está haciendo lo que debería."
 
+msgid "This account has used up its storage on the sync server, so new changes are kept on this device until there is room. Nothing is lost. A device that is fully synchronised frees space on its next sync; if none is, the server's limit has to be raised."
+msgstr "Esta cuenta ha agotado su espacio en el servidor de sincronización, así que los cambios nuevos se quedan en este dispositivo hasta que haya sitio. No se pierde nada. Un dispositivo totalmente sincronizado libera espacio en su próxima sincronización; si no hay ninguno, hay que aumentar el límite del servidor."
+

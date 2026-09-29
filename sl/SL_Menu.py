@@ -659,9 +659,12 @@ def render_sync_notice():
     # usually clears itself, so it is left alone at first - but not for ever:
     # a sync that has been failing all week while the app looks perfectly
     # normal is how two machines quietly become two different documents.
+    # quota_exceeded belongs here: changes pile up on this device while it
+    # lasts, and waiting for a run of failures before saying so would hide
+    # exactly the thing somebody would want to act on.
     actionable = snapshot['error'] in ('not_signed_in', 'invalid_token', 'https_required',
                                        'not_installed', 'bad_response', 'local_io',
-                                       'address_changed')
+                                       'address_changed', 'quota_exceeded')
     if not actionable and int(snapshot.get('failures', 0)) < SYNC_QUIET_FAILURES:
         return
     st.warning(_("Synchronisation is paused: {reason}").format(
