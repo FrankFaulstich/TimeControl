@@ -281,6 +281,19 @@ megabyte or two, compacted every couple of thousand changes &ndash; so reaching
 it means snapshots have been failing for a long time, and that is worth
 knowing about anyway.
 
+**Each account is a file of its own**, in `accounts/` in the store, named after
+a hash of the username. Signing in reads that one file, and adding or deleting
+an account writes only its own &ndash; so none of it grows with the number of
+accounts, and one damaged file costs one account rather than all of them.
+
+Installations from before this kept every account in one list,
+`users.dat.php`. Nothing needs doing about it: the first sign-in or setup
+action after the update converts it, and removes it once every account has its
+file. If it cannot be converted &ndash; the file cannot be read, or the store
+cannot be written &ndash; it is left exactly as it was and signing in goes on
+working from it. Only adding and deleting accounts wait until it is converted,
+and *Show status* says so.
+
 **Stored files carry a PHP guard line.** If a directory's `.htaccess` ever
 stops being honoured, the files are executed rather than served and yield
 nothing. The marker file used during installation deliberately does *not*

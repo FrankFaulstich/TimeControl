@@ -48,8 +48,8 @@ One counter can do neither. The cost accepted in exchange is that exhausting it 
 *everyone* &ndash; which for one user, for one minute, was a fair trade.
 
 **Usernames are not filenames.** A user's directory is named after the 32-hex `uid`, and the
-username is only a key inside `users.dat.php`. Attacker-chosen usernames therefore introduce no
-path handling, which is one worry that can be set aside.
+account record after the SHA-256 of the username (issue #587). Attacker-chosen usernames
+therefore introduce no path handling, which is one worry that can be set aside.
 
 ## 1. Rate limiting that cannot lock out existing users
 
@@ -152,9 +152,13 @@ the compaction that keeps a log bounded is per-account and client-driven &ndash;
 client simply does not run it. A per-account cap on store size, checked before an append, is a
 prerequisite rather than a refinement.
 
-**`users.dat.php` is one JSON file**, read, decoded, modified and rewritten whole under a lock
+**`users.dat.php` was one JSON file**, read, decoded, modified and rewritten whole under a lock
 for every account change. That is right for a handful of accounts and wrong for a few thousand,
-and registration is what makes the count somebody else's decision.
+and registration is what makes the count somebody else's decision. Since issue #587 every
+account has a file of its own under `accounts/`, found by a computed path; an old list is
+converted on the first request after the update. Measured before the change, the old list cost
+about 4 ms per sign-up and 3 ms and 5 MiB of memory per sign-in at 5,000 accounts, growing in
+step with the count; after it, a sign-up takes about 0.5 ms and a sign-in 0.02 ms at any count.
 
 **The store is shared.** Every account lives under one store directory whose protection was
 proved once at install. That does not weaken per-account isolation &ndash; the paths are
@@ -168,7 +172,7 @@ in it has to be revisited against "anyone on the internet can create an account"
 ## Order of work, if it is ever taken up
 
 1. Per-account store cap, and a bounded `users.dat.php`. Neither is about registration; both
-   have to exist before it, and both are useful on their own.
+   have to exist before it, and both are useful on their own. Both done: issues #586 and #587.
 2. Invite codes: generation in `setup.php`, redemption via `?a=register`, single-use under the
    existing users lock.
 3. Sweep of never-used accounts, on the registration path, bounded per call.

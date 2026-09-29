@@ -107,24 +107,16 @@ tc_copytree(__DIR__ . '/tc', $web);
 tc_secure_mkdir($store);
 // The same subdirectories setup.php lays down. Without tokens/ every sign-in
 // answers "busy", which is a confusing way to be told the store is not there.
-foreach (['tokens', 'users'] as $sub) {
+foreach (['tokens', 'users', 'accounts'] as $sub) {
     tc_secure_mkdir($store . '/' . $sub);
 }
 
 file_put_contents($web . '/config.php',
     "<?php return " . var_export(['store' => $store], true) . ";\n");
 
-// An account, made the way setup.php makes one.
-$uid = bin2hex(random_bytes(16));
-tc_write_json($store . '/users.dat.php', ['users' => ['tester' => [
-    'uid' => $uid,
-    'pass' => password_hash('secret', PASSWORD_BCRYPT, ['cost' => TC_BCRYPT_COST_TEST]),
-    'created' => date('c'),
-]]]);
-tc_secure_mkdir($store . '/users/' . $uid);
-tc_secure_mkdir($store . '/users/' . $uid . '/seen');
-tc_write_json($store . '/users/' . $uid . '/user.dat.php',
-              ['disabled' => false, 'devices' => []]);
+// An account, made by what setup.php makes one with.
+$uid = tc_account_create($store, 'tester',
+    password_hash('secret', PASSWORD_BCRYPT, ['cost' => TC_BCRYPT_COST_TEST]))['uid'];
 
 // index.php refuses plain HTTP, and the built-in server does not do TLS. The
 // router says so on the way in; nothing else about the request is touched.
@@ -414,6 +406,38 @@ tc_check('and says how full, not only that it is',
 // still find out what is going on, and still be put right.
 [$status, $body] = tc_request($base, 'GET', ['a' => 'head'], null, $token);
 tc_check('the cheap poll still answers', $status === 200, $status . ' ' . json_encode($body));
+
+// Issue #587. What the owner's server looks like the moment the new files are
+// uploaded: accounts still in the one old list, and nobody there to convert it.
+print("\nAn installation from before one file per account\n");
+
+@unlink($store . '/rate.dat.php');
+@unlink($store . '/rate-reserve.dat.php');
+$oldUid = bin2hex(random_bytes(16));
+tc_secure_mkdir(tc_user_dir($store, $oldUid) . '/seen');
+tc_write_json(tc_user_dir($store, $oldUid) . '/user.dat.php', ['disabled' => false, 'devices' => []]);
+tc_write_json(tc_users_file($store), ['users' => ['oldtimer' => [
+    'uid' => $oldUid,
+    'pass' => password_hash('from-before', PASSWORD_BCRYPT, ['cost' => TC_BCRYPT_COST_TEST]),
+    'created' => date('c'),
+]]]);
+
+[$status, $body] = tc_request($base, 'POST', ['a' => 'login'], json_encode([
+    'username' => 'oldtimer', 'password' => 'from-before',
+    'device_uid' => 'abcdefabcdef0587', 'device_name' => 'test',
+]));
+tc_check('an account from the old list signs in', $status === 200 && !empty($body['token']),
+         $status . ' ' . json_encode($body));
+tc_check('and the list was converted on the way',
+         !is_file(tc_users_file($store))
+         && (tc_read_json(tc_account_file($store, 'oldtimer'))['uid'] ?? null) === $oldUid);
+
+[$status, $body] = tc_request($base, 'POST', ['a' => 'login'], json_encode([
+    'username' => 'tester', 'password' => 'secret',
+    'device_uid' => $device, 'device_name' => 'test',
+]));
+tc_check('without losing an account that was already converted', $status === 200,
+         $status . ' ' . json_encode($body));
 
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
 exit($GLOBALS['tc_failed'] === 0 ? 0 : 1);
