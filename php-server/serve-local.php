@@ -35,6 +35,7 @@
  */
 
 require __DIR__ . '/tc/lib/store.php';
+require __DIR__ . '/tc/lib/auth.php';
 
 const TC_LOCAL_BCRYPT_COST = 4;   // a throwaway account, not a password store
 
@@ -90,24 +91,15 @@ tc_local_copytree(__DIR__ . '/tc', $web);
 tc_secure_mkdir($store);
 // The subdirectories setup.php lays down. Without tokens/ every sign-in
 // answers "busy", which is a confusing way to be told the store is missing.
-foreach (['tokens', 'users'] as $sub) {
+foreach (['tokens', 'users', 'accounts'] as $sub) {
     tc_secure_mkdir($store . '/' . $sub);
 }
 file_put_contents($web . '/config.php',
     "<?php return " . var_export(['store' => $store], true) . ";\n");
 
-// One account, laid out the way setup.php lays one down.
-$uid = bin2hex(random_bytes(16));
-tc_write_json($store . '/users.dat.php', ['users' => [$user => [
-    'uid'     => $uid,
-    'pass'    => password_hash($pass, PASSWORD_BCRYPT,
-                               ['cost' => TC_LOCAL_BCRYPT_COST]),
-    'created' => date('c'),
-]]]);
-tc_secure_mkdir($store . '/users/' . $uid);
-tc_secure_mkdir($store . '/users/' . $uid . '/seen');
-tc_write_json($store . '/users/' . $uid . '/user.dat.php',
-              ['disabled' => false, 'devices' => []]);
+// One account, made by what setup.php makes one with.
+tc_account_create($store, $user,
+                  password_hash($pass, PASSWORD_BCRYPT, ['cost' => TC_LOCAL_BCRYPT_COST]));
 
 file_put_contents($root . '/router.php',
     "<?php\n\$_SERVER['HTTPS'] = 'on';\nrequire "

@@ -50,9 +50,36 @@ const TC_HASH_BUDGET_PER_MINUTE = 30;
 // because it is a lever too, only one that fewer hands can reach.
 const TC_HASH_RESERVE_PER_MINUTE = 10;
 
-function tc_users_file($store)   { return $store . '/users.dat.php'; }
-function tc_users_lock($store)   { return $store . '/users.lock'; }
-function tc_tokens_dir($store)   { return $store . '/tokens'; }
+// One file per account (issue #587). They used to be one JSON file,
+// users.dat.php, decoded whole on every sign-in and rewritten whole on every
+// account change. Measured, that costs little time at the numbers in question -
+// a few milliseconds at five thousand accounts - but everything about it grows
+// with the count: the memory each sign-in needs, the time the lock is held, and
+// how much one unreadable file takes down with it. Registration (#552) makes the
+// count somebody else's decision. So now a sign-in reads one small file, and an
+// account change writes one.
+//
+// users.dat.php is still recognised, as what an installation from before this
+// has, and converted the first time anything asks - see tc_accounts_migrate().
+function tc_users_file($store)    { return $store . '/users.dat.php'; }
+function tc_users_lock($store)    { return $store . '/users.lock'; }
+function tc_accounts_dir($store)  { return $store . '/accounts'; }
+function tc_tokens_dir($store)    { return $store . '/tokens'; }
+
+/**
+ * Where an account's record lives: a name computed from the username, the way
+ * a token's file is computed from its id - one path, never a search.
+ *
+ * Hashed rather than used as it stands. The name at sign-in is whatever the
+ * caller sent, of any length and made of any bytes, and a hash makes it a
+ * filename without deciding which of those would be safe as one - the same
+ * reason an account's directory is named after its uid. It also keeps "Frank"
+ * and "frank" apart on a filesystem that would fold them into one.
+ */
+function tc_account_file($store, $username)
+{
+    return tc_accounts_dir($store) . '/' . hash('sha256', (string)$username) . '.dat.php';
+}
 
 /**
  * The operator passphrase as it was meant, out of a file an editor may have
@@ -108,13 +135,148 @@ function tc_user_dir($store, $uid) { return $store . '/users/' . $uid; }
  */
 function tc_user_find($store, $username)
 {
-    $data = tc_read_json(tc_users_file($store));
-    if (!$data || empty($data['users']) || !isset($data['users'][$username])) {
+    $username = (string)$username;
+    if (!tc_accounts_migrate($store)) {
+        // The old list is still there, so it is still the whole truth: nothing
+        // adds or removes an account until it is gone. Signing in goes on
+        // working while the conversion cannot finish - on a full disk, say.
+        $data = tc_read_json(tc_users_file($store));
+        if (!$data || empty($data['users']) || !isset($data['users'][$username])) {
+            return null;
+        }
+        $user = $data['users'][$username];
+        $user['username'] = $username;
+        return $user;
+    }
+
+    $user = tc_read_json(tc_account_file($store, $username));
+    // The name is kept inside and compared, so a file that is not what its
+    // name says - copied, restored or edited by hand - finds nobody.
+    if (!is_array($user) || ($user['username'] ?? null) !== $username) {
         return null;
     }
-    $user = $data['users'][$username];
-    $user['username'] = $username;
     return $user;
+}
+
+/**
+ * Every account, by name, in order.
+ *
+ * For Show status, which is the one place that wants them all - an operator
+ * asking, never a client.
+ *
+ * @return array<string, array>
+ */
+function tc_accounts_list($store)
+{
+    if (!tc_accounts_migrate($store)) {
+        $data = tc_read_json(tc_users_file($store));
+        return is_array($data['users'] ?? null) ? $data['users'] : [];
+    }
+    $accounts = [];
+    foreach (glob(tc_accounts_dir($store) . '/*.dat.php') ?: [] as $path) {
+        $record = tc_read_json($path);
+        // Only what a sign-in would find under that name, for the reason
+        // tc_user_find() compares it.
+        if (is_array($record) && is_string($record['username'] ?? null)
+                && tc_account_file($store, $record['username']) === $path) {
+            $accounts[$record['username']] = $record;
+        }
+    }
+    ksort($accounts, SORT_STRING);
+    return $accounts;
+}
+
+/**
+ * Creates an account, touching nothing that belongs to any other.
+ *
+ * That is the point of it. Adding an account used to read the whole list and
+ * write it back - and when the read failed, it began a new list holding only
+ * the new account, so every other one was gone.
+ *
+ * @param string $passHash As password_hash() made it; the cost is the caller's.
+ * @return array ['uid' => string], or ['error' => 'exists'|'busy'|'unconverted'|'io']
+ */
+function tc_account_create($store, $username, $passHash)
+{
+    $username = (string)$username;
+    if (!tc_accounts_migrate($store)) {
+        // While the old list is there it is the truth, and an account written
+        // beside it could take a name it already holds.
+        return ['error' => 'unconverted'];
+    }
+    $lock = tc_lock(tc_users_lock($store));
+    if (!$lock) {
+        return ['error' => 'busy'];
+    }
+    try {
+        $path = tc_account_file($store, $username);
+        if (is_file($path)) {
+            return ['error' => 'exists'];
+        }
+        $uid = bin2hex(random_bytes(16));
+        $dir = tc_user_dir($store, $uid);
+        // The account's own directory first and the record last. The record is
+        // what makes the account exist, and one pointing at a directory that is
+        // not there yet would answer its every sign-in with "busy".
+        if (!tc_secure_mkdir($dir) || !tc_secure_mkdir($dir . '/seen')
+                || !tc_write_json($dir . '/user.dat.php', ['disabled' => false, 'devices' => []])
+                || !tc_secure_mkdir(tc_accounts_dir($store))
+                || !tc_write_json($path, ['username' => $username, 'uid' => $uid,
+                                          'pass' => $passHash, 'created' => date('c')])) {
+            return ['error' => 'io'];
+        }
+        return ['uid' => $uid];
+    } finally {
+        tc_unlock($lock);
+    }
+}
+
+/**
+ * Converts users.dat.php, if there still is one, into one file per account.
+ *
+ * Runs on the first request that looks an account up after an update, because
+ * there is nothing else to run it: no shell, no cron. From then on it costs a
+ * sign-in one stat().
+ *
+ * The old file goes only once every account in it has its own, and it is never
+ * removed when it could not be read - that would lose every account at once.
+ * Until it is gone it stays the authority: each run writes every account again
+ * rather than trusting what an interrupted run left, and nothing may add or
+ * remove an account in the meantime.
+ *
+ * @return bool True when there is nothing left to convert.
+ */
+function tc_accounts_migrate($store)
+{
+    $legacy = tc_users_file($store);
+    if (!is_file($legacy)) {
+        return true;
+    }
+    $lock = tc_lock(tc_users_lock($store));
+    if (!$lock) {
+        return false;
+    }
+    try {
+        if (!is_file($legacy)) {
+            return true;   // finished by somebody else while this waited
+        }
+        $data = tc_read_json($legacy);
+        if (!is_array($data) || !is_array($data['users'] ?? null)
+                || !tc_secure_mkdir(tc_accounts_dir($store))) {
+            return false;
+        }
+        foreach ($data['users'] as $name => $record) {
+            // Anything else never was an account: nothing could sign in with it.
+            if (is_array($record)
+                    && !tc_write_json(tc_account_file($store, (string)$name),
+                                      ['username' => (string)$name] + $record)) {
+                return false;
+            }
+        }
+        return @unlink($legacy);
+    } finally {
+        tc_unlock($lock);
+    }
 }
 
 /**

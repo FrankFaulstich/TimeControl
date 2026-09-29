@@ -35,6 +35,13 @@ ini_set('display_errors', '0');
 
 const TC_ENABLE_FILE = __DIR__ . '/setup.enable';
 
+// Said wherever the old account list is still in the way (issue #587). Signing
+// in keeps working from it meanwhile; only adding and deleting have to wait.
+const TC_UNCONVERTED = 'users.dat.php, the account list from before this version, could '
+    . 'not be converted into one file per account yet. Until it is, accounts can be signed '
+    . 'in to but not added or deleted. If this persists, the file cannot be read or the '
+    . 'store cannot be written; it has been left exactly as it was.';
+
 $enable = @file_get_contents(TC_ENABLE_FILE);
 if ($enable === false || trim($enable) === '') {
     // A bare 404, on purpose: with no passphrase file there is nothing to
@@ -188,10 +195,9 @@ function tc_install($baseUrl)
         }
         @unlink($canaryPhp);
 
-        foreach (['tokens', 'users'] as $sub) {
+        foreach (['tokens', 'users', 'accounts'] as $sub) {
             tc_secure_mkdir($path . '/' . $sub);
         }
-        tc_write_json(tc_users_file($path), ['users' => (object)[]]);
 
         // 'store' and 'installed' are setup's to write and nobody else's.
         // 'https' is the one line meant to be changed by hand, and it is
@@ -323,33 +329,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 } elseif (strlen($pass) < 12) {
                     $errors[] = 'Password must be at least 12 characters.';
                 } else {
-                    $store = $config['store'];
-                    $lock  = tc_lock(tc_users_lock($store));
-                    if (!$lock) {
+                    $made = tc_account_create($config['store'], $name,
+                        password_hash($pass, PASSWORD_BCRYPT, ['cost' => TC_BCRYPT_COST]));
+                    if (isset($made['uid'])) {
+                        $notices[] = 'Account "' . $name . '" created.';
+                        $done = true;
+                    } elseif ($made['error'] === 'exists') {
+                        $errors[] = 'That account already exists.';
+                    } elseif ($made['error'] === 'unconverted') {
+                        $errors[] = TC_UNCONVERTED;
+                    } elseif ($made['error'] === 'busy') {
                         $errors[] = 'Could not lock the user store.';
                     } else {
-                        $data = tc_read_json(tc_users_file($store));
-                        if (!is_array($data) || !isset($data['users'])) {
-                            $data = ['users' => []];
-                        }
-                        if (isset($data['users'][$name])) {
-                            $errors[] = 'That account already exists.';
-                        } else {
-                            $uid = bin2hex(random_bytes(16));
-                            $data['users'][$name] = [
-                                'uid'     => $uid,
-                                'pass'    => password_hash($pass, PASSWORD_BCRYPT, ['cost' => TC_BCRYPT_COST]),
-                                'created' => date('c'),
-                            ];
-                            tc_write_json(tc_users_file($store), $data);
-                            tc_secure_mkdir(tc_user_dir($store, $uid));
-                            tc_secure_mkdir(tc_user_dir($store, $uid) . '/seen');
-                            tc_write_json(tc_user_dir($store, $uid) . '/user.dat.php',
-                                ['disabled' => false, 'devices' => []]);
-                            $notices[] = 'Account "' . $name . '" created.';
-                            $done = true;
-                        }
-                        tc_unlock($lock);
+                        $errors[] = 'Could not write the account - is the disk full?';
                     }
                 }
             }
@@ -360,15 +352,21 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             } else {
                 $name  = trim((string)($_POST['username'] ?? ''));
                 $store = $config['store'];
-                $lock  = tc_lock(tc_users_lock($store));
-                if (!$lock) {
+                // The old list converted first - an account deleted beside it
+                // would come back when it is - and before the lock, which the
+                // conversion takes itself.
+                $converted = tc_accounts_migrate($store);
+                $lock      = $converted ? tc_lock(tc_users_lock($store)) : null;
+                if (!$converted) {
+                    $errors[] = TC_UNCONVERTED;
+                } elseif (!$lock) {
                     $errors[] = 'Could not lock the user store.';
                 } else {
-                    $data = tc_read_json(tc_users_file($store));
-                    if (!is_array($data) || !isset($data['users'][$name])) {
+                    $user = tc_user_find($store, $name);
+                    if (!$user || empty($user['uid'])) {
                         $errors[] = 'No such account.';
                     } else {
-                        $uid = $data['users'][$name]['uid'];
+                        $uid = $user['uid'];
                         // Tokens live in a shared directory keyed by token id,
                         // so they have to go individually - dropping the user
                         // directory alone would leave working credentials
@@ -380,10 +378,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                             }
                         }
                         tc_rmtree(tc_user_dir($store, $uid), $store);
-                        unset($data['users'][$name]);
-                        tc_write_json(tc_users_file($store), $data);
-                        $notices[] = 'Account "' . $name . '" and all of its data were deleted.';
-                        $done = true;
+                        if (@unlink(tc_account_file($store, $name))) {
+                            $notices[] = 'Account "' . $name . '" and all of its data were deleted.';
+                            $done = true;
+                        } else {
+                            $errors[] = 'The data of "' . $name . '" was deleted, but not the '
+                                      . 'account itself. Try again.';
+                        }
                     }
                     tc_unlock($lock);
                 }
@@ -393,10 +394,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if ($config === null) {
                 $notices[] = 'Not installed.';
             } else {
-                $data  = tc_read_json(tc_users_file($config['store']));
-                $names = ($data && !empty($data['users'])) ? array_keys((array)$data['users']) : [];
+                $accounts = tc_accounts_list($config['store']);
+                $names    = array_map('strval', array_keys($accounts));
                 $notices[] = 'Store: ' . $config['store'];
                 $notices[] = 'Accounts: ' . ($names ? implode(', ', $names) : '(none)');
+                if (is_file(tc_users_file($config['store']))) {
+                    $errors[] = TC_UNCONVERTED;
+                }
                 $tokens = glob(tc_tokens_dir($config['store']) . '/*.dat.php');
                 $notices[] = 'Live tokens: ' . ($tokens ? count($tokens) : 0);
 
@@ -404,8 +408,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 // an operator can see an account filling before it is refused -
                 // by then the client says so too, but only to its owner.
                 $mib = function ($bytes) { return sprintf('%.1f MiB', $bytes / 1048576); };
-                foreach ($names as $name) {
-                    $uid = $data['users'][$name]['uid'] ?? null;
+                foreach ($accounts as $name => $record) {
+                    $uid = $record['uid'] ?? null;
                     if (!is_string($uid) || $uid === '') {
                         continue;
                     }

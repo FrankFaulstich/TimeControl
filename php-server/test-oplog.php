@@ -674,15 +674,19 @@ tc_test('a typo in the setting does not lock everybody out', function () {
 // in anyway: a reserve, and the one fact that decides who may draw on it.
 // ---------------------------------------------------------------------------
 
-/** An account with a real password hash, as setup.php writes one. */
+/**
+ * An account with a real password hash, written where setup.php puts one - but
+ * directly, because these tests need to choose its uid and switch it off.
+ */
 function tc_account($store, $uid, $username = 'frank', $disabled = false)
 {
-    $record = ['uid' => $uid, 'pass' => password_hash('richtig', PASSWORD_BCRYPT,
-                                                       ['cost' => 4])];
+    $record = ['username' => $username, 'uid' => $uid,
+               'pass' => password_hash('richtig', PASSWORD_BCRYPT, ['cost' => 4])];
     if ($disabled) {
         $record['disabled'] = true;
     }
-    tc_write_json(tc_users_file($store), ['users' => [$username => $record]]);
+    tc_secure_mkdir(tc_accounts_dir($store));
+    tc_write_json(tc_account_file($store, $username), $record);
     tc_secure_mkdir(tc_tokens_dir($store));
     tc_secure_mkdir(tc_user_dir($store, $uid));
 }
@@ -929,6 +933,163 @@ tc_test('an account with room keeps the week of grace', function ($store, $uid) 
     tc_snapshot_put($store, $uid, 'dev0000000000001', $head, tc_document());
     tc_assert(count(tc_log_state($store, $uid)['retired']) > 0,
               'an account with plenty of room lost its grace period');
+});
+
+// ---------------------------------------------------------------------------
+// One file per account (issue #587).
+//
+// The accounts used to be one list, read whole on every sign-in and written
+// whole on every change. What matters now is that each account is on its own:
+// found by one computed path, changed without touching any other - and that an
+// installation from before still has every account after the update.
+// ---------------------------------------------------------------------------
+
+print("\nAccounts\n");
+
+/** The old list, as every installation from before this has it. */
+function tc_legacy_accounts($store, array $users)
+{
+    tc_write_json(tc_users_file($store), ['users' => $users]);
+}
+
+tc_test('an account is found by its name', function ($store, $uid) {
+    $made = tc_account_create($store, 'frank', password_hash('richtig', PASSWORD_BCRYPT, ['cost' => 4]));
+    $user = tc_user_find($store, 'frank');
+    tc_assert(is_array($user), 'the account just created was not found');
+    tc_assert_same($made['uid'], $user['uid'], 'uid');
+    tc_assert_same('frank', $user['username'], 'username');
+    tc_assert(password_verify('richtig', $user['pass']), 'the password does not check');
+    tc_assert(is_file(tc_user_dir($store, $made['uid']) . '/user.dat.php'),
+              'the account has nowhere to keep its devices');
+});
+
+tc_test('a name that differs only in case is another account', function ($store, $uid) {
+    // As it always was: the old list was keyed by the exact name. A filesystem
+    // that folds case must not quietly make two accounts one.
+    $lower = tc_account_create($store, 'frank', 'x');
+    tc_assert_same(null, tc_user_find($store, 'Frank'), 'Frank found frank');
+    $upper = tc_account_create($store, 'Frank', 'y');
+    tc_assert(isset($upper['uid']), 'Frank was refused as taken: ' . json_encode($upper));
+    tc_assert_same($lower['uid'], tc_user_find($store, 'frank')['uid'], 'frank was replaced');
+});
+
+tc_test('a name that is taken is refused, and its account left alone', function ($store, $uid) {
+    $first = tc_account_create($store, 'frank', 'x');
+    tc_assert_same(['error' => 'exists'], tc_account_create($store, 'frank', 'y'), 'second');
+    tc_assert_same($first['uid'], tc_user_find($store, 'frank')['uid'], 'the account was replaced');
+});
+
+tc_test('adding an account rewrites no other', function ($store, $uid) {
+    // The whole of the issue. Rewriting was what grew with the count: the
+    // time the lock is held, and what a failed write could take with it.
+    for ($i = 0; $i < 30; $i++) {
+        tc_account_create($store, 'user' . $i, 'x');
+    }
+    $before = [];
+    foreach (glob(tc_accounts_dir($store) . '/*') as $path) {
+        $before[$path] = fileinode($path) . ':' . md5_file($path);
+    }
+    tc_account_create($store, 'one-more', 'x');
+    clearstatcache();
+    foreach ($before as $path => $was) {
+        tc_assert_same($was, fileinode($path) . ':' . md5_file($path),
+                       'adding an account rewrote ' . basename($path));
+    }
+    tc_assert(!is_file(tc_users_file($store)), 'a list of all accounts is still being written');
+});
+
+tc_test('a damaged account costs nobody else theirs', function ($store, $uid) {
+    tc_account_create($store, 'anna', 'x');
+    $bert = tc_account_create($store, 'bert', 'x');
+    file_put_contents(tc_account_file($store, 'anna'), TC_GUARD . '{"username": "an');
+    tc_assert_same(null, tc_user_find($store, 'anna'), 'a damaged record was read');
+    tc_assert_same($bert['uid'], tc_user_find($store, 'bert')['uid'], 'bert went with anna');
+    tc_assert(isset(tc_account_create($store, 'carl', 'x')['uid']),
+              'nobody can be added while one record is damaged');
+});
+
+tc_test('a name is looked up, never followed as a path', function ($store, $uid) {
+    // At sign-in the name is whatever the caller sent. Were it the filename,
+    // this one would reach a file outside the accounts directory.
+    tc_secure_mkdir(tc_accounts_dir($store));
+    tc_write_json($store . '/evil.dat.php', ['username' => '../evil', 'uid' => 'x', 'pass' => 'x']);
+    foreach (['../evil', str_repeat('x', 5000), "a\0b", '', '.', '..'] as $name) {
+        tc_assert_same(null, tc_user_find($store, $name), 'found ' . var_export($name, true));
+    }
+});
+
+tc_test('a record under somebody else\'s name finds nobody', function ($store, $uid) {
+    // A file copied or restored to the wrong place must not become a way into
+    // the account it describes, under a name that account does not have.
+    tc_account_create($store, 'anna', 'x');
+    tc_secure_mkdir(tc_accounts_dir($store));
+    copy(tc_account_file($store, 'anna'), tc_account_file($store, 'bert'));
+    tc_assert_same(null, tc_user_find($store, 'bert'), 'bert signed in as anna');
+});
+
+tc_test('Show status lists every account, in order, and only those', function ($store, $uid) {
+    // The stray one has a name of its own. A copy of alpha would merge into
+    // alpha in the listing and prove nothing.
+    tc_account_create($store, 'zeta', 'x');
+    tc_account_create($store, 'alpha', 'x');
+    tc_write_json(tc_accounts_dir($store) . '/' . str_repeat('0', 64) . '.dat.php',
+                  ['username' => 'ghost', 'uid' => 'uid-ghost', 'pass' => 'x']);
+    tc_assert_same(['alpha', 'zeta'], array_keys(tc_accounts_list($store)), 'listed');
+});
+
+tc_test('an installation from before keeps every account', function ($store, $uid) {
+    tc_legacy_accounts($store, [
+        'frank' => ['uid' => 'uid-frank', 'pass' => 'hash-frank', 'created' => '2025-01-01'],
+        'anna'  => ['uid' => 'uid-anna', 'pass' => 'hash-anna', 'disabled' => true],
+        '1234'  => ['uid' => 'uid-1234', 'pass' => 'hash-1234'],
+    ]);
+    $frank = tc_user_find($store, 'frank');
+    tc_assert(!is_file(tc_users_file($store)), 'the old list was not converted');
+    tc_assert_same(['username' => 'frank', 'uid' => 'uid-frank', 'pass' => 'hash-frank',
+                    'created' => '2025-01-01'], $frank, 'frank');
+    tc_assert_same(true, tc_user_find($store, 'anna')['disabled'] ?? null,
+                   'a switched-off account came back switched on');
+    // A name of digits is an integer key to PHP, and must still be found.
+    tc_assert_same('uid-1234', tc_user_find($store, '1234')['uid'] ?? null, '1234');
+});
+
+tc_test('an old list that cannot be read is left exactly as it was', function ($store, $uid) {
+    // Adding an account to a list that could not be read used to begin a new
+    // one, holding only the new account. Here nothing may be lost that way.
+    $damaged = TC_GUARD . '{"users": {"frank": {"uid": "uid-fr';
+    file_put_contents(tc_users_file($store), $damaged);
+    tc_assert_same(null, tc_user_find($store, 'frank'), 'found in a damaged list');
+    tc_assert_same(['error' => 'unconverted'], tc_account_create($store, 'new', 'x'),
+                   'an account was added beside a list that could not be read');
+    tc_assert_same($damaged, file_get_contents(tc_users_file($store)), 'the old list was touched');
+    tc_assert_same([], glob(tc_accounts_dir($store) . '/*') ?: [], 'accounts were written');
+});
+
+tc_test('while it cannot be converted, signing in works from the old list', function ($store, $uid) {
+    // A full disk, say. The owner must still be able to sign in, and nothing
+    // may add or remove an account behind the list's back meanwhile.
+    tc_legacy_accounts($store, ['frank' => ['uid' => 'uid-frank', 'pass' => 'x']]);
+    file_put_contents(tc_accounts_dir($store), 'in the way');
+    tc_assert_same('uid-frank', tc_user_find($store, 'frank')['uid'] ?? null, 'frank');
+    tc_assert_same(['frank'], array_keys(tc_accounts_list($store)), 'Show status');
+    tc_assert_same(['error' => 'unconverted'], tc_account_create($store, 'new', 'x'), 'create');
+    tc_assert(is_file(tc_users_file($store)), 'the old list went without being converted');
+
+    // And the next request that can, finishes it.
+    unlink(tc_accounts_dir($store));
+    tc_assert_same('uid-frank', tc_user_find($store, 'frank')['uid'] ?? null, 'frank, after');
+    tc_assert(!is_file(tc_users_file($store)), 'the conversion was never finished');
+});
+
+tc_test('until the old list is gone, it is what counts', function ($store, $uid) {
+    // An interrupted conversion leaves files behind, and the old list may have
+    // been edited since - to switch an account off, say. The list wins.
+    tc_legacy_accounts($store, ['frank' => ['uid' => 'uid-frank', 'pass' => 'x', 'disabled' => true]]);
+    tc_secure_mkdir(tc_accounts_dir($store));
+    tc_write_json(tc_account_file($store, 'frank'),
+                  ['username' => 'frank', 'uid' => 'uid-frank', 'pass' => 'x']);
+    tc_assert_same(true, tc_user_find($store, 'frank')['disabled'] ?? null,
+                   'what an interrupted run left overrode the list');
 });
 
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
