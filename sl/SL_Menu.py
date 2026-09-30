@@ -22,7 +22,8 @@ from tt.task_order import (
 )
 from tt.task_progress import completion_counts, completion_ratio
 from tt.task_calendar import month_grid, shift_month
-from tt.sync_messages import sign_in_error_message, sync_error_message
+from tt.sync_messages import (register_error_message, sign_in_error_message,
+                              sync_error_message)
 from tt.markdown_editor import editor_html
 from i18n import _
 
@@ -2765,6 +2766,38 @@ def view_settings():
                             set_feedback(sign_in_error_message(result.get('error')), 'error')
                         st.rerun()
 
+                # Issue #588: somebody the server's operator has invited gets
+                # an account here, with a password nobody else has seen. Not
+                # offered when this device's own sign-in has merely lapsed -
+                # that account exists, and a second one is not what is wanted.
+                #
+                # A section with remembered state rather than a bare expander:
+                # a refusal puts its message at the top of the page, that
+                # shifts everything below it, and a bare expander is then
+                # drawn afresh - closed, over the very form that needs another
+                # try.
+                if state['state'] != 'rejected':
+                    with _settings_section("sync_register",
+                                           _("Create an account with an invitation code")):
+                        render_register_form(sync_cfg.get('base_url', ''))
+                else:
+                    # The way out when there is nothing left to sign in to:
+                    # the account was deleted, or replaced by one made from an
+                    # invitation. Sign out lives with the signed-in state, so
+                    # without this the device would stay here for good, and
+                    # the invitation form could never be reached.
+                    st.caption(_("If this account was deleted or replaced - by one made "
+                                 "from an invitation code, say - let this device forget "
+                                 "it. The form for an invitation code then appears here."))
+                    if st.button(_("Forget this sign-in on this device"),
+                                 use_container_width=True, key="sync_forget_btn"):
+                        with st.spinner(_("Contacting the server...")):
+                            # Drops the credential even when the server cannot
+                            # be reached, which is the case this is for.
+                            sync_client.logout()
+                        set_feedback(_("This device has forgotten its sign-in."))
+                        st.rerun()
+
             # After the sign-in block rather than beside the switches above:
             # encryption is tied to the account, so the form that turns it on
             # is useless until this device knows which account it is - and
@@ -2802,6 +2835,46 @@ def view_settings():
 
     if st.button(_("Back"), use_container_width=True):
         navigate_to(st.session_state.context.get('return_to', 'today_view'))
+
+def render_register_form(base_url):
+    """
+    Redeems an invitation code for a new account, and signs this device in.
+
+    The password is asked for twice because nobody can recover it: the server
+    keeps only a hash, and the operator never knew it.
+
+    :param base_url: The saved server address - the one the code belongs to.
+    """
+    with st.form("sync_register_form"):
+        st.caption(_("For the first device of a new account, with the code the server's "
+                     "operator gave you. On your other devices, sign in above with the "
+                     "username and password you choose here."))
+        code = st.text_input(_("Invitation code"), key="sync_register_code")
+        username = st.text_input(
+            _("Username"), key="sync_register_user",
+            help=_("3 to 32 characters: a-z or A-Z without accents, digits, dots, "
+                   "underscores or hyphens."))
+        password = st.text_input(_("Password"), type="password", key="sync_register_pass",
+                                 help=_("At least 12 characters."))
+        repeated = st.text_input(_("Repeat password"), type="password",
+                                 key="sync_register_pass_repeat")
+        if st.form_submit_button(_("Create account"), use_container_width=True):
+            if password != repeated:
+                set_feedback(register_error_message('passwords_differ'), 'error')
+            else:
+                with st.spinner(_("Contacting the server...")):
+                    result = sync_client.register(base_url, code, username, password)
+                if result.get('ok'):
+                    # force, for the reason the sign-in form gives: having no
+                    # credential is what the worker had stopped for.
+                    sync_engine.nudge(force=True)
+                    set_feedback(_("Account created, and this device is signed in. On your "
+                                   "other devices, sign in with this username and password - "
+                                   "the invitation code works only once."))
+                else:
+                    set_feedback(register_error_message(result.get('error')), 'error')
+            st.rerun()
+
 
 # --- Action Views (Forms) ---
 

@@ -439,5 +439,73 @@ tc_check('and the list was converted on the way',
 tc_check('without losing an account that was already converted', $status === 200,
          $status . ' ' . json_encode($body));
 
+// Issue #588. An invitation made the way setup.php makes one, redeemed over
+// ?a=register the way the client redeems it.
+print("\nBeing invited\n");
+
+/** A registration from a new device, with whatever the test wants changed. */
+function tc_register($base, array $fields)
+{
+    return tc_request($base, 'POST', ['a' => 'register'], json_encode($fields + [
+        'username' => 'invitee', 'password' => 'long enough, surely',
+        'device_uid' => 'fedcba9876543210', 'device_name' => 'new laptop',
+    ]));
+}
+
+// Both allowances spent, as by somebody flooding ?a=login. Registering must
+// neither need them nor take from them.
+$minute = intdiv(time(), 60);
+tc_write_json($store . '/rate.dat.php', ['win' => $minute, 'n' => TC_HASH_BUDGET_PER_MINUTE]);
+tc_write_json($store . '/rate-reserve.dat.php', ['win' => $minute, 'n' => TC_HASH_RESERVE_PER_MINUTE]);
+
+$code = tc_invite_create($store, 'for the test')['code'];
+// With the name of an account that exists: without a code, nothing about
+// names may be learnt here, or this would list them for free.
+[$status, $body] = tc_register($base, ['code' => 'ffffffffffffffff', 'username' => 'tester']);
+tc_check('a code that was never issued is refused, whatever the name',
+         $status === 403 && ($body['error'] ?? '') === 'invalid_invite', $status . ' ' . json_encode($body));
+[$status, $body] = tc_register($base, ['code' => $code, 'username' => 'tester']);
+tc_check('a name that is taken is refused, without using the code up',
+         $status === 409 && ($body['error'] ?? '') === 'username_taken', $status . ' ' . json_encode($body));
+[$status, $body] = tc_register($base, ['code' => $code, 'username' => "tester\n"]);
+tc_check('and so is the same name with a newline after it',
+         $status === 400 && ($body['error'] ?? '') === 'bad_username', $status . ' ' . json_encode($body));
+[$status, $body] = tc_register($base, ['code' => $code, 'device_uid' => "fedcba9876543210\n"]);
+tc_check('and a device id with one', $status === 400 && ($body['error'] ?? '') === 'bad_device_uid',
+         $status . ' ' . json_encode($body));
+
+// As somebody reads it off the setup page and types it in.
+[$status, $body] = tc_register($base, ['code' => strtoupper(implode('-', str_split($code, 4)))]);
+$invitedToken = $body['token'] ?? '';
+tc_check('the code as setup.php shows it makes an account, and signs this device in',
+         $status === 200 && $invitedToken !== '' && ($body['username'] ?? '') === 'invitee',
+         $status . ' ' . json_encode($body));
+tc_check('while every sign-in allowance was spent',
+         (tc_read_json($store . '/rate.dat.php')['n'] ?? null) === TC_HASH_BUDGET_PER_MINUTE
+         && (tc_read_json($store . '/rate-reserve.dat.php')['n'] ?? null) === TC_HASH_RESERVE_PER_MINUTE);
+
+// And from an allowance with room in it, which is the one that could show a
+// unit being taken - a spent one is never written again, whatever asks.
+tc_write_json($store . '/rate.dat.php', ['win' => intdiv(time(), 60), 'n' => 0]);
+[$status, $body] = tc_register($base, ['code' => tc_invite_create($store)['code'],
+                                       'username' => 'invitee2', 'device_uid' => 'fedcba9876543211']);
+tc_check('without taking anything from it', $status === 200
+         && (tc_read_json($store . '/rate.dat.php')['n'] ?? null) === 0, $status . ' ' . json_encode($body));
+
+[$status, $body] = tc_request($base, 'GET', ['a' => 'ping'], null, $invitedToken);
+tc_check('the token it gave works', $status === 200, $status . ' ' . json_encode($body));
+[$status, $body] = tc_register($base, ['code' => $code, 'username' => 'second']);
+tc_check('the code does not work twice',
+         $status === 403 && ($body['error'] ?? '') === 'invalid_invite', $status . ' ' . json_encode($body));
+
+@unlink($store . '/rate.dat.php');
+@unlink($store . '/rate-reserve.dat.php');
+[$status, $body] = tc_request($base, 'POST', ['a' => 'login'], json_encode([
+    'username' => 'invitee', 'password' => 'long enough, surely',
+    'device_uid' => '0123456789abcdef', 'device_name' => 'second machine',
+]));
+tc_check('and the account signs in from another machine with the password chosen',
+         $status === 200 && !empty($body['token']), $status . ' ' . json_encode($body));
+
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
 exit($GLOBALS['tc_failed'] === 0 ? 0 : 1);

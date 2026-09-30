@@ -232,6 +232,127 @@ class TestSyncClientCredentials(unittest.TestCase):
                          "the server's answer should win over the stored copy")
 
 
+class TestRegisteringWithAnInvitation(unittest.TestCase):
+    """
+    Issue #588. Redeeming a code is a sign-in to an account that did not exist
+    a moment ago, and everything after it has to be unable to tell the two
+    apart - so these hold register() to what login() already does, and add
+    the one thing only it can get wrong: an answer that never arrived.
+    """
+
+    CODE = '3f2a9c1bab12cd34'
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._real = sync_client.config_dir
+        sync_client.config_dir = lambda: self.tmp
+
+    def tearDown(self):
+        sync_client.config_dir = self._real
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _register(self, code=CODE, username='anna', password='long enough, surely'):
+        return sync_client.register('https://x.de/tc', code, username, password)
+
+    def test_an_account_made_is_signed_in_to_like_any_other(self):
+        reply = {'ok': True, 'token': 'tc1.aa.bb', 'expires_at': 1794000000, 'username': 'anna'}
+        with patch('tt.sync_client.requests.post', return_value=_Response(reply)) as post:
+            result = self._register(code='3F2A-9C1B-AB12-CD34')
+
+        self.assertTrue(result['ok'])
+        self.assertEqual(sync_client.load_credentials()['token'], 'tc1.aa.bb')
+        self.assertEqual(sync_client.load_credentials()['username'], 'anna')
+        self.assertEqual(post.call_args.kwargs['params'], {'a': 'register'})
+        sent = json.loads(post.call_args.kwargs['data'])
+        self.assertEqual(sent['code'], self.CODE, "the code was not sent as it was issued")
+        self.assertEqual(sent['device_uid'], sync_client.device_identity()['device_uid'])
+
+    def test_a_refusal_stores_nothing(self):
+        for error in ('invalid_invite', 'username_taken', 'bad_username'):
+            with self.subTest(error=error), \
+                 patch('tt.sync_client.requests.post',
+                       return_value=_Response({'ok': False, 'error': error}, status=403)) as post:
+                self.assertEqual(self._register()['error'], error)
+                # A refusal is an answer: nothing here to find out by signing in.
+                self.assertEqual(post.call_count, 1)
+            self.assertIsNone(sync_client.load_credentials())
+
+    def test_what_can_be_told_here_does_not_reach_the_network(self):
+        with patch('tt.sync_client.requests.post') as post:
+            self.assertEqual(sync_client.register('', self.CODE, 'anna', 'long enough, surely')['error'],
+                             'no_server')
+            self.assertEqual(self._register(code=' - ')['error'], 'missing_invite')
+            self.assertEqual(self._register(username='')['error'], 'missing_credentials')
+            self.assertEqual(self._register(password='short')['error'], 'weak_password')
+            self.assertEqual(sync_client.register('http://x.de/tc', self.CODE, 'anna',
+                                                  'long enough, surely')['error'],
+                             'https_required')
+        post.assert_not_called()
+
+    def test_an_answer_that_never_came_is_followed_by_signing_in(self):
+        """
+        The server finishes creating the account whether or not anybody is
+        left to hear about it, and then the code is spent. Trying again would
+        say so and nothing else; signing in finds out, and is right either way.
+        """
+        import requests as real_requests
+        answers = [real_requests.exceptions.Timeout(),
+                   _Response({'ok': True, 'token': 'tc1.cc.dd', 'expires_at': 1794000000})]
+        with patch('tt.sync_client.requests.post', side_effect=answers) as post:
+            result = self._register()
+
+        self.assertTrue(result['ok'])
+        self.assertTrue(result.get('recovered'))
+        self.assertEqual(sync_client.load_credentials()['token'], 'tc1.cc.dd')
+        self.assertEqual(post.call_args.kwargs['params'], {'a': 'login'})
+        sent = json.loads(post.call_args.kwargs['data'])
+        self.assertEqual((sent['username'], sent['password']), ('anna', 'long enough, surely'))
+
+    def test_and_when_that_fails_too_the_first_answer_stands(self):
+        """
+        The first failure is the one worth reporting. "Wrong username or
+        password" for an account that was never made would be a riddle.
+        """
+        import requests as real_requests
+        answers = [real_requests.exceptions.ConnectionError(),
+                   _Response({'ok': False, 'error': 'invalid_credentials'}, status=401)]
+        with patch('tt.sync_client.requests.post', side_effect=answers) as post:
+            result = self._register()
+        self.assertEqual(result['error'], 'unreachable')
+        self.assertIsNone(sync_client.load_credentials())
+        # And signing in really was tried - otherwise this would pass for a
+        # register() that never looked.
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(post.call_args.kwargs['params'], {'a': 'login'})
+
+    def test_an_answer_that_could_not_be_read_counts_as_none(self):
+        """
+        A proxy's error page in place of the reply is the same situation: the
+        server may have finished behind it.
+        """
+        answers = [_Response(None, status=502),
+                   _Response({'ok': True, 'token': 'tc1.ee.ff', 'expires_at': 1794000000})]
+        with patch('tt.sync_client.requests.post', side_effect=answers):
+            result = self._register()
+        self.assertTrue(result['ok'])
+        self.assertEqual(sync_client.load_credentials()['token'], 'tc1.ee.ff')
+
+    def test_a_code_reads_the_same_however_it_was_pasted(self):
+        # The server's rule (tc_invite_normalise), which is the one that counts.
+        for pasted in ('3F2A-9C1B-AB12-CD34', ' 3f2a 9c1b ab12 cd34\n',
+                       '3f2a 9c1b–ab12‑cd34', '3f2a​9c1bab12cd34',
+                       # out of a sentence, with its quotes and full stop
+                       '"3f2a-9c1b-ab12-cd34".', '„3f2a9c1bab12cd34“'):
+            with self.subTest(pasted=pasted):
+                self.assertEqual(sync_client.normalise_invite_code(pasted), self.CODE)
+        # A letter is never taken out: "code" stays, and so does a stray x,
+        # and the server refuses the result rather than reading it as another
+        # code - which dropping everything but hex would do.
+        self.assertEqual(sync_client.normalise_invite_code('Code: 3f2a'), 'code3f2a')
+        self.assertEqual(sync_client.normalise_invite_code('3f2a x9c1b'), '3f2ax9c1b')
+        self.assertEqual(sync_client.normalise_invite_code(None), '')
+
+
 class TestTheRequestsTheLogEndpointsBuild(unittest.TestCase):
     """
     The seam between this application and the server.

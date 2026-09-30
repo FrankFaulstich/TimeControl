@@ -57,10 +57,10 @@ switch ($action) {
 
         // The device id becomes a filename; and a name is only ever shown
         // back to its owner, so it is length-capped rather than sanitised.
-        if (!preg_match('/^[a-f0-9]{16}$/', $deviceUid)) {
+        if (!preg_match(TC_DEVICE_UID_PATTERN, $deviceUid)) {
             tc_fail(400, 'bad_device_uid', 'device_uid must be 16 hexadecimal characters.');
         }
-        $deviceName = mb_substr(preg_replace('/[^\P{C}]+/u', '', $deviceName), 0, 60);
+        $deviceName = tc_label_clean($deviceName);
 
         if ($username === '' || $password === '') {
             tc_fail(400, 'missing_credentials', 'username and password are required.');
@@ -99,6 +99,63 @@ switch ($action) {
             'token'      => $issued['token'],
             'expires_at' => $issued['expires_at'],
             'username'   => $user['username'],
+        ]);
+        break;
+
+    // -----------------------------------------------------------------
+    // An invitation exchanged for an account (issue #588), and the device
+    // that exchanged it signed in to it - the same answer a sign-in gives, so
+    // the client stores it the same way.
+    //
+    // It takes nothing from the sign-in allowance above. That one exists
+    // because anybody may ask for a password to be checked; here nothing is
+    // hashed without a code only the operator can make, and each code allows
+    // one hash (see tc_invite_redeem). Counting these against sign-ins would
+    // only let an invitation spend what the owner needs to sign in.
+    case 'register':
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            tc_fail(405, 'method_not_allowed', 'Use POST.');
+        }
+        $body       = tc_body();
+        $deviceUid  = isset($body['device_uid']) ? (string)$body['device_uid'] : '';
+        $deviceName = isset($body['device_name']) ? (string)$body['device_name'] : 'unnamed';
+        if (!preg_match(TC_DEVICE_UID_PATTERN, $deviceUid)) {
+            tc_fail(400, 'bad_device_uid', 'device_uid must be 16 hexadecimal characters.');
+        }
+        // Taken exactly as sent. A name trim() would change is refused by the
+        // pattern rather than quietly made into a different one.
+        $username = isset($body['username']) ? (string)$body['username'] : '';
+
+        $made = tc_invite_redeem($store,
+                                 isset($body['code']) ? (string)$body['code'] : '',
+                                 $username,
+                                 isset($body['password']) ? (string)$body['password'] : '');
+        if (isset($made['error'])) {
+            $refusals = [
+                'invalid_invite' => [403, 'This invitation code is not valid, has expired or has already been used.'],
+                'bad_username'   => [400, 'A username is 3-32 letters, digits, dots, underscores or hyphens.'],
+                'weak_password'  => [400, 'A password needs at least ' . TC_PASSWORD_MIN . ' characters.'],
+                'username_taken' => [409, 'That username is taken. The invitation has not been used up.'],
+                'unconverted'    => [503, 'The server cannot make accounts until its operator has looked at it. The invitation has not been used up.'],
+                'busy'           => [503, 'The server is busy. The invitation has not been used up; try again.'],
+                'io'             => [503, 'The account could not be written. The invitation has not been used up.'],
+                'invite_lost'    => [503, 'The account could not be written, and the invitation was lost with it. Ask for a new one.'],
+            ];
+            list($status, $text) = $refusals[$made['error']] ?? [503, 'The account could not be created.'];
+            tc_fail($status, $made['error'], $text);
+        }
+
+        $issued = tc_token_issue($store, $made['uid'], $deviceUid, tc_label_clean($deviceName));
+        if ($issued === null) {
+            // The account is there and the code is spent, so trying again
+            // would only be told the code is used. Signing in is what is left.
+            tc_fail(503, 'account_created_sign_in',
+                    'The account was created, but this device could not be signed in. Sign in with the new username and password.');
+        }
+        tc_ok([
+            'token'      => $issued['token'],
+            'expires_at' => $issued['expires_at'],
+            'username'   => $username,
         ]);
         break;
 

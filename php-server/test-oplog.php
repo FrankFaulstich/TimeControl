@@ -1092,5 +1092,304 @@ tc_test('until the old list is gone, it is what counts', function ($store, $uid)
                    'what an interrupted run left overrode the list');
 });
 
+// ---------------------------------------------------------------------------
+// Invitations (issue #588).
+//
+// A code the operator makes, exchanged once for an account. What has to hold:
+// nothing is hashed without a valid code, a code makes one account, and a
+// refusal that is not the invitee's fault - a taken name, a full disk, a busy
+// server - leaves the code as good as it was.
+// ---------------------------------------------------------------------------
+
+print("\nInvitations\n");
+
+const TC_TEST_PASSWORD = 'long enough, surely';
+
+/** How long one real password hash takes here - what "nothing was hashed" is measured against. */
+function tc_hash_seconds()
+{
+    static $seconds = null;
+    if ($seconds === null) {
+        $t = microtime(true);
+        password_hash('x', PASSWORD_BCRYPT, ['cost' => TC_BCRYPT_COST]);
+        $seconds = microtime(true) - $t;
+    }
+    return $seconds;
+}
+
+/** Runs $body and says whether it took anything like as long as one hash. */
+function tc_assert_no_hash(callable $body, $what)
+{
+    $t = microtime(true);
+    $result = $body();
+    $took = microtime(true) - $t;
+    tc_assert($took < tc_hash_seconds() / 4, sprintf('%s took %.0f ms, a hash takes %.0f ms',
+              $what, $took * 1000, tc_hash_seconds() * 1000));
+    return $result;
+}
+
+tc_test('an invitation is made where there was no place for one, and only its hash is kept', function ($store, $uid) {
+    // Every store from before this version has no invites/ directory.
+    tc_assert(!is_dir(tc_invites_dir($store)), 'the test store already had one');
+    $made = tc_invite_create($store, 'for Anna');
+    tc_assert(preg_match('/^[a-f0-9]{16}$/D', $made['code'] ?? '') === 1, 'code: ' . json_encode($made));
+    tc_assert_same(TC_INVITE_TTL, $made['expires'] - $made['created'], 'lifetime');
+    tc_assert_same('for Anna', $made['note'], 'note');
+    foreach (glob(tc_invites_dir($store) . '/*') as $path) {
+        tc_assert(strpos(basename($path) . file_get_contents($path), $made['code']) === false,
+                  'the code itself is in the store: ' . basename($path));
+    }
+});
+
+tc_test('a code is found however it was pasted', function ($store, $uid) {
+    $code = tc_invite_create($store)['code'];
+    $grouped = implode('-', str_split($code, 4));
+    foreach ([$code, strtoupper($grouped), ' ' . $grouped . "\n",
+              str_replace('-', "\u{00A0}", $grouped),      // no-break space
+              str_replace('-', "\u{2013}", $grouped),      // en dash
+              str_replace('-', "\u{2011}", $grouped),      // non-breaking hyphen
+              implode("\u{200B}", str_split($code, 4)),
+              // out of a sentence, with its quotes and full stop
+              '"' . $grouped . '".', "\u{201E}" . $code . "\u{201C}", '(' . $code . ')'] as $pasted) {
+        tc_assert(tc_invite_find($store, $pasted) !== null, 'not found: ' . json_encode($pasted));
+    }
+    // A letter is never taken out, whatever it is: what is left is the code
+    // or it is not one. Dropping everything but hex would read the first two
+    // as codes as well - one of them somebody else's.
+    foreach (['Code: ' . $code, substr($code, 0, 8) . 'x' . substr($code, 8),
+              'o' . $code, substr($code, 1), $code . 'a', '', null, 17, [$code]] as $wrong) {
+        tc_assert_same(null, tc_invite_find($store, $wrong), 'found: ' . json_encode($wrong));
+    }
+});
+
+tc_test('an expired invitation is refused, and removed on the way', function ($store, $uid) {
+    $code = tc_invite_create($store)['code'];
+    $path = tc_invite_file($store, $code);
+    $record = tc_read_json($path);
+    $record['expires'] = time() - 1;
+    tc_write_json($path, $record);
+    tc_assert_same(['error' => 'invalid_invite'],
+                   tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD), 'redeemed');
+    tc_assert(!is_file($path), 'an expired invitation was kept');
+});
+
+tc_test('redeeming makes the account the invitee chose', function ($store, $uid) {
+    $code = tc_invite_create($store, 'for Anna')['code'];
+    $made = tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD);
+    tc_assert(isset($made['uid']), json_encode($made));
+    $user = tc_user_find($store, 'anna');
+    tc_assert_same($made['uid'], $user['uid'] ?? null, 'uid');
+    tc_assert(password_verify(TC_TEST_PASSWORD, $user['pass']), 'the password does not check');
+    tc_assert_same('for Anna', $user['invited']['note'] ?? null, 'where the account came from');
+    tc_assert(is_file(tc_user_dir($store, $made['uid']) . '/user.dat.php'), 'no place for devices');
+    tc_assert_same([], glob(tc_invites_dir($store) . '/*') ?: [], 'the code, or its claim, is left');
+});
+
+tc_test('a code makes one account', function ($store, $uid) {
+    $code = tc_invite_create($store)['code'];
+    tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD);
+    tc_assert_same(['error' => 'invalid_invite'],
+                   tc_invite_redeem($store, $code, 'bert', TC_TEST_PASSWORD), 'second');
+    tc_assert_same(null, tc_user_find($store, 'bert'), 'a second account was made');
+});
+
+tc_test('five requests racing with one code make one account', function ($store, $uid) {
+    // Separate processes, started together: the case the lock and the claim
+    // are both there for.
+    $code = tc_invite_create($store)['code'];
+    $running = [];
+    for ($i = 0; $i < 5; $i++) {
+        // Each reports the CPU time it spent redeeming, which is how a hash
+        // shows: waiting for the lock costs next to none.
+        $script = sprintf('require %s; $u = getrusage(); $r = tc_invite_redeem(%s, %s, %s, %s); '
+                          . '$v = getrusage(); $r["cpu"] = ($v["ru_utime.tv_sec"] - $u["ru_utime.tv_sec"]) '
+                          . '+ ($v["ru_utime.tv_usec"] - $u["ru_utime.tv_usec"]) / 1e6; echo json_encode($r);',
+                          var_export(__DIR__ . '/tc/lib/auth.php', true), var_export($store, true),
+                          var_export($code, true), var_export('racer' . $i, true),
+                          var_export(TC_TEST_PASSWORD, true));
+        $process = proc_open([PHP_BINARY, '-r', $script], [1 => ['pipe', 'w']], $pipes);
+        $running[] = [$process, $pipes[1]];
+    }
+    $won = 0;
+    $hashed = 0;
+    foreach ($running as [$process, $out]) {
+        $answer = json_decode(stream_get_contents($out), true);
+        proc_close($process);
+        $won += isset($answer['uid']) ? 1 : 0;
+        $hashed += ($answer['cpu'] ?? 0) > tc_hash_seconds() / 2 ? 1 : 0;
+    }
+    tc_assert_same(1, $won, 'accounts made');
+    tc_assert_same(1, count(tc_accounts_list($store)), 'accounts there');
+    // The point of hashing under the lock: the ones that lost queued for it
+    // and found the code gone, rather than each paying for a hash first.
+    tc_assert_same(1, $hashed, 'requests that paid for a hash');
+});
+
+tc_test('a wrong code is refused before anything is hashed', function ($store, $uid) {
+    // The rule the issue puts above the rest: a gate after bcrypt is not one.
+    // With a name that exists, too: answering "taken" to somebody without a
+    // code would list the accounts for free.
+    tc_invite_create($store);
+    tc_account_create($store, 'anna', 'x');
+    $answer = tc_assert_no_hash(function () use ($store) {
+        return tc_invite_redeem($store, 'ffffffffffffffff', 'anna', TC_TEST_PASSWORD);
+    }, 'a wrong code');
+    tc_assert_same(['error' => 'invalid_invite'], $answer, 'answer');
+});
+
+tc_test('and before the lock, which somebody else may be holding', function ($store, $uid) {
+    // Otherwise every guess would queue behind a real redemption, and take it
+    // five seconds to be told no.
+    tc_account_create($store, 'anna', 'x');
+    $held = tc_lock(tc_users_lock($store));
+    try {
+        $answer = tc_assert_no_hash(function () use ($store) {
+            return tc_invite_redeem($store, 'ffffffffffffffff', 'anna', TC_TEST_PASSWORD);
+        }, 'a wrong code while the lock is held');
+    } finally {
+        tc_unlock($held);
+    }
+    tc_assert_same(['error' => 'invalid_invite'], $answer, 'answer');
+});
+
+tc_test('a taken name is refused without hashing, and leaves the code usable', function ($store, $uid) {
+    tc_account_create($store, 'anna', 'x');
+    $code = tc_invite_create($store)['code'];
+    $answer = tc_assert_no_hash(function () use ($store, $code) {
+        return tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD);
+    }, 'a taken name');
+    tc_assert_same(['error' => 'username_taken'], $answer, 'answer');
+    tc_assert(isset(tc_invite_redeem($store, $code, 'anna2', TC_TEST_PASSWORD)['uid']),
+              'the code was used up by a name that was taken');
+});
+
+tc_test('names and passwords that are refused leave the code usable', function ($store, $uid) {
+    $code = tc_invite_create($store)['code'];
+    $refused = [
+        ['an', 'bad_username'], ['anna maria', 'bad_username'], [str_repeat('a', 33), 'bad_username'],
+        // '$' alone would let this one through, as a second "anna" that looks
+        // exactly like the first and that setup.php could never delete.
+        ["anna\n", 'bad_username'],
+    ];
+    foreach ($refused as [$name, $error]) {
+        tc_assert_same(['error' => $error], tc_invite_redeem($store, $code, $name, TC_TEST_PASSWORD),
+                       json_encode($name));
+    }
+    // Six umlauts are twelve bytes but six characters, and characters are
+    // what every message counts.
+    foreach (['short', "long enough\0but not", str_repeat('ä', 6)] as $password) {
+        // A NUL byte is refused rather than handed to password_hash(), which
+        // throws on one and would end the request halfway through.
+        tc_assert_same(['error' => 'weak_password'], tc_invite_redeem($store, $code, 'anna', $password),
+                       json_encode($password));
+    }
+    tc_assert(isset(tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD)['uid']),
+              'a refusal used the code up');
+});
+
+tc_test('setup and register refuse the same names', function ($store, $uid) {
+    foreach (['frank', 'a.b-c_d', 'F12', str_repeat('x', 32)] as $name) {
+        tc_assert(tc_username_acceptable($name), 'refused: ' . $name);
+    }
+    foreach (['fr', "frank\n", 'frank ', 'fränk', '../x', str_repeat('x', 33), null] as $name) {
+        tc_assert(!tc_username_acceptable($name), 'accepted: ' . json_encode($name));
+    }
+    tc_assert(!preg_match(TC_DEVICE_UID_PATTERN, "a1b2c3d4e5f60718\n"), 'a device id with a newline');
+    tc_assert(tc_password_acceptable(str_repeat('ä', 12)), 'twelve umlauts are twelve characters');
+    tc_assert(!tc_password_acceptable(str_repeat('ä', 11)), 'eleven umlauts are not');
+});
+
+tc_test('while the old account list cannot be converted, nothing is spent', function ($store, $uid) {
+    file_put_contents(tc_users_file($store), TC_GUARD . '{"users": {"anna"');
+    $code = tc_invite_create($store)['code'];
+    // Not "busy": trying again would meet the same list, until the operator
+    // has looked at it.
+    tc_assert_same(['error' => 'unconverted'], tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD), 'answer');
+    tc_assert(tc_invite_find($store, $code) !== null, 'the code was used up');
+    tc_assert_same(['u0000000000000001'], array_map('basename', glob($store . '/users/*')),
+                   'an account was begun beside the old list');
+});
+
+tc_test('an account that cannot be written leaves the code usable', function ($store, $uid) {
+    // A full disk, say: the invitee should not need a new code for it.
+    $code = tc_invite_create($store)['code'];
+    file_put_contents(tc_accounts_dir($store), 'in the way');
+    tc_assert_same(['error' => 'io'], tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD), 'answer');
+    tc_assert(tc_invite_find($store, $code) !== null, 'the code was used up');
+    tc_assert_same([], glob(tc_invites_dir($store) . '/*.claimed.php') ?: [], 'a claim was left');
+
+    unlink(tc_accounts_dir($store));
+    tc_assert(isset(tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD)['uid']), 'and afterwards');
+});
+
+tc_test('the code is claimed before an account is made, and a claim that fails makes none', function ($store, $uid) {
+    // The claim is what keeps a code to one account where the lock does
+    // nothing - and wherever it does, as here, the lock would hide a claim
+    // that had stopped working. So it is made to fail on purpose: a
+    // directory with something in it cannot be renamed onto.
+    $code = tc_invite_create($store)['code'];
+    tc_secure_mkdir(tc_invite_claim_file($store, $code) . '/in-the-way');
+    $answer = tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD);
+    tc_assert_same(null, tc_user_find($store, 'anna'), 'an account was made without the code being claimed');
+    // Nobody else took the code, so it is not called used: it is still there.
+    tc_assert_same(['error' => 'io'], $answer, 'answer');
+    tc_assert(tc_invite_find($store, $code) !== null, 'the code was lost');
+});
+
+tc_test('withdrawing waits for a redemption in progress', function ($store, $uid) {
+    // Otherwise it could fall between a failed write and the rename that
+    // puts that code back, and the code would survive being withdrawn.
+    tc_invite_create($store);
+    $held = tc_lock(tc_users_lock($store));
+    $script = sprintf('require %s; $t = microtime(true); $n = tc_invites_withdraw(%s); '
+                      . 'echo json_encode([$n, microtime(true) - $t]);',
+                      var_export(__DIR__ . '/tc/lib/auth.php', true), var_export($store, true));
+    $process = proc_open([PHP_BINARY, '-r', $script], [1 => ['pipe', 'w']], $pipes);
+    usleep(400000);
+    tc_unlock($held);
+    [$withdrawn, $waited] = json_decode(stream_get_contents($pipes[1]), true);
+    proc_close($process);
+    tc_assert_same(1, $withdrawn, 'withdrawn');
+    tc_assert($waited > 0.2, sprintf('it did not wait for the lock (%.0f ms)', $waited * 1000));
+});
+
+tc_test('open invitations are listed, and what is past is tidied away', function ($store, $uid) {
+    $late = tc_invite_create($store, 'late');
+    $soon = tc_invite_create($store, 'soon');
+    $record = tc_read_json(tc_invite_file($store, $soon['code']));
+    $record['expires'] = time() + 60;
+    tc_write_json(tc_invite_file($store, $soon['code']), $record);
+    $gone = tc_invite_create($store, 'gone')['code'];
+    $record['expires'] = time() - 1;
+    tc_write_json(tc_invite_file($store, $gone), $record);
+
+    // A claim left by a request that died long ago, and one still in progress.
+    $stale = tc_invite_claim_file($store, 'aaaaaaaaaaaaaaaa');
+    $fresh = tc_invite_claim_file($store, 'bbbbbbbbbbbbbbbb');
+    tc_write_json($stale, ['created' => 0]);
+    touch($stale, time() - 3600);
+    tc_write_json($fresh, ['created' => 0]);
+
+    tc_assert_same(['soon', 'late'], array_column(tc_invites_list($store), 'note'), 'listed');
+    tc_assert(!is_file(tc_invite_file($store, $gone)), 'an expired invitation was kept');
+    tc_assert(!is_file($stale), 'a claim nobody can still be holding was kept');
+    tc_assert(is_file($fresh), 'a claim in progress was taken away');
+    tc_assert(tc_invite_find($store, $late['code']) !== null, 'listing spent a code');
+});
+
+tc_test('withdrawing stops every open code, and nothing else', function ($store, $uid) {
+    $used = tc_invite_create($store)['code'];
+    tc_invite_redeem($store, $used, 'anna', TC_TEST_PASSWORD);
+    $open = [tc_invite_create($store)['code'], tc_invite_create($store)['code']];
+    tc_write_json(tc_invite_claim_file($store, 'cccccccccccccccc'), ['created' => 0]);
+
+    tc_assert_same(2, tc_invites_withdraw($store), 'withdrawn');
+    foreach ($open as $code) {
+        tc_assert_same(null, tc_invite_find($store, $code), 'a withdrawn code still works');
+    }
+    tc_assert_same([], glob(tc_invites_dir($store) . '/*') ?: [], 'a claim could still be put back');
+    tc_assert(tc_user_find($store, 'anna') !== null, 'withdrawing took an account with it');
+});
+
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
 exit($GLOBALS['tc_failed'] === 0 ? 0 : 1);
