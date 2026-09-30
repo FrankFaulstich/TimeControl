@@ -272,6 +272,8 @@ That server is in [`php-server/`](php-server/). It is plain PHP with no database
 4. Enter your **username** and **password** and press **Sign in**.
 5. Repeat steps 2–4 on the second machine.
 
+**Somebody else on the same server** — a partner, a colleague — gets an account of their own, with a document of their own, by invitation. The operator makes a code with *Invite someone* in `setup.php` and hands it over with the server address. The invitee does step 3, then opens **Create an account with an invitation code**, enters the code and chooses a username and password; that device is signed in straight away, and their other machines sign in as in step 4. A code works once and for seven days, and the operator never learns the password.
+
 Whichever machine reaches an empty server first offers what it already has. A machine joining later offers its own document too, so nothing built up before you switched synchronisation on is left behind.
 
 ### How it behaves

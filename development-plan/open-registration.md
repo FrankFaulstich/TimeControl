@@ -174,7 +174,9 @@ in it has to be revisited against "anyone on the internet can create an account"
 1. Per-account store cap, and a bounded `users.dat.php`. Neither is about registration; both
    have to exist before it, and both are useful on their own. Both done: issues #586 and #587.
 2. Invite codes: generation in `setup.php`, redemption via `?a=register`, single-use under the
-   existing users lock.
+   existing users lock. Done: issue #588. Single-use rests on renaming the code's file rather
+   than on the lock alone, since `store.php` does not trust `flock()`; the code is checked
+   before the password is hashed, and registering does not draw on the sign-in budget.
 3. Sweep of never-used accounts, on the registration path, bounded per call.
 4. Last-seen and size reporting in *Show status*, so abandoned accounts are visible and removed
    by a person.

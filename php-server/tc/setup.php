@@ -114,6 +114,7 @@ if ($enableFile['note'] !== null) {
 }
 $errors  = [];
 $done    = false;
+$invitation = null;   // set when a code has just been issued, and shown once
 
 function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
@@ -195,7 +196,7 @@ function tc_install($baseUrl)
         }
         @unlink($canaryPhp);
 
-        foreach (['tokens', 'users', 'accounts'] as $sub) {
+        foreach (['tokens', 'users', 'accounts', 'invites'] as $sub) {
             tc_secure_mkdir($path . '/' . $sub);
         }
 
@@ -324,10 +325,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             } else {
                 $name = trim((string)($_POST['username'] ?? ''));
                 $pass = (string)($_POST['password'] ?? '');
-                if (!preg_match('/^[A-Za-z0-9._-]{3,32}$/', $name)) {
+                // The same two rules ?a=register applies (issue #588).
+                if (!tc_username_acceptable($name)) {
                     $errors[] = 'Username must be 3-32 characters, letters/digits/dot/underscore/hyphen.';
-                } elseif (strlen($pass) < 12) {
-                    $errors[] = 'Password must be at least 12 characters.';
+                } elseif (!tc_password_acceptable($pass)) {
+                    $errors[] = 'Password must be at least ' . TC_PASSWORD_MIN . ' characters.';
                 } else {
                     $made = tc_account_create($config['store'], $name,
                         password_hash($pass, PASSWORD_BCRYPT, ['cost' => TC_BCRYPT_COST]));
@@ -389,6 +391,40 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     tc_unlock($lock);
                 }
             }
+        } elseif ($action === 'invite') {
+            // Issue #588. Shown once and never again: only a hash of the code
+            // is kept, the way only a hash of a token is.
+            $config = tc_config();
+            if ($config === null) {
+                $errors[] = 'Not installed yet.';
+            } else {
+                $made = tc_invite_create($config['store'], (string)($_POST['note'] ?? ''));
+                if ($made === null) {
+                    $errors[] = 'Could not write the invitation - is the disk full? No code was issued.';
+                } else {
+                    $invitation = [
+                        // Grouped for reading aloud or copying by hand. The
+                        // client and the server both ignore the hyphens.
+                        'code'    => implode('-', str_split($made['code'], 4)),
+                        'expires' => date('Y-m-d H:i', $made['expires']),
+                        'note'    => $made['note'],
+                        // What the invitee enters as the server address: this
+                        // directory, as the browser reached it.
+                        'server'  => $baseUrl,
+                    ];
+                    $done = true;
+                }
+            }
+        } elseif ($action === 'withdraw') {
+            $config = tc_config();
+            if ($config === null) {
+                $errors[] = 'Not installed yet.';
+            } else {
+                $withdrawn = tc_invites_withdraw($config['store']);
+                $notices[] = $withdrawn === 1 ? '1 open invitation withdrawn.'
+                                              : $withdrawn . ' open invitations withdrawn.';
+                $done = $withdrawn > 0;
+            }
         } elseif ($action === 'status') {
             $config = tc_config();
             if ($config === null) {
@@ -404,6 +440,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $tokens = glob(tc_tokens_dir($config['store']) . '/*.dat.php');
                 $notices[] = 'Live tokens: ' . ($tokens ? count($tokens) : 0);
 
+                $invites = tc_invites_list($config['store']);
+                $notices[] = 'Open invitations: ' . count($invites);
+                foreach ($invites as $invite) {
+                    $notices[] = sprintf('Invitation%s, valid until %s',
+                        ($invite['note'] ?? '') !== '' ? ' for ' . $invite['note'] : '',
+                        date('Y-m-d H:i', (int)$invite['expires']));
+                }
+
                 // What each account takes up against its limit. The one place
                 // an operator can see an account filling before it is refused -
                 // by then the client says so too, but only to its owner.
@@ -414,8 +458,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         continue;
                     }
                     $used = tc_account_usage(tc_log_state($config['store'], $uid));
-                    $notices[] = sprintf('Storage for %s: %s of %s (%d%%)%s',
-                        $name, $mib($used), $mib(TC_ACCOUNT_QUOTA_BYTES),
+                    // A name the operator did not choose, so what the
+                    // invitation was for is said next to it.
+                    $invited = is_array($record['invited'] ?? null)
+                        ? sprintf(' (invited %s%s)',
+                                  date('Y-m-d', (int)($record['invited']['issued'] ?? 0)),
+                                  ($record['invited']['note'] ?? '') !== ''
+                                      ? ', for ' . $record['invited']['note'] : '')
+                        : '';
+                    $notices[] = sprintf('Storage for %s%s: %s of %s (%d%%)%s',
+                        $name, $invited, $mib($used), $mib(TC_ACCOUNT_QUOTA_BYTES),
                         (int)round(100 * $used / TC_ACCOUNT_QUOTA_BYTES),
                         $used >= TC_ACCOUNT_QUOTA_BYTES ? ' - FULL, pushes are refused' : '');
                 }
@@ -456,6 +508,18 @@ header('X-Robots-Tag: noindex, nofollow');
 <h1>TimeControl sync &ndash; setup</h1>
 <?php foreach ($notices as $n): ?><div class="ok"><?= h($n) ?></div><?php endforeach; ?>
 <?php foreach ($errors as $e): ?><div class="err"><?= h($e) ?></div><?php endforeach; ?>
+<?php if ($invitation !== null): ?>
+<div class="ok">
+  <p><strong>Invitation<?= $invitation['note'] !== '' ? ' for ' . h($invitation['note']) : '' ?></strong>
+  &ndash; valid until <?= h($invitation['expires']) ?> (server time), and only once.</p>
+  <p>Server address: <code><?= h($invitation['server']) ?></code><br>
+  Invitation code: <code><?= h($invitation['code']) ?></code></p>
+  <p>In TimeControl: <em>Settings &rarr; Synchronisation</em>, enter the server
+  address and save, then <em>Create an account with an invitation code</em>.</p>
+  <p>This is the only time the code is shown &ndash; the server keeps only a hash
+  of it. Pass it on now, or withdraw it and make another.</p>
+</div>
+<?php endif; ?>
 
 <p>Every action needs the passphrase from <code>setup.enable</code>. That file is
 deleted as soon as something is changed &ndash; upload it again for the next action.</p>
@@ -474,6 +538,25 @@ deleted as soon as something is changed &ndash; upload it again for the next act
   <label>Password (12+ characters)</label><input type="password" name="password" autocomplete="new-password">
   <label>Passphrase</label><input type="password" name="passphrase" autocomplete="off">
   <button type="submit" name="action" value="adduser">Create</button>
+</fieldset>
+</form>
+
+<form method="post">
+<fieldset><legend>Invite someone</legend>
+  <p>Makes a code that creates one account, with a username and password of the
+  invitee's choosing. It works once and for <?= (int)(TC_INVITE_TTL / 86400) ?> days.</p>
+  <label>Who it is for (optional, only shown here)</label><input name="note" maxlength="60" autocomplete="off">
+  <label>Passphrase</label><input type="password" name="passphrase" autocomplete="off">
+  <button type="submit" name="action" value="invite">Make an invitation code</button>
+</fieldset>
+</form>
+
+<form method="post">
+<fieldset><legend>Withdraw invitations</legend>
+  <p>Every code nobody has used yet stops working. Accounts already made with
+  one are not touched.</p>
+  <label>Passphrase</label><input type="password" name="passphrase" autocomplete="off">
+  <button type="submit" name="action" value="withdraw">Withdraw all open invitations</button>
 </fieldset>
 </form>
 

@@ -1891,8 +1891,8 @@ msgid "Never worked on, due {date}"
 msgstr "Jamais travaillée, échéance {date}"
 
 #: tt/sync_messages.py:54
-msgid "The server was dealing with something else. This one retries on its own."
-msgstr "Le serveur était occupé ailleurs. Cela est réessayé tout seul."
+msgid "The server was occupied with another request. Try again in a moment - background synchronisation does that by itself."
+msgstr "Le serveur traitait une autre requête. Réessayez dans un instant - la synchronisation en arrière-plan le fait d'elle-même."
 
 #: tt/sync_messages.py:62
 msgid "The stored copy of the data could not be fetched from the server, so catching up had to stop."
@@ -3279,3 +3279,72 @@ msgstr "Le serveur a envoyé une modification déjà reçue, ou deux d'entre ell
 msgid "This account has used up its storage on the sync server, so new changes are kept on this device until there is room. Nothing is lost. A device that is fully synchronised frees space on its next sync; if none is, the server's limit has to be raised."
 msgstr "Ce compte a épuisé son espace de stockage sur le serveur de synchronisation : les nouvelles modifications restent donc sur cet appareil jusqu'à ce qu'il y ait de la place. Rien n'est perdu. Un appareil entièrement synchronisé libère de l'espace lors de sa prochaine synchronisation ; s'il n'y en a aucun, la limite du serveur doit être relevée."
 
+
+msgid "3 to 32 characters: a-z or A-Z without accents, digits, dots, underscores or hyphens."
+msgstr "3 à 32 caractères : a-z ou A-Z sans accents, chiffres, points, tirets bas ou traits d'union."
+
+msgid "A username is 3 to 32 characters: a-z or A-Z without accents, digits, dots, underscores or hyphens - no spaces."
+msgstr "Un nom d'utilisateur compte 3 à 32 caractères : a-z ou A-Z sans accents, chiffres, points, tirets bas ou traits d'union - sans espaces."
+
+msgid "Account created, and this device is signed in. On your other devices, sign in with this username and password - the invitation code works only once."
+msgstr "Compte créé, et cet appareil est connecté. Sur vos autres appareils, connectez-vous avec ce nom d'utilisateur et ce mot de passe - le code d'invitation ne fonctionne qu'une fois."
+
+msgid "At least 12 characters."
+msgstr "Au moins 12 caractères."
+
+msgid "Could not create the account ({code})."
+msgstr "Le compte n'a pas pu être créé ({code})."
+
+msgid "Create account"
+msgstr "Créer le compte"
+
+msgid "Create an account with an invitation code"
+msgstr "Créer un compte avec un code d'invitation"
+
+msgid "For the first device of a new account, with the code the server's operator gave you. On your other devices, sign in above with the username and password you choose here."
+msgstr "Pour le premier appareil d'un nouveau compte, avec le code que l'administrateur du serveur vous a remis. Sur vos autres appareils, connectez-vous ci-dessus avec le nom d'utilisateur et le mot de passe choisis ici."
+
+msgid "Invitation code"
+msgstr "Code d'invitation"
+
+msgid "Please enter the invitation code you were given."
+msgstr "Veuillez saisir le code d'invitation qui vous a été remis."
+
+msgid "Repeat password"
+msgstr "Répéter le mot de passe"
+
+msgid "That username is already taken. Choose another - the invitation code has not been used up."
+msgstr "Ce nom d'utilisateur est déjà pris. Choisissez-en un autre - le code d'invitation n'a pas été consommé."
+
+msgid "The password needs at least 12 characters."
+msgstr "Le mot de passe doit compter au moins 12 caractères."
+
+msgid "The server could not store the account. The invitation code has not been used up - try again later, and tell whoever runs the server if it keeps happening."
+msgstr "Le serveur n'a pas pu enregistrer le compte. Le code d'invitation n'a pas été consommé - réessayez plus tard, et prévenez l'administrateur du serveur si cela se reproduit."
+
+msgid "No usable answer came back from the server. If it created the account anyway, signing in above works with the username and password you chose; if it did not, the invitation code is still valid and can be used again."
+msgstr "Aucune réponse exploitable n'est venue du serveur. S'il a tout de même créé le compte, la connexion ci-dessus fonctionne avec le nom d'utilisateur et le mot de passe choisis ; sinon, le code d'invitation est encore valable et peut être réutilisé."
+
+msgid "The two passwords are not the same."
+msgstr "Les deux mots de passe ne correspondent pas."
+
+msgid "This invitation code is not valid, has expired or has already been used. If you already created your account with it, sign in above with the username and password you chose."
+msgstr "Ce code d'invitation n'est pas valable, a expiré ou a déjà été utilisé. Si vous avez déjà créé votre compte avec ce code, connectez-vous ci-dessus avec le nom d'utilisateur et le mot de passe choisis."
+
+msgid "Your account was created, but this device could not be signed in. Sign in above with the username and password you chose."
+msgstr "Votre compte a été créé, mais cet appareil n'a pas pu être connecté. Connectez-vous ci-dessus avec le nom d'utilisateur et le mot de passe choisis."
+
+msgid "The server cannot make new accounts until whoever runs it has looked at it: its old list of accounts could not be converted. The invitation code has not been used up."
+msgstr "Le serveur ne peut pas créer de nouveaux comptes tant que son administrateur ne s'en est pas occupé : son ancienne liste de comptes n'a pas pu être convertie. Le code d'invitation n'a pas été consommé."
+
+msgid "The server could not store the account, and the invitation code was lost with it. Ask whoever runs the server for a new one."
+msgstr "Le serveur n'a pas pu enregistrer le compte, et le code d'invitation a été perdu en même temps. Demandez-en un nouveau à l'administrateur du serveur."
+
+msgid "If this account was deleted or replaced - by one made from an invitation code, say - let this device forget it. The form for an invitation code then appears here."
+msgstr "Si ce compte a été supprimé ou remplacé - par exemple par un compte créé avec un code d'invitation -, faites-le oublier à cet appareil. Le formulaire pour un code d'invitation apparaît alors ici."
+
+msgid "Forget this sign-in on this device"
+msgstr "Oublier cette connexion sur cet appareil"
+
+msgid "This device has forgotten its sign-in."
+msgstr "Cet appareil a oublié sa connexion."

@@ -50,6 +50,23 @@ const TC_HASH_BUDGET_PER_MINUTE = 30;
 // because it is a lever too, only one that fewer hands can reach.
 const TC_HASH_RESERVE_PER_MINUTE = 10;
 
+// What an account may be called and what its password must be, in one place:
+// setup.php and ?a=register both create accounts, and two copies of a rule are
+// how one of them ends up weaker.
+//
+// Anchored with D, and not only as a nicety: without it '$' also matches
+// before a final newline, so "frank\n" would pass - a second account that
+// looks exactly like frank in Show status, and that setup.php, which trims
+// what it is given, could never name to delete.
+const TC_USERNAME_PATTERN   = '/^[A-Za-z0-9._-]{3,32}$/D';
+const TC_DEVICE_UID_PATTERN = '/^[a-f0-9]{16}$/D';
+const TC_PASSWORD_MIN       = 12;
+
+// How long an invitation stays redeemable. Long enough to reach somebody who
+// is away for a week; short enough that one forgotten in an old message has
+// stopped working by the time anybody finds it.
+const TC_INVITE_TTL = 604800;  // 7 days
+
 // One file per account (issue #587). They used to be one JSON file,
 // users.dat.php, decoded whole on every sign-in and rewritten whole on every
 // account change. Measured, that costs little time at the numbers in question -
@@ -65,6 +82,37 @@ function tc_users_file($store)    { return $store . '/users.dat.php'; }
 function tc_users_lock($store)    { return $store . '/users.lock'; }
 function tc_accounts_dir($store)  { return $store . '/accounts'; }
 function tc_tokens_dir($store)    { return $store . '/tokens'; }
+function tc_invites_dir($store)   { return $store . '/invites'; }
+
+function tc_username_acceptable($username)
+{
+    return is_string($username) && preg_match(TC_USERNAME_PATTERN, $username) === 1;
+}
+
+/**
+ * Long enough, and something bcrypt can take: password_hash() throws on a NUL
+ * byte rather than returning false, so one would end the request halfway.
+ *
+ * Counted in characters, the unit every message and the client use, not in
+ * bytes: six umlauts are six characters, not twelve.
+ */
+function tc_password_acceptable($password)
+{
+    return is_string($password) && mb_strlen($password, 'UTF-8') >= TC_PASSWORD_MIN
+        && strpos($password, "\0") === false;
+}
+
+/**
+ * A short label somebody else typed - a device name, an invitation's note -
+ * made fit to keep: control characters out, at most 60 characters. Each is
+ * only ever shown back to whoever it describes, or to the operator, and always
+ * escaped where it is shown, so nothing further is done to it.
+ */
+function tc_label_clean($name)
+{
+    $clean = preg_replace('/[^\P{C}]+/u', '', (string)$name);
+    return mb_substr($clean === null ? '' : $clean, 0, 60);
+}
 
 /**
  * Where an account's record lives: a name computed from the username, the way
@@ -209,26 +257,45 @@ function tc_account_create($store, $username, $passHash)
         return ['error' => 'busy'];
     }
     try {
-        $path = tc_account_file($store, $username);
-        if (is_file($path)) {
+        if (is_file(tc_account_file($store, $username))) {
             return ['error' => 'exists'];
         }
-        $uid = bin2hex(random_bytes(16));
-        $dir = tc_user_dir($store, $uid);
-        // The account's own directory first and the record last. The record is
-        // what makes the account exist, and one pointing at a directory that is
-        // not there yet would answer its every sign-in with "busy".
-        if (!tc_secure_mkdir($dir) || !tc_secure_mkdir($dir . '/seen')
-                || !tc_write_json($dir . '/user.dat.php', ['disabled' => false, 'devices' => []])
-                || !tc_secure_mkdir(tc_accounts_dir($store))
-                || !tc_write_json($path, ['username' => $username, 'uid' => $uid,
-                                          'pass' => $passHash, 'created' => date('c')])) {
-            return ['error' => 'io'];
-        }
-        return ['uid' => $uid];
+        return tc_account_write($store, $username, $passHash);
     } finally {
         tc_unlock($lock);
     }
+}
+
+/**
+ * The part of creating an account that writes it: for callers already holding
+ * the users lock, which tc_account_create() and tc_invite_redeem() both are.
+ * A second tc_lock() of the same file from the same request would not see its
+ * own lock as its own - it would wait out the five seconds and give up.
+ *
+ * That the name is still free is the caller's to have checked, under that same
+ * lock. Nothing here makes it exclusive on its own: a rename replaces whatever
+ * it lands on, and a primitive that does not is one the host probe never
+ * measured.
+ *
+ * @param array $extra Further fields for the record, such as where it came from.
+ * @return array ['uid' => string], or ['error' => 'io']
+ */
+function tc_account_write($store, $username, $passHash, array $extra = [])
+{
+    $uid = bin2hex(random_bytes(16));
+    $dir = tc_user_dir($store, $uid);
+    // The account's own directory first and the record last. The record is
+    // what makes the account exist, and one pointing at a directory that is
+    // not there yet would answer its every sign-in with "busy".
+    if (!tc_secure_mkdir($dir) || !tc_secure_mkdir($dir . '/seen')
+            || !tc_write_json($dir . '/user.dat.php', ['disabled' => false, 'devices' => []])
+            || !tc_secure_mkdir(tc_accounts_dir($store))
+            || !tc_write_json(tc_account_file($store, $username),
+                              ['username' => (string)$username, 'uid' => $uid,
+                               'pass' => $passHash, 'created' => date('c')] + $extra)) {
+        return ['error' => 'io'];
+    }
+    return ['uid' => $uid];
 }
 
 /**
@@ -279,6 +346,300 @@ function tc_accounts_migrate($store)
     }
 }
 
+// ---------------------------------------------------------------------------
+// Invitations (issue #588).
+//
+// How somebody other than the operator gets an account: setup.php makes a
+// code, the operator hands it over, and ?a=register exchanges it, once, for an
+// account whose password the operator never sees. Issuing the code is the
+// approval. It happens while the operator is there, which is the only time
+// this server has one.
+//
+// Only sha256(code) is stored, as with tokens, so the store holds nothing that
+// could be redeemed. A code is 64 random bits: there is nothing to guess, so a
+// wrong one needs no counter - it costs a stat() and gets nowhere near bcrypt.
+// ---------------------------------------------------------------------------
+
+function tc_invite_file($store, $code)
+{
+    return tc_invites_dir($store) . '/' . hash('sha256', $code) . '.dat.php';
+}
+
+/**
+ * Where a code is while it is being redeemed. Still a .php file, so the guard
+ * line inside it keeps working; not a .dat.php one, so nothing that looks for
+ * open invitations can mistake it for one.
+ */
+function tc_invite_claim_file($store, $code)
+{
+    return tc_invites_dir($store) . '/' . hash('sha256', $code) . '.claimed.php';
+}
+
+/**
+ * A code as somebody typed or pasted it, reduced to what was issued.
+ *
+ * Lowercased, and every space, punctuation mark and invisible formatting
+ * character taken out: the hyphens setup.php groups it with, the quotes or the
+ * full stop of the sentence it was copied from, and whatever a mail client or
+ * a chat window adds on the way - a no-break space, an en dash, a zero-width
+ * joiner. Letters and digits are never removed, so what is left is either the
+ * code or not one: "Code: 3f2a..." keeps "code" and is refused, rather than
+ * being read as some other code.
+ *
+ * The client does the same, but this is the one that counts.
+ *
+ * @return string|null Sixteen hex characters, or null when it is not a code.
+ */
+function tc_invite_normalise($code)
+{
+    if (!is_string($code)) {
+        return null;
+    }
+    $clean = preg_replace('/[\s\p{Z}\p{P}\p{Cf}]+/u', '', strtolower($code));
+    return (is_string($clean) && preg_match('/^[a-f0-9]{16}$/D', $clean)) ? $clean : null;
+}
+
+/**
+ * Makes an invitation.
+ *
+ * @param string $note Who it is for, as the operator put it. Only ever shown
+ *                     to the operator, in setup.php.
+ * @return array|null ['code', 'created', 'expires', 'note'], or null when it
+ *                    could not be written - and then there is no code to show.
+ */
+function tc_invite_create($store, $note = '')
+{
+    // Here rather than only at install: every store from before this version
+    // has no such directory.
+    if (!tc_secure_mkdir(tc_invites_dir($store))) {
+        return null;
+    }
+    $code   = bin2hex(random_bytes(8));
+    $now    = time();
+    $record = ['created' => $now, 'expires' => $now + TC_INVITE_TTL,
+               'note' => tc_label_clean($note)];
+    if (!tc_write_json(tc_invite_file($store, $code), $record)) {
+        return null;
+    }
+    return ['code' => $code] + $record;
+}
+
+/**
+ * The invitation a code stands for, if it may still be redeemed.
+ *
+ * No lock and no hash, on purpose: this is the gate, and it has to be cheaper
+ * than anything behind it. An expired one is removed on the way past.
+ *
+ * @return array|null
+ */
+function tc_invite_find($store, $code)
+{
+    $code = tc_invite_normalise($code);
+    if ($code === null) {
+        return null;
+    }
+    $path   = tc_invite_file($store, $code);
+    $invite = tc_read_json($path);
+    if (!is_array($invite)) {
+        return null;
+    }
+    if (time() >= (int)($invite['expires'] ?? 0)) {
+        @unlink($path);
+        return null;
+    }
+    return $invite;
+}
+
+/**
+ * Exchanges an invitation for an account.
+ *
+ * In this order, and the order is the design:
+ *
+ *  1. The code, before anything else - before the lock, and above all before
+ *     the password is hashed. bcrypt at cost 12 is the one expensive thing
+ *     here, and a check that came after it would stop nobody making the
+ *     server do it. So nobody without a code learns anything, either - not
+ *     even which names are taken.
+ *  2. The name and the password. Neither uses the code up: a taken name is
+ *     worth trying again with another.
+ *  3. Under the users lock: the code once more, since somebody may have
+ *     redeemed it meanwhile; the name; the hash; the account. Hashing under
+ *     the lock is what holds a code to one hash - requests racing with it
+ *     queue behind the first and find the code gone. Where the lock does
+ *     nothing, each request already racing can hash once before step 4
+ *     decides: one burst per code, never a way to keep the server busy.
+ *  4. The code is claimed by renaming it, after the hash and before the
+ *     account is written. A rename succeeds once whether or not the lock does
+ *     anything on this host, so no code makes two accounts. If the account
+ *     cannot be written the claim is renamed back and the code still works:
+ *     a full disk should not cost somebody their invitation. The hash comes
+ *     first because it is the slow part, and a request stopped halfway
+ *     through it should leave the code where it was.
+ *
+ * @return array ['uid' => string], or ['error' => 'invalid_invite'|'bad_username'
+ *               |'weak_password'|'username_taken'|'unconverted'|'busy'|'io'
+ *               |'invite_lost']
+ */
+function tc_invite_redeem($store, $code, $username, $password)
+{
+    if (tc_invite_find($store, $code) === null) {
+        return ['error' => 'invalid_invite'];
+    }
+    if (!tc_username_acceptable($username)) {
+        return ['error' => 'bad_username'];
+    }
+    if (!tc_password_acceptable($password)) {
+        return ['error' => 'weak_password'];
+    }
+    // While an old account list is still in place it is the truth, and a name
+    // checked beside it could be one it holds (see tc_account_create). Finding
+    // that out spends neither the code nor a hash. It is not 'busy': the one
+    // time the list is converted, nothing else is waiting for the lock, so a
+    // list still there is one that cannot be read or cannot be written out -
+    // and that waits for the operator, not for a second try.
+    if (!tc_accounts_migrate($store)) {
+        return ['error' => 'unconverted'];
+    }
+    $lock = tc_lock(tc_users_lock($store));
+    if (!$lock) {
+        return ['error' => 'busy'];
+    }
+    try {
+        $code   = tc_invite_normalise($code);
+        $invite = tc_invite_find($store, $code);
+        if ($invite === null) {
+            return ['error' => 'invalid_invite'];
+        }
+        if (is_file(tc_account_file($store, $username))) {
+            return ['error' => 'username_taken'];
+        }
+        $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => TC_BCRYPT_COST]);
+        if (!is_string($hash)) {
+            return ['error' => 'io'];
+        }
+
+        $open  = tc_invite_file($store, $code);
+        $claim = tc_invite_claim_file($store, $code);
+        // Touched before the rename, which keeps the mtime it finds: a claim
+        // is then young from the moment it exists, and Show status, which
+        // tidies away old ones, cannot take it for one left by a request that
+        // died - not even in between.
+        @touch($open);
+        if (!@rename($open, $claim)) {
+            clearstatcache();
+            // Somebody else's rename won, and the code is theirs. Unless it is
+            // still there: then the rename failed for some other reason, the
+            // code is as good as it was, and saying it is used would be false.
+            return ['error' => is_file($open) ? 'io' : 'invalid_invite'];
+        }
+
+        // The name once more, now that the hash is done. Where the lock works
+        // this cannot have changed; where it does nothing, this is what keeps
+        // the gap between asking and writing as small as setup.php's - the
+        // hash no longer sits in it. That is narrower, not closed: that a name
+        // stays free until it is written rests on the lock, as it does there.
+        if (is_file(tc_account_file($store, $username))) {
+            $made = ['error' => 'username_taken'];
+        } else {
+            try {
+                // What it was for goes with the account: the one thing that
+                // lets the operator tell, later, whose a name they did not
+                // choose is.
+                $made = tc_account_write($store, $username, $hash, ['invited' => [
+                    'note'   => (string)($invite['note'] ?? ''),
+                    'issued' => (int)($invite['created'] ?? 0),
+                ]]);
+            } catch (Throwable $e) {
+                error_log('tc_invite_redeem: ' . $e->getMessage());
+                $made = ['error' => 'io'];
+            }
+        }
+        if (isset($made['uid'])) {
+            @unlink($claim);
+        } elseif (!@rename($claim, $open)) {
+            // Next to never - a rename back within one directory - but then
+            // the code is gone, and the answer must not say otherwise.
+            error_log('tc_invite_redeem: a claimed code could not be put back');
+            $made = ['error' => 'invite_lost'];
+        }
+        return $made;
+    } finally {
+        tc_unlock($lock);
+    }
+}
+
+/**
+ * The invitations that are still open, soonest to expire first.
+ *
+ * Tidies on the way, for Show status is the one place that looks at them all:
+ * expired ones go, and so does a claim old enough that the request holding it
+ * cannot still be running - its code is spent either way.
+ *
+ * @return array[] Each ['created', 'expires', 'note'].
+ */
+function tc_invites_list($store)
+{
+    $now  = time();
+    $open = [];
+    foreach (glob(tc_invites_dir($store) . '/*.dat.php') ?: [] as $path) {
+        $invite = tc_read_json($path);
+        if (!is_array($invite)) {
+            continue;   // unreadable is not the same as expired
+        }
+        if ($now >= (int)($invite['expires'] ?? 0)) {
+            @unlink($path);
+            continue;
+        }
+        $open[] = $invite;
+    }
+    foreach (glob(tc_invites_dir($store) . '/*.claimed.php') ?: [] as $path) {
+        if ($now - (int)@filemtime($path) > 600) {
+            @unlink($path);
+        }
+    }
+    usort($open, function ($a, $b) {
+        return (int)($a['expires'] ?? 0) <=> (int)($b['expires'] ?? 0);
+    });
+    return $open;
+}
+
+/**
+ * Withdraws every invitation nobody has redeemed yet.
+ *
+ * Claims included: a redemption in progress whose account then fails to be
+ * written puts its claim back by renaming it, and a claim that is no longer
+ * there cannot be put back - so a withdrawn code stays withdrawn.
+ *
+ * @return int How many open invitations there were.
+ */
+function tc_invites_withdraw($store)
+{
+    // Under the lock, so it cannot fall between a redemption's failed write
+    // and the rename that puts its code back - between the two globs below,
+    // that code would be in neither. Without the lock, withdrawing still
+    // happens; it only loses that guarantee, as everything else here does.
+    $lock = tc_lock(tc_users_lock($store));
+    try {
+        return tc_invites_withdraw_now($store);
+    } finally {
+        tc_unlock($lock);
+    }
+}
+
+function tc_invites_withdraw_now($store)
+{
+    $withdrawn = 0;
+    foreach (glob(tc_invites_dir($store) . '/*.dat.php') ?: [] as $path) {
+        if (@unlink($path)) {
+            $withdrawn++;
+        }
+    }
+    foreach (glob(tc_invites_dir($store) . '/*.claimed.php') ?: [] as $path) {
+        @unlink($path);
+    }
+    return $withdrawn;
+}
+
 /**
  * Consumes one unit of the global password-checking allowance.
  *
@@ -322,7 +683,7 @@ function tc_hash_reserve_take($store)
  */
 function tc_login_from_known_device($store, $username, $deviceUid)
 {
-    if (!is_string($deviceUid) || !preg_match('/^[a-f0-9]{16}$/', $deviceUid)) {
+    if (!is_string($deviceUid) || !preg_match(TC_DEVICE_UID_PATTERN, $deviceUid)) {
         return false;
     }
     $user = tc_user_find($store, (string)$username);

@@ -21,19 +21,22 @@ This directory holds two things:
 
 Authentication, the operation log, and compaction.
 
-Accounts are created by hand, in `setup.php`. There is **no self-service
-registration**, and that is a decision rather than a gap: it would need rate
-limiting that cannot be turned into a lock-out of the people already using the
-server, some defence against automated sign-ups, an answer to whether a new
-account may be used before somebody approves it, and a way to be rid of the
-ones nobody ever came back to. None of those exist, and none of them is worth
-building while the server serves one person's own machines. The design, and
-what would have to be true before any of it were written, is in
-[`development-plan/open-registration.md`](../development-plan/open-registration.md).
+Accounts are made in `setup.php`: directly, or by **invitation** &ndash; a
+code the operator hands to somebody, who then chooses their own username and
+password in TimeControl (see below). There is **no open registration**, and
+that is a decision rather than a gap: it would need rate limiting that cannot
+be turned into a lock-out of the people already using the server, some defence
+against automated sign-ups, an answer to whether a new account may be used
+before somebody approves it, and a way to be rid of the ones nobody ever came
+back to. An invitation answers the middle two by itself &ndash; the code is the
+defence, and issuing it is the approval &ndash; which is why it came first. The
+design, and what would have to be true before any of the rest were written, is
+in [`development-plan/open-registration.md`](../development-plan/open-registration.md).
 
 | Action | Method | Purpose |
 |---|---|---|
 | `?a=login` | POST | username + password + device id &rarr; token |
+| `?a=register` | POST | invitation code + username + password + device id &rarr; new account and token |
 | `?a=ping` | GET | proves a token is still valid |
 | `?a=logout` | GET | revokes the token that was presented |
 | `?a=head` | GET | current sequence number &ndash; the cheap poll |
@@ -215,10 +218,11 @@ sits directly under the document root and fails the moment it does not: with
 went there unprotected while setup reported success. Nothing is assumed now.
 
 **5. Create an account.** `setup.enable` is deleted after every change, so
-upload it again, then use *Create an account*.
+upload it again, then use *Create an account*. For somebody else, *Invite
+someone* is usually the better choice: you never learn their password.
 
-**6. Check.** *Show status* lists the store path, the accounts and the number
-of live tokens. It does not consume `setup.enable`.
+**6. Check.** *Show status* lists the store path, the accounts, the number
+of live tokens and the open invitations. It does not consume `setup.enable`.
 
 ## Things worth knowing
 
@@ -280,6 +284,40 @@ limit is far out of reach &ndash; one person's time tracking is a document of a
 megabyte or two, compacted every couple of thousand changes &ndash; so reaching
 it means snapshots have been failing for a long time, and that is worth
 knowing about anyway.
+
+**An invitation works once, and for seven days.** *Invite someone* in
+`setup.php` shows a code of sixteen hex characters, the server address to go
+with it, and an optional note of who it is for. The code is shown that once:
+the store keeps only its SHA-256, the way it keeps only a hash of each token.
+In TimeControl the invitee enters the address, then *Create an account with an
+invitation code*, and chooses a username and password; the device is signed in
+straight away. Their other devices sign in in the ordinary way.
+
+The code is checked **before the password is hashed**, and before anything
+else. bcrypt is the expensive part of an account, and a check that came after
+it would stop nobody making the server do it; a wrong code costs a file lookup
+and is answered at once. That is also why registering takes nothing from the
+sign-in allowance above &ndash; nothing is hashed without a code, only the
+operator makes codes, and each allows one hash. (Where the lock does nothing,
+requests already racing for one code can each hash once before the code is
+claimed: one burst per code, never a way to keep the server busy.) A code with
+64 random bits needs no counter of its own, and a wrong one says nothing about
+which usernames exist.
+
+What does use a code up is the account being made, and nothing else. A name
+that is taken, a password that is too short, a busy server or a full disk all
+leave it as good as it was; so does an account list from before
+one-file-per-account that cannot be converted, which stops every redemption
+until the operator has looked at it. The code is claimed by renaming its file
+before the account is written, so it makes one account even where the lock
+does nothing. That the name is still free rests on the lock, as it does when
+`setup.php` makes an account; it is checked again right before the account is
+written, so the gap is no wider there.
+
+*Withdraw invitations* stops every code nobody has used yet. *Show status*
+lists the open ones, and marks each account that was made from one with the
+note it was issued with &ndash; a name you did not choose yourself is
+otherwise hard to place.
 
 **Each account is a file of its own**, in `accounts/` in the store, named after
 a hash of the username. Signing in reads that one file, and adding or deleting

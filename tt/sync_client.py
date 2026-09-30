@@ -30,6 +30,7 @@ import json
 import os
 import platform
 import secrets
+import unicodedata
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
@@ -60,6 +61,16 @@ TIMEOUT = 20
 # worst case - `timeout` applies separately to connect and read - so it only
 # ever fires for a lookup that is genuinely stuck.
 DEADLINE = 2 * TIMEOUT + 5
+
+# The server's own minimum (TC_PASSWORD_MIN in php-server/tc/lib/auth.php),
+# checked here as well only to spare a round trip. The server's is the one that
+# counts; this one merely has to be no stricter.
+PASSWORD_MIN = 12
+
+# A register whose answer never arrived may still have made the account - the
+# server finishes its work whether or not anybody is left to hear about it. For
+# these, signing in with the same name and password is how to find out.
+UNANSWERED = frozenset(('timeout', 'unreachable', 'bad_response'))
 
 
 def config_dir():
@@ -381,6 +392,17 @@ def login(base_url, username, password):
         'device_uid': identity['device_uid'],
         'device_name': identity['device_name'],
     })
+    return _keep_token(base_url, username, result)
+
+
+def _keep_token(base_url, username, result):
+    """
+    Stores the token a sign-in or a registration answered with.
+
+    One function for both, because the rest of the application must not be
+    able to tell them apart: an account made a moment ago is signed in to in
+    exactly the way an old one is.
+    """
     if result.get('ok'):
         if not result.get('token'):
             # A success without a token is not something this server does,
@@ -395,6 +417,65 @@ def login(base_url, username, password):
             'expires_at': result.get('expires_at'),
         })
     return result
+
+
+def normalise_invite_code(code):
+    """
+    An invitation code as it was typed or pasted, reduced to what was issued.
+
+    The same rule as the server's tc_invite_normalise(): lowercased, with
+    every space, punctuation mark and invisible formatting character removed -
+    the hyphens the setup page groups it with, the quotes or full stop of the
+    sentence it was copied from, and whatever a mail client or chat window
+    slips in. Letters and digits are never removed, so "Code: 3f2a..." keeps
+    "code" and is refused rather than read as some other code.
+
+    :return: The code, or '' when nothing is left of it.
+    """
+    return ''.join(ch for ch in (code or '').lower()
+                   if not (ch.isspace() or unicodedata.category(ch)[0] == 'P'
+                           or unicodedata.category(ch) in ('Zs', 'Cf')))
+
+
+def register(base_url, code, username, password):
+    """
+    Creates an account with an invitation code, and signs this machine in to it.
+
+    The server answers the way a sign-in does, so the token is kept the same
+    way (issue #588).
+
+    :return: The server's reply, with 'ok' telling the caller what happened.
+    :rtype: dict
+    """
+    if not (base_url or '').strip():
+        return {'ok': False, 'error': 'no_server'}
+    code = normalise_invite_code(code)
+    if not code:
+        return {'ok': False, 'error': 'missing_invite'}
+    if not username or not password:
+        return {'ok': False, 'error': 'missing_credentials'}
+    if len(password) < PASSWORD_MIN:
+        return {'ok': False, 'error': 'weak_password'}
+    if not _transport_is_safe(base_url):
+        return {'ok': False, 'error': 'https_required'}
+
+    identity = device_identity()
+    result = _post(base_url, 'register', {
+        'code': code,
+        'username': username,
+        'password': password,
+        'device_uid': identity['device_uid'],
+        'device_name': identity['device_name'],
+    })
+    if result.get('error') in UNANSWERED:
+        # Trying again would be told the code is used, if it was. Signing in
+        # finds out which it was, and is the right thing to have done either
+        # way: it succeeds exactly when the account is there.
+        recovered = login(base_url, username, password)
+        if recovered.get('ok'):
+            return dict(recovered, recovered=True)
+        return result
+    return _keep_token(base_url, username, result)
 
 
 def logout():

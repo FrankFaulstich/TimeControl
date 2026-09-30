@@ -24,7 +24,17 @@ from i18n import _
 REJECTED_BY_SERVER = frozenset((
     'bad_json', 'ops_not_a_list', 'op_not_an_object', 'unknown_op',
     'bad_lc', 'bad_uid', 'bad_fields', 'method_not_allowed', 'unknown_action',
+    # Signing in and redeeming an invitation both send this machine's id, and
+    # the server refuses one that is not what device_identity() makes.
+    'bad_device_uid',
 ))
+
+
+# The failures after which a registration may have happened all the same: the
+# server finishes its work whether or not anybody is left to hear about it.
+# sync_client.UNANSWERED, repeated rather than imported so that this module
+# keeps importing nothing but the translator; a test holds the two together.
+UNANSWERED = frozenset(('timeout', 'unreachable', 'bad_response'))
 
 
 def _messages():
@@ -44,6 +54,29 @@ def _messages():
         'invalid_credentials': _("Wrong username or password."),
         'too_many_attempts': _("Too many sign-in attempts on the server. Try again in a minute."),
 
+        # --- creating an account with an invitation (issue #588) ---
+        'missing_invite': _("Please enter the invitation code you were given."),
+        'invalid_invite': _("This invitation code is not valid, has expired or has already "
+                            "been used. If you already created your account with it, sign "
+                            "in above with the username and password you chose."),
+        'bad_username': _("A username is 3 to 32 characters: a-z or A-Z without accents, "
+                          "digits, dots, underscores or hyphens - no spaces."),
+        'weak_password': _("The password needs at least 12 characters."),
+        'passwords_differ': _("The two passwords are not the same."),
+        'username_taken': _("That username is already taken. Choose another - the invitation "
+                            "code has not been used up."),
+        'account_created_sign_in': _("Your account was created, but this device could not be "
+                                     "signed in. Sign in above with the username and password "
+                                     "you chose."),
+        'io': _("The server could not store the account. The invitation code has not been "
+                "used up - try again later, and tell whoever runs the server if it keeps "
+                "happening."),
+        'unconverted': _("The server cannot make new accounts until whoever runs it has "
+                         "looked at it: its old list of accounts could not be converted. "
+                         "The invitation code has not been used up."),
+        'invite_lost': _("The server could not store the account, and the invitation code "
+                         "was lost with it. Ask whoever runs the server for a new one."),
+
         # --- reaching the server, from anywhere ---
         'tls_failed': _("The server's certificate could not be verified."),
         'timeout': _("The server did not answer in time."),
@@ -60,7 +93,10 @@ def _messages():
                                "redirect, because that could send its access token on "
                                "to an unencrypted one."),
         'not_installed': _("The server is reachable but has not been set up yet."),
-        'busy': _("The server was dealing with something else. This one retries on its own."),
+        # Worded to be true on every screen that shows it: under a form, nothing
+        # retries by itself, and "this one retries on its own" was not so.
+        'busy': _("The server was occupied with another request. Try again in a moment - "
+                  "background synchronisation does that by itself."),
 
         # --- the background sync, which the user was not looking at ---
         'not_signed_in': _("This device is not signed in to the server."),
@@ -160,3 +196,21 @@ def sign_in_error_message(code):
     signing in - and where naming that is more use than a bare code.
     """
     return _message(code, _("Sign-in failed ({code})."))
+
+
+def register_error_message(code):
+    """
+    What to show under the form that redeems an invitation.
+
+    Its own headline, and one explanation of its own: an answer that never
+    arrived. After a sign-in that only means trying again. After this it is
+    the one moment nobody can tell whether the account exists - the server
+    finishes its work either way - and sync_client.register() has already
+    tried signing in to find out. So what is left to say is both halves.
+    """
+    if code in UNANSWERED:
+        return _("No usable answer came back from the server. If it created the account "
+                 "anyway, signing in above works with the username and password you "
+                 "chose; if it did not, the invitation code is still valid and can be "
+                 "used again.")
+    return _message(code, _("Could not create the account ({code})."))
