@@ -3328,8 +3328,8 @@ msgstr "De 3 a 32 caracteres: a-z o A-Z sin tildes, cifras, puntos, guiones bajo
 msgid "A username is 3 to 32 characters: a-z or A-Z without accents, digits, dots, underscores or hyphens - no spaces."
 msgstr "Un nombre de usuario tiene de 3 a 32 caracteres: a-z o A-Z sin tildes, cifras, puntos, guiones bajos o guiones, sin espacios."
 
-msgid "Account created, and this device is signed in. On your other devices, sign in with this username and password - the invitation code works only once."
-msgstr "Cuenta creada y este dispositivo ha iniciado sesión. En sus otros dispositivos, inicie sesión con este usuario y esta contraseña; el código de invitación solo funciona una vez."
+msgid "Account created, and this device is signed in. On your other devices, sign in with this username and password - the invitation code works only once. An account that nothing is ever stored in, and that no device uses for a month, is removed again."
+msgstr "Cuenta creada y este dispositivo ha iniciado sesión. En sus otros dispositivos, inicie sesión con este usuario y esta contraseña; el código de invitación solo funciona una vez. Una cuenta en la que nunca se guarda nada y que ningún dispositivo usa durante un mes se elimina automáticamente."
 
 msgid "At least 12 characters."
 msgstr "Al menos 12 caracteres."
@@ -3370,8 +3370,8 @@ msgstr "No llegó ninguna respuesta útil del servidor. Si aun así creó la cue
 msgid "The two passwords are not the same."
 msgstr "Las dos contraseñas no coinciden."
 
-msgid "This invitation code is not valid, has expired or has already been used. If you already created your account with it, sign in above with the username and password you chose."
-msgstr "Este código de invitación no es válido, ha caducado o ya se ha usado. Si ya creó su cuenta con él, inicie sesión arriba con el usuario y la contraseña que eligió."
+msgid "This invitation code is not valid, has expired or has already been used. If you already created your account with it, sign in above with the username and password you chose. If that account has since been removed, ask whoever runs the server for a new code."
+msgstr "Este código de invitación no es válido, ha caducado o ya se ha usado. Si ya creó su cuenta con él, inicie sesión arriba con el usuario y la contraseña que eligió. Si esa cuenta se ha eliminado desde entonces, pida un código nuevo a quien administra el servidor."
 
 msgid "Your account was created, but this device could not be signed in. Sign in above with the username and password you chose."
 msgstr "Su cuenta se creó, pero este dispositivo no pudo iniciar sesión. Inicie sesión arriba con el usuario y la contraseña que eligió."
@@ -3382,8 +3382,8 @@ msgstr "El servidor no puede crear cuentas nuevas hasta que quien lo administra 
 msgid "The server could not store the account, and the invitation code was lost with it. Ask whoever runs the server for a new one."
 msgstr "El servidor no pudo guardar la cuenta y el código de invitación se perdió con ella. Pida uno nuevo a quien administra el servidor."
 
-msgid "If this account was deleted or replaced - by one made from an invitation code, say - let this device forget it. The form for an invitation code then appears here."
-msgstr "Si esta cuenta se eliminó o se sustituyó (por ejemplo, por una creada con un código de invitación), haga que este dispositivo la olvide. Después aparecerá aquí el formulario para un código de invitación."
+msgid "If this account was deleted or replaced - by one made from an invitation code, say - let this device forget it. The form for an invitation code then appears here. An account that nothing was ever stored in is also removed after a month without use; ask whoever runs the server for a new code then."
+msgstr "Si esta cuenta se eliminó o se sustituyó (por ejemplo, por una creada con un código de invitación), haga que este dispositivo la olvide. Después aparecerá aquí el formulario para un código de invitación. Una cuenta en la que nunca se guardó nada también se elimina tras un mes sin uso; en ese caso, pida un código nuevo a quien administra el servidor."
 
 msgid "Forget this sign-in on this device"
 msgstr "Olvidar este inicio de sesión en este dispositivo"

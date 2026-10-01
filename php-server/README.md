@@ -319,6 +319,34 @@ lists the open ones, and marks each account that was made from one with the
 note it was issued with &ndash; a name you did not choose yourself is
 otherwise hard to place.
 
+**An account made from an invitation that is never used is removed again.**
+Two cases are kept strictly apart, because confusing them is how a clean-up
+deletes somebody's year of time tracking:
+
+- *Never used*: nothing was ever stored in it &ndash; its log directory is
+  missing or empty. It is removed once no device of it could still come back
+  without its password: 31 days, one more than a token lasts unused, after the
+  later of its registration and the last time any of its devices reached the
+  server. Nothing is lost by it; whatever the devices hold locally stays
+  there, and is offered again to whichever account they sign in to next.
+- *Used and then abandoned*: there is a log, perhaps years of it. Nothing here
+  ever removes that.
+
+Accounts made in `setup.php` are never removed this way &ndash; you made those
+on purpose, perhaps for somebody who starts later &ndash; and neither are
+accounts made from an invitation before this version. There is no cron, so the
+removal happens the way token expiry does: at the next registration, for at
+most five accounts at a time. Anything that cannot be read is kept.
+
+*Show status* marks each account that is a candidate with the date after which
+it can go, and lists the last accounts that were removed, with their note;
+each removal is also written to `error.log` in the store. (A removal that was
+interrupted and finished by a later sweep is only in `error.log`: by then it
+can no longer be told for certain whose it was.) The person it
+happened to is only told, when signing in, that the name or password is
+wrong &ndash; sign-in does not say which names exist &ndash; so they will ask
+you, and what they need is a new invitation. Their old username is free again.
+
 **Each account is a file of its own**, in `accounts/` in the store, named after
 a hash of the username. Signing in reads that one file, and adding or deleting
 an account writes only its own &ndash; so none of it grows with the number of

@@ -23,6 +23,12 @@ $GLOBALS['tc_tests'] = 0;
 $GLOBALS['tc_failed'] = 0;
 $GLOBALS['tc_current'] = '';
 
+// What the code under test writes to the error log goes to a file of its own,
+// where a test can look for it, rather than into the results.
+$GLOBALS['tc_error_log'] = sys_get_temp_dir() . '/tc-oplog-test-' . bin2hex(random_bytes(6)) . '.log';
+ini_set('error_log', $GLOBALS['tc_error_log']);
+register_shutdown_function(function () { @unlink($GLOBALS['tc_error_log']); });
+
 function tc_test($name, callable $body)
 {
     $GLOBALS['tc_current'] = $name;
@@ -58,6 +64,9 @@ function tc_temp_store()
 {
     $dir = sys_get_temp_dir() . '/tc-oplog-test-' . bin2hex(random_bytes(6));
     tc_secure_mkdir($dir . '/users/u0000000000000001');
+    // As an account has it. The log refuses to write for an account whose
+    // directory has no user.dat.php, since that is one that has been removed.
+    tc_write_json($dir . '/users/u0000000000000001/user.dat.php', ['disabled' => false, 'devices' => []]);
     return $dir;
 }
 
@@ -1389,6 +1398,480 @@ tc_test('withdrawing stops every open code, and nothing else', function ($store,
     }
     tc_assert_same([], glob(tc_invites_dir($store) . '/*') ?: [], 'a claim could still be put back');
     tc_assert(tc_user_find($store, 'anna') !== null, 'withdrawing took an account with it');
+});
+
+// ---------------------------------------------------------------------------
+// Accounts nobody ever used (issue #589).
+//
+// Removing accounts automatically is the one thing here that could lose
+// somebody's work, so most of these are about what must be kept: anything
+// stored at all, anything a device could still reach, anything the operator
+// made, anything that cannot be read. And one is about the account that is
+// removed while its device is arriving - which must neither be let in nor
+// come back as a directory nothing points to.
+// ---------------------------------------------------------------------------
+
+print("\nAccounts nobody ever used\n");
+
+/** A day more than removal waits for. */
+const TC_TEST_LONG_AGO = TC_UNUSED_SECONDS / 86400 + 1;
+
+/**
+ * An account made by redeeming a code, without paying for a real hash, with
+ * everything about it - the registration, every device's last contact -
+ * having happened $days ago.
+ */
+function tc_registered($store, $name, $days, $device = null)
+{
+    $made = tc_account_write($store, $name, 'x', ['invited' => ['note' => 'for ' . $name, 'issued' => 0]], true);
+    $uid  = $made['uid'];
+    tc_secure_mkdir(tc_tokens_dir($store));
+    if ($device !== null) {
+        tc_token_issue($store, $uid, $device, 'laptop');
+    }
+    tc_age($store, $uid, $days);
+    return $uid;
+}
+
+function tc_age($store, $uid, $days)
+{
+    $at     = time() - (int)round($days * 86400);
+    $path   = tc_unused_marker($store, $uid);
+    $marker = tc_read_json($path);
+    $marker['since'] = $at;
+    tc_write_json($path, $marker);
+    touch($path, min(time(), $at + TC_UNUSED_SECONDS + 1));
+    foreach (glob(tc_user_dir($store, $uid) . '/seen/*') ?: [] as $seen) {
+        touch($seen, $at);
+    }
+}
+
+function tc_gone($store, $name, $uid)
+{
+    clearstatcache();
+    return tc_user_find($store, $name) === null && !is_dir(tc_user_dir($store, $uid))
+        && !is_file(tc_unused_marker($store, $uid));
+}
+
+tc_test('only an account made by redeeming a code is looked after this way', function ($store, $uid) {
+    $code = tc_invite_create($store)['code'];
+    $invited = tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD)['uid'];
+    tc_assert(is_file(tc_unused_marker($store, $invited)), 'a registered account is not watched');
+    // The operator made this one on purpose - for somebody who starts next
+    // month, perhaps - and removes it in Show status if it is not wanted.
+    $made = tc_account_create($store, 'bert', 'x')['uid'];
+    tc_assert(!is_file(tc_unused_marker($store, $made)), 'an account the operator made is watched');
+});
+
+tc_test('one nothing was stored in, that no device could still reach, is removed', function ($store, $uid) {
+    $gone = tc_registered($store, 'anna', TC_TEST_LONG_AGO, 'a1b2c3d4e5f60718');
+    $token = tc_read_json(tc_user_dir($store, $gone) . '/user.dat.php')['devices'][0]['token_id'];
+    tc_assert_same(1, tc_accounts_sweep_unused($store), 'removed');
+    tc_assert(tc_gone($store, 'anna', $gone), 'something of it is left');
+    tc_assert(!is_file(tc_tokens_dir($store) . '/' . $token . '.dat.php'), 'its token was left');
+    tc_assert_same([], glob($store . '/users/.gone-*') ?: [], 'what was moved away was not emptied');
+    // Said where the operator can find it: the person is only told their
+    // password is wrong.
+    tc_assert_same('anna', tc_removed_list($store)[0]['username'] ?? null, 'Show status cannot name it');
+    tc_assert(strpos((string)@file_get_contents(ini_get('error_log')), '"anna"') !== false,
+              'the removal left no line in the log');
+});
+
+tc_test('but not while any of its devices could still sign in without a password', function ($store, $uid) {
+    // Until then a token of it still works: somebody back from a fortnight
+    // away must find the laptop still synchronising, not a lost account.
+    foreach ([8, TC_IDLE_TTL / 86400] as $i => $days) {
+        $kept = tc_registered($store, 'anna' . $i, $days, sprintf('a1b2c3d4e5f6071%d', $i));
+        tc_assert_same(0, tc_accounts_sweep_unused($store), 'removed after ' . $days . ' days');
+        tc_assert(tc_user_find($store, 'anna' . $i) !== null, 'gone after ' . $days . ' days');
+    }
+});
+
+tc_test('a device that has been in touch recently keeps it', function ($store, $uid) {
+    $kept = tc_registered($store, 'anna', TC_TEST_LONG_AGO, 'a1b2c3d4e5f60718');
+    touch(tc_user_dir($store, $kept) . '/seen/a1b2c3d4e5f60718');   // it synchronised just now
+    tc_assert_same(0, tc_accounts_sweep_unused($store), 'removed');
+    clearstatcache();
+    tc_assert(filemtime(tc_unused_marker($store, $kept)) > time(),
+              'not dated to when it could next be due, so it would be looked at every time');
+});
+
+/** Dates a device's token as issued $days ago, in both places it is kept. */
+function tc_token_issued($store, $uid, $days)
+{
+    $at   = time() - (int)round($days * 86400);
+    $path = tc_user_dir($store, $uid) . '/user.dat.php';
+    $user = tc_read_json($path);
+    foreach ($user['devices'] as &$device) {
+        $device['iat'] = $at;
+        $device['exp'] = $at + TC_TOKEN_TTL;
+        $file  = tc_tokens_dir($store) . '/' . $device['token_id'] . '.dat.php';
+        $token = tc_read_json($file);
+        $token['iat'] = $at;
+        $token['exp'] = $at + TC_TOKEN_TTL;
+        tc_write_json($file, $token);
+    }
+    unset($device);
+    tc_write_json($path, $user);
+}
+
+tc_test('a device listed without a seen entry counts until its token runs out', function ($store, $uid) {
+    // tc_token_check cannot apply idle expiry without that entry, so the
+    // token lasts its whole life - and the account has to as well. Issued
+    // long enough ago that a rule reckoning from when it was issued, rather
+    // than from when it runs out, would already have let it go.
+    $kept = tc_registered($store, 'anna', 40, 'a1b2c3d4e5f60718');
+    tc_token_issued($store, $kept, 40);
+    $token = tc_read_json(tc_user_dir($store, $kept) . '/user.dat.php')['devices'][0]['token_id'];
+    unlink(tc_user_dir($store, $kept) . '/seen/a1b2c3d4e5f60718');
+    tc_assert_same(0, tc_accounts_sweep_unused($store), 'removed while its token still works');
+    // Not asked before the sweep: a check that succeeds writes the seen
+    // entry again, and the account would be kept for that reason instead.
+    tc_assert(is_file(tc_tokens_dir($store) . '/' . $token . '.dat.php'), 'its token went');
+});
+
+tc_test('and once it has run out, it counts no longer', function ($store, $uid) {
+    // Expired a day longer ago than removal waits: nothing could come back.
+    $gone = tc_registered($store, 'anna', TC_TOKEN_TTL / 86400 + TC_TEST_LONG_AGO, 'a1b2c3d4e5f60718');
+    tc_token_issued($store, $gone, TC_TOKEN_TTL / 86400 + TC_TEST_LONG_AGO);
+    unlink(tc_user_dir($store, $gone) . '/seen/a1b2c3d4e5f60718');
+    tc_assert_same(1, tc_accounts_sweep_unused($store), 'kept for a token that ran out long ago');
+});
+
+tc_test('a marker is never due from the moment it exists', function ($store, $uid) {
+    // Dated before it becomes visible. Otherwise a sweep the lock failed to
+    // keep out could, in that instant, take a registration still being
+    // written for a removal that had been interrupted.
+    $code = tc_invite_create($store)['code'];
+    $made = tc_invite_redeem($store, $code, 'anna', TC_TEST_PASSWORD)['uid'];
+    clearstatcache();
+    tc_assert(filemtime(tc_unused_marker($store, $made)) > time() + TC_UNUSED_SECONDS - 60,
+              'the marker was visible before it was dated');
+    tc_assert_same([], glob(tc_unused_dir($store) . '/.tmp*') ?: [], 'a temporary file was left');
+});
+
+tc_test('a registration still being written is not taken for an interrupted removal', function ($store, $uid) {
+    // Its marker there, its record not yet. However the marker came to look
+    // due, a young one is left alone.
+    $young = tc_account_write($store, 'anna', 'x', [], true)['uid'];
+    unlink(tc_account_file($store, 'anna'));
+    touch(tc_unused_marker($store, $young), time() - 60);
+    tc_accounts_sweep_unused($store);
+    tc_assert(is_dir(tc_user_dir($store, $young)), 'the account being made lost its directory');
+    tc_assert(is_file(tc_unused_marker($store, $young)), 'and its marker');
+});
+
+tc_test('a marker that is not one is thrown away rather than looked at for ever', function ($store, $uid) {
+    // An empty one, say, which a touch() at the wrong moment can leave. Left
+    // there it would sit at the front of every sweep.
+    tc_secure_mkdir(tc_unused_dir($store));
+    $junk = tc_unused_dir($store) . '/' . str_repeat('a', 32) . '.dat.php';
+    touch($junk, time() - 60);
+    tc_accounts_sweep_unused($store);
+    tc_assert(!is_file($junk), 'an empty marker was kept');
+});
+
+tc_test('anything stored at all keeps it for good', function ($store, $uid) {
+    // Even the leftovers of a write that was interrupted: it is not for this
+    // to decide what in there matters.
+    $kept = tc_registered($store, 'anna', TC_TEST_LONG_AGO);
+    tc_secure_mkdir(tc_log_dir($store, $kept));
+    file_put_contents(tc_log_dir($store, $kept) . '/.tmp123456', 'x');
+    tc_assert_same(0, tc_accounts_sweep_unused($store), 'removed');
+    tc_assert(tc_user_find($store, 'anna') !== null, 'an account holding something was removed');
+    tc_assert(!is_file(tc_unused_marker($store, $kept)), 'still a candidate, though it is in use');
+});
+
+tc_test('and the first thing it stores takes it off the list at once', function ($store, $uid) {
+    // Not only at the next registration, which may be months away - until
+    // then Show status would call an account in use unused.
+    $kept = tc_registered($store, 'anna', 0);
+    tc_log_append($store, $kept, 'dev0000000000001', tc_ops(1));
+    tc_assert(!is_file(tc_unused_marker($store, $kept)), 'still marked unused after storing something');
+});
+
+tc_test('an empty log directory is not something stored', function ($store, $uid) {
+    // What a refused snapshot leaves behind. There is nothing in it.
+    $gone = tc_registered($store, 'anna', TC_TEST_LONG_AGO);
+    tc_secure_mkdir(tc_log_dir($store, $gone));
+    tc_assert_same(1, tc_accounts_sweep_unused($store), 'removed');
+});
+
+tc_test('an account the operator made is never removed, however unused', function ($store, $uid) {
+    $made = tc_account_create($store, 'bert', 'x')['uid'];
+    tc_write_json(tc_user_dir($store, $made) . '/user.dat.php', ['disabled' => false, 'devices' => []]);
+    tc_assert_same(0, tc_accounts_sweep_unused($store), 'removed');
+    tc_assert(tc_user_find($store, 'bert') !== null, 'the operator\'s account went');
+});
+
+tc_test('what cannot be read is not taken for empty', function ($store, $uid) {
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+        return;   // root reads what nobody else may, so this cannot be shown
+    }
+    $kept = tc_registered($store, 'anna', TC_TEST_LONG_AGO);
+    tc_secure_mkdir(tc_log_dir($store, $kept));
+    chmod(tc_log_dir($store, $kept), 0000);
+    try {
+        tc_assert_same(0, tc_accounts_sweep_unused($store), 'removed');
+    } finally {
+        chmod(tc_log_dir($store, $kept), 0700);
+    }
+    tc_assert(tc_user_find($store, 'anna') !== null, 'an account that could not be looked into went');
+
+    $user = tc_user_dir($store, $kept) . '/user.dat.php';
+    file_put_contents($user, TC_GUARD . '{"devices": [');
+    tc_assert_same(0, tc_accounts_sweep_unused($store), 'removed with a device list it could not read');
+});
+
+tc_test('a sweep does a bounded amount of work', function ($store, $uid) {
+    // It runs inside somebody's registration.
+    for ($i = 0; $i < TC_SWEEP_REMOVE + 3; $i++) {
+        tc_registered($store, 'due' . $i, TC_TEST_LONG_AGO);
+    }
+    tc_assert_same(TC_SWEEP_REMOVE, tc_accounts_sweep_unused($store), 'removed in one');
+    tc_assert_same(3, tc_accounts_sweep_unused($store), 'removed in the next');
+
+    // And it looks at no more than its share: markers that turn out not to be
+    // due are dated forward as they are looked at, so the count shows.
+    for ($i = 0; $i < TC_SWEEP_EXAMINE + 5; $i++) {
+        $recent = tc_registered($store, 'recent' . $i, TC_TEST_LONG_AGO, sprintf('b%015x', $i));
+        touch(tc_user_dir($store, $recent) . '/seen/' . sprintf('b%015x', $i));
+    }
+    tc_accounts_sweep_unused($store);
+    clearstatcache();
+    $lookedAt = 0;
+    foreach (glob(tc_unused_dir($store) . '/*.dat.php') as $marker) {
+        $lookedAt += filemtime($marker) > time() ? 1 : 0;
+    }
+    tc_assert_same(TC_SWEEP_EXAMINE, $lookedAt, 'markers looked at');
+});
+
+tc_test('a device arriving as its account is removed is refused, and builds nothing up again', function ($store, $uid) {
+    // Fresh, so its token works: one due for removal has none that do, but
+    // the operator removes accounts too, and a token can outlive its list.
+    $gone = tc_registered($store, 'anna', 0);
+    $token = tc_token_issue($store, $gone, 'a1b2c3d4e5f60718', 'laptop')['token'];
+    tc_assert(tc_token_check($store, $token) !== null, 'the token did not work to begin with');
+    // A token the device list never recorded: nothing will revoke it by name.
+    $stray = tc_token_issue($store, $gone, 'ffffffffffffffff', 'elsewhere')['token'];
+    $user = tc_read_json(tc_user_dir($store, $gone) . '/user.dat.php');
+    $user['devices'] = array_values(array_filter($user['devices'], function ($d) {
+        return $d['device_uid'] !== 'ffffffffffffffff';
+    }));
+    tc_write_json(tc_user_dir($store, $gone) . '/user.dat.php', $user);
+    unlink(tc_user_dir($store, $gone) . '/seen/ffffffffffffffff');
+
+    tc_account_delete($store, 'anna', $gone);
+    tc_assert_same(null, tc_token_check($store, $token), 'its token still let the device in');
+    tc_assert_same(null, tc_token_check($store, $stray), 'a token it never listed still let a device in');
+    // One that had got past the token check already, and reaches the log now.
+    tc_assert_same(['error' => 'account_gone'],
+                   tc_log_append($store, $gone, 'a1b2c3d4e5f60718', tc_ops(1)), 'push');
+    tc_touch_seen($store, $gone, 'a1b2c3d4e5f60718');
+    clearstatcache();
+    tc_assert(!is_dir(tc_user_dir($store, $gone)), 'the account\'s directory came back');
+});
+
+tc_test('a push waiting for the log while its account is removed is refused afterwards', function ($store, $uid) {
+    // It got past every check made before the lock; the account went while
+    // it waited. What it finds once it has the lock must stop it.
+    $gone = tc_registered($store, 'anna', 0);
+    $held = tc_lock(tc_log_lock_path($store, $gone));
+    // The child says when it is about to append, so how long it took to
+    // start cannot decide which of the two checks this ends up testing.
+    $script = sprintf('require %s; require %s; echo "ready\\n"; fflush(STDOUT); '
+                      . 'echo json_encode(tc_log_append(%s, %s, "dev0000000000001", '
+                      . '[["op" => "task.set", "lc" => 1, "uid" => "0000000000000001", "f" => []]]));',
+                      var_export(__DIR__ . '/tc/lib/auth.php', true), var_export(__DIR__ . '/tc/lib/oplog.php', true),
+                      var_export($store, true), var_export($gone, true));
+    $process = proc_open([PHP_BINARY, '-r', $script], [1 => ['pipe', 'w']], $pipes);
+    tc_assert_same("ready\n", fgets($pipes[1]), 'the child did not start');
+    usleep(300000);   // past the first check, and waiting for the lock
+    tc_account_delete($store, 'anna', $gone);
+    tc_unlock($held);
+    $raw = stream_get_contents($pipes[1]);
+    proc_close($process);
+    // The raw answer goes with a failure: "null" (the append gave up) and
+    // nothing at all (the child died) need looking for in different places.
+    tc_assert_same(['error' => 'account_gone'], json_decode($raw, true), 'answer ' . var_export($raw, true));
+    clearstatcache();
+    tc_assert(!is_dir(tc_user_dir($store, $gone)), 'the account\'s directory came back');
+});
+
+tc_test('what is looked at under a lock is not an answer from before it', function ($store, $uid) {
+    // The cause of the test above failing on PHP 7.4 only, pinned down where
+    // it lives. PHP remembers its last stat(); until 8.3.19 and 8.4.5 taking
+    // a lock does not make it forget, so a file another request removed while
+    // this one waited would still be there. Removed by another process, as it
+    // would be - PHP's own unlink() clears the memory and would prove nothing.
+    $file = $store . '/probe-file';
+    file_put_contents($file, 'x');
+    tc_assert(is_file($file), 'the file is not there to begin with');
+    exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg('unlink(' . var_export($file, true) . ');'));
+    $lock = tc_lock($store . '/probe.lock');
+    try {
+        tc_assert(!is_file($file), 'answered from before the lock was taken');
+    } finally {
+        tc_unlock($lock);
+    }
+});
+
+tc_test('a directory that cannot be emptied is still moved out of the way', function ($store, $uid) {
+    // Deleting in place would leave the account's directory half there -
+    // which on NFS, where a file still open cannot really be deleted, is
+    // what every removal would do. Moved in one step, it is gone from where
+    // anything looks, and emptying it is left for later.
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+        return;   // root deletes what nobody else may, so this cannot be shown
+    }
+    $gone = tc_registered($store, 'anna', 0);
+    $stuck = tc_user_dir($store, $gone) . '/stuck';
+    tc_secure_mkdir($stuck);
+    file_put_contents($stuck . '/cannot-go', 'x');
+    chmod($stuck, 0500);
+    try {
+        tc_assert_same(true, tc_account_delete($store, 'anna', $gone), 'deleted');
+        clearstatcache();
+        tc_assert(!is_dir(tc_user_dir($store, $gone)), 'the account\'s directory is still where it was');
+        tc_assert_same(null, tc_user_find($store, 'anna'), 'the account is still there');
+    } finally {
+        @chmod(tc_account_trash($store, $gone) . '/stuck', 0700);
+        @chmod($stuck, 0700);
+    }
+});
+
+tc_test('a removal clears away its own leftovers, whatever else is waiting', function ($store, $uid) {
+    // A general tidy takes whichever leftovers come first, and some may not
+    // go yet - those must not keep this one's on disk.
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+        return;
+    }
+    $stuck = [];
+    for ($i = 0; $i < 8; $i++) {
+        $dir = $store . '/users/.gone-' . sprintf('%032d', $i);
+        tc_secure_mkdir($dir . '/sub');
+        file_put_contents($dir . '/sub/cannot-go', 'x');
+        chmod($dir . '/sub', 0500);
+        $stuck[] = $dir . '/sub';
+    }
+    try {
+        $gone = tc_registered($store, 'anna', TC_TEST_LONG_AGO);
+        tc_assert_same(1, tc_accounts_sweep_unused($store), 'removed');
+        clearstatcache();
+        tc_assert(!file_exists(tc_account_trash($store, $gone)), 'its own leftovers were left behind');
+    } finally {
+        foreach ($stuck as $dir) {
+            chmod($dir, 0700);
+        }
+    }
+});
+
+tc_test('a token is refused, not deleted, while its account cannot be seen', function ($store, $uid) {
+    // One stat() that fails for a moment must not sign a working device out
+    // for good.
+    $made = tc_registered($store, 'anna', 0, 'a1b2c3d4e5f60718');
+    $token = tc_token_issue($store, $made, 'a1b2c3d4e5f60718', 'laptop')['token'];
+    $dir = tc_user_dir($store, $made);
+    rename($dir, $dir . '.away');
+    tc_assert_same(null, tc_token_check($store, $token), 'let in while its account was not there');
+    rename($dir . '.away', $dir);
+    tc_assert(tc_token_check($store, $token) !== null, 'the token did not survive a moment\'s absence');
+});
+
+tc_test('a list of removals that cannot be read is not started afresh', function ($store, $uid) {
+    // Rewriting it would lose every name in it - the very thing #587 was
+    // about, for the accounts themselves.
+    $damaged = TC_GUARD . '{"removed": [{"username": "earlier"';
+    file_put_contents(tc_removed_file($store), $damaged);
+    tc_registered($store, 'anna', TC_TEST_LONG_AGO);
+    tc_assert_same(1, tc_accounts_sweep_unused($store), 'removed');
+    tc_assert_same($damaged, file_get_contents(tc_removed_file($store)), 'the list was overwritten');
+});
+
+tc_test('a snapshot for an account that is gone is refused too', function ($store, $uid) {
+    $gone = tc_registered($store, 'anna', 0);
+    tc_account_delete($store, 'anna', $gone);
+    tc_assert_same('account_gone', tc_snapshot_put($store, $gone, 'dev0000000000001', 1, tc_document())['error'] ?? null,
+                   'answer');
+    clearstatcache();
+    tc_assert(!is_dir(tc_user_dir($store, $gone)), 'the account\'s directory came back');
+});
+
+tc_test('a removal that stopped halfway is finished by the next sweep', function ($store, $uid) {
+    // Killed after moving the directory away, before the record went...
+    $first = tc_registered($store, 'anna', TC_TEST_LONG_AGO);
+    rename(tc_user_dir($store, $first), tc_account_trash($store, $first));
+    // ...and after the record went, before the marker did.
+    $second = tc_registered($store, 'bert', TC_TEST_LONG_AGO);
+    rename(tc_user_dir($store, $second), tc_account_trash($store, $second));
+    unlink(tc_account_file($store, 'bert'));
+
+    tc_accounts_sweep_unused($store);
+    tc_assert(tc_gone($store, 'anna', $first), 'the first was left as it was');
+    tc_assert(tc_gone($store, 'bert', $second), 'the second was left as it was');
+    tc_assert_same([], glob($store . '/users/.gone-*') ?: [], 'what was moved away stays');
+    tc_assert_same(true, tc_account_delete($store, 'anna', $first), 'a second removal is a failure');
+});
+
+tc_test('a name somebody else has taken since is left to them', function ($store, $uid) {
+    $old = tc_registered($store, 'anna', TC_TEST_LONG_AGO);
+    unlink(tc_account_file($store, 'anna'));
+    $new = tc_account_create($store, 'anna', 'x')['uid'];
+    tc_accounts_sweep_unused($store);
+    tc_assert_same($new, tc_user_find($store, 'anna')['uid'] ?? null, 'the new anna went');
+    tc_assert(is_dir(tc_user_dir($store, $new)), 'the new anna lost her directory');
+    tc_assert(!is_file(tc_unused_marker($store, $old)), 'the old marker is still there');
+});
+
+tc_test('a sweep never waits for a lock', function ($store, $uid) {
+    // Neither for the users lock - the next registration will do - nor for an
+    // account's log lock, whose holder is using it right now.
+    $due = tc_registered($store, 'anna', TC_TEST_LONG_AGO);
+    $held = tc_lock(tc_users_lock($store));
+    $t = microtime(true);
+    tc_assert_same(0, tc_accounts_sweep_unused($store), 'swept under somebody else\'s lock');
+    tc_unlock($held);
+    tc_assert(microtime(true) - $t < 1, 'it waited for the users lock');
+
+    $held = tc_lock(tc_log_lock_path($store, $due));
+    $t = microtime(true);
+    tc_assert_same(0, tc_accounts_sweep_unused($store), 'removed while its log was locked');
+    tc_unlock($held);
+    tc_assert(microtime(true) - $t < 1, 'it waited for the log lock');
+    tc_assert_same(1, tc_accounts_sweep_unused($store), 'and not afterwards');
+});
+
+tc_test('nothing is swept while the old account list is still there', function ($store, $uid) {
+    // Its names are not in accounts/ yet, so every marker would look like
+    // an account that is gone.
+    tc_registered($store, 'anna', TC_TEST_LONG_AGO);
+    tc_write_json(tc_users_file($store), ['users' => []]);
+    tc_assert_same(0, tc_accounts_sweep_unused($store), 'swept');
+});
+
+tc_test('an account removed by the operator goes the same way, and can be removed twice', function ($store, $uid) {
+    $made = tc_account_create($store, 'bert', 'x')['uid'];
+    tc_secure_mkdir(tc_tokens_dir($store));
+    $token = tc_token_issue($store, $made, 'a1b2c3d4e5f60718', 'laptop')['token'];
+    tc_assert(tc_token_check($store, $token) !== null, 'the token did not work to begin with');
+    tc_log_append($store, $made, 'a1b2c3d4e5f60718', tc_ops(3));
+    tc_assert_same(true, tc_account_delete($store, 'bert', $made), 'deleted');
+    tc_trash_tidy($store);
+    tc_assert(tc_gone($store, 'bert', $made), 'something of it is left');
+    tc_assert_same(null, tc_token_check($store, $token), 'its token still works');
+    tc_assert_same([], glob($store . '/users/.gone-*') ?: [], 'its data is still on disk');
+    tc_assert_same(true, tc_account_delete($store, 'bert', $made), 'the second time');
+});
+
+tc_test('a token its device list cannot record is not handed out', function ($store, $uid) {
+    // Nothing could find it again to revoke.
+    $made = tc_account_create($store, 'bert', 'x')['uid'];
+    tc_secure_mkdir(tc_tokens_dir($store));
+    $user = tc_user_dir($store, $made) . '/user.dat.php';
+    unlink($user);
+    tc_secure_mkdir($user . '/in-the-way');
+    tc_assert_same(null, tc_token_issue($store, $made, 'a1b2c3d4e5f60718', 'laptop'), 'issued');
+    tc_assert_same([], glob(tc_tokens_dir($store) . '/*.dat.php') ?: [], 'a token was left behind');
 });
 
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);

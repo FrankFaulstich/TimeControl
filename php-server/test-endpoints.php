@@ -507,5 +507,59 @@ tc_check('the code does not work twice',
 tc_check('and the account signs in from another machine with the password chosen',
          $status === 200 && !empty($body['token']), $status . ' ' . json_encode($body));
 
+// Issue #589. An account made from an invitation, that nothing was stored in
+// and no device has reached for longer than any of its tokens could last.
+print("\nAccounts nobody ever used\n");
+
+$idle = tc_account_write($store, 'nobody-came', 'x', ['invited' => ['note' => 'test', 'issued' => 0]], true)['uid'];
+$longAgo = time() - TC_UNUSED_SECONDS - 86400;
+$marker = tc_read_json(tc_unused_marker($store, $idle));
+$marker['since'] = $longAgo;
+tc_write_json(tc_unused_marker($store, $idle), $marker);
+touch(tc_unused_marker($store, $idle), $longAgo + TC_UNUSED_SECONDS + 1);
+// And one the sweep has to look at and keep: due by its marker, but its
+// device was here a moment ago.
+$recent = tc_user_find($store, 'invitee2')['uid'];
+touch(tc_unused_marker($store, $recent), time() - 60);
+
+[$status, $body] = tc_register($base, ['code' => 'ffffffffffffffff', 'username' => 'sweeper']);
+tc_check('a registration without a valid code tidies nothing',
+         $status === 403 && tc_user_find($store, 'nobody-came') !== null, $status . ' ' . json_encode($body));
+
+[$status, $body] = tc_register($base, ['code' => tc_invite_create($store)['code'],
+                                       'username' => 'sweeper', 'device_uid' => 'fedcba9876543212']);
+tc_check('a registration removes an account nobody ever used',
+         $status === 200 && tc_user_find($store, 'nobody-came') === null && !is_dir(tc_user_dir($store, $idle)),
+         $status . ' ' . json_encode($body));
+tc_check('and keeps the one it made, and the ones in use or made by the operator',
+         !empty($body['token']) && tc_user_find($store, 'sweeper') !== null
+         && tc_user_find($store, 'invitee') !== null && tc_user_find($store, 'tester') !== null);
+clearstatcache();
+tc_check('including one it looked at, whose device was here a moment ago',
+         tc_user_find($store, 'invitee2') !== null && filemtime(tc_unused_marker($store, $recent)) > time());
+
+// A device whose account has gone, as it next reaches the server: the same
+// answer as for any token that stopped working, so the client asks for a
+// sign-in - and does not believe its work was stored somewhere.
+//
+// Also one token the device list never recorded, which nothing revokes by
+// name: its file outlives the account, and only the account being gone can
+// stop it.
+$inviteeUid = tc_user_find($store, 'invitee')['uid'];
+$stray = tc_token_issue($store, $inviteeUid, '00000000000000aa', 'elsewhere')['token'];
+$list = tc_read_json(tc_user_dir($store, $inviteeUid) . '/user.dat.php');
+$list['devices'] = array_values(array_filter($list['devices'], function ($d) {
+    return $d['device_uid'] !== '00000000000000aa';
+}));
+tc_write_json(tc_user_dir($store, $inviteeUid) . '/user.dat.php', $list);
+tc_account_delete($store, 'invitee', $inviteeUid);
+[$status, $body] = tc_request($base, 'GET', ['a' => 'head'], null, $invitedToken);
+tc_check('a device of a removed account is told its token no longer works',
+         $status === 401 && ($body['error'] ?? '') === 'invalid_token', $status . ' ' . json_encode($body));
+[$status, $body] = tc_request($base, 'GET', ['a' => 'head'], null, $stray);
+tc_check('and so is one holding a token its device list never recorded',
+         $status === 401 && ($body['error'] ?? '') === 'invalid_token'
+         && !is_dir(tc_user_dir($store, $inviteeUid)), $status . ' ' . json_encode($body));
+
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
 exit($GLOBALS['tc_failed'] === 0 ? 0 : 1);

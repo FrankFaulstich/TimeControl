@@ -67,6 +67,20 @@ const TC_PASSWORD_MIN       = 12;
 // stopped working by the time anybody finds it.
 const TC_INVITE_TTL = 604800;  // 7 days
 
+// When an account made from an invitation, that nothing was ever stored in,
+// is removed again (issue #589). Derived from the idle limit rather than
+// chosen, and never to be set below it: by then every token the account ever
+// had has failed that check, so no device of it could come back without its
+// password. Removing it earlier would end a sign-in that was still working -
+// somebody away for a fortnight, back to a laptop that thinks it is synced.
+const TC_UNUSED_SECONDS = TC_IDLE_TTL + 86400;  // 31 days
+
+// How much one sweep may do. It runs inside somebody's registration, which
+// should not wait on a clear-out of everything that has piled up.
+const TC_SWEEP_EXAMINE = 20;
+const TC_SWEEP_REMOVE  = 5;
+const TC_REMOVED_KEEP  = 50;   // removals Show status can still name
+
 // One file per account (issue #587). They used to be one JSON file,
 // users.dat.php, decoded whole on every sign-in and rewritten whole on every
 // account change. Measured, that costs little time at the numbers in question -
@@ -83,6 +97,27 @@ function tc_users_lock($store)    { return $store . '/users.lock'; }
 function tc_accounts_dir($store)  { return $store . '/accounts'; }
 function tc_tokens_dir($store)    { return $store . '/tokens'; }
 function tc_invites_dir($store)   { return $store . '/invites'; }
+function tc_unused_dir($store)    { return $store . '/unused'; }
+function tc_removed_file($store)  { return $store . '/removed.dat.php'; }
+
+/**
+ * Where it is noted that an account came from an invitation and has not been
+ * used yet (issue #589). Keyed by uid, not by name: a name can be taken again
+ * by somebody else, a uid never is.
+ */
+function tc_unused_marker($store, $uid) { return tc_unused_dir($store) . '/' . $uid . '.dat.php'; }
+
+/**
+ * Whether an account still exists underneath its tokens. A token file can
+ * outlive its account - a request in flight while it is removed, a token its
+ * device list never recorded - and nothing may be let in, or written, on the
+ * strength of one.
+ */
+function tc_account_present($store, $uid)
+{
+    return is_string($uid) && preg_match('/^[A-Za-z0-9]{1,64}$/D', $uid) === 1
+        && is_file(tc_user_dir($store, $uid) . '/user.dat.php');
+}
 
 function tc_username_acceptable($username)
 {
@@ -277,18 +312,24 @@ function tc_account_create($store, $username, $passHash)
  * it lands on, and a primitive that does not is one the host probe never
  * measured.
  *
- * @param array $extra Further fields for the record, such as where it came from.
+ * @param array $extra     Further fields for the record, such as where it came from.
+ * @param bool  $unwatched Whether it may be removed again if it is never used
+ *                         (issue #589) - true for an account somebody made by
+ *                         redeeming a code, never for one the operator made.
  * @return array ['uid' => string], or ['error' => 'io']
  */
-function tc_account_write($store, $username, $passHash, array $extra = [])
+function tc_account_write($store, $username, $passHash, array $extra = [], $unwatched = false)
 {
     $uid = bin2hex(random_bytes(16));
     $dir = tc_user_dir($store, $uid);
     // The account's own directory first and the record last. The record is
     // what makes the account exist, and one pointing at a directory that is
-    // not there yet would answer its every sign-in with "busy".
+    // not there yet would answer its every sign-in with "busy". The marker
+    // goes before the record as well, so a record never lacks one it should
+    // have had: an account that silently lost it would never be looked at.
     if (!tc_secure_mkdir($dir) || !tc_secure_mkdir($dir . '/seen')
             || !tc_write_json($dir . '/user.dat.php', ['disabled' => false, 'devices' => []])
+            || ($unwatched && !tc_unused_mark($store, $uid, (string)$username))
             || !tc_secure_mkdir(tc_accounts_dir($store))
             || !tc_write_json(tc_account_file($store, $username),
                               ['username' => (string)$username, 'uid' => $uid,
@@ -548,7 +589,7 @@ function tc_invite_redeem($store, $code, $username, $password)
                 $made = tc_account_write($store, $username, $hash, ['invited' => [
                     'note'   => (string)($invite['note'] ?? ''),
                     'issued' => (int)($invite['created'] ?? 0),
-                ]]);
+                ]], true);
             } catch (Throwable $e) {
                 error_log('tc_invite_redeem: ' . $e->getMessage());
                 $made = ['error' => 'io'];
@@ -638,6 +679,391 @@ function tc_invites_withdraw_now($store)
         @unlink($path);
     }
     return $withdrawn;
+}
+
+// ---------------------------------------------------------------------------
+// Accounts nobody ever used (issue #589).
+//
+// An account made from an invitation that nothing was ever stored in, and
+// that no device can still reach without its password, is removed again. Two
+// cases must never be confused, and this only ever touches the first:
+//
+//  - never used: its log holds nothing at all. Removing it loses nothing;
+//    whatever its devices hold locally stays there, and is offered again to
+//    whichever account they sign in to next.
+//  - used and then abandoned: there is a log, perhaps years of it. That is
+//    reported to the operator, never deleted by anything here.
+//
+// Accounts the operator made in setup.php are never candidates: the operator
+// made those on purpose, perhaps for somebody who starts next month, and sees
+// and removes them in Show status. Only a redemption leaves the marker this
+// looks for, so an account made from an invitation before this version is
+// not a candidate either.
+//
+// There is no cron, so this runs where token expiry does: lazily, bounded, on
+// a request that was going to touch accounts anyway - a registration, the
+// path whose frequency grows with the problem.
+// ---------------------------------------------------------------------------
+
+/**
+ * Notes that a new account came from an invitation and has not been used.
+ *
+ * Its mtime is the moment it could first be due, so a sweep can take the
+ * oldest first and stop at the first one still in the future.
+ */
+function tc_unused_mark($store, $uid, $username)
+{
+    $now  = time();
+    $path = tc_unused_marker($store, $uid);
+    $json = json_encode(['username' => $username, 'uid' => $uid, 'since' => $now],
+                        JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if ($json === false || !tc_secure_mkdir(tc_unused_dir($store))) {
+        return false;
+    }
+    // Dated before it can be seen, not after: a rename keeps the mtime, so
+    // from the moment it exists it says "not before then". Dated afterwards,
+    // there would be an instant in which a sweep - one the lock failed to keep
+    // out - found a due marker with no record yet, and took a registration
+    // still being written for a removal that had been interrupted.
+    $tmp = tc_unused_dir($store) . '/.tmp' . bin2hex(random_bytes(6));
+    if (@file_put_contents($tmp, TC_GUARD . $json . "\n") === false) {
+        return false;
+    }
+    @chmod($tmp, 0600);
+    @touch($tmp, $now + TC_UNUSED_SECONDS + 1);
+    if (!@rename($tmp, $path)) {
+        @unlink($tmp);
+        return false;
+    }
+    return true;
+}
+
+/**
+ * When a device last reached an account, if nothing was ever stored in it.
+ *
+ * Every check fails closed. A directory that cannot be listed, a date that
+ * cannot be read, a device list that cannot be decoded: each means "cannot
+ * tell", and an account nobody can tell about is kept.
+ *
+ * A device listed without a seen/ entry counts as reachable until its token
+ * expires outright, because that is how long tc_token_check lets it in.
+ *
+ * @param array $marker As tc_unused_mark() wrote it.
+ * @return int|false|null The last contact; false when something is stored,
+ *                        so the account is in use; null when it cannot be told.
+ */
+function tc_account_unused_since($store, $uid, array $marker)
+{
+    $dir = tc_user_dir($store, $uid);
+    $log = $dir . '/log';
+    if (file_exists($log)) {
+        $entries = @scandir($log);
+        if ($entries === false) {
+            return null;
+        }
+        // Anything at all - a segment, a state file, the leftovers of a write
+        // that was interrupted. An empty directory is what a refused snapshot
+        // leaves, and holds nothing.
+        if (array_diff($entries, ['.', '..']) !== []) {
+            return false;
+        }
+    }
+
+    $last = (int)($marker['since'] ?? 0);
+    if ($last <= 0) {
+        return null;
+    }
+    $seen = $dir . '/seen';
+    if (file_exists($seen)) {
+        $entries = @scandir($seen);
+        if ($entries === false) {
+            return null;
+        }
+        foreach (array_diff($entries, ['.', '..']) as $entry) {
+            $at = @filemtime($seen . '/' . $entry);
+            if ($at === false) {
+                return null;
+            }
+            $last = max($last, $at);
+        }
+    }
+    $user = tc_read_json($dir . '/user.dat.php');
+    if (!is_array($user) || !is_array($user['devices'] ?? null)) {
+        return null;
+    }
+    foreach ($user['devices'] as $device) {
+        if (!is_array($device) || !is_string($device['device_uid'] ?? null)) {
+            return null;
+        }
+        if (!is_file($seen . '/' . $device['device_uid'])) {
+            // Idle expiry cannot apply without a seen/ entry, so this token
+            // lasts until it expires; count it as reached until then.
+            $last = max($last, (int)($device['exp'] ?? PHP_INT_MAX) - TC_IDLE_TTL);
+        }
+    }
+    return $last;
+}
+
+function tc_account_trash($store, $uid) { return $store . '/users/.gone-' . $uid; }
+
+/**
+ * Removes an account and everything it holds. For callers holding the users
+ * lock: setup.php, on the operator's word, and the sweep below.
+ *
+ * Every step may be the one an interrupted earlier try left undone, so each
+ * is safe to repeat and a missing piece counts as done. The account's
+ * directory is not deleted in place but renamed out of the way first: one
+ * atomic step, which works even while a file inside it is open - the sweep
+ * holds its log lock - and even on NFS, where deleting an open file leaves a
+ * stand-in behind that no rmdir gets past. Emptying it follows, as tidying.
+ *
+ * @return bool False when the directory could not be moved; nothing that
+ *              matters has been lost then, and it can simply be tried again.
+ */
+function tc_account_delete($store, $username, $uid)
+{
+    $dir = tc_user_dir($store, $uid);
+    if (is_dir($dir)) {
+        // Tokens live in a shared directory keyed by token id, so they have
+        // to go individually. A token missed here still gets nowhere: once
+        // the directory is gone, tc_token_check refuses it.
+        $user = tc_read_json($dir . '/user.dat.php');
+        foreach ((array)($user['devices'] ?? []) as $device) {
+            if (!empty($device['token_id'])) {
+                tc_token_revoke($store, (string)$device['token_id']);
+            }
+        }
+        $trash = tc_account_trash($store, $uid);
+        if (is_dir($trash)) {
+            tc_remove_tree($trash, $store);
+        }
+        if (!@rename($dir, $trash)) {
+            return false;
+        }
+    }
+    // Only if the name is still this account's: it can have been given to
+    // somebody else since, and then it is theirs.
+    $recordPath = tc_account_file($store, $username);
+    $record     = tc_read_json($recordPath);
+    if (is_array($record) && ($record['uid'] ?? null) === $uid && !@unlink($recordPath)) {
+        // The marker stays, so the next sweep can still finish this.
+        return false;
+    }
+    @unlink(tc_unused_marker($store, $uid));
+    return true;
+}
+
+/**
+ * Empties a few directories that removals left out of the way. Bounded, like
+ * the sweep, and best effort: one that will not go now goes next time.
+ */
+function tc_trash_tidy($store, $max = 3)
+{
+    foreach (array_slice(glob($store . '/users/.gone-*', GLOB_ONLYDIR) ?: [], 0, $max) as $trash) {
+        tc_remove_tree($trash, $store);
+    }
+}
+
+/**
+ * Removes accounts made from an invitation that nobody ever used.
+ *
+ * Takes the users lock without waiting: a registration that finds it busy
+ * leaves the sweep to the next one, which loses nothing - an account that
+ * holds nothing costs nothing to keep a while longer.
+ *
+ * Bounded twice: at most TC_SWEEP_EXAMINE markers are looked at and at most
+ * TC_SWEEP_REMOVE accounts removed. What it does not bound is listing the
+ * markers' names and dates, which grows with the number of accounts that are
+ * unused right now - a handful on a server whose accounts come by invitation.
+ *
+ * @return int How many accounts were removed.
+ */
+function tc_accounts_sweep_unused($store)
+{
+    // Before one-file-per-account the names live in the old list, and a
+    // marker whose record cannot be found would read as an account that is
+    // gone. Nothing is swept until that list is converted.
+    if (is_file(tc_users_file($store))) {
+        return 0;
+    }
+    $lock = tc_lock(tc_users_lock($store), 0);
+    if (!$lock) {
+        return 0;
+    }
+    $removed = 0;
+    try {
+        $now = time();
+        $due = [];
+        foreach (glob(tc_unused_dir($store) . '/*.dat.php') ?: [] as $path) {
+            $at = @filemtime($path);
+            if ($at !== false && $at <= $now) {
+                $due[$path] = $at;
+            }
+        }
+        asort($due);
+        $examined = 0;
+        foreach (array_keys($due) as $path) {
+            if ($examined++ >= TC_SWEEP_EXAMINE || $removed >= TC_SWEEP_REMOVE) {
+                break;
+            }
+            // One marker's trouble is its own; the rest are still looked at,
+            // and none of it reaches the registration this runs inside.
+            try {
+                $removed += tc_account_sweep_one($store, $path, $now) ? 1 : 0;
+            } catch (Throwable $e) {
+                error_log('tc_accounts_sweep_unused: ' . $e->getMessage());
+            }
+        }
+    } finally {
+        tc_unlock($lock);
+    }
+    // As many as this sweep could have added, and one more, so leftovers
+    // cannot pile up from one registration to the next.
+    tc_trash_tidy($store, TC_SWEEP_REMOVE + 1);
+    return $removed;
+}
+
+/**
+ * Looks at one marker, and removes its account if the time has come.
+ *
+ * @return bool Whether an account was removed.
+ */
+function tc_account_sweep_one($store, $markerPath, $now)
+{
+    $marker = tc_read_json($markerPath);
+    $uid    = $marker['uid'] ?? null;
+    $name   = $marker['username'] ?? null;
+    // The uid becomes a path. Only a marker this code wrote is acted on, and
+    // any other is thrown away: it would otherwise sit at the front of every
+    // sweep for good. Losing a marker only ever keeps an account.
+    if (!is_string($uid) || !preg_match('/^[a-f0-9]{32}$/D', $uid) || !is_string($name)
+            || $markerPath !== tc_unused_marker($store, $uid)) {
+        @unlink($markerPath);
+        return false;
+    }
+
+    // What follows finishes removals that were interrupted, and an
+    // interrupted removal was due long ago. A marker younger than that has a
+    // registration behind it that may still be under way.
+    $old = $now - (int)($marker['since'] ?? $now) > TC_UNUSED_SECONDS;
+
+    $recordPath = tc_account_file($store, $name);
+    $record     = tc_read_json($recordPath);
+    if (!is_array($record) || ($record['uid'] ?? null) !== $uid) {
+        if ((is_file($recordPath) && !is_array($record)) || !$old) {
+            return false;   // there but unreadable, or too new to tell: kept
+        }
+        // The account is gone, or its name is somebody else's now: what is
+        // left is a removal that was interrupted - this sweep's, or the
+        // operator's. Finished, and said only in the log: whose it was is no
+        // longer known for certain, so it is not listed as never used.
+        if (tc_account_delete($store, $name, $uid)) {
+            error_log(sprintf('tc: finished an interrupted removal of "%s" (uid %s)', $name, $uid));
+        }
+        return false;
+    }
+
+    // Its directory already out of the way - a removal that stopped halfway.
+    // There is no lock to take in a directory that is not there, and nothing
+    // in it to lose.
+    if (!is_dir(tc_user_dir($store, $uid))) {
+        if ($old && tc_account_delete($store, $name, $uid)) {
+            error_log(sprintf('tc: finished an interrupted removal of "%s" (uid %s)', $name, $uid));
+        }
+        return false;
+    }
+
+    $last = tc_account_unused_since($store, $uid, $marker);
+    if ($last === false) {
+        @unlink($markerPath);   // used: never a candidate again
+        return false;
+    }
+    if ($last === null) {
+        return false;
+    }
+    if ($now - $last <= TC_UNUSED_SECONDS) {
+        // Not yet. Dated to the moment it next could be, so it waits at the
+        // back rather than taking a place at the front every time. Only if it
+        // is still there: touch() would bring back, empty, a marker that the
+        // first thing this account stored has just taken away.
+        if (is_file($markerPath)) {
+            @touch($markerPath, $last + TC_UNUSED_SECONDS + 1);
+        }
+        return false;
+    }
+
+    // Held while it is checked once more and removed, so a device arriving
+    // this very moment either got in first and stored something - and the
+    // account is kept - or finds it gone and is refused.
+    $logLock = tc_lock(tc_log_lock_path($store, $uid), 0);
+    if (!$logLock) {
+        return false;   // somebody is using it right now
+    }
+    try {
+        $last = tc_account_unused_since($store, $uid, $marker);
+        if (!is_int($last) || $now - $last <= TC_UNUSED_SECONDS) {
+            if ($last === false) {
+                @unlink($markerPath);
+            }
+            return false;
+        }
+        if (!tc_account_delete($store, $name, $uid)) {
+            return false;
+        }
+    } finally {
+        tc_unlock($logLock);
+    }
+    // Emptied now that nothing in it is held open, rather than left for
+    // tc_trash_tidy - which takes whichever leftovers come first, so a
+    // removal could otherwise leave its own behind. Where it will not go yet,
+    // a later tidy has it.
+    tc_remove_tree(tc_account_trash($store, $uid), $store);
+    return tc_removed_note($store, $marker, $record, $last);
+}
+
+/**
+ * Says that an account was removed, where the operator can find it.
+ *
+ * Once in the server's error log, and in a short list Show status reads: the
+ * person whose account it was will not be told why they cannot sign in -
+ * signing in does not say which names exist - so the operator must be able to.
+ *
+ * @return bool Always true: the account is gone whether or not this was kept.
+ */
+function tc_removed_note($store, array $marker, array $record, $lastContact)
+{
+    $entry = [
+        'username' => (string)($marker['username'] ?? ''),
+        'uid'      => (string)($marker['uid'] ?? ''),
+        'since'    => (int)($marker['since'] ?? 0),
+        'contact'  => (int)$lastContact,
+        'removed'  => time(),
+        'note'     => (string)($record['invited']['note'] ?? ''),
+    ];
+    error_log(sprintf('tc: removed the never-used account "%s" (uid %s, registered %s, no contact since %s)',
+        $entry['username'], $entry['uid'], date('c', $entry['since']),
+        $entry['contact'] ? date('c', $entry['contact']) : 'unknown'));
+    $list = tc_read_json(tc_removed_file($store));
+    if (!is_array($list) && file_exists(tc_removed_file($store))) {
+        // There, but not readable: rewriting it would start a new list and
+        // lose every name in the old one. The log line above has this one.
+        return true;
+    }
+    $kept = is_array($list['removed'] ?? null) ? $list['removed'] : [];
+    $kept[] = $entry;
+    tc_write_json(tc_removed_file($store), ['removed' => array_slice($kept, -TC_REMOVED_KEEP)]);
+    return true;
+}
+
+/**
+ * The accounts removed as never used, most recent first.
+ *
+ * @return array[]
+ */
+function tc_removed_list($store)
+{
+    $list = tc_read_json(tc_removed_file($store));
+    return array_reverse(is_array($list['removed'] ?? null) ? $list['removed'] : []);
 }
 
 /**
@@ -801,7 +1227,12 @@ function tc_token_issue($store, $uid, $deviceUid, $deviceName)
             'iat'         => $now,
             'exp'         => $expires,
         ];
-        tc_write_json($userDir . '/user.dat.php', $user);
+        if (!tc_write_json($userDir . '/user.dat.php', $user)) {
+            // A token the device list does not name is one nothing can find
+            // again to revoke: not handed out.
+            @unlink(tc_tokens_dir($store) . '/' . $tokenId . '.dat.php');
+            return null;
+        }
         tc_touch_seen($store, $uid, $deviceUid);
 
         return ['token' => 'tc1.' . $tokenId . '.' . $secret, 'expires_at' => $expires];
@@ -821,7 +1252,10 @@ function tc_token_issue($store, $uid, $deviceUid, $deviceName)
 function tc_touch_seen($store, $uid, $deviceUid)
 {
     $dir = tc_user_dir($store, $uid) . '/seen';
-    if (!is_dir($dir) && !tc_secure_mkdir($dir)) {
+    // Only this one level: if the account's directory is gone, so is the
+    // account, and a request that was already on its way must not bring it
+    // back as a directory nothing points to.
+    if (!is_dir($dir) && !tc_secure_mkdir($dir, false)) {
         return;
     }
     $path = $dir . '/' . $deviceUid;
@@ -873,6 +1307,18 @@ function tc_token_check($store, $presented)
     $last = @filemtime($seen);
     if ($last !== false && ($now - $last) > TC_IDLE_TTL) {
         @unlink(tc_tokens_dir($store) . '/' . $tokenId . '.dat.php');
+        return null;
+    }
+
+    // A token its account has gone from under - removed while a request was
+    // on its way, or one the device list never recorded - is worth nothing.
+    // Asked by existence, not by whether it can be read: a read that fails
+    // for a moment must not sign every device out.
+    // Refused, not deleted: one stat() that fails for a moment would
+    // otherwise sign a working device out for good. A token whose account
+    // really is gone stays refused on every use, and the device list the
+    // removal revoked from has the rest.
+    if (!tc_account_present($store, $record['uid'] ?? null)) {
         return null;
     }
 

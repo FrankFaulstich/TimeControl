@@ -58,7 +58,9 @@ def _messages():
         'missing_invite': _("Please enter the invitation code you were given."),
         'invalid_invite': _("This invitation code is not valid, has expired or has already "
                             "been used. If you already created your account with it, sign "
-                            "in above with the username and password you chose."),
+                            "in above with the username and password you chose. If that "
+                            "account has since been removed, ask whoever runs the server "
+                            "for a new code."),
         'bad_username': _("A username is 3 to 32 characters: a-z or A-Z without accents, "
                           "digits, dots, underscores or hyphens - no spaces."),
         'weak_password': _("The password needs at least 12 characters."),

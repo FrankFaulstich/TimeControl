@@ -3189,8 +3189,8 @@ msgstr "3 bis 32 Zeichen: a-z oder A-Z ohne Umlaute und Akzente, Ziffern, Punkte
 msgid "A username is 3 to 32 characters: a-z or A-Z without accents, digits, dots, underscores or hyphens - no spaces."
 msgstr "Ein Benutzername hat 3 bis 32 Zeichen: a-z oder A-Z ohne Umlaute und Akzente, Ziffern, Punkte, Unterstriche oder Bindestriche - keine Leerzeichen."
 
-msgid "Account created, and this device is signed in. On your other devices, sign in with this username and password - the invitation code works only once."
-msgstr "Konto angelegt, und dieses Gerät ist angemeldet. Auf den anderen Geräten mit diesem Benutzernamen und Passwort anmelden - der Einladungscode funktioniert nur einmal."
+msgid "Account created, and this device is signed in. On your other devices, sign in with this username and password - the invitation code works only once. An account that nothing is ever stored in, and that no device uses for a month, is removed again."
+msgstr "Konto angelegt, und dieses Gerät ist angemeldet. Auf den anderen Geräten mit diesem Benutzernamen und Passwort anmelden - der Einladungscode funktioniert nur einmal. Ein Konto, in dem nie etwas gespeichert wird und das einen Monat lang von keinem Gerät benutzt wird, wird wieder entfernt."
 
 msgid "At least 12 characters."
 msgstr "Mindestens 12 Zeichen."
@@ -3231,8 +3231,8 @@ msgstr "Vom Server kam keine verwertbare Antwort. Falls er das Konto trotzdem an
 msgid "The two passwords are not the same."
 msgstr "Die beiden Passwörter stimmen nicht überein."
 
-msgid "This invitation code is not valid, has expired or has already been used. If you already created your account with it, sign in above with the username and password you chose."
-msgstr "Dieser Einladungscode ist ungültig, abgelaufen oder wurde bereits verwendet. Wurde das Konto damit schon angelegt, oben mit dem gewählten Benutzernamen und Passwort anmelden."
+msgid "This invitation code is not valid, has expired or has already been used. If you already created your account with it, sign in above with the username and password you chose. If that account has since been removed, ask whoever runs the server for a new code."
+msgstr "Dieser Einladungscode ist ungültig, abgelaufen oder wurde bereits verwendet. Wurde das Konto damit schon angelegt, oben mit dem gewählten Benutzernamen und Passwort anmelden. Wurde dieses Konto inzwischen entfernt, beim Betreiber des Servers einen neuen Code erfragen."
 
 msgid "Your account was created, but this device could not be signed in. Sign in above with the username and password you chose."
 msgstr "Das Konto wurde angelegt, aber dieses Gerät konnte nicht angemeldet werden. Bitte oben mit dem gewählten Benutzernamen und Passwort anmelden."
@@ -3243,8 +3243,8 @@ msgstr "Der Server kann keine neuen Konten anlegen, bis sein Betreiber sich daru
 msgid "The server could not store the account, and the invitation code was lost with it. Ask whoever runs the server for a new one."
 msgstr "Der Server konnte das Konto nicht speichern, und der Einladungscode ist dabei verloren gegangen. Bitte beim Betreiber des Servers einen neuen erfragen."
 
-msgid "If this account was deleted or replaced - by one made from an invitation code, say - let this device forget it. The form for an invitation code then appears here."
-msgstr "Wurde dieses Konto gelöscht oder ersetzt - etwa durch eines, das mit einem Einladungscode angelegt wurde -, kann dieses Gerät es vergessen. Danach erscheint hier das Formular für einen Einladungscode."
+msgid "If this account was deleted or replaced - by one made from an invitation code, say - let this device forget it. The form for an invitation code then appears here. An account that nothing was ever stored in is also removed after a month without use; ask whoever runs the server for a new code then."
+msgstr "Wurde dieses Konto gelöscht oder ersetzt - etwa durch eines, das mit einem Einladungscode angelegt wurde -, kann dieses Gerät es vergessen. Danach erscheint hier das Formular für einen Einladungscode. Ein Konto, in dem nie etwas gespeichert wurde, wird auch nach einem Monat ohne Benutzung entfernt; dann beim Betreiber des Servers einen neuen Code erfragen."
 
 msgid "Forget this sign-in on this device"
 msgstr "Anmeldung auf diesem Gerät vergessen"

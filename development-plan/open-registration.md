@@ -128,8 +128,11 @@ at a moment the operator has already chosen to be present.
 Two different cases, and conflating them is how a cleanup routine deletes somebody's year of
 time tracking.
 
-**Never used.** Registered, and no device ever synchronised: no `seen/` entry, an empty log.
-This is bot residue, it holds nothing, and it can be removed automatically after a few days.
+**Never used.** Registered, and nothing ever stored: an empty log. (Not "no `seen/` entry" &ndash;
+since #588 registering signs the device in, which writes one.) This is bot residue, it holds
+nothing, and it can be removed automatically. Done in issue #589, with "after a few days" made
+precise as "once no device of it could still come back without its password" &ndash; 31 days,
+one more than a token lasts unused &ndash; since a shorter wait would end sign-ins that still work.
 
 **Used and then abandoned.** There is an operation log, possibly a snapshot, possibly years of
 work. Removing this automatically is not cleanup, it is data loss on a timer. It should be
@@ -177,7 +180,8 @@ in it has to be revisited against "anyone on the internet can create an account"
    existing users lock. Done: issue #588. Single-use rests on renaming the code's file rather
    than on the lock alone, since `store.php` does not trust `flock()`; the code is checked
    before the password is hashed, and registering does not draw on the sign-in budget.
-3. Sweep of never-used accounts, on the registration path, bounded per call.
+3. Sweep of never-used accounts, on the registration path, bounded per call. Done: issue #589.
+   Only accounts made from an invitation are candidates, never ones the operator made.
 4. Last-seen and size reporting in *Show status*, so abandoned accounts are visible and removed
    by a person.
 5. Only then, and only if genuinely wanted: proof of work in front of the hash, and open
