@@ -1689,11 +1689,31 @@ tc_test('a push waiting for the log while its account is removed is refused afte
     usleep(300000);   // past the first check, and waiting for the lock
     tc_account_delete($store, 'anna', $gone);
     tc_unlock($held);
-    $answer = json_decode(stream_get_contents($pipes[1]), true);
+    $raw = stream_get_contents($pipes[1]);
     proc_close($process);
-    tc_assert_same(['error' => 'account_gone'], $answer, 'answer');
+    // The raw answer goes with a failure: "null" (the append gave up) and
+    // nothing at all (the child died) need looking for in different places.
+    tc_assert_same(['error' => 'account_gone'], json_decode($raw, true), 'answer ' . var_export($raw, true));
     clearstatcache();
     tc_assert(!is_dir(tc_user_dir($store, $gone)), 'the account\'s directory came back');
+});
+
+tc_test('what is looked at under a lock is not an answer from before it', function ($store, $uid) {
+    // The cause of the test above failing on PHP 7.4 only, pinned down where
+    // it lives. PHP remembers its last stat(); until 8.3.19 and 8.4.5 taking
+    // a lock does not make it forget, so a file another request removed while
+    // this one waited would still be there. Removed by another process, as it
+    // would be - PHP's own unlink() clears the memory and would prove nothing.
+    $file = $store . '/probe-file';
+    file_put_contents($file, 'x');
+    tc_assert(is_file($file), 'the file is not there to begin with');
+    exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg('unlink(' . var_export($file, true) . ');'));
+    $lock = tc_lock($store . '/probe.lock');
+    try {
+        tc_assert(!is_file($file), 'answered from before the lock was taken');
+    } finally {
+        tc_unlock($lock);
+    }
 });
 
 tc_test('a directory that cannot be emptied is still moved out of the way', function ($store, $uid) {

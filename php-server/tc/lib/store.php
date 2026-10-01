@@ -165,6 +165,13 @@ function tc_lock($lockPath, $wait = 5.0)
         }
         usleep(20000);
     }
+    // Whatever was looked at before the wait may have changed during it - the
+    // wait is for somebody else changing things. PHP remembers the last stat()
+    // it made, and before 8.3.19 and 8.4.5 nothing here forgets it (bug
+    // #72666): on 7.4, is_file() under this lock would answer for the moment
+    // before it was taken. It did - a push that waited behind the removal of
+    // its account was told "busy" instead of being refused (issue #589).
+    clearstatcache();
     return $fh;
 }
 
