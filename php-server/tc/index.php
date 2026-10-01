@@ -152,6 +152,14 @@ switch ($action) {
             tc_fail(503, 'account_created_sign_in',
                     'The account was created, but this device could not be signed in. Sign in with the new username and password.');
         }
+        // The tidying of accounts nobody ever used (issue #589) rides along
+        // here, once this one's token exists: nothing that goes wrong in it
+        // can cost the new account anything.
+        try {
+            tc_accounts_sweep_unused($store);
+        } catch (Throwable $e) {
+            error_log('register: the sweep of unused accounts failed: ' . $e->getMessage());
+        }
         tc_ok([
             'token'      => $issued['token'],
             'expires_at' => $issued['expires_at'],
@@ -234,6 +242,12 @@ switch ($action) {
         $result = tc_log_append($store, $session['uid'], $session['device_uid'], $ops);
         if ($result === null) {
             tc_fail(503, 'busy', 'The log is locked right now. Retry.');
+        }
+        if (($result['error'] ?? null) === 'account_gone') {
+            // Removed while this request was on its way (issue #589): the
+            // token was good a moment ago and is not now. Same answer, so the
+            // client does what it does for any token that stopped working.
+            tc_fail(401, 'invalid_token', 'Token is missing, expired or revoked.');
         }
         if (isset($result['error'])) {
             // 507 Insufficient Storage: the request was fine, the account is
@@ -343,6 +357,9 @@ switch ($action) {
         $result = tc_snapshot_put($store, $session['uid'], $session['device_uid'], $seq, $raw);
         if ($result === null) {
             tc_fail(503, 'busy', 'The log is locked right now. Retry.');
+        }
+        if (($result['error'] ?? null) === 'account_gone') {
+            tc_fail(401, 'invalid_token', 'Token is missing, expired or revoked.');
         }
         if (isset($result['error'])) {
             // Not a failure of the request so much as of its timing: the log

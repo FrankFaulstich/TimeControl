@@ -3129,8 +3129,8 @@ msgstr "3 až 32 znaků: a-z nebo A-Z bez diakritiky, číslice, tečky, podtrž
 msgid "A username is 3 to 32 characters: a-z or A-Z without accents, digits, dots, underscores or hyphens - no spaces."
 msgstr "Uživatelské jméno má 3 až 32 znaků: a-z nebo A-Z bez diakritiky, číslice, tečky, podtržítka nebo spojovníky - bez mezer."
 
-msgid "Account created, and this device is signed in. On your other devices, sign in with this username and password - the invitation code works only once."
-msgstr "Účet je vytvořen a toto zařízení je přihlášeno. Na ostatních zařízeních se přihlaste tímto uživatelským jménem a heslem - kód pozvánky funguje jen jednou."
+msgid "Account created, and this device is signed in. On your other devices, sign in with this username and password - the invitation code works only once. An account that nothing is ever stored in, and that no device uses for a month, is removed again."
+msgstr "Účet je vytvořen a toto zařízení je přihlášeno. Na ostatních zařízeních se přihlaste tímto uživatelským jménem a heslem - kód pozvánky funguje jen jednou. Účet, do kterého se nikdy nic neuloží a který se měsíc nepoužije na žádném zařízení, bude automaticky odstraněn."
 
 msgid "At least 12 characters."
 msgstr "Alespoň 12 znaků."
@@ -3171,8 +3171,8 @@ msgstr "Ze serveru nepřišla žádná použitelná odpověď. Pokud účet pře
 msgid "The two passwords are not the same."
 msgstr "Hesla se neshodují."
 
-msgid "This invitation code is not valid, has expired or has already been used. If you already created your account with it, sign in above with the username and password you chose."
-msgstr "Tento kód pozvánky není platný, vypršel nebo už byl použit. Pokud už byl účet s tímto kódem vytvořen, přihlaste se ve formuláři výše se zvoleným uživatelským jménem a heslem."
+msgid "This invitation code is not valid, has expired or has already been used. If you already created your account with it, sign in above with the username and password you chose. If that account has since been removed, ask whoever runs the server for a new code."
+msgstr "Tento kód pozvánky není platný, vypršel nebo už byl použit. Pokud už byl účet s tímto kódem vytvořen, přihlaste se ve formuláři výše se zvoleným uživatelským jménem a heslem. Pokud byl ten účet mezitím odstraněn, požádejte správce serveru o nový kód."
 
 msgid "Your account was created, but this device could not be signed in. Sign in above with the username and password you chose."
 msgstr "Váš účet byl vytvořen, ale toto zařízení se nepodařilo přihlásit. Přihlaste se ve formuláři výše se zvoleným uživatelským jménem a heslem."
@@ -3183,8 +3183,8 @@ msgstr "Server nemůže vytvářet nové účty, dokud se na něj nepodívá jeh
 msgid "The server could not store the account, and the invitation code was lost with it. Ask whoever runs the server for a new one."
 msgstr "Server nemohl účet uložit a kód pozvánky se přitom ztratil. Požádejte správce serveru o nový."
 
-msgid "If this account was deleted or replaced - by one made from an invitation code, say - let this device forget it. The form for an invitation code then appears here."
-msgstr "Pokud byl tento účet smazán nebo nahrazen - třeba účtem vytvořeným pomocí kódu pozvánky -, nechte toto zařízení na něj zapomenout. Poté se zde zobrazí formulář pro kód pozvánky."
+msgid "If this account was deleted or replaced - by one made from an invitation code, say - let this device forget it. The form for an invitation code then appears here. An account that nothing was ever stored in is also removed after a month without use; ask whoever runs the server for a new code then."
+msgstr "Pokud byl tento účet smazán nebo nahrazen - třeba účtem vytvořeným pomocí kódu pozvánky -, nechte toto zařízení na něj zapomenout. Poté se zde zobrazí formulář pro kód pozvánky. Účet, do kterého se nikdy nic neuložilo, se odstraní také po měsíci bez použití; pak požádejte správce serveru o nový kód."
 
 msgid "Forget this sign-in on this device"
 msgstr "Zapomenout toto přihlášení na tomto zařízení"

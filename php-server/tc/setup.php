@@ -261,34 +261,6 @@ function tc_discard_dir($path)
     @rmdir($path);
 }
 
-/**
- * Removes a directory and everything under it.
- *
- * Refuses to touch anything outside the store. A recursive delete driven by
- * a path is worth being paranoid about even when the caller looks
- * trustworthy, because the cost of being wrong is unbounded.
- */
-function tc_rmtree($path, $store)
-{
-    $real  = realpath($path);
-    $inside = realpath($store);
-    if ($real === false || $inside === false || strpos($real, $inside . DIRECTORY_SEPARATOR) !== 0) {
-        return false;
-    }
-    foreach (scandir($real) ?: [] as $entry) {
-        if ($entry === '.' || $entry === '..') {
-            continue;
-        }
-        $child = $real . '/' . $entry;
-        if (is_dir($child) && !is_link($child)) {
-            tc_rmtree($child, $store);
-        } else {
-            @unlink($child);
-        }
-    }
-    return @rmdir($real);
-}
-
 // ---------------------------------------------------------------------------
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
@@ -368,27 +340,36 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     if (!$user || empty($user['uid'])) {
                         $errors[] = 'No such account.';
                     } else {
-                        $uid = $user['uid'];
-                        // Tokens live in a shared directory keyed by token id,
-                        // so they have to go individually - dropping the user
-                        // directory alone would leave working credentials
-                        // pointing at an account that no longer exists.
-                        $rec = tc_read_json(tc_user_dir($store, $uid) . '/user.dat.php');
-                        foreach (($rec['devices'] ?? []) as $d) {
-                            if (!empty($d['token_id'])) {
-                                tc_token_revoke($store, $d['token_id']);
-                            }
-                        }
-                        tc_rmtree(tc_user_dir($store, $uid), $store);
-                        if (@unlink(tc_account_file($store, $name))) {
-                            $notices[] = 'Account "' . $name . '" and all of its data were deleted.';
-                            $done = true;
-                        } else {
+                        // The same removal the sweep of unused accounts uses
+                        // (issue #589): tokens revoked, the directory moved
+                        // out of the way in one step, the record last. Every
+                        // step is safe to repeat, so "Try again" finishes
+                        // whatever an interrupted attempt left.
+                        $deleted = tc_account_delete($store, $name, $user['uid']);
+                        if (!$deleted) {
+                            $errors[] = 'The devices of "' . $name . '" were signed out, but its data '
+                                      . 'could not be moved away, so the account is still there. '
+                                      . 'Try again.';
+                        } elseif (is_file(tc_account_file($store, $name))) {
                             $errors[] = 'The data of "' . $name . '" was deleted, but not the '
                                       . 'account itself. Try again.';
                         }
                     }
                     tc_unlock($lock);
+                    // This account's own leftovers first, and what is said is
+                    // what happened to them - not to whichever leftovers a
+                    // general tidy happens to reach first.
+                    if (!empty($deleted) && !is_file(tc_account_file($store, $name))) {
+                        if (tc_remove_tree(tc_account_trash($store, $user['uid']), $store)) {
+                            $notices[] = 'Account "' . $name . '" and all of its data were deleted.';
+                        } else {
+                            $notices[] = 'Account "' . $name . '" was deleted and can no longer be '
+                                       . 'used, but some of its files could not be removed yet. '
+                                       . 'They go at a later deletion or registration.';
+                        }
+                        $done = true;
+                    }
+                    tc_trash_tidy($store);
                 }
             }
         } elseif ($action === 'invite') {
@@ -466,10 +447,37 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                                   ($record['invited']['note'] ?? '') !== ''
                                       ? ', for ' . $record['invited']['note'] : '')
                         : '';
-                    $notices[] = sprintf('Storage for %s%s: %s of %s (%d%%)%s',
+                    // Worked out from what the account holds, never from the
+                    // marker alone (issue #589): an account that has stored
+                    // something since its last look is in use, and loses the
+                    // marker here rather than being called unused until the
+                    // next registration happens to notice.
+                    $unused = '';
+                    $marker = tc_read_json(tc_unused_marker($config['store'], $uid));
+                    if (is_array($marker)) {
+                        $last = tc_account_unused_since($config['store'], $uid, $marker);
+                        if ($last === false) {
+                            @unlink(tc_unused_marker($config['store'], $uid));
+                        } elseif (is_int($last)) {
+                            $unused = sprintf(' - nothing stored yet; removed at the first '
+                                            . 'registration after %s unless it is used',
+                                              date('Y-m-d', $last + TC_UNUSED_SECONDS));
+                        }
+                    }
+                    $notices[] = sprintf('Storage for %s%s: %s of %s (%d%%)%s%s',
                         $name, $invited, $mib($used), $mib(TC_ACCOUNT_QUOTA_BYTES),
                         (int)round(100 * $used / TC_ACCOUNT_QUOTA_BYTES),
-                        $used >= TC_ACCOUNT_QUOTA_BYTES ? ' - FULL, pushes are refused' : '');
+                        $used >= TC_ACCOUNT_QUOTA_BYTES ? ' - FULL, pushes are refused' : '',
+                        $unused);
+                }
+
+                // The one place a removal can be traced afterwards: the person
+                // it happened to is only told their password is wrong.
+                foreach (array_slice(tc_removed_list($config['store']), 0, 10) as $gone) {
+                    $notices[] = sprintf('Removed as never used: %s (registered %s%s) on %s',
+                        $gone['username'] ?? '?', date('Y-m-d', (int)($gone['since'] ?? 0)),
+                        ($gone['note'] ?? '') !== '' ? ', for ' . $gone['note'] : '',
+                        date('Y-m-d', (int)($gone['removed'] ?? 0)));
                 }
             }
         } else {
@@ -518,6 +526,10 @@ header('X-Robots-Tag: noindex, nofollow');
   address and save, then <em>Create an account with an invitation code</em>.</p>
   <p>This is the only time the code is shown &ndash; the server keeps only a hash
   of it. Pass it on now, or withdraw it and make another.</p>
+  <p>An account made with it that nothing is ever stored in, and that no device
+  uses for <?= (int)(TC_UNUSED_SECONDS / 86400) ?> days, is removed again at a
+  later registration. To keep a place for somebody who starts later than that,
+  use <em>Create an account</em> instead.</p>
 </div>
 <?php endif; ?>
 

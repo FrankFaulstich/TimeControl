@@ -2788,7 +2788,10 @@ def view_settings():
                     # the invitation form could never be reached.
                     st.caption(_("If this account was deleted or replaced - by one made "
                                  "from an invitation code, say - let this device forget "
-                                 "it. The form for an invitation code then appears here."))
+                                 "it. The form for an invitation code then appears here. "
+                                 "An account that nothing was ever stored in is also "
+                                 "removed after a month without use; ask whoever runs "
+                                 "the server for a new code then."))
                     if st.button(_("Forget this sign-in on this device"),
                                  use_container_width=True, key="sync_forget_btn"):
                         with st.spinner(_("Contacting the server...")):
@@ -2870,7 +2873,9 @@ def render_register_form(base_url):
                     sync_engine.nudge(force=True)
                     set_feedback(_("Account created, and this device is signed in. On your "
                                    "other devices, sign in with this username and password - "
-                                   "the invitation code works only once."))
+                                   "the invitation code works only once. An account that "
+                                   "nothing is ever stored in, and that no device uses for a "
+                                   "month, is removed again."))
                 else:
                     set_feedback(register_error_message(result.get('error')), 'error')
             st.rerun()

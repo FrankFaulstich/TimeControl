@@ -3286,8 +3286,8 @@ msgstr "3 à 32 caractères : a-z ou A-Z sans accents, chiffres, points, tirets 
 msgid "A username is 3 to 32 characters: a-z or A-Z without accents, digits, dots, underscores or hyphens - no spaces."
 msgstr "Un nom d'utilisateur compte 3 à 32 caractères : a-z ou A-Z sans accents, chiffres, points, tirets bas ou traits d'union - sans espaces."
 
-msgid "Account created, and this device is signed in. On your other devices, sign in with this username and password - the invitation code works only once."
-msgstr "Compte créé, et cet appareil est connecté. Sur vos autres appareils, connectez-vous avec ce nom d'utilisateur et ce mot de passe - le code d'invitation ne fonctionne qu'une fois."
+msgid "Account created, and this device is signed in. On your other devices, sign in with this username and password - the invitation code works only once. An account that nothing is ever stored in, and that no device uses for a month, is removed again."
+msgstr "Compte créé, et cet appareil est connecté. Sur vos autres appareils, connectez-vous avec ce nom d'utilisateur et ce mot de passe - le code d'invitation ne fonctionne qu'une fois. Un compte dans lequel rien n'est jamais enregistré et qu'aucun appareil n'utilise pendant un mois est automatiquement supprimé."
 
 msgid "At least 12 characters."
 msgstr "Au moins 12 caractères."
@@ -3328,8 +3328,8 @@ msgstr "Aucune réponse exploitable n'est venue du serveur. S'il a tout de même
 msgid "The two passwords are not the same."
 msgstr "Les deux mots de passe ne correspondent pas."
 
-msgid "This invitation code is not valid, has expired or has already been used. If you already created your account with it, sign in above with the username and password you chose."
-msgstr "Ce code d'invitation n'est pas valable, a expiré ou a déjà été utilisé. Si vous avez déjà créé votre compte avec ce code, connectez-vous ci-dessus avec le nom d'utilisateur et le mot de passe choisis."
+msgid "This invitation code is not valid, has expired or has already been used. If you already created your account with it, sign in above with the username and password you chose. If that account has since been removed, ask whoever runs the server for a new code."
+msgstr "Ce code d'invitation n'est pas valable, a expiré ou a déjà été utilisé. Si vous avez déjà créé votre compte avec ce code, connectez-vous ci-dessus avec le nom d'utilisateur et le mot de passe choisis. Si ce compte a été supprimé depuis, demandez un nouveau code à l'administrateur du serveur."
 
 msgid "Your account was created, but this device could not be signed in. Sign in above with the username and password you chose."
 msgstr "Votre compte a été créé, mais cet appareil n'a pas pu être connecté. Connectez-vous ci-dessus avec le nom d'utilisateur et le mot de passe choisis."
@@ -3340,8 +3340,8 @@ msgstr "Le serveur ne peut pas créer de nouveaux comptes tant que son administr
 msgid "The server could not store the account, and the invitation code was lost with it. Ask whoever runs the server for a new one."
 msgstr "Le serveur n'a pas pu enregistrer le compte, et le code d'invitation a été perdu en même temps. Demandez-en un nouveau à l'administrateur du serveur."
 
-msgid "If this account was deleted or replaced - by one made from an invitation code, say - let this device forget it. The form for an invitation code then appears here."
-msgstr "Si ce compte a été supprimé ou remplacé - par exemple par un compte créé avec un code d'invitation -, faites-le oublier à cet appareil. Le formulaire pour un code d'invitation apparaît alors ici."
+msgid "If this account was deleted or replaced - by one made from an invitation code, say - let this device forget it. The form for an invitation code then appears here. An account that nothing was ever stored in is also removed after a month without use; ask whoever runs the server for a new code then."
+msgstr "Si ce compte a été supprimé ou remplacé - par exemple par un compte créé avec un code d'invitation -, faites-le oublier à cet appareil. Le formulaire pour un code d'invitation apparaît alors ici. Un compte dans lequel rien n'a jamais été enregistré est aussi supprimé après un mois sans utilisation ; demandez alors un nouveau code à l'administrateur du serveur."
 
 msgid "Forget this sign-in on this device"
 msgstr "Oublier cette connexion sur cet appareil"

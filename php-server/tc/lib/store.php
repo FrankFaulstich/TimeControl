@@ -31,18 +31,58 @@ const TC_DENY_HTACCESS = "Options -Indexes\n"
 
 /**
  * Creates a directory nobody but the owner can enter.
+ *
+ * @param bool $parents Whether missing directories above it are made too.
+ *                      Not for anything inside an account's own directory:
+ *                      a request still in flight when the account is removed
+ *                      would build the directory up again around it (#589).
  */
-function tc_secure_mkdir($path)
+function tc_secure_mkdir($path, $parents = true)
 {
     if (is_dir($path)) {
         @chmod($path, 0700);
         return true;
     }
-    if (!@mkdir($path, 0700, true)) {
+    if (!@mkdir($path, 0700, $parents)) {
         return false;
     }
     @chmod($path, 0700);
     return true;
+}
+
+/**
+ * Removes a directory and everything under it.
+ *
+ * Refuses to touch anything outside the store. A recursive delete driven by
+ * a path is worth being paranoid about even when the caller looks
+ * trustworthy, because the cost of being wrong is unbounded.
+ *
+ * @return bool True when nothing is left of it - including when there was
+ *              nothing there to begin with, so a second try after an
+ *              interrupted one is not reported as a failure.
+ */
+function tc_remove_tree($path, $store)
+{
+    if (!file_exists($path) && !is_link($path)) {
+        return true;
+    }
+    $real   = realpath($path);
+    $inside = realpath($store);
+    if ($real === false || $inside === false || strpos($real, $inside . DIRECTORY_SEPARATOR) !== 0) {
+        return false;
+    }
+    foreach (scandir($real) ?: [] as $entry) {
+        if ($entry === '.' || $entry === '..') {
+            continue;
+        }
+        $child = $real . '/' . $entry;
+        if (is_dir($child) && !is_link($child)) {
+            tc_remove_tree($child, $store);
+        } else {
+            @unlink($child);
+        }
+    }
+    return @rmdir($real);
 }
 
 /**
@@ -106,16 +146,18 @@ function tc_read_json($path)
  * queue of stalled requests ties up worker processes for the whole vhost,
  * and the caller can simply retry.
  *
+ * @param float $wait How long to keep trying. 0 tries once: for work that is
+ *                    better skipped than waited for, such as tidying up.
  * @return resource|null The open handle to pass to tc_unlock, or null.
  */
-function tc_lock($lockPath)
+function tc_lock($lockPath, $wait = 5.0)
 {
     $fh = @fopen($lockPath, 'c');
     if (!$fh) {
         return null;
     }
     @chmod($lockPath, 0600);
-    $deadline = microtime(true) + 5.0;
+    $deadline = microtime(true) + $wait;
     while (!@flock($fh, LOCK_EX | LOCK_NB)) {
         if (microtime(true) >= $deadline) {
             @fclose($fh);

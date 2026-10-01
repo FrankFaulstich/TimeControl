@@ -191,6 +191,15 @@ class TestRedeemingAnInvitationIsExplainedForWhatItIs(unittest.TestCase):
         """
         self.assertIn('sign in', register_error_message('invalid_invite'))
 
+    def test_and_where_to_turn_if_that_account_was_removed(self):
+        """
+        Issue #589: an account nothing was ever stored in is removed again
+        after a month without use. Signing in then only says the password is
+        wrong - it must not say which names exist - so this is the one place
+        that can point at the way back.
+        """
+        self.assertIn('new code', register_error_message('invalid_invite'))
+
     def test_a_refusal_that_is_not_theirs_says_the_code_survived(self):
         for code in ('username_taken', 'io', 'unconverted'):
             with self.subTest(code=code):

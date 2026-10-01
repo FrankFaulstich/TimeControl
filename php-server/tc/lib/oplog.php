@@ -194,13 +194,27 @@ function tc_log_reconcile($store, $uid, array $state)
  */
 function tc_log_append($store, $uid, $deviceUid, array $ops)
 {
+    // Once before the lock as well: the lock file lives in the account's
+    // directory, and for an account that is gone there is none to open -
+    // which would otherwise read as "busy" and be retried for nothing.
+    if (!tc_account_present($store, $uid)) {
+        return ['error' => 'account_gone'];
+    }
     $lock = tc_lock(tc_log_lock_path($store, $uid));
     if (!$lock) {
         return null;
     }
     try {
+        // Asked under the lock, which is what the removal of an unused
+        // account holds while it moves the account away (issue #589). A push
+        // that queued behind it gets the lock afterwards and finds nothing to
+        // write into - and is refused, rather than building the directory up
+        // again and being told its work was stored in an account that is gone.
+        if (!tc_account_present($store, $uid)) {
+            return ['error' => 'account_gone'];
+        }
         $dir = tc_log_dir($store, $uid);
-        if (!is_dir($dir) && !tc_secure_mkdir($dir)) {
+        if (!is_dir($dir) && !tc_secure_mkdir($dir, false)) {
             return null;
         }
         $state = tc_log_reconcile($store, $uid, tc_log_state($store, $uid));
@@ -295,6 +309,11 @@ function tc_log_append($store, $uid, $deviceUid, array $ops)
             $state['devices'][$deviceUid] = ['max_lc' => $newMaxLc, 'seen' => time()];
             // Written only after the log itself is safely on disk.
             tc_write_json(tc_log_state_path($store, $uid), $state);
+            // Something is stored now, so this account is in use and never a
+            // candidate for removal again. One unlink of what is usually not
+            // there; it keeps Show status from calling a used account unused
+            // until the next registration happens to look.
+            @unlink(tc_unused_marker($store, $uid));
         }
 
         return ['assigned' => $assigned, 'dups' => $dups, 'head' => (int)$state['head']];
@@ -532,13 +551,20 @@ function tc_snapshot_validate($raw)
  */
 function tc_snapshot_put($store, $uid, $deviceUid, $seq, $raw)
 {
+    if (!tc_account_present($store, $uid)) {
+        return ['error' => 'account_gone', 'head' => 0, 'snapshot_seq' => 0];
+    }
     $lock = tc_lock(tc_log_lock_path($store, $uid));
     if (!$lock) {
         return null;
     }
     try {
+        // As in tc_log_append: nothing is written for an account that is gone.
+        if (!tc_account_present($store, $uid)) {
+            return ['error' => 'account_gone', 'head' => 0, 'snapshot_seq' => 0];
+        }
         $dir = tc_log_dir($store, $uid);
-        if (!is_dir($dir) && !tc_secure_mkdir($dir)) {
+        if (!is_dir($dir) && !tc_secure_mkdir($dir, false)) {
             return null;
         }
         $state = tc_log_reconcile($store, $uid, tc_log_state($store, $uid));
