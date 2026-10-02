@@ -49,6 +49,15 @@ line, and the caret - drawn by the textarea, which does not know - would
 drift further from the text the further along the line you typed. So
 headings, emphasis and code are told apart by colour, and the markers
 themselves are dimmed rather than restyled.
+
+Colour alone is not quite enough to keep them in step, though. The textarea
+holds the note as one run of text, the overlay as many elements - one per
+marker and per marked word - and WebKit, the engine of the Mac app, applies
+kerning and ligatures within a run but never across the edge of an element.
+So at every marker the overlay set the rest of the line a little differently
+from the textarea, and the caret drifted off the text it was typing into.
+Both therefore have kerning and ligatures turned off: every character then
+takes the same room in each, whatever its neighbours.
 """
 
 import json
@@ -228,7 +237,12 @@ function tcRun(text, cls) {
              : tcEscape(text);
 }
 
-var TC_INLINE = /(`+)([\s\S]*?)\1|(\*\*|__)([\s\S]+?)\3|(~~)([\s\S]+?)\5|([*_])([^*_\n]+?)\7|(\[)([^\]\n]*)(\]\()([^)\n]*)(\))/g;
+/* An asterisk followed by a variation selector (U+FE0E, U+FE0F) or the
+   enclosing keycap (U+20E3) is the start of an emoji, the keycap asterisk,
+   and not a marker. Cut there, the overlay drew a bare asterisk and a box
+   where the textarea draws one keycap, and everything after it on the line
+   was out of step with the caret. Hence the lookahead on the two openers. */
+var TC_INLINE = /(`+)([\s\S]*?)\1|(\*\*|__)(?![\uFE0E\uFE0F\u20E3])([\s\S]+?)\3|(~~)([\s\S]+?)\5|([*_])(?![\uFE0E\uFE0F\u20E3])([^*_\n]+?)\7|(\[)([^\]\n]*)(\]\()([^)\n]*)(\))/g;
 
 /* Inline markup, on one line, as a string of <span>s.
 
@@ -342,6 +356,17 @@ _WIRING_JS = r"""
       "}",
       ".tc-md-live { position: relative !important; z-index: 1 !important;",
       "  background-color: transparent !important; }",
+      /* Every glyph as wide as itself, whatever stands next to it. The
+         textarea is one run of text and kerns it; the overlay is cut into
+         elements at every Markdown marker, and WebKit kerns nothing across
+         the edge of an element. Each cut moved the rest of the line, and the
+         caret - drawn by the textarea - ended up beside the text the overlay
+         showed. Off on both, so the two agree again. */
+      ".tc-md-overlay, .tc-md-live {",
+      "  font-kerning: none !important;",
+      "  font-variant-ligatures: none !important;",
+      "  font-feature-settings: 'kern' 0, 'liga' 0, 'clig' 0, 'calt' 0 !important;",
+      "}",
       /* Translucent, so the coloured text behind stays readable while it is
          selected. An opaque selection would paint over the only copy of the
          text there is. */
@@ -383,11 +408,29 @@ _WIRING_JS = r"""
     "borderLeftWidth", "boxSizing", "tabSize"
   ];
 
-  function copyMetrics(area, overlay) {
+  /* @param textWidth The width the textarea leaves for its text, as a
+     ResizeObserver reports it - in fractions of a pixel. Absent at first. */
+  function copyMetrics(area, overlay, textWidth) {
     var from = win.getComputedStyle(area);
     METRICS.forEach(function (name) {
       overlay.style[name] = from[name];
     });
+    /* A scrollbar takes its width out of the textarea's text, not out of
+       the overlay's, which has none: a long note would wrap at different
+       places in the two, and every line after that be out of step. Given
+       back as padding - nothing where scrollbars float over the text, as
+       they usually do on a Mac, a scrollbar's width where they do not.
+       Worked out from the exact width when there is one: offsetWidth and
+       clientWidth are whole pixels, a scrollbar under zoom or display
+       scaling is not, and a line ending in the difference wraps in one of
+       the two and not in the other. */
+    var left = parseFloat(from.borderLeftWidth), right = parseFloat(from.borderRightWidth);
+    var padding = parseFloat(from.paddingRight);
+    var bar = typeof textWidth === "number"
+      ? area.getBoundingClientRect().width - left - right
+        - parseFloat(from.paddingLeft) - padding - textWidth
+      : area.offsetWidth - area.clientWidth - left - right;
+    overlay.style.paddingRight = (padding + Math.max(0, bar)) + "px";
     overlay.style.borderStyle = "solid";
     overlay.style.borderColor = "transparent";
     overlay.style.whiteSpace = "pre-wrap";
@@ -434,8 +477,12 @@ _WIRING_JS = r"""
     area.addEventListener("scroll", function () { paint(area); });
     area.addEventListener("input", function () { paint(area); });
     if (win.ResizeObserver) {
-      new win.ResizeObserver(function () {
-        copyMetrics(area, overlay);
+      /* Fires once as soon as it is watching, and again whenever the room
+         for the text changes - a scrollbar appearing as the note grows, or
+         going again as it shrinks. */
+      new win.ResizeObserver(function (entries) {
+        var box = entries && entries[0] && entries[0].contentRect;
+        copyMetrics(area, overlay, box ? box.width : undefined);
         paint(area);
       }).observe(area);
     }
@@ -486,7 +533,28 @@ _WIRING_JS = r"""
     }
   }
 
-  function attach(area) {
+  /* The size a field was dragged to, given back when Streamlit draws it
+     again (issue #636). It replaces a field whenever an element above it
+     comes or goes - a message, a warning - and the new one starts at the
+     height the page gives it: a drag undone without anybody touching it.
+     Only a drag writes a height onto the element itself, so that is what is
+     remembered. Kept on the page's window, which lasts as long as the
+     window: a new start begins at the size the page gives it, as before. */
+  function keepSize(area, key) {
+    var sizes = win.tcMdEditorSizes = win.tcMdEditorSizes || {};
+    if (sizes[key] && !area.style.height) {
+      area.style.height = sizes[key];
+    }
+    if (win.ResizeObserver) {
+      new win.ResizeObserver(function () {
+        if (area.style.height) {
+          sizes[key] = area.style.height;
+        }
+      }).observe(area);
+    }
+  }
+
+  function attach(area, key) {
     if (area.dataset.tcMdEditor) {
       return;
     }
@@ -494,13 +562,16 @@ _WIRING_JS = r"""
     styleSheet();
     area.addEventListener("keydown", onKeyDown);
     overlayFor(area);
+    keepSize(area, key);
   }
 
   function scan() {
     KEYS.forEach(function (key) {
       var selector = ".st-key-" + (win.CSS && win.CSS.escape
         ? win.CSS.escape(key) : key) + " textarea";
-      doc.querySelectorAll(selector).forEach(attach);
+      doc.querySelectorAll(selector).forEach(function (area) {
+        attach(area, key);
+      });
     });
   }
 

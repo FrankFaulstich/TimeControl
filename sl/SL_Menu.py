@@ -3569,6 +3569,75 @@ def view_add_task():
         st.session_state.context = {}
         navigate_to(return_to)
 
+def render_note_area_css(min_height):
+    """
+    Sizes the notes field of the task forms to the window, without holding it
+    there.
+
+    It starts as tall as the window allows (issue #327), never less than
+    min_height, and its corner can still be dragged to make it taller or
+    shorter (issue #636). That size used to be forced: the field was set to
+    100% of a box whose height was fixed with !important, and a browser obeys
+    !important over the size a drag gives the field itself - so the handle
+    could be grabbed, and the field stayed exactly where it was. On every
+    platform, not only the Mac.
+
+    Now the window only gives the starting height, as an ordinary rule, and
+    the inline size a drag sets wins over it. The size a drag chose survives
+    the field being drawn again: tt/markdown_editor.py remembers it.
+
+    The Preview tab is given the field's starting height as a minimum, so a
+    short note does not make the page collapse when switching to it. Only the
+    tab that does not hold the field: on the Edit tab a minimum would keep
+    the page from shrinking with a field dragged shorter. Named both ways:
+    Streamlit's own test id is what older versions put on a panel, BaseWeb's
+    attribute is what 1.55 puts there instead.
+
+    The frame on that tab - see render_note_preview() - starts at the same
+    height, so the note sits in a box the size of the field it was typed
+    into, and grows with a longer one. Border, corners and padding are the
+    bordered container's own, in the colours of the theme.
+
+    :param min_height: The least the field starts with, in pixels, however
+                       small the window is.
+    """
+    start = "max(%dpx, calc(100vh - 560px))" % min_height
+    st.markdown("""
+        <style>
+        div[data-testid="stTabPanel"]:not(:has(textarea)),
+        div[data-baseweb="tab-panel"]:not(:has(textarea)) {
+            min-height: %s;
+        }
+        div[data-baseweb='textarea'] textarea {
+            height: %s;
+        }
+        .st-key-note_preview {
+            min-height: %s;
+            overflow-y: auto;
+        }
+        </style>
+        """ % (start, start, start), unsafe_allow_html=True)
+
+
+def render_note_preview(note):
+    """
+    Shows a task's note, rendered and framed: the Preview tab of the task
+    forms.
+
+    The frame is a container, and the note is drawn inside it. It used to be
+    a <div> opened by one st.markdown and closed by another - but every
+    st.markdown is an element of its own, so the browser closed the <div>
+    where the first one ended. What showed was an empty bordered strip, with
+    the note below it, unframed. Nor is the note written into an HTML string
+    along with the frame: it is Markdown, and HTML typed into a note is shown
+    as text rather than made part of the page.
+
+    :param note: The note as typed. Empty shows a placeholder instead.
+    """
+    with st.container(border=True, key="note_preview"):
+        st.markdown(note if note else f"*{_('No notes provided.')}*")
+
+
 def view_add_task_form():
     """
     Renders the second step of adding a task: entering the name.
@@ -3583,24 +3652,7 @@ def view_add_task_form():
 
     render_header(_("Add Task"), f"{_('To Project:')} {main_project}")
     
-    # Inject CSS for full-height responsive layout and styled preview
-    st.markdown("""
-        <style>
-        div[data-testid="stTabPanel"], div[data-baseweb='textarea'] {
-            height: calc(100vh - 560px) !important;
-            min-height: 250px;
-        }
-        div[data-baseweb='textarea'] textarea, .note-preview-box {
-            height: 100% !important;
-        }
-        .note-preview-box {
-            border: 1px solid rgba(49, 51, 63, 0.2);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            overflow-y: auto;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+    render_note_area_css(min_height=250)
 
     name = st.text_input(_("Name of the new task"))
     if "new_task_note" not in st.session_state:
@@ -3634,14 +3686,18 @@ def view_add_task_form():
     # the tracker, because this is where the pair is chosen.
     dates_out_of_order = bool(start_date and due_date and start_date > due_date)
     validation_error = (is_recurring and not due_date) or dates_out_of_order
-    if validation_error:
-        st.markdown("""
-            <style>
-            div[data-testid="stDateInput"] > div {
-                border: 2px solid red !important;
-            }
-            </style>
-        """, unsafe_allow_html=True)
+    # Written on every run, empty when there is nothing wrong, rather than
+    # only when there is: Streamlit 1.55 tells blocks apart by their position,
+    # so an element that comes and goes up here makes everything below it new
+    # - the notes field among them, which then loses the size it was dragged
+    # to and drops back to the Edit tab (issue #636).
+    st.markdown("""
+        <style>
+        div[data-testid="stDateInput"] > div {
+            border: 2px solid red !important;
+        }
+        </style>
+    """ if validation_error else "", unsafe_allow_html=True)
 
     # Frequency options for recurring tasks
     freq_options = ["daily", "on all business days", "weekly", "monthly", "userdefined"]
@@ -3662,9 +3718,7 @@ def view_add_task_form():
         st.text_area(_("Notes (Markdown)"), key="new_task_note", label_visibility="collapsed")
         render_markdown_editor("new_task_note")
     with tab_preview:
-        st.markdown('<div class="note-preview-box">', unsafe_allow_html=True)
-        st.markdown(st.session_state.new_task_note if st.session_state.new_task_note else f"*{_('No notes provided.')}*")
-        st.markdown('</div>', unsafe_allow_html=True)
+        render_note_preview(st.session_state.new_task_note)
     
     st.divider()
     if dates_out_of_order:
@@ -3760,24 +3814,7 @@ def view_edit_task_form():
     
     render_header(_("Edit Task"), f"{main_project} / {task_name}")
     
-    # Inject CSS for full-height responsive layout and styled preview
-    st.markdown("""
-        <style>
-        div[data-testid="stTabPanel"], div[data-baseweb='textarea'] {
-            height: calc(100vh - 560px) !important;
-            min-height: 200px;
-        }
-        div[data-baseweb='textarea'] textarea, .note-preview-box {
-            height: 100% !important;
-        }
-        .note-preview-box {
-            border: 1px solid rgba(49, 51, 63, 0.2);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            overflow-y: auto;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+    render_note_area_css(min_height=200)
 
     # Initialisiere Session-State für das Datum, um interaktives Leeren zu ermöglichen
     if 'edit_due_date' not in st.session_state:
@@ -3831,14 +3868,18 @@ def view_edit_task_form():
                               > st.session_state.edit_due_date)
     validation_error = ((is_recurring and not st.session_state.edit_due_date)
                         or dates_out_of_order)
-    if validation_error:
-        st.markdown("""
-            <style>
-            div[data-testid="stDateInput"] > div {
-                border: 2px solid red !important;
-            }
-            </style>
-        """, unsafe_allow_html=True)
+    # Written on every run, empty when there is nothing wrong, rather than
+    # only when there is: Streamlit 1.55 tells blocks apart by their position,
+    # so an element that comes and goes up here makes everything below it new
+    # - the notes field among them, which then loses the size it was dragged
+    # to and drops back to the Edit tab (issue #636).
+    st.markdown("""
+        <style>
+        div[data-testid="stDateInput"] > div {
+            border: 2px solid red !important;
+        }
+        </style>
+    """ if validation_error else "", unsafe_allow_html=True)
 
     freq_options = ["daily", "on all business days", "weekly", "monthly", "userdefined"]
     freq_labels = [_("daily"), _("on all business days"), _("weekly"), _("monthly"), _("userdefined")]
@@ -3860,9 +3901,7 @@ def view_edit_task_form():
         st.text_area(_("Notes (Markdown)"), key="edit_task_note", label_visibility="collapsed")
         render_markdown_editor("edit_task_note")
     with tab_preview:
-        st.markdown('<div class="note-preview-box">', unsafe_allow_html=True)
-        st.markdown(st.session_state.edit_task_note if st.session_state.edit_task_note else f"*{_('No notes provided.')}*")
-        st.markdown('</div>', unsafe_allow_html=True)
+        render_note_preview(st.session_state.edit_task_note)
     
     st.divider()
     if dates_out_of_order:
