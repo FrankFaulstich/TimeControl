@@ -137,9 +137,12 @@ def _attach(offset_width=702, client_width=700, border='1px', padding_right='12p
             json.dump({'offsetWidth': offset_width, 'clientWidth': client_width,
                        'border': border, 'paddingRight': padding_right,
                        'steps': list(steps), 'highlight': highlight}, handle)
+        # UTF-8, as node writes it - not the locale's encoding, which on a
+        # Windows runner is cp1252 and cannot even read the emoji below.
         finished = subprocess.run([NODE, paths['page.js'], paths['editor.js'],
                                    paths['scenario.json']],
-                                  capture_output=True, text=True, timeout=60)
+                                  capture_output=True, text=True, encoding='utf-8',
+                                  timeout=60)
         if finished.returncode != 0:
             raise AssertionError('node could not run the editor:\n%s' % finished.stderr.strip())
         result = json.loads(finished.stdout)
