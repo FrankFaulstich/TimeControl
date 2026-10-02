@@ -62,8 +62,12 @@ def _run_js(calls):
             handle.write(_HARNESS)
         with open(payload, 'w', encoding='utf-8') as handle:
             json.dump(calls, handle)
+        # UTF-8, as node writes it - not the locale's encoding, which on a
+        # Windows runner is cp1252 and cannot read every character a note
+        # may hold.
         finished = subprocess.run([NODE, harness, source, payload],
-                                  capture_output=True, text=True, timeout=60)
+                                  capture_output=True, text=True, encoding='utf-8',
+                                  timeout=60)
         if finished.returncode != 0:
             raise AssertionError('node could not run the editor:\n%s'
                                  % finished.stderr.strip())
