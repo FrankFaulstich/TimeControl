@@ -429,9 +429,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         date('Y-m-d H:i', (int)$invite['expires']));
                 }
 
-                // What each account takes up against its limit. The one place
-                // an operator can see an account filling before it is refused -
-                // by then the client says so too, but only to its owner.
+                // One line per account: when it was last used (issue #590) and
+                // what it takes up against its limit. The first is what tells
+                // an abandoned account from a quiet one - nothing removes one
+                // that holds data, so the operator decides, and needs to see.
+                // The second is the one place an account can be seen filling
+                // before it is refused; by then the client says so too, but
+                // only to its owner.
                 $mib = function ($bytes) { return sprintf('%.1f MiB', $bytes / 1048576); };
                 foreach ($accounts as $name => $record) {
                     $uid = $record['uid'] ?? null;
@@ -464,8 +468,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                                               date('Y-m-d', $last + TC_UNUSED_SECONDS));
                         }
                     }
-                    $notices[] = sprintf('Storage for %s%s: %s of %s (%d%%)%s%s',
-                        $name, $invited, $mib($used), $mib(TC_ACCOUNT_QUOTA_BYTES),
+                    $notices[] = sprintf('Account %s%s: %s; storage %s of %s (%d%%)%s%s',
+                        $name, $invited,
+                        tc_describe_activity(tc_account_activity($config['store'], $uid)),
+                        $mib($used), $mib(TC_ACCOUNT_QUOTA_BYTES),
                         (int)round(100 * $used / TC_ACCOUNT_QUOTA_BYTES),
                         $used >= TC_ACCOUNT_QUOTA_BYTES ? ' - FULL, pushes are refused' : '',
                         $unused);
