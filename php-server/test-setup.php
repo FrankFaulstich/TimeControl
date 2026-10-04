@@ -128,6 +128,16 @@ tc_check('and a file it refuses stops the page',
 tc_check('the submitted passphrase is trimmed as well',
          preg_match('/\$given\s*=\s*trim\(/', $setup) === 1,
          'a pasted newline would fail just as invisibly');
+// Issue #590: when each account was last used, worked out and worded in
+// lib/auth.php where test-oplog.php can run it - and shown here. The whole
+// statement is matched, so the words land in the placeholder meant for them:
+// moved one argument along, they would turn up where the storage figure goes.
+tc_check('Show status says when each account was last used',
+         preg_match('/sprintf\(\'Account %s%s: %s; storage %s of %s \(%d%%\)%s%s\',\s*'
+                    . '\$name,\s*\$invited,\s*'
+                    . 'tc_describe_activity\(\s*tc_account_activity\(\s*\$config\[\'store\'\],\s*\$uid\s*\)\s*\),\s*'
+                    . '\$mib\(\$used\),/', $setup) === 1,
+         'the per-account line does not carry it, or not in its place');
 
 print("\nWhich address the store would be served at\n");
 

@@ -1066,6 +1066,145 @@ function tc_removed_list($store)
     return array_reverse(is_array($list['removed'] ?? null) ? $list['removed'] : []);
 }
 
+// ---------------------------------------------------------------------------
+// When an account was last used (issue #590).
+//
+// An account that was used and then abandoned is never removed on a timer -
+// the sweep above leaves anything with a log alone, because that may be
+// somebody's year of time tracking. So it has to be visible instead: the
+// operator is the only one who knows whether that person is coming back, and
+// Show status is where they look.
+// ---------------------------------------------------------------------------
+
+/**
+ * When a device last reached an account, and how many could still do so.
+ *
+ * Nothing new is recorded for it. Every request a device makes with its token
+ * moves the mtime of its seen/ entry forward (tc_token_check), and so does
+ * signing in (tc_token_issue). A device from before seen/ entries existed has
+ * none, so the time it signed in counts for it as well.
+ *
+ * Signed in means what tc_token_check would let through without a password:
+ * the token still there, not expired, not idle for longer than TC_IDLE_TTL,
+ * and the account not switched off in user.dat.php. A device that signed out
+ * stays in the list without one.
+ *
+ * A seen/ entry that cannot be read makes the date unknown rather than
+ * leaving it out. Without it the date could only come out older than the
+ * truth, and an account in use would look abandoned to the one person who
+ * decides whether to delete it.
+ *
+ * @param int|null $now For the tests; the current time otherwise.
+ * @return array|null ['last' => int|null|false, 'devices' => int,
+ *                    'signed_in' => int, 'disabled' => bool]. 'last' is null
+ *                    when no device ever reached the account and false when
+ *                    its seen/ entries cannot be read; null altogether when its
+ *                    device list cannot be.
+ */
+function tc_account_activity($store, $uid, $now = null)
+{
+    $now  = $now === null ? time() : (int)$now;
+    $dir  = tc_user_dir($store, $uid);
+    $user = tc_read_json($dir . '/user.dat.php');
+    if (!is_array($user)) {
+        return null;
+    }
+    $devices  = is_array($user['devices'] ?? null) ? $user['devices'] : [];
+    $disabled = !empty($user['disabled']);
+
+    $last = null;
+    $seen = $dir . '/seen';
+    if (file_exists($seen)) {
+        $entries = @scandir($seen);
+        if ($entries === false) {
+            $last = false;
+        } else {
+            foreach (array_diff($entries, ['.', '..']) as $entry) {
+                $at = @filemtime($seen . '/' . $entry);
+                if ($at === false) {
+                    $last = false;
+                    break;
+                }
+                $last = max((int)$last, $at);
+            }
+        }
+    }
+
+    $signedIn = 0;
+    foreach ($devices as $device) {
+        if (!is_array($device)) {
+            continue;
+        }
+        $issued = (int)($device['iat'] ?? 0);
+        if ($issued > 0 && $last !== false) {
+            $last = max((int)$last, $issued);
+        }
+        if ($disabled) {
+            continue;
+        }
+        // Both become file names, so nothing but what the server writes.
+        $tokenId   = (string)($device['token_id'] ?? '');
+        $deviceUid = (string)($device['device_uid'] ?? '');
+        if (!preg_match('/^[a-f0-9]{16}$/D', $tokenId)
+                || !preg_match(TC_DEVICE_UID_PATTERN, $deviceUid)
+                || !is_file(tc_tokens_dir($store) . '/' . $tokenId . '.dat.php')
+                || $now >= (int)($device['exp'] ?? 0)) {
+            continue;
+        }
+        $at = @filemtime($seen . '/' . $deviceUid);
+        if ($at !== false && $now - $at > TC_IDLE_TTL) {
+            continue;
+        }
+        $signedIn++;
+    }
+
+    return ['last' => $last, 'devices' => count($devices), 'signed_in' => $signedIn,
+            'disabled' => $disabled];
+}
+
+/**
+ * What Show status says about tc_account_activity()'s answer.
+ *
+ * Counted in calendar days of the server's time zone, the one the date beside
+ * it is in: used at 23:50 and read at 00:10 is yesterday, not today. The two
+ * dates are compared as dates, in UTC, where no day is shorter than another -
+ * as midnights of the server's own zone, the day its clocks skip midnight
+ * (Chile, Cuba, Egypt, Lebanon) would be 23 hours long and come out as none.
+ *
+ * @param int|null $now For the tests; the current time otherwise.
+ * @return string
+ */
+function tc_describe_activity($activity, $now = null)
+{
+    $now = $now === null ? time() : (int)$now;
+    if (!is_array($activity)) {
+        return 'last use unknown - its device list (user.dat.php) cannot be read';
+    }
+    if ($activity['last'] === false) {
+        $text = 'last use unknown - its seen/ entries cannot be read';
+    } elseif ($activity['last'] === null) {
+        $text = 'never used';
+    } elseif ($activity['last'] > $now) {
+        // Only a server clock that was set back gets here. The date is still
+        // what was recorded; how long ago it was cannot be said.
+        $text = sprintf('last used %s', date('Y-m-d', $activity['last']));
+    } else {
+        $utc  = new DateTimeZone('UTC');
+        $days = (new DateTime(date('Y-m-d', $activity['last']), $utc))
+            ->diff(new DateTime(date('Y-m-d', $now), $utc))->days;
+        $ago  = $days === 0 ? 'today' : ($days === 1 ? 'yesterday' : $days . ' days ago');
+        $text = sprintf('last used %s (%s)', date('Y-m-d', $activity['last']), $ago);
+    }
+    if ($activity['devices'] > 0) {
+        $text .= sprintf(', %d of %d device%s signed in', $activity['signed_in'],
+                         $activity['devices'], $activity['devices'] === 1 ? '' : 's');
+    }
+    if (!empty($activity['disabled'])) {
+        $text .= ', switched off';
+    }
+    return $text;
+}
+
 /**
  * Consumes one unit of the global password-checking allowance.
  *

@@ -222,7 +222,9 @@ upload it again, then use *Create an account*. For somebody else, *Invite
 someone* is usually the better choice: you never learn their password.
 
 **6. Check.** *Show status* lists the store path, the accounts, the number
-of live tokens and the open invitations. It does not consume `setup.enable`.
+of live tokens and the open invitations, and for each account when a device
+last reached it, how many of its devices are still signed in and how much it
+stores. It does not consume `setup.enable`.
 
 ## Things worth knowing
 
@@ -330,7 +332,10 @@ deletes somebody's year of time tracking:
   server. Nothing is lost by it; whatever the devices hold locally stays
   there, and is offered again to whichever account they sign in to next.
 - *Used and then abandoned*: there is a log, perhaps years of it. Nothing here
-  ever removes that.
+  ever removes that. Only you can know whether that person is coming back, so
+  *Show status* says, for every account, on which day a device last reached
+  it and how many of its devices could still synchronise without the
+  password; *Delete an account* removes one you no longer want.
 
 Accounts made in `setup.php` are never removed this way &ndash; you made those
 on purpose, perhaps for somebody who starts later &ndash; and neither are

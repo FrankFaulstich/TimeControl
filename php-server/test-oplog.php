@@ -1874,5 +1874,242 @@ tc_test('a token its device list cannot record is not handed out', function ($st
     tc_assert_same([], glob(tc_tokens_dir($store) . '/*.dat.php') ?: [], 'a token was left behind');
 });
 
+// ---------------------------------------------------------------------------
+// When an account was last used (issue #590). Nothing removes an account that
+// holds data, so Show status has to make an abandoned one visible: on which
+// day a device last reached it, and whether any could still come back without
+// the password. Both are read from what the server keeps anyway.
+// ---------------------------------------------------------------------------
+
+print("\nWhen an account was last used\n");
+
+/** An account the operator made, with a signed-in device for each uid given. */
+function tc_used($store, $name, array $devices)
+{
+    $uid = tc_account_create($store, $name, 'x')['uid'];
+    tc_secure_mkdir(tc_tokens_dir($store));
+    $tokens = [];
+    foreach ($devices as $device) {
+        $tokens[$device] = tc_token_issue($store, $uid, $device, 'laptop')['token'];
+    }
+    return [$uid, $tokens];
+}
+
+function tc_seen_at($store, $uid, $device, $at)
+{
+    touch(tc_user_dir($store, $uid) . '/seen/' . $device, $at);
+    clearstatcache();
+}
+
+/** Changes one account's device list the way a hand edit would. */
+function tc_edit_devices($store, $uid, callable $edit)
+{
+    $path = tc_user_dir($store, $uid) . '/user.dat.php';
+    tc_write_json($path, $edit(tc_read_json($path)));
+}
+
+tc_test('an account no device ever reached is called never used', function ($store, $uid) {
+    list($made) = tc_used($store, 'bert', []);
+    $activity = tc_account_activity($store, $made);
+    tc_assert_same(['last' => null, 'devices' => 0, 'signed_in' => 0, 'disabled' => false],
+                   $activity, 'activity');
+    tc_assert_same('never used', tc_describe_activity($activity), 'said');
+});
+
+tc_test('the latest contact of any of its devices is when it was last used', function ($store, $uid) {
+    list($made) = tc_used($store, 'bert', ['a1b2c3d4e5f60718', 'b1b2c3d4e5f60718']);
+    tc_token_issued($store, $made, 20);
+    // The newest on the entry read first, so a "last one read wins" passes
+    // nothing here by luck of the order.
+    $recent = time() - 3 * 86400;
+    tc_seen_at($store, $made, 'a1b2c3d4e5f60718', $recent);
+    tc_seen_at($store, $made, 'b1b2c3d4e5f60718', time() - 10 * 86400);
+    tc_assert_same($recent, tc_account_activity($store, $made)['last'], 'last used');
+});
+
+tc_test('and every request a device makes moves it forward', function ($store, $uid) {
+    // The signal is only as good as what keeps it current: tc_token_check,
+    // on each request, not merely signing in.
+    list($made, $tokens) = tc_used($store, 'bert', ['a1b2c3d4e5f60718']);
+    tc_seen_at($store, $made, 'a1b2c3d4e5f60718', time() - 10 * 86400);
+    tc_assert(tc_token_check($store, $tokens['a1b2c3d4e5f60718']) !== null, 'the token did not work');
+    clearstatcache();
+    tc_assert(tc_account_activity($store, $made)['last'] >= time() - 5, 'a request did not count');
+});
+
+tc_test('a device without a seen entry counts from when it signed in', function ($store, $uid) {
+    // As every device from before seen entries existed has it - and as
+    // the operator would otherwise read "never used" for an account in use.
+    list($made, $tokens) = tc_used($store, 'bert', ['a1b2c3d4e5f60718']);
+    tc_token_issued($store, $made, 5);
+    $issued = tc_read_json(tc_user_dir($store, $made) . '/user.dat.php')['devices'][0]['iat'];
+    unlink(tc_user_dir($store, $made) . '/seen/a1b2c3d4e5f60718');
+    $activity = tc_account_activity($store, $made);
+    tc_assert_same($issued, $activity['last'], 'without its entry');
+    // Idle expiry cannot apply to it, so its token works and it is signed in.
+    tc_assert_same(1, $activity['signed_in'], 'signed in without its entry');
+    rmdir(tc_user_dir($store, $made) . '/seen');
+    tc_assert_same($issued, tc_account_activity($store, $made)['last'], 'without the directory');
+    tc_assert(tc_token_check($store, $tokens['a1b2c3d4e5f60718']) !== null, 'the token does not work');
+});
+
+tc_test('signed in is what a token check would let through', function ($store, $uid) {
+    $a = 'a1b2c3d4e5f60718';
+    $b = 'b1b2c3d4e5f60718';
+    $c = 'c1b2c3d4e5f60718';
+    $d = 'd1b2c3d4e5f60718';
+    list($made, $tokens) = tc_used($store, 'bert', [$a, $b, $c, $d]);
+    tc_assert_same(4, tc_account_activity($store, $made)['signed_in'], 'all four fresh');
+    tc_token_revoke($store, explode('.', $tokens[$b])[1]);                // signed out
+    tc_seen_at($store, $made, $c, time() - TC_IDLE_TTL - 3600);           // idle too long
+    tc_seen_at($store, $made, $d, time() - TC_IDLE_TTL + 3600);           // idle, not too long
+    $activity = tc_account_activity($store, $made);
+    tc_assert_same(2, $activity['signed_in'], 'signed in');
+    tc_assert_same(4, $activity['devices'], 'devices listed');
+    // And the same answer from the check itself, which is what the count
+    // stands for. Asked last: a check that succeeds writes the entry again.
+    $let = 0;
+    foreach ($tokens as $token) {
+        $let += tc_token_check($store, $token) !== null ? 1 : 0;
+    }
+    tc_assert_same(2, $let, 'what tc_token_check lets through');
+});
+
+tc_test('to the second, where the token runs out and where it goes idle', function ($store, $uid) {
+    // tc_token_check refuses from the second of expiry on (>=), and after
+    // more than TC_IDLE_TTL without contact (>), not at exactly that.
+    list($made) = tc_used($store, 'bert', ['a1b2c3d4e5f60718']);
+    $exp = tc_read_json(tc_user_dir($store, $made) . '/user.dat.php')['devices'][0]['exp'];
+    tc_seen_at($store, $made, 'a1b2c3d4e5f60718', $exp - 5);
+    tc_assert_same(1, tc_account_activity($store, $made, $exp - 1)['signed_in'], 'a second before expiry');
+    tc_assert_same(0, tc_account_activity($store, $made, $exp)['signed_in'], 'at expiry');
+    $seen = $exp - TC_IDLE_TTL - 10;
+    tc_seen_at($store, $made, 'a1b2c3d4e5f60718', $seen);
+    tc_assert_same(1, tc_account_activity($store, $made, $seen + TC_IDLE_TTL)['signed_in'],
+                   'idle for exactly TC_IDLE_TTL');
+    tc_assert_same(0, tc_account_activity($store, $made, $seen + TC_IDLE_TTL + 1)['signed_in'],
+                   'idle for a second longer');
+});
+
+tc_test('a token past its lifetime is not signed in either', function ($store, $uid) {
+    list($made) = tc_used($store, 'bert', ['a1b2c3d4e5f60718']);
+    tc_token_issued($store, $made, TC_TOKEN_TTL / 86400 + 1);   // its seen entry is fresh
+    tc_assert_same(0, tc_account_activity($store, $made)['signed_in'], 'signed in');
+});
+
+tc_test('nor is any device of an account that is switched off', function ($store, $uid) {
+    // tc_token_check refuses them all, which is what switching off is for.
+    list($made, $tokens) = tc_used($store, 'bert', ['a1b2c3d4e5f60718']);
+    tc_edit_devices($store, $made, function ($user) { $user['disabled'] = true; return $user; });
+    $activity = tc_account_activity($store, $made);
+    tc_assert_same(0, $activity['signed_in'], 'signed in');
+    tc_assert(is_int($activity['last']), 'when it was last used is still known');
+    tc_assert(substr(tc_describe_activity($activity), -strlen(', switched off')) === ', switched off',
+              'not said: ' . tc_describe_activity($activity));
+    tc_assert_same(null, tc_token_check($store, $tokens['a1b2c3d4e5f60718']), 'the check lets it in');
+});
+
+tc_test('what the device list names is only used as a file name if the server could have written it', function ($store, $uid) {
+    list($made, $tokens) = tc_used($store, 'bert', ['a1b2c3d4e5f60718']);
+    $token = explode('.', $tokens['a1b2c3d4e5f60718'])[1];
+    unlink(tc_user_dir($store, $made) . '/seen/a1b2c3d4e5f60718');
+    tc_edit_devices($store, $made, function ($user) use ($token) {
+        $good = $user['devices'][0];
+        // A path out of seen/ would find no entry there, and a device with
+        // no entry counts as signed in; a token id with a path in it would
+        // find the real token file.
+        $user['devices'] = [
+            ['device_uid' => '../../../x', 'token_id' => $token, 'exp' => $good['exp']],
+            ['device_uid' => $good['device_uid'], 'token_id' => '../tokens/' . $token, 'exp' => $good['exp']],
+        ];
+        return $user;
+    });
+    $activity = tc_account_activity($store, $made);
+    tc_assert_same(0, $activity['signed_in'], 'signed in');
+    // Neither entry says when it signed in, so there is nothing to date the
+    // account by - and certainly not 1970.
+    tc_assert_same(null, $activity['last'], 'last used');
+});
+
+tc_test('seen entries that cannot be read make the date unknown, not older', function ($store, $uid) {
+    // Leaving them out would date the account by when its devices signed
+    // in, perhaps months ago, and an account in use would look abandoned.
+    list($made) = tc_used($store, 'bert', ['a1b2c3d4e5f60718']);
+    tc_token_issued($store, $made, 80);
+    $seen = tc_user_dir($store, $made) . '/seen';
+
+    symlink($seen . '/nothing-there', $seen . '/b1b2c3d4e5f60718');    // an entry that cannot be stat'ed
+    $activity = tc_account_activity($store, $made);
+    tc_assert_same(false, $activity['last'], 'an entry that cannot be read');
+    tc_assert_same(1, $activity['devices'], 'the device list is still read');
+    tc_assert(strpos(tc_describe_activity($activity), 'seen/') !== false,
+              'the wrong thing is named: ' . tc_describe_activity($activity));
+
+    unlink($seen . '/b1b2c3d4e5f60718');
+    unlink($seen . '/a1b2c3d4e5f60718');
+    rmdir($seen);
+    file_put_contents($seen, '');                                         // cannot be listed
+    tc_assert_same(false, tc_account_activity($store, $made)['last'], 'a directory that cannot be listed');
+});
+
+tc_test('a device list that cannot be read is said, not guessed at', function ($store, $uid) {
+    list($made) = tc_used($store, 'bert', ['a1b2c3d4e5f60718']);
+    $user = tc_user_dir($store, $made) . '/user.dat.php';
+    unlink($user);
+    tc_secure_mkdir($user . '/in-the-way');
+    tc_assert_same(null, tc_account_activity($store, $made), 'activity');
+    tc_assert(strpos(tc_describe_activity(null), 'user.dat.php') !== false,
+              'the wrong thing is named: ' . tc_describe_activity(null));
+});
+
+tc_test('how long ago is counted in calendar days of the server', function ($store, $uid) {
+    $zone = date_default_timezone_get();
+    try {
+        $say = function ($last, $now, $devices = 0, $signedIn = 0, $disabled = false) {
+            return tc_describe_activity(['last' => $last, 'devices' => $devices,
+                                         'signed_in' => $signedIn, 'disabled' => $disabled], $now);
+        };
+        date_default_timezone_set('Europe/Berlin');
+        $now = mktime(0, 10, 0, 6, 15, 2026);
+        tc_assert_same('last used 2026-06-15 (today)', $say(mktime(0, 5, 0, 6, 15, 2026), $now), 'minutes ago');
+        tc_assert_same('last used 2026-06-15 (today)', $say($now, $now), 'this very second');
+        // Twenty minutes earlier, but the day before: the date says the 14th.
+        tc_assert_same('last used 2026-06-14 (yesterday)', $say(mktime(23, 50, 0, 6, 14, 2026), $now), 'before midnight');
+        tc_assert_same('last used 2026-06-01 (14 days ago)', $say(mktime(12, 0, 0, 6, 1, 2026), $now), 'a fortnight');
+        // Over the clock changes two days are 47 and 49 hours: neither a
+        // division by 86400, rounded either way, nor a missed correction
+        // gets both right.
+        tc_assert_same('last used 2026-03-28 (2 days ago)',
+                       $say(mktime(12, 0, 0, 3, 28, 2026), mktime(12, 0, 0, 3, 30, 2026)), 'into summer time');
+        tc_assert_same('last used 2026-10-24 (2 days ago)',
+                       $say(mktime(12, 0, 0, 10, 24, 2026), mktime(12, 0, 0, 10, 26, 2026)), 'out of it');
+        tc_assert_same('last used 2026-06-14 (yesterday), 0 of 1 device signed in',
+                       $say(mktime(9, 0, 0, 6, 14, 2026), $now, 1, 0), 'one device');
+        tc_assert_same('last used 2026-06-14 (yesterday), 1 of 2 devices signed in',
+                       $say(mktime(9, 0, 0, 6, 14, 2026), $now, 2, 1), 'two devices');
+        tc_assert_same('last used 2026-06-14 (yesterday), 0 of 2 devices signed in, switched off',
+                       $say(mktime(9, 0, 0, 6, 14, 2026), $now, 2, 0, true), 'switched off');
+        tc_assert_same('last use unknown - its seen/ entries cannot be read, 0 of 1 device signed in',
+                       $say(false, $now, 1, 0), 'unknown');
+        // A server clock set back: the recorded date, and no guess at how
+        // long ago - not even when it is only minutes, across midnight.
+        tc_assert_same('last used 2026-06-16', $say(mktime(9, 0, 0, 6, 16, 2026), $now), 'from the future');
+        tc_assert_same('last used 2026-06-16',
+                       $say(mktime(0, 5, 0, 6, 16, 2026), mktime(23, 50, 0, 6, 15, 2026)), 'minutes ahead');
+
+        // Where the clocks skip midnight itself, as Chile's do on the first
+        // Sunday of September, that day's midnight is 01:00 - and a count
+        // between the zone's own midnights loses a day.
+        date_default_timezone_set('America/Santiago');
+        $last = mktime(12, 0, 0, 9, 6, 2026);
+        tc_assert_same('last used 2026-09-06 (yesterday)', $say($last, mktime(8, 0, 0, 9, 7, 2026)),
+                       'the day after midnight was skipped');
+        tc_assert_same('last used 2026-09-06 (5 days ago)', $say($last, mktime(8, 0, 0, 9, 11, 2026)),
+                       'and days after it');
+    } finally {
+        date_default_timezone_set($zone);
+    }
+});
+
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
 exit($GLOBALS['tc_failed'] === 0 ? 0 : 1);
