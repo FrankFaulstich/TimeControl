@@ -26,10 +26,12 @@ is helpful. The token and the device identity live here instead, per machine,
 outside the project directory.
 """
 
+import hashlib
 import json
 import os
 import platform
 import secrets
+import time
 import unicodedata
 from urllib.parse import urlsplit, urlunsplit
 
@@ -71,6 +73,27 @@ PASSWORD_MIN = 12
 # server finishes its work whether or not anybody is left to hear about it. For
 # these, signing in with the same name and password is how to find out.
 UNANSWERED = frozenset(('timeout', 'unreachable', 'bad_response'))
+
+# The proof of work a registration brings along (issue #591; the server side is
+# php-server/tc/lib/pow.php). Whatever difficulty the server asks for is
+# solved, so it can be raised without a new client - up to this, beyond which
+# a search would take this machine hours rather than seconds.
+POW_MAX_BITS = 28
+
+# Left over of the time a challenge is valid, for the request that delivers
+# the solution. Solving is given the rest.
+POW_MARGIN = 30
+
+# The server's answers after which a fresh challenge is the remedy: a solution
+# that came too late or twice - a slow connection, or a request whose answer
+# got lost - and one the server no longer takes, because its difficulty was
+# raised or its key replaced while the challenge was on its way.
+POW_RETRY = frozenset(('pow_expired', 'pow_used', 'pow_invalid'))
+
+# Failures of the challenge request that the registration would only meet
+# again. Nothing has been sent to register at that point, so there is nothing
+# to find out by signing in, and waiting for two more timeouts helps nobody.
+POW_UNREACHABLE = frozenset(('timeout', 'unreachable', 'tls_failed', 'address_redirects'))
 
 
 def config_dir():
@@ -437,12 +460,89 @@ def normalise_invite_code(code):
                            or unicodedata.category(ch) in ('Zs', 'Cf')))
 
 
+def leading_zero_bits(digest):
+    """How many zero bits a digest begins with - tc_pow_leading_zero_bits()."""
+    bits = 0
+    for byte in digest:
+        if byte:
+            return bits + 8 - byte.bit_length()
+        bits += 8
+    return bits
+
+
+def solve_challenge(challenge, bits, seconds):
+    """
+    Finds a nonce for a proof-of-work challenge from the server.
+
+    The server's rule: SHA-256 of the challenge, a colon and the nonce begins
+    with `bits` zero bits. The nonce is a counter written in decimal, the
+    plainest thing that fits the server's pattern for it.
+
+    :param seconds: How long to search. A challenge expires; a solution found
+                    after that is worth nothing.
+    :return: The nonce as a string, or None when none was found in time.
+    """
+    prefix = hashlib.sha256((challenge + ':').encode('ascii'))
+    whole, rest = divmod(bits, 8)
+    zeros = bytes(whole)
+    # The bits of the next byte that have to be zero as well.
+    mask = (0xFF << (8 - rest)) & 0xFF
+    deadline = time.monotonic() + seconds
+    nonce = 0
+    while True:
+        # The clock is read every few thousand tries rather than every one:
+        # at a million and more a second, reading it each time would cost
+        # more than the hashing.
+        for nonce in range(nonce, nonce + 4096):
+            attempt = prefix.copy()
+            attempt.update(str(nonce).encode('ascii'))
+            digest = attempt.digest()
+            if digest[:whole] == zeros and not (rest and digest[whole] & mask):
+                return str(nonce)
+        nonce += 1
+        if time.monotonic() >= deadline:
+            return None
+
+
+def _proof_of_work(base_url, purpose):
+    """
+    Asks the server for a challenge and solves it.
+
+    :return: (work, failure). work is the 'pow' a request carries, or None
+             when there is nothing to send: a server from before issue #591
+             does not know the request, and a challenge too hard to solve in
+             time is left for the server to decide about - today it does not
+             insist, and it would answer that it does if it ever did. failure
+             is set only when the server could not be reached at all, from
+             POW_UNREACHABLE.
+    """
+    answer = _post(base_url, 'challenge', {'purpose': purpose})
+    if answer.get('error') in POW_UNREACHABLE:
+        return None, answer['error']
+    challenge = answer.get('challenge') if answer.get('ok') else None
+    bits = answer.get('bits')
+    expires_in = answer.get('expires_in')
+    if (not isinstance(challenge, str) or not challenge.isascii()
+            or type(bits) is not int or not 0 <= bits <= POW_MAX_BITS
+            or type(expires_in) is not int):
+        return None, None
+    nonce = solve_challenge(challenge, bits, max(1, expires_in - POW_MARGIN))
+    if nonce is None:
+        return None, None
+    return {'challenge': challenge, 'nonce': nonce}, None
+
+
 def register(base_url, code, username, password):
     """
     Creates an account with an invitation code, and signs this machine in to it.
 
     The server answers the way a sign-in does, so the token is kept the same
     way (issue #588).
+
+    A proof of work goes along with it (issue #591). With a code the server
+    does not demand one - the code already stands in front of the password
+    hash - but it checks one that is sent, so this is the path that keeps the
+    mechanism in use until registering without a code needs it.
 
     :return: The server's reply, with 'ok' telling the caller what happened.
     :rtype: dict
@@ -460,13 +560,28 @@ def register(base_url, code, username, password):
         return {'ok': False, 'error': 'https_required'}
 
     identity = device_identity()
-    result = _post(base_url, 'register', {
+    request = {
         'code': code,
         'username': username,
         'password': password,
         'device_uid': identity['device_uid'],
         'device_name': identity['device_name'],
-    })
+    }
+    for _ in range(2):
+        work, unreachable = _proof_of_work(base_url, 'register')
+        if unreachable:
+            return {'ok': False, 'error': unreachable}
+        if work is None:
+            # Never the one refused a moment ago.
+            request.pop('pow', None)
+        else:
+            request['pow'] = work
+        result = _post(base_url, 'register', request)
+        # Refused before the code was looked at, so the code is still good
+        # for one more try with a fresh challenge. Only one: a client and
+        # server that disagree about the rules would otherwise go on for ever.
+        if result.get('error') not in POW_RETRY:
+            break
     if result.get('error') in UNANSWERED:
         # Trying again would be told the code is used, if it was. Signing in
         # finds out which it was, and is the right thing to have done either

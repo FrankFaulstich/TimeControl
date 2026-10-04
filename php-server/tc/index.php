@@ -17,6 +17,7 @@ require_once __DIR__ . '/lib/store.php';
 require_once __DIR__ . '/lib/auth.php';
 require_once __DIR__ . '/lib/http.php';
 require_once __DIR__ . '/lib/oplog.php';
+require_once __DIR__ . '/lib/pow.php';
 
 // Errors go to a file inside the store, never to the response: a stack trace
 // naming absolute paths is a gift to anyone probing this endpoint.
@@ -126,6 +127,27 @@ switch ($action) {
         // pattern rather than quietly made into a different one.
         $username = isset($body['username']) ? (string)$body['username'] : '';
 
+        // Proof of work (issue #591), before anything is hashed and before
+        // the code is looked at, so a refused one costs the invitation
+        // nothing. Not demanded: a code only the operator can make already
+        // stands in front of the hash. But a solution that is sent is held
+        // to every rule, so the path is in use and tested long before
+        // registering without a code (#552) would come to depend on it.
+        if (array_key_exists('pow', $body)) {
+            $pow = is_array($body['pow']) ? $body['pow'] : [];
+            $refused = tc_pow_spend($store, $pow['challenge'] ?? null, $pow['nonce'] ?? null, 'register');
+            if ($refused !== null) {
+                $refusals = [
+                    'pow_invalid' => [403, 'The proof of work is not valid.'],
+                    'pow_expired' => [403, 'The proof of work came too late. Ask for a new challenge.'],
+                    'pow_used'    => [403, 'That proof of work has been used already. Ask for a new challenge.'],
+                    'busy'        => [503, 'The server is busy. The invitation has not been used up; try again.'],
+                ];
+                list($status, $text) = $refusals[$refused];
+                tc_fail($status, $refused, $text);
+            }
+        }
+
         $made = tc_invite_redeem($store,
                                  isset($body['code']) ? (string)$body['code'] : '',
                                  $username,
@@ -165,6 +187,26 @@ switch ($action) {
             'expires_at' => $issued['expires_at'],
             'username'   => $username,
         ]);
+        break;
+
+    // -----------------------------------------------------------------
+    // A challenge for the proof of work above (issue #591). Writes nothing
+    // and needs no account, so it can be asked for as often as anybody
+    // likes: what it hands out is worth something only once solved.
+    case 'challenge':
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            tc_fail(405, 'method_not_allowed', 'Use POST.');
+        }
+        $body    = tc_body();
+        $purpose = isset($body['purpose']) ? (string)$body['purpose'] : '';
+        if (!in_array($purpose, TC_POW_PURPOSES, true)) {
+            tc_fail(400, 'bad_purpose', 'purpose must be one of: ' . implode(', ', TC_POW_PURPOSES) . '.');
+        }
+        $issued = tc_pow_challenge($store, $purpose);
+        if ($issued === null) {
+            tc_fail(503, 'busy', 'Could not issue a challenge right now. Try again.');
+        }
+        tc_ok($issued);
         break;
 
     // -----------------------------------------------------------------

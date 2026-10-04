@@ -140,6 +140,8 @@ class TestEveryReachableCodeIsExplained(unittest.TestCase):
             'invalid_invite', 'bad_username', 'weak_password', 'username_taken',
             'busy', 'io', 'account_created_sign_in', 'bad_device_uid',
             'unconverted', 'invite_lost',
+            # issue #591: the proof of work that goes along with it
+            'pow_invalid', 'pow_expired', 'pow_used',
             # the client's own, before anything is sent
             'no_server', 'missing_invite', 'missing_credentials', 'https_required',
             # and the form's

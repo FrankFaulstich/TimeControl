@@ -1,8 +1,11 @@
+import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -246,6 +249,12 @@ class TestRegisteringWithAnInvitation(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self._real = sync_client.config_dir
         sync_client.config_dir = lambda: self.tmp
+        # The proof of work that goes along (issue #591) is a request of its
+        # own, and has its tests below. Out of the way here, so every request
+        # these count is the registration's.
+        work = patch('tt.sync_client._proof_of_work', return_value=(None, None))
+        work.start()
+        self.addCleanup(work.stop)
 
     def tearDown(self):
         sync_client.config_dir = self._real
@@ -351,6 +360,248 @@ class TestRegisteringWithAnInvitation(unittest.TestCase):
         self.assertEqual(sync_client.normalise_invite_code('Code: 3f2a'), 'code3f2a')
         self.assertEqual(sync_client.normalise_invite_code('3f2a x9c1b'), '3f2ax9c1b')
         self.assertEqual(sync_client.normalise_invite_code(None), '')
+
+
+def _zero_bits(challenge, nonce):
+    """The server's check, written out again rather than borrowed from the client."""
+    digest = hashlib.sha256((challenge + ':' + nonce).encode('ascii')).digest()
+    value = int.from_bytes(digest, 'big')
+    return 256 - value.bit_length()
+
+
+class TestSolvingAChallenge(unittest.TestCase):
+    """Issue #591: the search for a nonce, on its own."""
+
+    CHALLENGE = '1.register.1791131602.12.0123456789abcdef.' + 'ab' * 32
+
+    def test_the_count_of_leading_zero_bits(self):
+        # Ones with bytes after the first that is not zero, which a count
+        # that did not stop there would go on adding.
+        for digest, bits in ((b'\x80', 0), (b'\x01', 7), (b'\x00\x0f', 12),
+                             (b'\x00\x00\x00\x08', 28), (bytes(32), 256),
+                             (b'\x0f\x00', 4), (b'\x01\xff', 7), (b'\x00\x10\x00\x00', 11),
+                             (b'\x80' + bytes(31), 0)):
+            with self.subTest(digest=digest):
+                self.assertEqual(sync_client.leading_zero_bits(digest), bits)
+
+    def test_what_it_finds_meets_the_server_s_rule(self):
+        for bits in (0, 1, 7, 8, 9, 12, 16):
+            with self.subTest(bits=bits):
+                nonce = sync_client.solve_challenge(self.CHALLENGE, bits, 30)
+                self.assertRegex(nonce, r'^[0-9]{1,64}$', "not a nonce the server takes")
+                self.assertGreaterEqual(_zero_bits(self.CHALLENGE, nonce), bits)
+
+    def test_and_it_is_the_first_that_does(self):
+        """
+        Asking more of itself than the server does would pass every test
+        above and cost sixteen times the work for four bits too many.
+        """
+        for bits in range(0, 13):
+            with self.subTest(bits=bits):
+                nonce = int(sync_client.solve_challenge(self.CHALLENGE, bits, 30))
+                earlier = [n for n in range(nonce) if _zero_bits(self.CHALLENGE, str(n)) >= bits]
+                self.assertEqual(earlier, [])
+
+    def test_it_gives_up_when_the_time_is_over(self):
+        # Sixty bits would take this machine millennia; a challenge expires
+        # long before. And it gives up then, not some while later: this runs
+        # while somebody looks at the form.
+        started = time.monotonic()
+        self.assertIsNone(sync_client.solve_challenge(self.CHALLENGE, 60, 0.2))
+        self.assertLess(time.monotonic() - started, 0.7)
+
+
+class TestAProofOfWorkGoesAlong(unittest.TestCase):
+    """
+    Issue #591. The server does not demand one while a code is needed to
+    register, but checks one that is sent - so the client sends one, and has
+    to cope with a server that does not know what that is.
+    """
+
+    CODE = '3f2a9c1bab12cd34'
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self._real = sync_client.config_dir
+        sync_client.config_dir = lambda: self.tmp
+        self.sent = []
+
+    def tearDown(self):
+        sync_client.config_dir = self._real
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    @staticmethod
+    def challenge(n=0, bits=8, expires_in=300):
+        return _Response({'ok': True, 'bits': bits, 'expires_in': expires_in,
+                          'challenge': '1.register.%d.%d.0123456789abcdef.%s' % (1791131602 + n, bits, 'c' * 64)})
+
+    def run_register(self, challenges, registrations):
+        """Answers each kind of request from its own list, and keeps what was sent."""
+        answers = {'challenge': list(challenges), 'register': list(registrations)}
+
+        def post(url, params, headers, data, timeout, allow_redirects):
+            self.sent.append((params['a'], json.loads(data)))
+            return answers[params['a']].pop(0)
+
+        with patch('tt.sync_client.requests.post', side_effect=post):
+            return sync_client.register('https://x.de/tc', self.CODE, 'anna', 'long enough, surely')
+
+    def registrations(self):
+        return [body for action, body in self.sent if action == 'register']
+
+    def test_a_solved_challenge_is_sent_with_the_registration(self):
+        result = self.run_register([self.challenge()], [_Response({'ok': True, 'token': 'tc1.a.b'})])
+        self.assertTrue(result['ok'])
+        self.assertEqual([a for a, _ in self.sent], ['challenge', 'register'])
+        self.assertEqual(self.sent[0][1], {'purpose': 'register'})
+        work = self.registrations()[0]['pow']
+        self.assertEqual(work['challenge'], self.challenge().json()['challenge'])
+        self.assertGreaterEqual(_zero_bits(work['challenge'], work['nonce']), 8)
+
+    def test_a_server_from_before_it_is_registered_with_all_the_same(self):
+        result = self.run_register([_Response({'ok': False, 'error': 'unknown_action'}, status=404)],
+                                   [_Response({'ok': True, 'token': 'tc1.a.b'})])
+        self.assertTrue(result['ok'])
+        self.assertNotIn('pow', self.registrations()[0])
+
+    def test_a_refused_solution_gets_one_fresh_challenge(self):
+        # Too late, already used, or no longer taken: the difficulty raised
+        # or the key replaced while it was on its way.
+        for refusal in ('pow_expired', 'pow_used', 'pow_invalid'):
+            with self.subTest(refusal=refusal):
+                self.sent = []
+                result = self.run_register(
+                    [self.challenge(1), self.challenge(2)],
+                    [_Response({'ok': False, 'error': refusal}, status=403),
+                     _Response({'ok': True, 'token': 'tc1.a.b'})])
+                self.assertTrue(result['ok'])
+                first, second = self.registrations()
+                self.assertNotEqual(first['pow']['challenge'], second['pow']['challenge'])
+
+    def test_but_only_one(self):
+        result = self.run_register(
+            [self.challenge(1), self.challenge(2)],
+            [_Response({'ok': False, 'error': 'pow_used'}, status=403)] * 2)
+        self.assertEqual(result['error'], 'pow_used')
+        self.assertEqual(len(self.registrations()), 2)
+
+    def test_and_never_with_the_solution_just_refused(self):
+        # No fresh challenge to be had: then without one, which a code is
+        # enough for, rather than with the one the server just turned down.
+        result = self.run_register(
+            [self.challenge(1), _Response({'ok': False, 'error': 'busy'}, status=503)],
+            [_Response({'ok': False, 'error': 'pow_expired'}, status=403),
+             _Response({'ok': True, 'token': 'tc1.a.b'})])
+        self.assertTrue(result['ok'])
+        self.assertNotIn('pow', self.registrations()[1])
+
+    def test_a_refusal_of_anything_else_is_not_retried(self):
+        result = self.run_register([self.challenge()],
+                                   [_Response({'ok': False, 'error': 'username_taken'}, status=409)])
+        self.assertEqual(result['error'], 'username_taken')
+        self.assertEqual(len(self.registrations()), 1)
+
+    def test_a_server_that_cannot_be_reached_is_not_asked_twice_more(self):
+        """
+        The challenge goes first; when that finds nobody there, registering
+        would only find the same - and nothing was registered, so there is
+        no sign-in to try either. Three timeouts in a row is a minute of a
+        frozen form.
+        """
+        import requests as real_requests
+        for failure, error in ((real_requests.exceptions.Timeout(), 'timeout'),
+                               (real_requests.exceptions.ConnectionError(), 'unreachable'),
+                               (real_requests.exceptions.SSLError(), 'tls_failed'),
+                               (_Response({}, status=301), 'address_redirects')):
+            with self.subTest(error=error), \
+                 patch('tt.sync_client.requests.post', side_effect=[failure]) as post:
+                result = sync_client.register('https://x.de/tc', self.CODE, 'anna', 'long enough, surely')
+            self.assertEqual(result, {'ok': False, 'error': error})
+            self.assertEqual(post.call_count, 1)
+
+    def test_a_busy_or_odd_challenge_answer_does_not_stop_the_registration(self):
+        for answer in (_Response({'ok': False, 'error': 'busy'}, status=503), _Response(None, status=500)):
+            with self.subTest(answer=answer._payload):
+                self.sent = []
+                result = self.run_register([answer], [_Response({'ok': True, 'token': 'tc1.a.b'})])
+                self.assertTrue(result['ok'])
+                self.assertNotIn('pow', self.registrations()[0])
+
+    def test_the_hardest_challenge_it_takes_on_is_attempted(self):
+        with patch('tt.sync_client.solve_challenge', return_value='0') as solve:
+            self.run_register([self.challenge(bits=sync_client.POW_MAX_BITS)],
+                              [_Response({'ok': True, 'token': 'tc1.a.b'})])
+        solve.assert_called_once()
+        self.assertIn('pow', self.registrations()[0])
+
+    def test_a_challenge_out_of_reach_is_not_attempted(self):
+        # Raised beyond what this machine could solve in the time it has: left
+        # to the server, which today does not insist.
+        started = time.monotonic()
+        result = self.run_register([self.challenge(bits=sync_client.POW_MAX_BITS + 1)],
+                                   [_Response({'ok': True, 'token': 'tc1.a.b'})])
+        self.assertTrue(result['ok'])
+        self.assertNotIn('pow', self.registrations()[0])
+        self.assertLess(time.monotonic() - started, 2)
+
+    def test_an_answer_that_does_not_look_like_one_is_not_trusted(self):
+        good = self.challenge().json()
+        # True among them: Python counts it as the number 1.
+        for broken in (dict(good, bits='8'), dict(good, bits=-1), dict(good, bits=True),
+                       dict(good, expires_in=True), dict(good, challenge=None),
+                       dict(good, challenge='1.register.ü'), dict(good, expires_in=None)):
+            with self.subTest(answer=broken):
+                self.sent = []
+                result = self.run_register([_Response(broken)], [_Response({'ok': True, 'token': 'tc1.a.b'})])
+                self.assertTrue(result['ok'])
+                self.assertNotIn('pow', self.registrations()[0])
+
+    def test_solving_is_given_the_time_the_challenge_lasts_less_the_margin(self):
+        with patch('tt.sync_client.solve_challenge', return_value='0') as solve:
+            self.run_register([self.challenge(expires_in=300)], [_Response({'ok': True, 'token': 'tc1.a.b'})])
+        self.assertEqual(solve.call_args.args[2], 300 - sync_client.POW_MARGIN)
+
+
+@unittest.skipUnless(shutil.which('php'), "php is not installed")
+class TestTheServerTakesWhatTheClientFinds(unittest.TestCase):
+    """
+    Each side tested on its own could agree with itself and not with the
+    other - a colon too many, the nonce encoded differently. So a challenge
+    the server's own code issued is solved here and checked by the server's
+    own code.
+    """
+
+    LIB = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'php-server', 'tc', 'lib')
+
+    def php(self, store, body):
+        script = ("require %r; require %r; require %r; $store = %r; %s"
+                  % (os.path.join(self.LIB, 'store.php'), os.path.join(self.LIB, 'auth.php'),
+                     os.path.join(self.LIB, 'pow.php'), store, body))
+        done = subprocess.run(['php', '-r', script], capture_output=True, text=True,
+                              encoding='utf-8', timeout=60)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        return done.stdout
+
+    def spend(self, store, challenge, nonce):
+        return self.php(store, "var_export(tc_pow_spend($store, %r, %r, 'register', null, 12));"
+                        % (challenge, nonce))
+
+    def test_a_solution_found_here_is_accepted_there_once(self):
+        store = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, store, True)
+        issued = json.loads(self.php(store, "echo json_encode(tc_pow_challenge($store, 'register', null, 12));"))
+        nonce = sync_client.solve_challenge(issued['challenge'], issued['bits'], 30)
+        self.assertEqual(self.spend(store, issued['challenge'], nonce), 'NULL')
+        self.assertEqual(self.spend(store, issued['challenge'], nonce), "'pow_used'")
+
+    def test_and_one_a_bit_short_of_it_is_not(self):
+        # Counted by this file's own reckoning, so neither side's count is
+        # what decides whether the two agree.
+        store = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, store, True)
+        issued = json.loads(self.php(store, "echo json_encode(tc_pow_challenge($store, 'register', null, 12));"))
+        short = next(str(n) for n in range(10 ** 6) if _zero_bits(issued['challenge'], str(n)) == 11)
+        self.assertEqual(self.spend(store, issued['challenge'], short), "'pow_invalid'")
 
 
 class TestTheRequestsTheLogEndpointsBuild(unittest.TestCase):

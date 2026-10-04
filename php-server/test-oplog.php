@@ -18,6 +18,7 @@
 require_once __DIR__ . '/tc/lib/store.php';
 require_once __DIR__ . '/tc/lib/auth.php';
 require_once __DIR__ . '/tc/lib/oplog.php';
+require_once __DIR__ . '/tc/lib/pow.php';
 
 $GLOBALS['tc_tests'] = 0;
 $GLOBALS['tc_failed'] = 0;
@@ -2109,6 +2110,358 @@ tc_test('how long ago is counted in calendar days of the server', function ($sto
     } finally {
         date_default_timezone_set($zone);
     }
+});
+
+// ---------------------------------------------------------------------------
+// Proof of work in front of the password hash (issue #591). Worth something
+// only if it cannot be had without the work: issued by this server and no
+// other, solved to the difficulty asked for, used within minutes and once.
+// Most of these ask for 8 bits rather than TC_POW_BITS so that they solve in
+// a moment; the rule that a challenge must meet TC_POW_BITS has its own.
+// ---------------------------------------------------------------------------
+
+print("\nProof of work\n");
+
+/**
+ * The zero bits a digest begins with, counted another way than the server
+ * counts them - so a mistake in the server's count cannot hide behind the
+ * same mistake here.
+ */
+function tc_pow_zeros($digest)
+{
+    $binary = '';
+    foreach (str_split($digest) as $byte) {
+        $binary .= str_pad(decbin(ord($byte)), 8, '0', STR_PAD_LEFT);
+    }
+    return strspn($binary, '0');
+}
+
+/** The first nonce, of the given shape, with at least $bits zero bits. */
+function tc_pow_solve($challenge, $bits, $shape = '%d')
+{
+    for ($n = 0; ; $n++) {
+        $nonce = sprintf($shape, $n);
+        if (tc_pow_zeros(hash('sha256', $challenge . ':' . $nonce, true)) >= $bits) {
+            return $nonce;
+        }
+    }
+}
+
+/** A nonce with exactly one zero bit fewer than asked for: half the work. */
+function tc_pow_miss($challenge, $bits)
+{
+    for ($n = 0; ; $n++) {
+        if (tc_pow_zeros(hash('sha256', $challenge . ':' . $n, true)) === $bits - 1) {
+            return (string)$n;
+        }
+    }
+}
+
+/** A challenge with one of its fields replaced, its signature left as it was. */
+function tc_pow_altered($challenge, $field, $value)
+{
+    $parts = explode('.', $challenge);
+    $parts[$field] = $value;
+    return implode('.', $parts);
+}
+
+tc_test('the zero bits a digest begins with are counted exactly', function ($store, $uid) {
+    // With bytes after the first one that is not zero, which a count that
+    // did not stop there would go on adding - and find twenty in nearly any
+    // digest.
+    foreach ([["\x80", 0], ["\x40", 1], ["\x01", 7], ["\x00\x0f", 12], ["\x00\x00\x00\x08", 28],
+              [str_repeat("\x00", 32), 256], ["\x0f\x00", 4], ["\x01\xff", 7],
+              ["\x00\x10\x00\x00", 11], ["\x80" . str_repeat("\x00", 31), 0]] as list($digest, $bits)) {
+        tc_assert_same($bits, tc_pow_leading_zero_bits($digest), bin2hex($digest));
+    }
+    for ($i = 0; $i < 200; $i++) {
+        $digest = hash('sha256', 'sample ' . $i, true);
+        tc_assert_same(tc_pow_zeros($digest), tc_pow_leading_zero_bits($digest), 'sample ' . $i);
+    }
+});
+
+tc_test('a solved challenge is accepted once, and only once', function ($store, $uid) {
+    $issued = tc_pow_challenge($store, 'register', null, 8);
+    tc_assert_same(8, $issued['bits'], 'difficulty');
+    tc_assert_same(TC_POW_TTL, $issued['expires_in'], 'how long it lasts');
+    $nonce = tc_pow_solve($issued['challenge'], 8);
+    tc_assert_same(null, tc_pow_spend($store, $issued['challenge'], $nonce, 'register', null, 8), 'first');
+    tc_assert_same('pow_used', tc_pow_spend($store, $issued['challenge'], $nonce, 'register', null, 8), 'second');
+    // Another nonce for the same challenge is the same challenge.
+    $other = tc_pow_solve($issued['challenge'], 8, '1%d');
+    tc_assert_same('pow_used', tc_pow_spend($store, $issued['challenge'], $other, 'register', null, 8),
+                   'a second solution to it');
+});
+
+tc_test('and not again written differently', function ($store, $uid) {
+    // Leading zeros read as the same number would sign the same, and each
+    // way of writing it would be a challenge of its own.
+    $issued = tc_pow_challenge($store, 'register', null, 8)['challenge'];
+    tc_assert_same(null, tc_pow_spend($store, $issued, tc_pow_solve($issued, 8), 'register', null, 8), 'spent');
+    $parts = explode('.', $issued);
+    foreach (['0' . $parts[2] => 2, '00' . $parts[2] => 2, '08' => 3] as $padded => $field) {
+        $variant = tc_pow_altered($issued, $field, (string)$padded);
+        tc_assert_same('pow_invalid', tc_pow_spend($store, $variant, tc_pow_solve($variant, 8), 'register', null, 8),
+                       $variant);
+    }
+});
+
+tc_test('one that falls short is refused, and is not used up by that', function ($store, $uid) {
+    $issued = tc_pow_challenge($store, 'register', null, 8);
+    tc_assert_same('pow_invalid', tc_pow_spend($store, $issued['challenge'],
+                   tc_pow_miss($issued['challenge'], 8), 'register', null, 8), 'a bit short');
+    tc_assert_same(null, tc_pow_spend($store, $issued['challenge'],
+                   tc_pow_solve($issued['challenge'], 8), 'register', null, 8), 'then solved');
+});
+
+tc_test('the difficulty asked for is TC_POW_BITS, and nothing easier is taken', function ($store, $uid) {
+    tc_assert_same(TC_POW_BITS, tc_pow_challenge($store, 'register')['bits'], 'issued');
+    // As one issued before the constant was raised would be: solved, but to
+    // the old standard.
+    $easy = tc_pow_challenge($store, 'register', null, TC_POW_BITS - 1);
+    tc_assert_same('pow_invalid', tc_pow_spend($store, $easy['challenge'],
+                   tc_pow_solve($easy['challenge'], TC_POW_BITS - 1), 'register'), 'easier than asked');
+});
+
+tc_test('no two challenges are the same, even in the same second', function ($store, $uid) {
+    // Two people asking at once would otherwise share one, and the second to
+    // send it back would be told it was used.
+    $at = 1800000000;
+    $seen = [];
+    for ($i = 0; $i < 20; $i++) {
+        $seen[tc_pow_challenge($store, 'register', $at, 8)['challenge']] = true;
+    }
+    tc_assert_same(20, count($seen), 'different challenges');
+});
+
+tc_test('nothing in a challenge can be changed without the server noticing', function ($store, $uid) {
+    $issued = tc_pow_challenge($store, 'register', null, 8)['challenge'];
+    $parts  = explode('.', $issued);
+    $altered = [
+        'what it is for'   => tc_pow_altered($issued, 1, 'login'),
+        'when it was made' => tc_pow_altered($issued, 2, (string)($parts[2] + 60)),
+        'how hard it is'   => tc_pow_altered($issued, 3, '4'),
+        'its salt'         => tc_pow_altered($issued, 4, str_repeat('0', 16)),
+        'its signature'    => tc_pow_altered($issued, 5, str_repeat('0', 64)),
+    ];
+    foreach ($altered as $what => $challenge) {
+        // Each solved as it stands, so only the signature can be what fails.
+        tc_assert_same('pow_invalid', tc_pow_spend($store, $challenge, tc_pow_solve($challenge, 8),
+                       'register', null, 4), $what);
+    }
+    // And one this server signed for registering is no use for anything else.
+    tc_assert_same('pow_invalid', tc_pow_spend($store, $issued, tc_pow_solve($issued, 8), 'login', null, 8),
+                   'spent for another purpose');
+    // Nor is one another installation signed, with a key of its own.
+    $elsewhere = tc_temp_store();
+    try {
+        $foreign = tc_pow_challenge($elsewhere, 'register', null, 8)['challenge'];
+        tc_assert_same('pow_invalid', tc_pow_spend($store, $foreign, tc_pow_solve($foreign, 8),
+                       'register', null, 8), 'from another server');
+    } finally {
+        tc_rmtree($elsewhere);
+    }
+});
+
+tc_test('it is good for TC_POW_TTL seconds from when it was issued', function ($store, $uid) {
+    $at = 1800000000;
+    $last = tc_pow_challenge($store, 'register', $at, 8)['challenge'];
+    tc_assert_same(null, tc_pow_spend($store, $last, tc_pow_solve($last, 8), 'register', $at + TC_POW_TTL, 8),
+                   'in its last second');
+    $late = tc_pow_challenge($store, 'register', $at, 8)['challenge'];
+    tc_assert_same('pow_expired', tc_pow_spend($store, $late, tc_pow_solve($late, 8), 'register',
+                   $at + TC_POW_TTL + 1, 8), 'a second after');
+    // Several web servers behind one name need not agree to the second; one
+    // that claims a time further ahead than that was not made by this server.
+    $ahead = tc_pow_challenge($store, 'register', $at + TC_POW_SKEW, 8)['challenge'];
+    tc_assert_same(null, tc_pow_spend($store, $ahead, tc_pow_solve($ahead, 8), 'register', $at, 8),
+                   'as far ahead as is allowed');
+    $future = tc_pow_challenge($store, 'register', $at + TC_POW_SKEW + 1, 8)['challenge'];
+    tc_assert_same('pow_invalid', tc_pow_spend($store, $future, tc_pow_solve($future, 8), 'register', $at, 8),
+                   'further ahead');
+});
+
+tc_test('what is not a challenge and a nonce is refused before anything else', function ($store, $uid) {
+    // Every one of these is solved for exactly what is sent, so that the
+    // work would pass and only the form can be what refuses it.
+    $issued = tc_pow_challenge($store, 'register', null, 8)['challenge'];
+    $nonce  = tc_pow_solve($issued, 8);
+    $cases = [
+        'no challenge'               => [null, $nonce],
+        'no nonce'                   => [$issued, null],
+        'a challenge that is a list' => [[], $nonce],
+        'a nonce that is a number'   => [$issued, 7],
+        'an empty challenge'         => ['', $nonce],
+        'an empty nonce'             => [$issued, ''],
+        'a challenge and a newline'  => [$issued . "\n", tc_pow_solve($issued . "\n", 8)],
+        'a nonce and a newline'      => [$issued, tc_pow_solve($issued, 8, "%d\n")],
+        'a challenge in capitals'    => [strtoupper($issued), tc_pow_solve(strtoupper($issued), 8)],
+        'a nonce with a dot'         => [$issued, tc_pow_solve($issued, 8, '1.%d')],
+        'a nonce in capitals'        => [$issued, tc_pow_solve($issued, 8, 'A%d')],
+        'a nonce too long'           => [$issued, tc_pow_solve($issued, 8, str_repeat('1', 60) . '%05d')],
+    ];
+    foreach ($cases as $what => list($challenge, $given)) {
+        tc_assert_same('pow_invalid', tc_pow_spend($store, $challenge, $given, 'register', null, 8), $what);
+    }
+    tc_assert(!is_dir(tc_pow_spent_dir($store)), 'something was recorded for it');
+    // At its longest a nonce is still taken.
+    $longest = tc_pow_solve($issued, 8, str_repeat('1', 59) . '%05d');
+    tc_assert_same(64, strlen($longest), 'the test made the wrong length');
+    tc_assert_same(null, tc_pow_spend($store, $issued, $longest, 'register', null, 8), 'and the real one still works');
+});
+
+tc_test('handing out a challenge writes nothing, beyond the key the first time', function ($store, $uid) {
+    tc_pow_challenge($store, 'register');
+    $before = glob($store . '/*');
+    for ($i = 0; $i < 20; $i++) {
+        tc_pow_challenge($store, 'register');
+    }
+    tc_assert_same($before, glob($store . '/*'), 'files appeared');
+    tc_assert_same([], glob($store . '/.tmp*') ?: [], 'a temporary file was left');
+    tc_assert_same(null, tc_pow_challenge($store, 'login'), 'a purpose nobody asked for');
+});
+
+tc_test('the key is made once and then kept', function ($store, $uid) {
+    $key = tc_pow_key($store);
+    tc_assert(is_string($key) && strlen($key) === 32, 'no key');
+    tc_assert_same($key, tc_pow_key($store), 'a second call');
+    // How it is made rests on this: renaming a directory onto one that
+    // already holds a key fails, so a second request that finds it missing
+    // at the same moment cannot replace the first one's.
+    $rival = $store . '/rival';
+    tc_secure_mkdir($rival);
+    tc_write_json($rival . '/key.dat.php', ['key' => str_repeat('ab', 32)]);
+    tc_assert(!@rename($rival, tc_pow_key_dir($store)), 'a later key replaced the first');
+    clearstatcache();
+    tc_assert_same($key, tc_pow_key($store), 'after a rival tried');
+    tc_assert_same(null, tc_pow_key_problem($store), 'Show status sees a problem');
+});
+
+tc_test('and requests that all find it missing at once agree on one', function ($store, $uid) {
+    // Separate processes, held at a gate and let go together, as the first
+    // registrations after an update would be.
+    $gate = $store . '/gate';
+    $script = sprintf('require %s; require %s; $s = %s; while (!file_exists(%s)) { usleep(200); } '
+                      . 'echo bin2hex((string)tc_pow_key($s));',
+                      var_export(__DIR__ . '/tc/lib/store.php', true), var_export(__DIR__ . '/tc/lib/pow.php', true),
+                      var_export($store, true), var_export($gate, true));
+    $running = [];
+    $outputs = [];
+    for ($i = 0; $i < 8; $i++) {
+        $running[] = proc_open([PHP_BINARY, '-r', $script], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $outputs[] = $pipes[1];
+    }
+    usleep(300000);
+    touch($gate);
+    $keys = [];
+    foreach ($running as $i => $process) {
+        $keys[] = stream_get_contents($outputs[$i]);
+        proc_close($process);
+    }
+    tc_assert_same(1, count(array_unique($keys)), 'they made different keys: ' . implode(' ', $keys));
+    tc_assert_same(bin2hex(tc_pow_key($store)), $keys[0], 'not the one that stayed');
+    tc_assert_same([], glob($store . '/.tmp*') ?: [], 'a loser left its copy behind');
+});
+
+tc_test('a key that cannot be read is not quietly replaced', function ($store, $uid) {
+    // A new one would void every challenge in flight and leave whatever
+    // stops this one being read where it is.
+    tc_secure_mkdir(tc_pow_key_dir($store));
+    tc_assert_same(null, tc_pow_key($store), 'a key was made up');
+    tc_assert_same(null, tc_pow_challenge($store, 'register'), 'a challenge was issued');
+    tc_assert_same('busy', tc_pow_spend($store, '1.register.1800000000.8.0123456789abcdef.' . str_repeat('a', 64),
+                   '1', 'register', 1800000000, 8), 'a solution was judged');
+    tc_assert(!is_file(tc_pow_key_dir($store) . '/key.dat.php'), 'it was written anyway');
+    // Show status is where the operator learns of it, and what to do.
+    tc_assert(strpos((string)tc_pow_key_problem($store), 'Delete that directory') !== false,
+              'Show status does not say');
+});
+
+tc_test('nor is one made where it cannot be kept', function ($store, $uid) {
+    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+        return;   // root writes anywhere; there is nothing to show
+    }
+    chmod($store, 0500);
+    try {
+        tc_assert_same(null, tc_pow_key($store), 'a key nobody could keep');
+        tc_assert_same(null, tc_pow_challenge($store, 'register'), 'a challenge signed with it');
+    } finally {
+        chmod($store, 0700);
+    }
+});
+
+tc_test('a use that cannot be recorded is not accepted', function ($store, $uid) {
+    // Accepted without the record, the same solution would be accepted again.
+    $issued = tc_pow_challenge($store, 'register', null, 8)['challenge'];
+    file_put_contents(tc_pow_spent_dir($store), 'in the way');
+    tc_assert_same('busy', tc_pow_spend($store, $issued, tc_pow_solve($issued, 8), 'register', null, 8), 'directory');
+    unlink(tc_pow_spent_dir($store));
+
+    // And where the record itself cannot be made.
+    $parts = explode('.', $issued);
+    tc_secure_mkdir(tc_pow_spent_dir($store) . '/' . intdiv((int)$parts[2], TC_POW_BUCKET));
+    file_put_contents(tc_pow_spent_dir($store) . '/' . intdiv((int)$parts[2], TC_POW_BUCKET) . '/' . $parts[5], '');
+    for ($i = 0; $i < 2; $i++) {
+        tc_assert_same('busy', tc_pow_spend($store, $issued, tc_pow_solve($issued, 8), 'register', null, 8),
+                       'record, attempt ' . $i);
+    }
+});
+
+/** Records spent challenges issued in the given minute, the way spending does. */
+function tc_pow_fill($store, $minute, $count)
+{
+    $dir = tc_pow_spent_dir($store) . '/' . $minute;
+    tc_secure_mkdir($dir);
+    for ($i = 0; $i < $count; $i++) {
+        mkdir($dir . '/' . hash('sha256', $minute . ' ' . $i));
+    }
+    return $dir;
+}
+
+tc_test('spent challenges are forgotten once every one of their minute has expired', function ($store, $uid) {
+    $now  = 1800000000;
+    // The minute whose last second is exactly as old as a challenge can be
+    // while some server, its clock behind, may still take it - and the one
+    // before, which no server can any more.
+    $kept = (int)ceil(($now - TC_POW_TTL - TC_POW_SKEW) / TC_POW_BUCKET) - 1;
+    $gone = $kept - 1;
+    tc_assert($now - ($kept + 1) * TC_POW_BUCKET === TC_POW_TTL + TC_POW_SKEW
+              && $now - ($gone + 1) * TC_POW_BUCKET > TC_POW_TTL + TC_POW_SKEW, 'the test chose the wrong minutes');
+    $keptDir = tc_pow_fill($store, $kept, 3);
+    $goneDir = tc_pow_fill($store, $gone, 3);
+    tc_assert_same(3, tc_pow_prune($store, $now), 'removed');
+    clearstatcache();
+    tc_assert(!is_dir($goneDir), 'an expired minute was left');
+    tc_assert_same(3, count(glob($keptDir . '/*')), 'a minute still in its window was touched');
+});
+
+tc_test('a few at a time, and without looking at what is not due', function ($store, $uid) {
+    $now = 1800000000;
+    $old = intdiv($now, TC_POW_BUCKET) - 100;
+    tc_pow_fill($store, $old, TC_POW_PRUNE_MAX + 5);
+    // A crowd of recent ones, which a tidy that looked at every record would
+    // have to wade through on every single spend.
+    $recent = tc_pow_fill($store, intdiv($now, TC_POW_BUCKET), 2000);
+    $started = microtime(true);
+    tc_assert_same(TC_POW_PRUNE_MAX, tc_pow_prune($store, $now), 'removed in one go');
+    $took = microtime(true) - $started;
+    tc_assert_same(5, tc_pow_prune($store, $now), 'the rest, next time');
+    clearstatcache();
+    tc_assert(!is_dir(tc_pow_spent_dir($store) . '/' . $old), 'the emptied minute was left');
+    tc_assert_same(2000, count(glob($recent . '/*')), 'recent ones were removed');
+    tc_assert($took < 0.5, sprintf('it took %.3f s', $took));
+});
+
+tc_test('and in passing, whenever a challenge is spent', function ($store, $uid) {
+    $now = time();
+    $old = tc_pow_fill($store, intdiv($now, TC_POW_BUCKET) - 100, 1);
+    $issued = tc_pow_challenge($store, 'register', $now, 8)['challenge'];
+    tc_assert_same(null, tc_pow_spend($store, $issued, tc_pow_solve($issued, 8), 'register', $now, 8), 'spent');
+    clearstatcache();
+    tc_assert(!is_dir($old), 'not tidied when one was spent');
+    $parts = explode('.', $issued);
+    tc_assert(is_dir(tc_pow_spent_dir($store) . '/' . intdiv((int)$parts[2], TC_POW_BUCKET) . '/' . $parts[5]),
+              'not filed under the minute it was issued in');
 });
 
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);

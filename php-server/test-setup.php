@@ -138,6 +138,12 @@ tc_check('Show status says when each account was last used',
                     . 'tc_describe_activity\(\s*tc_account_activity\(\s*\$config\[\'store\'\],\s*\$uid\s*\)\s*\),\s*'
                     . '\$mib\(\$used\),/', $setup) === 1,
          'the per-account line does not carry it, or not in its place');
+// Issue #591: a proof-of-work key that cannot be read is said here and only
+// here - the requests that run into it are anybody's to send.
+tc_check('Show status says when the proof-of-work key cannot be read',
+         preg_match('/\$keyProblem\s*=\s*tc_pow_key_problem\(\s*\$config\[\'store\'\]\s*\);\s*'
+                    . 'if\s*\(\$keyProblem\s*!==\s*null\)\s*\{\s*\$errors\[\]\s*=\s*\$keyProblem;/', $setup) === 1,
+         'nothing tells the operator');
 
 print("\nWhich address the store would be served at\n");
 
