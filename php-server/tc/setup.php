@@ -30,6 +30,8 @@ require_once __DIR__ . '/lib/probe.php';
 // For the storage figures in "Show status": how much each account's log takes
 // up, read from its own bookkeeping.
 require_once __DIR__ . '/lib/oplog.php';
+// And for whether the proof-of-work key can be read (issue #591).
+require_once __DIR__ . '/lib/pow.php';
 
 ini_set('display_errors', '0');
 
@@ -420,6 +422,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 }
                 $tokens = glob(tc_tokens_dir($config['store']) . '/*.dat.php');
                 $notices[] = 'Live tokens: ' . ($tokens ? count($tokens) : 0);
+                // Said here and nowhere else: the requests that run into it
+                // are anybody's to send, and a log line each would let them
+                // fill the log.
+                $keyProblem = tc_pow_key_problem($config['store']);
+                if ($keyProblem !== null) {
+                    $errors[] = $keyProblem;
+                }
 
                 $invites = tc_invites_list($config['store']);
                 $notices[] = 'Open invitations: ' . count($invites);

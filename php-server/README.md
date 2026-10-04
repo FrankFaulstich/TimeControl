@@ -36,7 +36,8 @@ in [`development-plan/open-registration.md`](../development-plan/open-registrati
 | Action | Method | Purpose |
 |---|---|---|
 | `?a=login` | POST | username + password + device id &rarr; token |
-| `?a=register` | POST | invitation code + username + password + device id &rarr; new account and token |
+| `?a=register` | POST | invitation code + username + password + device id, optionally a solved challenge &rarr; new account and token |
+| `?a=challenge` | POST | a proof-of-work challenge for a registration |
 | `?a=ping` | GET | proves a token is still valid |
 | `?a=logout` | GET | revokes the token that was presented |
 | `?a=head` | GET | current sequence number &ndash; the cheap poll |
@@ -320,6 +321,40 @@ written, so the gap is no wider there.
 lists the open ones, and marks each account that was made from one with the
 note it was issued with &ndash; a name you did not choose yourself is
 otherwise hard to place.
+
+**A registration brings a proof of work along.** `?a=challenge` hands out a
+challenge; the client finds a nonce such that SHA-256 of the challenge, a
+colon and the nonce begins with `TC_POW_BITS` zero bits &ndash; about a
+million tries at the default of 20, under a second on an ordinary machine
+&ndash; and `?a=register` checks it with one hash, before the code and before
+the password. It exists for the day registration is opened to anyone
+(#552), where nothing else would stand between a stranger and the password
+hash; today the code does that, so a registration without a solution is
+still made, and one that brings one is held to every rule:
+
+- Issued by this server: each challenge carries an HMAC under a key the
+  store keeps in `pow-key/`, made on first use.
+- Valid for `TC_POW_TTL` seconds, five minutes, from when it was issued, so
+  no stock of solutions can be built up in advance.
+- Used once. The first solution to arrive is recorded in `pow-spent/`, filed
+  by the minute the challenge was issued in, and every later one refused. A
+  minute's records are tidied away, a few at a time, once all its challenges
+  have expired &ndash; so however many solutions somebody sends, each one costs
+  the server the same small amount.
+- Handing out a challenge writes nothing, so asking for them costs the
+  server no disk. Only a solution leaves a trace, and a solution costs its
+  sender the work.
+
+Raise `TC_POW_BITS` in `tc/lib/pow.php` to make each registration costlier;
+clients solve whatever they are given, up to 28 bits, so none needs changing.
+Each bit doubles the work &ndash; on an ordinary machine about 0.7&nbsp;s at
+20, 10&nbsp;s at 24 and three minutes at 28 &ndash; and challenges issued
+before the change stop counting at once; a client that meets one asks for a
+fresh challenge.
+
+If *Show status* says the proof-of-work key cannot be read, delete `pow-key/`.
+The next request makes a new one; only challenges handed out in the last few
+minutes stop counting, and their clients ask for fresh ones.
 
 **An account made from an invitation that is never used is removed again.**
 Two cases are kept strictly apart, because confusing them is how a clean-up

@@ -27,6 +27,11 @@ REJECTED_BY_SERVER = frozenset((
     # Signing in and redeeming an invitation both send this machine's id, and
     # the server refuses one that is not what device_identity() makes.
     'bad_device_uid',
+    # The proof of work that goes along with a registration (issue #591). Each
+    # is tried once more with a fresh challenge before anybody sees it, so
+    # what reaches a screen is a client and a server that disagree about the
+    # rules.
+    'pow_invalid', 'pow_expired', 'pow_used',
 ))
 
 

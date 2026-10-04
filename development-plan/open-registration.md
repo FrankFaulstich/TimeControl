@@ -183,9 +183,13 @@ in it has to be revisited against "anyone on the internet can create an account"
 3. Sweep of never-used accounts, on the registration path, bounded per call. Done: issue #589.
    Only accounts made from an invitation are candidates, never ones the operator made.
 4. Last-seen and size reporting in *Show status*, so abandoned accounts are visible and removed
-   by a person.
+   by a person. Done: issues #586 (size) and #590 (last seen).
 5. Only then, and only if genuinely wanted: proof of work in front of the hash, and open
-   registration behind it.
+   registration behind it. The proof of work is done: issue #591. `?a=challenge` issues an
+   HMAC-signed challenge that writes nothing; `?a=register` checks a solution before the code
+   and the password, and records it so it counts once. With a code it is checked when sent but
+   not demanded, and the client always sends one, so it is in use before anything depends on
+   it. Open registration itself (#552) is not done.
 
 Steps 1&ndash;4 give a server that a second person can be added to. Step 5 is the one that
 changes what the thing is, and it should be a separate decision made on purpose.

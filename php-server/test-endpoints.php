@@ -23,6 +23,8 @@ require_once __DIR__ . '/tc/lib/store.php';
 require_once __DIR__ . '/tc/lib/auth.php';
 // For the storage limit below: its value, and the log's own bookkeeping.
 require_once __DIR__ . '/tc/lib/oplog.php';
+// For solving the challenges ?a=challenge hands out, by the server's own count.
+require_once __DIR__ . '/tc/lib/pow.php';
 
 const TC_BCRYPT_COST_TEST = 4;   // this is a test, not a password store
 
@@ -560,6 +562,109 @@ tc_check('a device of a removed account is told its token no longer works',
 tc_check('and so is one holding a token its device list never recorded',
          $status === 401 && ($body['error'] ?? '') === 'invalid_token'
          && !is_dir(tc_user_dir($store, $inviteeUid)), $status . ' ' . json_encode($body));
+
+// Issue #591. A challenge from ?a=challenge, solved the way the client solves
+// it, sent along with a registration. With a code the server does not insist
+// on one, but holds one that is sent to every rule - before the code is even
+// looked at, so a refused one costs the invitation nothing.
+print("\nA proof of work along with it\n");
+
+function tc_challenge($base)
+{
+    return tc_request($base, 'POST', ['a' => 'challenge'], json_encode(['purpose' => 'register']));
+}
+
+function tc_solve($challenge, $bits)
+{
+    for ($n = 0; ; $n++) {
+        if (tc_pow_leading_zero_bits(hash('sha256', $challenge . ':' . $n, true)) >= $bits) {
+            return (string)$n;
+        }
+    }
+}
+
+[$status, $body] = tc_request($base, 'GET', ['a' => 'challenge']);
+tc_check('a challenge is asked for with POST', $status === 405, (string)$status);
+[$status, $body] = tc_request($base, 'POST', ['a' => 'challenge'], json_encode(['purpose' => 'login']));
+tc_check('and only for what one is used for',
+         $status === 400 && ($body['error'] ?? '') === 'bad_purpose', $status . ' ' . json_encode($body));
+[$status, $issued] = tc_challenge($base);
+tc_check('one is handed out at the difficulty the server is set to',
+         $status === 200 && is_string($issued['challenge'] ?? null)
+         && ($issued['bits'] ?? null) === TC_POW_BITS && ($issued['expires_in'] ?? null) === TC_POW_TTL,
+         $status . ' ' . json_encode($issued));
+
+$solved = ['challenge' => $issued['challenge'], 'nonce' => tc_solve($issued['challenge'], $issued['bits'])];
+[$status, $body] = tc_register($base, ['code' => tc_invite_create($store)['code'], 'username' => 'worker',
+                                       'device_uid' => 'fedcba98765432b1', 'pow' => $solved]);
+tc_check('a registration that brings one solved is made',
+         $status === 200 && !empty($body['token']), $status . ' ' . json_encode($body));
+
+$code = tc_invite_create($store)['code'];
+[$status, $body] = tc_register($base, ['code' => $code, 'username' => 'worker2',
+                                       'device_uid' => 'fedcba98765432b2', 'pow' => $solved]);
+tc_check('the same solution does not count twice',
+         $status === 403 && ($body['error'] ?? '') === 'pow_used', $status . ' ' . json_encode($body));
+
+[, $fresh] = tc_challenge($base);
+$miss = 0;
+while (tc_pow_leading_zero_bits(hash('sha256', $fresh['challenge'] . ':' . $miss, true)) >= $fresh['bits']) {
+    $miss++;
+}
+$miss = (string)$miss;
+[$status, $body] = tc_register($base, ['code' => $code, 'username' => 'worker2', 'device_uid' => 'fedcba98765432b2',
+                                       'pow' => ['challenge' => $fresh['challenge'], 'nonce' => $miss]]);
+tc_check('one that was not worked for is refused',
+         $status === 403 && ($body['error'] ?? '') === 'pow_invalid', $status . ' ' . json_encode($body));
+$shapes = ['a sentence' => 'solved, honestly', 'null' => null, 'an empty list' => [],
+           'a challenge without a nonce' => ['challenge' => $fresh['challenge']]];
+foreach ($shapes as $what => $shape) {
+    // Sent is sent: an empty one is not the same as none, or leaving it
+    // empty would be the way round it once it is demanded.
+    [$status, $body] = tc_register($base, ['code' => $code, 'username' => 'worker2',
+                                           'device_uid' => 'fedcba98765432b2', 'pow' => $shape]);
+    tc_check('and so is ' . $what . ' in its place',
+             $status === 403 && ($body['error'] ?? '') === 'pow_invalid', $status . ' ' . json_encode($body));
+}
+
+// One the server issued, but longer ago than it lasts. The test shares the
+// store's key, so it can be made here as the server would have made it then.
+$old = tc_pow_challenge($store, 'register', time() - TC_POW_TTL - 5);
+[$status, $body] = tc_register($base, ['code' => $code, 'username' => 'worker2', 'device_uid' => 'fedcba98765432b2',
+                                       'pow' => ['challenge' => $old['challenge'],
+                                                 'nonce' => tc_solve($old['challenge'], $old['bits'])]]);
+tc_check('one solved too late is told so, for the client to fetch a fresh one',
+         $status === 403 && ($body['error'] ?? '') === 'pow_expired', $status . ' ' . json_encode($body));
+[$status, $body] = tc_request($base, 'POST', ['a' => 'challenge'], json_encode([]));
+tc_check('a challenge asked for without saying what for is refused',
+         $status === 400 && ($body['error'] ?? '') === 'bad_purpose', $status . ' ' . json_encode($body));
+
+// The key unreadable: no challenge, and a solution that comes anyway cannot
+// be judged - both a moment's 'busy' to the client, which then registers
+// without one.
+rename(tc_pow_key_dir($store), $store . '/pow-key-aside');
+tc_secure_mkdir(tc_pow_key_dir($store));
+[$status, $body] = tc_challenge($base);
+tc_check('without a key that can be read there are no challenges',
+         $status === 503 && ($body['error'] ?? '') === 'busy', $status . ' ' . json_encode($body));
+[$status, $body] = tc_register($base, ['code' => $code, 'username' => 'worker2', 'device_uid' => 'fedcba98765432b2',
+                                       'pow' => ['challenge' => $fresh['challenge'], 'nonce' => '1']]);
+tc_check('and a solution cannot be judged',
+         $status === 503 && ($body['error'] ?? '') === 'busy', $status . ' ' . json_encode($body));
+rmdir(tc_pow_key_dir($store));
+rename($store . '/pow-key-aside', tc_pow_key_dir($store));
+
+// The code went through all of that unharmed: the work is checked first.
+[$status, $body] = tc_register($base, ['code' => $code, 'username' => 'worker2', 'device_uid' => 'fedcba98765432b2',
+                                       'pow' => ['challenge' => $fresh['challenge'],
+                                                 'nonce' => tc_solve($fresh['challenge'], $fresh['bits'])]]);
+tc_check('none of those used up the invitation', $status === 200, $status . ' ' . json_encode($body));
+
+// A client from before this sends none, and an invitation is enough.
+[$status, $body] = tc_register($base, ['code' => tc_invite_create($store)['code'], 'username' => 'worker3',
+                                       'device_uid' => 'fedcba98765432b3']);
+tc_check('a registration without one is still made with a code',
+         $status === 200 && !empty($body['token']), $status . ' ' . json_encode($body));
 
 printf("\n%d tests, %d failed\n", $GLOBALS['tc_tests'], $GLOBALS['tc_failed']);
 exit($GLOBALS['tc_failed'] === 0 ? 0 : 1);
