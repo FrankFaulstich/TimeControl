@@ -55,13 +55,29 @@ const TC_PULL_MAX_OPS  = 500;
 // ordinary request - but only within reason, and only from a caller who has
 // already proved a token. Anything past this is refused with a code the
 // client can recognise and stop retrying on.
-const TC_SNAPSHOT_MAX_BYTES = 4194304;   // 4 MiB
+//
+// It was 4 MiB, sized for "a megabyte or two" of time tracking, and a real
+// document outgrew it: a few thousand tasks, many of them with long notes,
+// came to 5.3 MB. From then on every snapshot was refused, so the log could
+// never be compacted, grew by every change, and in a week filled the
+// account's storage - after which every push was refused too. A limit here is
+// not a ceiling a document approaches slowly; it is the day compaction stops.
+// So it is set well above what a document is likely to reach, at what the
+// host can still check: decoding one costs PHP up to about seven times its
+// size in memory for a document of nothing but short entries (115 MB for
+// 16 MiB, measured), about twice for one made mostly of notes. A host whose
+// memory_limit cannot take that refuses the largest documents at the decode,
+// which costs compaction, never data. Keep the client's MAX_SNAPSHOT_BYTES in
+// tt/sync_client.py the same.
+const TC_SNAPSHOT_MAX_BYTES = 16777216;   // 16 MiB
 
 // How long the segments a snapshot replaced stay on disk. Space is not the
 // urgent problem - months of growth is - and a snapshot that turns out to be
 // wrong is only discovered by someone noticing, which takes days rather than
 // seconds. Deleting immediately would make that mistake unrecoverable to save
-// a week of storage.
+// a week of storage. Recoverable by the operator, that is, by hand in the
+// store: the person who notices is the account holder, and nothing they can
+// reach brings the segments back.
 const TC_SEG_GRACE_SECONDS = 604800;     // 7 days
 
 // How much one account may keep in the store, in bytes (issue #586).
@@ -70,19 +86,23 @@ const TC_SEG_GRACE_SECONDS = 604800;     // 7 days
 // compaction that keeps a log bounded is driven by the client, and a client
 // that never offers a snapshot simply appends for ever. When the disk fills,
 // every account on the server stops synchronising, not just the one that
-// filled it - so the limit is per account, and it is the operator's quota it
-// protects rather than the account's own.
+// filled it - so the limit is per account, and what it protects is the other
+// accounts and the operator's quota rather than the account's own. It bounds
+// each account, not their sum: there is no limit on the total, nothing checks
+// how much room is left, and eight full accounts already take 400 MiB.
 //
 // Counted as what is actually on disk for the account's log: the live
 // segments, the retired ones still waiting out their grace, and both
 // snapshots. That is what the host is paying for.
 //
 // Fifty megabytes is roomy on purpose. One person's time tracking is a
-// document of a megabyte or two and a log that is compacted every couple of
-// thousand operations; the limit sits well clear of that, and of the two
-// four-megabyte snapshots an account may hold at the most, so that it only
-// ever bites on something that has gone wrong. Change it here for a host with
-// more space or less.
+// document of a few megabytes and a log that is compacted every couple of
+// thousand operations; the limit sits well clear of that, and leaves room for
+// the log even beside the two snapshots of up to 16 MiB an account may hold,
+// so that it only ever bites on something that has gone wrong - such as
+// snapshots being refused, which is how it was first reached. Change it here for a host with
+// more space or less - and with the number of accounts in mind, since it is
+// one figure for all of them.
 const TC_ACCOUNT_QUOTA_BYTES = 52428800;   // 50 MiB
 
 function tc_log_dir($store, $uid)   { return tc_user_dir($store, $uid) . '/log'; }
@@ -504,7 +524,7 @@ function tc_snapshot_validate($raw)
     // inside are skipped and only the ones above still apply: it is not
     // empty, it is within the size limit, and it is JSON, which it has to be
     // because the stored bytes are spliced straight into the reply to a GET
-    // (index.php:250).
+    // (the snapshot case in index.php).
     //
     // Presence only, as with a sealed operation. The shape of what is inside
     // the envelope is the clients' business; a server that learned it would

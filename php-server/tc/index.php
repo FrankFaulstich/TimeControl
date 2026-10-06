@@ -2,9 +2,12 @@
 /**
  * TimeControl sync server - API entry point.
  *
- * This first slice carries authentication only: log in, prove a token,
- * log out. The operation log that actually synchronises data comes next and
- * will sit behind exactly this check.
+ * Signing in and registering, the token check, and behind it everything a
+ * device does with its own account's operation log. Every action after the
+ * check takes the account from the token, never from the request, so no
+ * request can reach another account's data. What accounts on one
+ * installation still share - and so what one of them can do to the others -
+ * is set out under "Who can do what" in php-server/README.md.
  */
 
 if (PHP_VERSION_ID < 70400) {
@@ -69,9 +72,12 @@ switch ($action) {
 
         // The general allowance first. Only when it is spent does it matter
         // who is asking - and then a device this account has signed in from
-        // before may still draw on a reserve nobody flooding the endpoint can
-        // reach. Everybody else gets the same answer they always did, so
-        // neither path says anything about which usernames or devices exist.
+        // before may still draw on a reserve a stranger flooding the endpoint
+        // cannot reach. (An account holder can: recognition comes before the
+        // password, so failing under one's own name spends it for everybody.
+        // See TC_HASH_RESERVE_PER_MINUTE.) Everybody else gets the same answer
+        // they always did, so neither path says anything about which
+        // usernames or devices exist.
         if (!tc_hash_budget_take($store)
                 && !(tc_login_from_known_device($store, $username, $deviceUid)
                      && tc_hash_reserve_take($store))) {
@@ -112,7 +118,7 @@ switch ($action) {
     // because anybody may ask for a password to be checked; here nothing is
     // hashed without a code only the operator can make, and each code allows
     // one hash (see tc_invite_redeem). Counting these against sign-ins would
-    // only let an invitation spend what the owner needs to sign in.
+    // only let an invitation spend what every account holder needs to sign in.
     case 'register':
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             tc_fail(405, 'method_not_allowed', 'Use POST.');
@@ -214,9 +220,11 @@ switch ($action) {
         $session = tc_token_check($store, tc_presented_token());
         if (!$session) {
             // One code for every reason the token is not usable - expired,
-            // revoked, account switched off. The client's response is the
-            // same in all three cases: log in again. Distinguishing them
-            // here would only tell an attacker which tokens once existed.
+            // revoked, account switched off, or the account deleted by the
+            // operator or removed as never used. The client's response is
+            // the same in all of them: sign in again, which for the last two
+            // fails, and then only the operator can say why. Distinguishing
+            // them here would only tell an attacker which tokens once existed.
             tc_fail(401, 'invalid_token', 'Token is missing, expired or revoked.');
         }
         tc_ok([

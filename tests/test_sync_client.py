@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -937,6 +938,79 @@ class TestTheSnapshotEndpoint(unittest.TestCase):
         self.assertFalse(result['ok'])
         self.assertEqual(result['error'], 'snapshot_too_large')
         post.assert_not_called()
+
+    @staticmethod
+    def heavy_document():
+        """
+        The shape of the document that outgrew the old 4 MiB: a few thousand
+        tasks, a good many with long notes - 5.3 MB in all.
+        """
+        note = 'Lange Notiz aus einer E-Mail, mit Umlauten: äöü ß. ' * 40
+        return {'schema_version': 2, 'next_id': 3000, '_deleted': [],
+                'projects': [{'uid': '%016x' % p, 'main_project_name': 'Projekt %d' % p,
+                              'status': 'open',
+                              'tasks': [{'uid': '%016x' % (p * 1000 + t), 'id': p * 1000 + t,
+                                         'task_name': 'Aufgabe %d' % t, 'note': note,
+                                         'time_entries': []}
+                                        for t in range(75)]}
+                             for p in range(35)]}
+
+    def test_a_document_of_a_few_megabytes_is_offered(self):
+        """
+        The real one that was refused for a week, until its account was full
+        and every push was refused as well. Nothing about
+        a document that size is wrong; the limit was.
+        """
+        document = self.heavy_document()
+        size = len(json.dumps(document, ensure_ascii=False).encode('utf-8'))
+        self.assertGreater(size, 5 * 1024 * 1024, "the test document is too small to mean anything")
+        with patch('tt.sync_client.requests.post',
+                   return_value=_Response({'ok': True, 'snapshot_seq': 12})) as post:
+            result = sync_client.put_snapshot(12, document)
+        self.assertTrue(result['ok'])
+        post.assert_called_once()
+
+    def test_the_client_s_limit_is_the_server_s(self):
+        """
+        Smaller here, and documents the server would take are never sent;
+        larger, and each one is sent only to be refused.
+        """
+        oplog = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             '..', 'php-server', 'tc', 'lib', 'oplog.php')
+        with open(oplog, encoding='utf-8') as handle:
+            server = re.search(r'const TC_SNAPSHOT_MAX_BYTES\s*=\s*(\d+);', handle.read())
+        self.assertIsNotNone(server, "the server's constant could not be found")
+        self.assertEqual(int(server.group(1)), sync_client.MAX_SNAPSHOT_BYTES)
+
+    def test_a_large_one_is_given_the_time_it_takes_to_send(self):
+        """
+        Every other call has DEADLINE, which a few megabytes over a slow
+        uplink would run past: the snapshot would be cut off half-sent, every
+        time, and the log never compacted.
+        """
+        document = self.heavy_document()
+        size = len(json.dumps(document, ensure_ascii=False).encode('utf-8'))
+        with patch('tt.sync_client._call_with_deadline',
+                   side_effect=lambda send, deadline: _Response({'ok': True})) as call:
+            sync_client.put_snapshot(12, document)
+        allowed = call.call_args.args[1]
+        self.assertGreaterEqual(allowed, sync_client.DEADLINE + size / sync_client.SNAPSHOT_MIN_RATE)
+        # Half a megabit a second still gets it there.
+        self.assertGreater(allowed, size / (512 * 1024 / 8))
+
+    def test_and_fetching_one_the_time_the_largest_would_take(self):
+        with patch('tt.sync_client._call_with_deadline',
+                   side_effect=lambda send, deadline: _Response({'ok': True})) as call:
+            sync_client.get_snapshot()
+        self.assertEqual(call.call_args.args[1],
+                         sync_client.DEADLINE + sync_client.MAX_SNAPSHOT_BYTES / sync_client.SNAPSHOT_MIN_RATE)
+
+    def test_everything_else_keeps_the_ordinary_deadline(self):
+        with patch('tt.sync_client._call_with_deadline',
+                   side_effect=lambda send, deadline: _Response({'ok': True, 'head': 1})) as call:
+            sync_client.head()
+            sync_client.push(0, [])
+        self.assertEqual([c.args[1] for c in call.call_args_list], [sync_client.DEADLINE] * 2)
 
 
 class TestWhatIsMeasuredIsWhatIsSent(unittest.TestCase):

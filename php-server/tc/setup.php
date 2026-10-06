@@ -9,12 +9,17 @@
  * The proof is write access to this directory: create a file called
  * setup.enable next to this one, containing a passphrase of your choosing,
  * and enter that passphrase here. Without the file this page is a bare 404
- * and does nothing. On success the file is deleted, so the window in which
- * anything here can be reached is one the operator opens deliberately and
- * lasts minutes.
+ * and does nothing. After a change the file is deleted, so the window in which
+ * anything here can be reached is one the operator opens deliberately. It is
+ * not closed by Show status, a wrong passphrase or a failed action, though,
+ * and passphrase attempts are not counted: an operator who only looked has to
+ * delete setup.enable themselves.
  *
  * There is no admin account and no admin session - nothing to steal between
- * uses, and nothing to remember.
+ * uses, and nothing to remember. On an installation shared by several people
+ * that is also its limit: the passphrase reaches every account, and what it
+ * offers is coarse - an account can be deleted, not switched off, given a new
+ * password or rid of a single device.
  */
 
 if (PHP_VERSION_ID < 70400) {

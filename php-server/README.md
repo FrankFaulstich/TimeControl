@@ -1,8 +1,19 @@
 # TimeControl sync server &ndash; PHP implementation
 
-A small PHP service so one person can synchronise their `data.json` between
-their own machines. It stores everything in files, needs no database, and is
-built for a plain shared webspace with FTP access and no shell.
+A small PHP service through which people keep their TimeControl `data.json` in
+step between their own machines. Each person has an account, and each account
+holds one person's document. Whoever installs it &ndash; the *operator* &ndash;
+may be its only user, or may invite others: a partner, a colleague. It stores
+everything in files, needs no database, and is built for a plain shared
+webspace with FTP access and no shell.
+
+It was first reasoned about as one person's server for one person's machines,
+and an installation used that way still is one. But invitations make it one
+that several people share, who are not the operator, cannot see its files, and
+have to trust what the operator and the host can do. What each of them can do
+to the others &ndash; and what nothing here defends against yet &ndash; is set
+out under [*Who can do what*](#who-can-do-what), and every decision below is
+argued for that case rather than for one person alone.
 
 Those constraints are what shaped it, and they are the reason this lives
 under `php-server/` rather than `server/`: a different implementation, freed
@@ -19,7 +30,9 @@ This directory holds two things:
 
 ## What is implemented so far
 
-Authentication, the operation log, and compaction.
+Authentication, the operation log and compaction; accounts by invitation, a
+storage limit per account, the removal of invited accounts nobody ever used,
+and a proof of work that goes along with a registration.
 
 Accounts are made in `setup.php`: directly, or by **invitation** &ndash; a
 code the operator hands to somebody, who then chooses their own username and
@@ -30,6 +43,8 @@ against automated sign-ups, an answer to whether a new account may be used
 before somebody approves it, and a way to be rid of the ones nobody ever came
 back to. An invitation answers the middle two by itself &ndash; the code is the
 defence, and issuing it is the approval &ndash; which is why it came first. The
+first it does not answer: even among invited people, sign-in can be locked out
+for everybody by one of them (see [*Who can do what*](#who-can-do-what)). The
 design, and what would have to be true before any of the rest were written, is
 in [`development-plan/open-registration.md`](../development-plan/open-registration.md).
 
@@ -67,8 +82,8 @@ caller's own operations back &ndash; it already holds their bodies and only
 needs to be told which sequence numbers they were given.
 
 **A cycle with nothing to send asks `?a=head` first.** That is the state of
-nearly every cycle: two or three machines belonging to one person, waking
-every few minutes, with nothing queued and nothing new to collect. `?a=head`
+nearly every cycle: the two or three machines of one account, waking every
+few minutes, with nothing queued and nothing new to collect. `?a=head`
 reads one small file and takes no lock. `?a=push` takes the log's exclusive
 lock and reconciles before it discovers the batch is empty, and when another
 machine is holding that lock it answers `busy` rather than waiting &ndash;
@@ -124,7 +139,10 @@ costs. A document with no projects at all is refused outright, because that is
 the shape a `data.json` that was emptied or replaced takes. And the segments a
 snapshot replaces are not deleted with it &ndash; they are set aside and swept
 only after a week, so a mistake noticed in that time is still recoverable. The
-snapshot it replaced is kept until the one after that arrives.
+snapshot it replaced is kept until the one after that arrives. Recoverable by
+the operator, that is, by editing the account's `state.dat.php` in the store
+by hand: there is no tool for it, nothing an account holder can reach brings
+the segments back, and an account at its storage limit gets no week at all.
 
 `?a=pull` and `?a=push` report `snapshot_seq`, and set `needs_snapshot` for a
 caller below it. Such a caller is sent **no operations at all**, rather than
@@ -136,7 +154,23 @@ tells the client to take the snapshot first.
 The document travels as the entire request body, with the sequence number in
 the query string, so it can be stored exactly as it arrived instead of being
 decoded and re-encoded on a host where memory is the scarce thing. The upload
-limit is 4 MiB, against 1 MiB for every other request.
+limit is 16 MiB, against 1 MiB for every other request.
+
+It used to be 4 MiB, sized for a document of a megabyte or two, and a real one
+outgrew it: a few thousand tasks, many with long notes, came to 5.3 MB. From
+then on every snapshot was refused, the log could not be compacted and grew
+by every change, and a week later the account had used up its storage and
+every push was refused as well. A limit here is the day compaction stops, so
+it sits well above what a document is likely to reach &ndash; and at what the
+host can still check. The server decodes a snapshot once to see that it is a
+document, which costs PHP up to about seven times its size in memory for one
+made of nothing but short time entries (115 MB for 16 MiB, measured), about
+twice for one made mostly of notes; a host whose `memory_limit` cannot take
+that refuses the largest documents there, which costs compaction, never data.
+PHP's `post_max_size` does not stand in the way: a body that is not a form is
+handed over whole even past it. It does warn before `index.php` has started,
+though, so a host has to keep `display_errors` off, as any host in production
+does &ndash; shown, the warning would come before the answer and break it.
 
 **What this costs.** A machine that has been out of contact for longer than
 the client's tombstone retention (ninety days) can resurrect an object deleted
@@ -225,7 +259,171 @@ someone* is usually the better choice: you never learn their password.
 **6. Check.** *Show status* lists the store path, the accounts, the number
 of live tokens and the open invitations, and for each account when a device
 last reached it, how many of its devices are still signed in and how much it
-stores. It does not consume `setup.enable`.
+stores. It does not consume `setup.enable`, and neither does a wrong
+passphrase or an action that failed &ndash; so delete the file yourself when
+you are done. Until then anyone can try passphrases against it, and nothing
+counts the attempts.
+
+## Who can do what
+
+An installation has one **operator** &ndash; whoever can write to `tc/` over
+FTP and knows the passphrase in `setup.enable` &ndash; and one or more
+**account holders**. On many installations they are one and the same person.
+This section is written for the case where they are not: once there is a
+second account, its holder is somebody who did not install the server, cannot
+see its files, and has to take on trust what the operator and the host can do.
+An installation with one person on it is the special case in which some of the
+parties below coincide.
+
+**One account, one person.** An account holds one person's document, and so
+does a TimeControl installation: one `data.json`. The sign-in that ties it to an
+account, though, belongs to the login on the computer, not to the installation:
+the token, the machine's device id, its queue of unsent changes, its place in
+the log and its encryption key are all kept per operating-system user
+(`~/.config/TimeControl`, `%APPDATA%\TimeControl`). So two people sharing a
+computer need a login each, not merely an installation each &ndash; a second
+installation under the same login uses the first one's sign-in as soon as
+synchronisation is switched on in it.
+
+Signing an installation in to a different account sends its whole document
+there, without asking. What comes back is not that account's document: only
+what was logged there past the point the installation had reached in its old
+account &ndash; nothing at all if the other account holds less &ndash; unless
+that account already has a snapshot, which then arrives whole. That is wrong for
+somebody else's account, and no dependable way to bring one person's two
+together either. End-to-end encryption only delays it: the key on the machine
+belongs to the first account, so synchronisation stops at the mismatch, but the
+settings then ask for the passphrase again, and once it is entered the exchange
+goes ahead, sealed.
+
+**What keeps accounts apart.** Every request after signing in acts on the
+account its token belongs to; the token says which, never the request. Each
+account has a directory of its own, named after a random identifier rather
+than anything a client sends, with its own log, lock, storage limit and
+devices. Nothing in the API reads or writes another account's data, and a
+device known to one account is a stranger to every other.
+
+**What they share**, and therefore what one account &ndash; or one device
+&ndash; can do to the rest:
+
+- *The password checks.* 30 a minute for the whole installation, and a reserve
+  of 10 behind them (see *Password checking* below). Anybody can spend the
+  first; any account holder, or whoever has one of their machines, can spend
+  the second. While both are spent nobody signs in, on any account.
+- *The disk.* Each account's log may take about 50 MiB, a little more with its
+  snapshots. What signing in leaves behind is not counted at all, there is no
+  limit on the total, and nothing checks how much room is left. When the disk
+  is full, every account stops.
+- *The host's processors and PHP workers.* Only password checks are rationed.
+  A busy account's requests are everybody's wait.
+- *The store's own files*: the counters, the token directory, `error.log`.
+- *The operator*, and whatever the operator can do to one account they can do
+  to all.
+
+**The operator** can read every project, task, note and time an account
+synchronises, as plain JSON, unless the account has end-to-end encryption on.
+Whether it is on or not, they can read the names of its devices, which are the
+machines' own names, and its password hash, which can be attacked offline. With
+FTP they can also change the server's code, and with it see passwords as they
+arrive &ndash; "you never learn their password", under *Invite someone*, holds
+for an operator who does not try. They can delete any account, with everything
+the server holds for it; the account holder's machines keep their own copy.
+What they cannot do through `setup.php` is anything finer: there is no way to
+reset a password, to switch an account off, or to sign out one device. By hand
+in the store, that last is deleting the device's file under `tokens/`, which the
+account's `user.dat.php` names. For a forgotten password, deleting the account
+is the only tool there is &ndash; and no clean start for the machines that used
+it (see the list below).
+
+**An account holder** can use their account from as many machines as they
+like, and sign out the machine they are using. They cannot see which other
+devices are signed in, or change their password, and TimeControl offers no way
+to sign another device out. The server allows it all the same: signing in
+replaces whatever token the given device id holds, and every operation a device
+pushed carries its id to the account's other devices. So somebody with the
+password and the lost machine's id can end its token by signing in under that
+id and out again &ndash; a machine that never pushed anything leaves no id to
+find. Short of that, a stolen laptop goes on synchronising &ndash; and can push
+changes into the account &ndash; until its token runs out, up to 90 days, unless
+the operator deletes the account.
+
+End-to-end encryption, which each account switches on for itself, keeps the
+content from the operator and the host &ndash; but only what is sent after it is
+on, and only by machines that have it on. It does not reach back: what the
+account sent before stays readable on the server until a sealed snapshot has
+replaced it, and for at least a week after that. It does not hide when and how
+much somebody worked. And a machine with it on still takes in operations that
+arrive unencrypted, so whoever can write into the store can still add or delete
+in an encrypted account: it guards what can be read, not what can be written.
+
+**Somebody holding an invitation code** can make one account under any free
+name. Until they use it they can also ask, for nothing, whether a name is
+taken: registering under a taken name is refused without spending the code.
+The code itself is a secret only until it is used &ndash; hand it over by a
+channel nobody else reads.
+
+**Anybody on the internet** can ask for password checks until the allowance is
+spent, and keep it spent: 30 requests a minute is enough. That keeps every
+machine that has never signed in from signing in, on every account, for as long
+as they keep it up. They can guess at a password at the same rate, all of it at
+one account if they like &ndash; there is no limit per account &ndash; so
+passwords have to be long and not used anywhere else. They cannot learn from
+signing in which usernames exist, and cannot make an account without a code.
+
+**The host** &ndash; the company running the web space &ndash; can do on the
+file system whatever the operator can, and its access logs hold the address and
+time of every request. **Other customers on the same host** cannot read the
+store as long as PHP runs under the site's own user, which `setup.php` relies on
+without checking it (`tcprobe/` reports it); they share the disk and the
+processors either way.
+
+**Somebody watching the network** sees which devices talk to the server, when
+and how much, but nothing inside: TLS is enforced before any credential is
+looked at, and the client follows no redirect.
+
+### What nothing here defends against yet
+
+Found while writing the section above, and each a change of its own rather than
+a sentence here:
+
+- One account holder, or one stolen device, can keep everybody from signing in
+  by spending the reserve that was meant to let known devices through a flood.
+  Machines that are signed in go on synchronising, but a token is never
+  extended, so each of them drops out when its own runs out.
+- Deleting an account is no clean start for the machines that used it, and
+  neither is signing a machine in to a different account. Such a machine
+  fetches from the new log only what lies past the point it had reached in the
+  old one, whether or not it notices that the log is a new one, and reports
+  that it synchronised. After a lost laptop or a forgotten password, every
+  machine but the first to reach the re-created account can quietly lack what
+  the others put there.
+- No account can be switched off. The code checks a `disabled` flag, but in two
+  different files for signing in and for using a token, and nothing sets either.
+- There is no limit on the guesses at one account, on the total storage, or on
+  what an account that is signed in may ask of the server.
+- Signing in under a new device id adds a device entry, a token file and a
+  `seen/` entry that the storage limit does not count and nothing tidies away,
+  so an account holder can fill the disk by signing in, as fast as the sign-in
+  allowance lets them.
+- A machine with end-to-end encryption on applies operations and snapshots that
+  arrive unencrypted, so it does not protect an encrypted account against
+  whoever can write into the store.
+- `error.log` grows with malformed requests, from anybody, and is never
+  rotated.
+- An account holder cannot see the sessions on their account, and TimeControl
+  cannot end another one.
+- The week for which replaced log segments are kept can only be used by the
+  operator, by hand.
+
+### If registration were opened to anyone
+
+Then *account holder* above means *anybody*, for the price of a proof of work of
+about a second; every item in the list just above stops depending on whom the
+operator chose to invite; and the operator, who has no standing way to see or
+stop what is happening, is no longer a safeguard. What would have to be built
+first is in
+[`development-plan/open-registration.md`](../development-plan/open-registration.md),
+and the list above is part of it.
 
 ## Things worth knowing
 
@@ -233,43 +431,75 @@ stores. It does not consume `setup.enable`.
 carrying it, so both entry points refuse plain HTTP before looking at any
 credential.
 
-**Tokens expire** 90 days after being issued and 30 days after last use. The
-absolute limit is the only thing that ever ends a compromise nobody noticed:
-a copied credential shows up as the device that is legitimately there
-already, so there is no new entry to spot.
+**Tokens expire** 90 days after being issued and 30 days after last use;
+signing in issues a new one, and nothing extends an old one. The absolute limit
+is what ends a compromise nobody noticed: a copied credential shows up as the
+device that is legitimately there already, so there is no new entry to spot.
+For an account holder it is in practice also what ends one they did notice
+&ndash; TimeControl has no way to sign another device out, and `setup.php` none
+short of deleting the account; it takes somebody with the password, the API and
+the lost machine's id, or the operator deleting its token file by hand (see
+*Who can do what*).
 
 **Signing in again from the same device replaces that device's token** rather
 than adding one. A client whose response got lost can simply retry.
 
-**Password checking is rate limited to 30 attempts per minute in total** &ndash;
-one global budget, not one per account or per IP address. Per-account
-counters let anyone lock you out by name, and per-IP counters let an attacker
-fill the disk with small files.
+**Password checking is rate limited to 30 attempts per minute in total**
+&ndash; one budget for the whole installation, not one per account or per IP
+address. Counters per IP address would let an attacker fill the disk with
+small files, since the attacker picks the address. One budget cannot be
+inflated, caps what password checks cost the host altogether, and is spent
+before the username is looked up, so it answers alike for names that exist and
+names that do not. Everything else is its price: whoever spends it locks every
+account out, not one &ndash; and not for a minute, but for as long as they go on
+spending it, which takes 30 requests a minute. Nor does it limit the guesses at
+any one account, which may receive all 30. With one account that was a fair
+trade; with several it is merely the one that is built. A counter per account,
+kept only for accounts that exist, would cap those guesses and keep a lockout to
+the account it was aimed at; it is not built.
 
-The price of one global budget is that anyone who can reach the server can
-spend it. What that denies is signing *in* &ndash; synchronising goes on
-throughout, because it uses a token and never checks a password. So when the
-budget is spent there is a small **reserve of 10 a minute**, and only a device
-that has signed in to that same account before may draw on it. That is the one
-thing somebody flooding the server does not have: a device id is 64 random bits
-that only the device and the server know, and the server records one only
-after a correct password. The record outlives the device's token, so the
-reserve covers both cases a lockout hurts: a token that has expired, and a
-device that was signed out on purpose.
+What it denies is signing *in*. Synchronising goes on, because it uses a token
+and never checks a password &ndash; though only until each device's token runs
+out, since nothing extends one. So when the budget is spent there is a small
+**reserve of 10 a minute**, and only a device that has signed in to that same
+account before may draw on it. A stranger flooding the server does not have
+one: a device id is 64 random bits, and the server records one only after a
+correct password. It is hard to guess, not secret: a machine keeps one id for
+every server and every account it signs in to, so it is known to each of those
+servers and to the other devices of each of those accounts &ndash; whoever runs
+another installation this machine uses could draw on this reserve too, given
+the account's name here. The record outlives the device's token, so the reserve covers both
+cases a lockout hurts: a token that has expired, and a device that was signed
+out on purpose.
 
-A machine signing in for the very first time has no such record, and waits
-out a flood like anybody else &ndash; at most a minute. The reserve still asks
-for the password in full, and it runs out too, so a device that is no longer
-its owner's &ndash; a stolen laptop &ndash; gains a steady trickle of guesses
-at most, never a flood of them.
+The reserve is shared as well, and that is where it falls short. Every account
+holder has a recorded device of their own, and a device is recognised by name
+and id before the password is checked &ndash; so any of them, or whoever has one
+of their machines, can spend it by failing to sign in under their own name, and
+then the devices of every other account wait too. It stops strangers, not
+account holders. A reserve per account would close that; it is not built.
 
-**Each account may keep 50 MiB.** When the disk of a shared host fills up,
-every account stops synchronising, not only the one that filled it &ndash; so
-the limit is per account, and it is the host's space it protects. It counts
-what is actually on disk for the account's log: the live segments, the ones a
-snapshot has retired but not yet deleted, and both snapshots. Change
-`TC_ACCOUNT_QUOTA_BYTES` in `tc/lib/oplog.php` for a host with more room or
-less. *Show status* in `setup.php` lists each account against it.
+A machine signing in for the very first time has no record, and waits out a
+flood like anybody else, for as long as the flood lasts. The reserve still asks
+for the password in full, and it runs out, so a device that is no longer its
+owner's &ndash; a stolen laptop &ndash; gains a steady trickle of guesses at
+most, never a flood of them.
+
+**Each account may keep 50 MiB of log.** When the disk of a shared host fills
+up, every account stops synchronising, not only the one that filled it &ndash;
+so each account's log has a limit, and no log can take more than its share. It
+counts what is actually on disk for the account's log: the live segments, the
+ones a snapshot has retired but not yet deleted, and both snapshots. It does not
+count what signing in leaves behind: every new device id adds an entry to the
+account's device list, a file under `tokens/` and one under `seen/`. The token
+file goes when that device signs out, or when its expired token is presented
+again; the other two only when the account is deleted. Nor does the limit cover
+the total. There is no ceiling on the installation as a whole, and nothing
+checks how much room is left: eight accounts at their limit hold over
+400 MiB, on web space that is often sold by the few hundred. Invite with the
+host's space in mind, and change `TC_ACCOUNT_QUOTA_BYTES` in
+`tc/lib/oplog.php` for a host with more room or less &ndash; it is one figure
+for every account. *Show status* in `setup.php` lists each account against it.
 
 A push that would cross the limit is refused whole, with `507 Insufficient
 Storage`. Nothing of it is stored, so the client keeps those changes queued and
@@ -282,11 +512,20 @@ after compacting.
 One case it cannot get out of by itself: a snapshot is only sent by a device
 with nothing left to send, and a device whose pushes are being refused always
 has something. So a full account recovers through another of its devices that
-is caught up, or through the limit being raised. For an ordinary account the
-limit is far out of reach &ndash; one person's time tracking is a document of a
-megabyte or two, compacted every couple of thousand changes &ndash; so reaching
-it means snapshots have been failing for a long time, and that is worth
-knowing about anyway.
+is caught up, or through the operator raising the limit &ndash; which the
+account holder has to ask for, and which raises it for everybody. For an
+ordinary account the limit is far out of reach &ndash; one person's time
+tracking is a document of a few megabytes, compacted every couple of thousand
+changes &ndash; so reaching it means snapshots have been failing for a long
+time, and that is worth knowing about anyway.
+
+To get such an account going again, once whatever stopped its snapshots has
+been put right: raise `TC_ACCOUNT_QUOTA_BYTES` in `tc/lib/oplog.php` for a
+while &ndash; to 100 MiB, say &ndash; and upload that file. The waiting changes
+go through on the devices' next cycles; the first device that has nothing left
+to send offers a snapshot, which retires the log behind it; and a week later,
+once those retired segments have been swept away, the limit can go back to
+what it was. *Show status* shows the account's storage falling.
 
 **An invitation works once, and for seven days.** *Invite someone* in
 `setup.php` shows a code of sixteen hex characters, the server address to go
@@ -343,7 +582,8 @@ still made, and one that brings one is held to every rule:
   the server the same small amount.
 - Handing out a challenge writes nothing, so asking for them costs the
   server no disk. Only a solution leaves a trace, and a solution costs its
-  sender the work.
+  sender the work. (A malformed request is another matter, here as for every
+  other action: it leaves a line in `error.log`.)
 
 Raise `TC_POW_BITS` in `tc/lib/pow.php` to make each registration costlier;
 clients solve whatever they are given, up to 28 bits, so none needs changing.
@@ -365,7 +605,9 @@ deletes somebody's year of time tracking:
   without its password: 31 days, one more than a token lasts unused, after the
   later of its registration and the last time any of its devices reached the
   server. Nothing is lost by it; whatever the devices hold locally stays
-  there, and is offered again to whichever account they sign in to next.
+  there, and is offered again to whichever account they sign in to next
+  &ndash; which had better be their owner's, see *One account, one person*
+  above.
 - *Used and then abandoned*: there is a log, perhaps years of it. Nothing here
   ever removes that. Only you can know whether that person is coming back, so
   *Show status* says, for every account, on which day a device last reached
@@ -434,5 +676,9 @@ land exactly once.
 
 ## Removing an installation
 
-Delete the `tc/` directory and the store. The store path is recorded in
+Tell the account holders first: removing it deletes the server's copy of every
+account, and their machines simply stop synchronising, with an error that says
+nothing about why. What each of them has on their own machines stays there.
+
+Then delete the `tc/` directory and the store. The store path is recorded in
 `tc/config.php`; *Show status* prints it.
