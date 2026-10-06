@@ -17,37 +17,60 @@ require_once __DIR__ . '/store.php';
 const TC_BCRYPT_COST = 12;
 
 // A token dies 90 days after it was issued no matter what, and 30 days after
-// it was last used. The absolute limit is the only thing that ever terminates
-// a compromise nobody noticed - a copied credential shows up as the device
-// that is legitimately there already, so there is no new entry to spot.
+// it was last used; nothing extends one. The absolute limit is what ends a
+// compromise nobody noticed - a copied credential shows up as the device that
+// is legitimately there already, so there is no new entry to spot. For an
+// account holder it is in practice also what ends one they did notice: the
+// client has no way to sign another device out, and setup.php none short of
+// deleting the whole account. The protocol would allow it - a sign-in under a
+// device's id replaces that device's token (tc_token_issue), and an account's
+// devices see each other's ids in the operations they pull - and so would
+// deleting that one token file by hand; nothing does either for them.
 const TC_TOKEN_TTL = 7776000;  // 90 days
 const TC_IDLE_TTL  = 2592000;  // 30 days
 
 // Password checks are deliberately expensive, which makes them a lever for
-// anyone wanting to tie up the host. This is a single global allowance rather
-// than a per-user or per-IP one: the probe showed REMOTE_ADDR is the real
-// client address here, but an attacker picks that, and a counter per attacker
-// -supplied key is a way to fill the filesystem with small files. One counter
-// cannot be inflated and cannot lock out a specific account by name.
+// anyone wanting to tie up the host. This is a single allowance for the whole
+// installation rather than one per account or per IP address: the probe showed
+// REMOTE_ADDR is the real client address here, but an attacker picks that, and
+// a counter per attacker-supplied key is a way to fill the filesystem with
+// small files. One counter cannot be inflated, bounds what hashing costs the
+// host in total, and is taken before the lookup, so it says nothing about which
+// names exist. It is paid for by every account at once: whoever spends it locks
+// everybody out, not one person, and for as long as they keep spending it, not
+// for a minute. Nor does it limit the guesses at any one account, which may
+// receive all of it. With one account that was a fair trade; with several it is
+// merely the one that is built. A counter per account, kept only for accounts
+// that exist, would cap those guesses and keep a lockout to its target; it is
+// not built. See "Who can do what" in php-server/README.md.
 const TC_HASH_BUDGET_PER_MINUTE = 30;
 
 // What that one counter costs: anybody who can reach ?a=login can spend it, and
-// once it is spent the owner cannot sign in either - not to add a machine, and
+// once it is spent no account holder can sign in - not to add a machine, and
 // not to recover one whose token has expired or been revoked. (Synchronising is
-// untouched throughout; push, pull, head and snapshot never hash a password.)
+// untouched throughout; push, pull, head and snapshot never hash a password.
+// But tokens are never extended, so a device drops out when its own runs out.)
 //
 // So there is a reserve beside it, drawn on only when the allowance above is
-// gone, and only by a device this account has signed in from before. That is
-// the one thing an attacker flooding the endpoint does not have: a device id is
-// 64 random bits, known to the device and the server and sent nowhere else, and
-// the server only ever records one after a correct password. Recording it is
-// also what the owner's machines already have - the entry outlives the token,
-// through expiry and through signing out - so the reserve reaches exactly the
-// two cases the lockout hurt.
+// gone, and only by a device this account has signed in from before. A
+// stranger flooding the endpoint does not have one: a device id is 64 random
+// bits, and the server only ever records one after a correct password. It is
+// hard to guess, not secret - the client keeps one per machine, not one per
+// server (device_identity() in tt/sync_client.py), so every server and every
+// account that machine has signed in to knows it, and whoever runs another
+// installation it uses could draw on this reserve given the name here.
+// Recording it is also what the holder's machines already have - the entry outlives the token,
+// through expiry and through signing out - so the reserve reaches the two cases
+// the lockout hurt.
 //
-// Still one global file, for the reason above: nothing about it is keyed on
-// what the caller sends, so it cannot be made to create files. And small,
-// because it is a lever too, only one that fewer hands can reach.
+// It is one global file too, for the reason above, and that is its gap: every
+// account holder has a recorded device of their own, and recognition looks at
+// the name and the device id before the password. So any of them - or whoever
+// holds one of their machines - can spend the reserve by failing to sign in
+// under their own name, and then the devices of every other account wait as
+// well. It stops strangers, not account holders. A reserve per account, under
+// users/<uid>/ where only accounts that exist can have one, would close that;
+// it is not built.
 const TC_HASH_RESERVE_PER_MINUTE = 10;
 
 // What an account may be called and what its password must be, in one place:
@@ -392,9 +415,10 @@ function tc_accounts_migrate($store)
 //
 // How somebody other than the operator gets an account: setup.php makes a
 // code, the operator hands it over, and ?a=register exchanges it, once, for an
-// account whose password the operator never sees. Issuing the code is the
-// approval. It happens while the operator is there, which is the only time
-// this server has one.
+// account whose password the operator is never shown (one who changes this
+// code could still catch it - see "Who can do what" in php-server/README.md).
+// Issuing the code is the approval. It happens while the operator is there,
+// which is the only time this server has one.
 //
 // Only sha256(code) is stored, as with tokens, so the store holds nothing that
 // could be redeemed. A code is 64 random bits: there is nothing to guess, so a
@@ -690,7 +714,8 @@ function tc_invites_withdraw_now($store)
 //
 //  - never used: its log holds nothing at all. Removing it loses nothing;
 //    whatever its devices hold locally stays there, and is offered again to
-//    whichever account they sign in to next.
+//    whichever account they sign in to next - which had better be their
+//    owner's (see "One account, one person" in php-server/README.md).
 //  - used and then abandoned: there is a log, perhaps years of it. That is
 //    reported to the operator, never deleted by anything here.
 //

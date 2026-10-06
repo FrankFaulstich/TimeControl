@@ -125,11 +125,17 @@ $uid = tc_account_create($store, 'tester',
 file_put_contents($root . '/router.php',
     "<?php\n\$_SERVER['HTTPS'] = 'on';\nrequire __DIR__ . '/tc/index.php';\n");
 
-$port = 8000 + random_int(0, 900);
+// Clear of 8500-8530, where TimeControl's own interface may be running.
+$port = 9000 + random_int(0, 800);
 $descriptors = [1 => ['file', $root . '/server.log', 'a'],
                 2 => ['file', $root . '/server.log', 'a']];
+// display_errors off, as on any host in production. It matters for the large
+// snapshots below: a body past post_max_size (8M by default) makes PHP warn
+// before index.php has run, and shown, that warning would come before the
+// answer and break it. Hidden, PHP still hands the whole body over - which is
+// what lets a snapshot be larger than post_max_size at all.
 $server = proc_open(
-    sprintf('%s -S 127.0.0.1:%d %s', escapeshellarg(PHP_BINARY), $port,
+    sprintf('%s -d display_errors=0 -S 127.0.0.1:%d %s', escapeshellarg(PHP_BINARY), $port,
             escapeshellarg($root . '/router.php')),
     $descriptors, $pipes, $root);
 
@@ -269,6 +275,49 @@ tc_check('two megabytes is taken, where a push of that size would not be',
          $status === 200 && ($body['snapshot_seq'] ?? 0) === 6,
          $status . ' ' . json_encode($body));
 
+// The document that outgrew the old limit of 4 MiB: a few thousand tasks, many
+// with long notes, 5.3 MB in all. Refused, it could never be compacted, and its
+// account filled up behind it until every push was refused as well.
+[$status, $body] = tc_request($base, 'POST', ['a' => 'push'], json_encode(['base_seq' => 6, 'ops' => [
+    ['op' => 'task.set', 'lc' => 1000, 'uid' => sprintf('%016x', 2), 'f' => ['note' => 'one more']]]]),
+    $token);
+tc_check('(a change, so there is something new to compact)', $status === 200 && ($body['head'] ?? 0) === 7,
+         $status . ' ' . json_encode($body));
+$heavy = $document;
+$heavy['projects'][0]['tasks'] = [];
+for ($t = 0; $t < 2600; $t++) {
+    $heavy['projects'][0]['tasks'][] = [
+        'uid' => sprintf('%016x', 100 + $t), 'id' => $t + 1, 'task_name' => 'Aufgabe ' . $t,
+        'note' => str_repeat('Lange Notiz aus einer E-Mail, mit Umlauten: äöü ß. ', 38),
+        'status' => 'open', 'time_entries' => [],
+    ];
+}
+$heavyJson = json_encode($heavy, JSON_UNESCAPED_UNICODE);
+[$status, $body] = tc_request($base, 'POST', ['a' => 'snapshot', 'seq' => 7], $heavyJson, $token);
+tc_check(sprintf('a document of %.1f MB, the size that was refused, is taken', strlen($heavyJson) / 1e6),
+         strlen($heavyJson) > 5 * 1024 * 1024 && $status === 200 && ($body['snapshot_seq'] ?? 0) === 7,
+         $status . ' ' . json_encode($body));
+[$status, $body, $raw] = tc_request($base, 'GET', ['a' => 'snapshot'], null, $token);
+tc_check('and handed back as it was sent',
+         $status === 200 && ($body['document'] ?? null) == $heavy && strlen($raw) > strlen($heavyJson),
+         $status . ' ' . strlen($raw));
+
+// Past PHP's post_max_size, which this server leaves at the 8M default: a body
+// that is not a form is handed over whole all the same.
+[$status, $body] = tc_request($base, 'POST', ['a' => 'push'], json_encode(['base_seq' => 7, 'ops' => [
+    ['op' => 'task.set', 'lc' => 1001, 'uid' => sprintf('%016x', 2), 'f' => ['note' => 'and one more']]]]),
+    $token);
+$heavier = $heavy;
+$heavier['projects'][0]['tasks'] = array_merge($heavy['projects'][0]['tasks'], array_map(function ($task) {
+    $task['uid'] = sprintf('%016x', hexdec($task['uid']) + 10000);
+    return $task;
+}, $heavy['projects'][0]['tasks']));
+$heavierJson = json_encode($heavier, JSON_UNESCAPED_UNICODE);
+[$status, $body] = tc_request($base, 'POST', ['a' => 'snapshot', 'seq' => 8], $heavierJson, $token);
+tc_check(sprintf('and one of %.1f MB, past PHP\'s post_max_size', strlen($heavierJson) / 1e6),
+         strlen($heavierJson) > 8 * 1024 * 1024 && $status === 200 && ($body['snapshot_seq'] ?? 0) === 8,
+         $status . ' ' . json_encode($body));
+
 print("\nWhat is refused\n");
 [$status, $body] = tc_request($base, 'POST', ['a' => 'snapshot', 'seq' => 0], $json, $token);
 tc_check('a missing sequence number', $status === 400 && ($body['error'] ?? '') === 'bad_seq',
@@ -282,8 +331,8 @@ tc_check('an unusable token', $status === 401 && ($body['error'] ?? '') === 'inv
          $status);
 
 $big = json_encode(['projects' => [['uid' => sprintf('%016x', 1),
-                                    'note' => str_repeat('x', 5 * 1024 * 1024)]]]);
-[$status, $body] = tc_request($base, 'POST', ['a' => 'snapshot', 'seq' => 6], $big, $token);
+                                    'note' => str_repeat('x', TC_SNAPSHOT_MAX_BYTES)]]]);
+[$status, $body] = tc_request($base, 'POST', ['a' => 'snapshot', 'seq' => 7], $big, $token);
 tc_check('a document past the size limit',
          $status === 413 && ($body['error'] ?? '') === 'body_too_large',
          $status . ' ' . json_encode($body));
@@ -301,7 +350,7 @@ tc_check('a push past the ordinary limit still is too',
 
 // Issue #585. The password-checking allowance is one counter for the whole
 // installation, and anybody who can reach ?a=login can spend it. What that used
-// to cost was the owner being unable to sign in at all until it refilled.
+// to cost was nobody being able to sign in at all until it refilled.
 print("\nSigning in while somebody else has spent the allowance\n");
 
 // Spent by writing the counter rather than by making thirty requests: each of
@@ -355,7 +404,9 @@ tc_check('a known device under a name it never used is turned away like a strang
 // The reserve has to end as well. It is still a password check, and a known
 // device is not necessarily its owner's any more - a stolen laptop is one. Were
 // the reserve drawn on without being counted, that laptop could guess at the
-// password without limit during a flood it caused itself.
+// password without limit during a flood it caused itself. (Counted, it can
+// still spend the reserve for every other account as well; that is a gap of
+// its own, see TC_HASH_RESERVE_PER_MINUTE.)
 $spend();
 tc_write_json($store . '/rate-reserve.dat.php',
               ['win' => intdiv(time(), 60), 'n' => TC_HASH_RESERVE_PER_MINUTE]);

@@ -13,13 +13,16 @@ WHY THE WHOLE OPERATION IS SEALED, NOT JUST ITS FIELDS
 ------------------------------------------------------
 The obvious design seals the `f` object, since that is where the names and the
 notes live and since the server only ever checks that it is an object at all
-(php-server/tc/lib/oplog.php:600-602). It is not enough. Seven of the twelve
+(tc_ops_validate() in php-server/tc/lib/oplog.php). It is not enough. Seven of the twelve
 verbs carry no `f` whatsoever - a deletion is `{op: 'task.delete', uid, ts}`
 (tt/TimeTracker.py:818), and so are the moves and the opening and closing of
-time entries. For those there would be nothing to encrypt and, worse, nothing
-to authenticate: anybody able to append to the log could write a plausible
-`project.delete`, and every machine would carry it out, taking the project and
-all its tasks with it (tt/sync_apply.py:274-281).
+time entries. For those there would be nothing to encrypt and nothing to
+authenticate either: a forged `project.delete` would look exactly like a real
+one, and every machine would carry it out, taking the project and all its tasks
+with it (the project.delete branch in tt/sync_apply.py). Sealed whole, an
+operation cannot be forged. That is a property of the sealed operations, not yet
+a defence on its own: as long as a machine still accepts unsealed ones, the
+forgery simply arrives unsealed (see WHAT THIS DOES NOT DO).
 
 So the unit of sealing is the operation itself. What travels is an envelope
 carrying only what the server structurally needs, and the real operation -
@@ -31,26 +34,35 @@ timesheet, accurate to the second, even when every name in it is unreadable.
 WHAT REMAINS IN THE CLEAR, AND WHY IT HAS TO
 --------------------------------------------
 `op`   A verb from the server's fixed list, or the batch is refused
-       (oplog.php:589). Every sealed operation carries the same placeholder,
+       (TC_OPS, checked in tc_ops_validate()). Every sealed operation carries the same placeholder,
        so the verb no longer says anything about what happened.
 `lc`   The per-device counter the server uses to recognise a repeated push
-       (oplog.php:154). It is the mechanism that makes a lost response
+       (in tc_log_append()). It is the mechanism that makes a lost response
        harmless, and it cannot be hidden without giving that up.
 
 Everything else the server tolerates - uid, project, task, ts, start, end - is
-simply left out. The server only validates those when they are present
-(oplog.php:595-599), so omitting them costs nothing and keeps the shape of the
-document off the wire.
+simply left out. The server checks uid, project and task only when they are
+present, and ts, start and end not at all (tc_ops_validate()), so omitting
+them costs nothing and keeps the shape of the document off the wire.
 
 WHAT THIS DOES NOT DO
 ---------------------
 Confidentiality, not integrity of the log as a whole. Each operation is
 authenticated on its own, so it cannot be altered or moved to another account
-- but the order of operations is the server's to assign (oplog.php:158), and
+- but the order of operations is the server's to assign (tc_log_append()), and
 nothing here stops a hostile server from withholding an operation, replaying
 an old one, or reordering two. Guarding against that needs a chain across
 operations, which is a larger change; `ENVELOPE_VERSION` is what leaves room
 for it.
+
+Nor does it keep out what was never sealed. A machine with encryption on still
+applies a plain operation and takes a plain snapshot (_open_incoming() and the
+snapshot check in tt/sync_engine.py). That is deliberate: while an account is
+being switched over, a machine without the passphrase still sends plain text,
+and refusing it would lose that work. But it means that whoever can write into
+the log - the server's operator, its host, or whoever holds one of the
+account's tokens - can still have a plain `project.delete` carried out on an
+encrypted account.
 
 THE KEY IDENTIFIER IS NOT A WEAKNESS
 ------------------------------------
@@ -81,7 +93,7 @@ SUITE = "tc-e2ee-1"
 ENVELOPE_VERSION = 1
 
 # The verb every sealed operation shows the server. It has to be a member of
-# the server's list (oplog.php:23-27) or the push is refused - which is a
+# the server's list (TC_OPS in oplog.php) or the push is refused - which is a
 # useful property rather than an obstacle: a server that has not been taught
 # this verb rejects encrypted traffic loudly instead of storing something its
 # own tools cannot read.
@@ -413,7 +425,7 @@ def seal_document(document, master, context, seq):
                 so the server cannot later claim it describes another.
     :return: The envelope to upload. An object, with valid JSON inside and
              out, because the server splices the stored bytes straight into
-             its reply (php-server/tc/index.php:250).
+             its reply (the snapshot case in php-server/tc/index.php).
     :rtype: dict
     """
     if not isinstance(document, dict):

@@ -57,7 +57,10 @@ def _messages():
                             "plain HTTP could be read by anyone on the way."),
         'missing_credentials': _("Please enter both a username and a password."),
         'invalid_credentials': _("Wrong username or password."),
-        'too_many_attempts': _("Too many sign-in attempts on the server. Try again in a minute."),
+        # Not "in a minute": somebody can keep sign-in closed for as long as they
+        # keep at it, and the one who can find out is whoever runs the server.
+        'too_many_attempts': _("Too many sign-in attempts on the server. Try again later, "
+                               "and tell whoever runs the server if it keeps happening."),
 
         # --- creating an account with an invitation (issue #588) ---
         'missing_invite': _("Please enter the invitation code you were given."),
@@ -93,8 +96,8 @@ def _messages():
         'quota_exceeded': _("This account has used up its storage on the sync server, so "
                             "new changes are kept on this device until there is room. "
                             "Nothing is lost. A device that is fully synchronised frees "
-                            "space on its next sync; if none is, the server's limit has "
-                            "to be raised."),
+                            "space on its next sync; if none is, ask whoever runs the "
+                            "server to raise its limit."),
         'address_redirects': _("The address redirects somewhere else. Enter the address "
                                "it points to instead - this device will not follow a "
                                "redirect, because that could send its access token on "

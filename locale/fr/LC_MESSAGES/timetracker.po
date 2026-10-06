@@ -467,9 +467,8 @@ msgid "Wrong username or password."
 msgstr "Nom d'utilisateur ou mot de passe incorrect."
 
 #: sl/SL_Menu.py:1568
-msgid "Too many sign-in attempts on the server. Try again in a minute."
-msgstr ""
-"Trop de tentatives de connexion sur le serveur. Réessayez dans une minute."
+msgid "Too many sign-in attempts on the server. Try again later, and tell whoever runs the server if it keeps happening."
+msgstr "Trop de tentatives de connexion sur le serveur. Réessayez plus tard, et prévenez l'administrateur du serveur si cela continue."
 
 #: sl/SL_Menu.py:1569
 msgid "The server's certificate could not be verified."
@@ -3276,8 +3275,8 @@ msgstr "Le serveur affirme qu'une modification provient d'un autre appareil que 
 msgid "The server sent a change that had already been received, or sent two of them the wrong way round. Nothing has been applied here. If this does not clear up, the server is not doing what it should."
 msgstr "Le serveur a envoyé une modification déjà reçue, ou deux d'entre elles dans le mauvais ordre. Rien n'a été appliqué ici. Si cela ne se résout pas, le serveur ne fait pas ce qu'il devrait."
 
-msgid "This account has used up its storage on the sync server, so new changes are kept on this device until there is room. Nothing is lost. A device that is fully synchronised frees space on its next sync; if none is, the server's limit has to be raised."
-msgstr "Ce compte a épuisé son espace de stockage sur le serveur de synchronisation : les nouvelles modifications restent donc sur cet appareil jusqu'à ce qu'il y ait de la place. Rien n'est perdu. Un appareil entièrement synchronisé libère de l'espace lors de sa prochaine synchronisation ; s'il n'y en a aucun, la limite du serveur doit être relevée."
+msgid "This account has used up its storage on the sync server, so new changes are kept on this device until there is room. Nothing is lost. A device that is fully synchronised frees space on its next sync; if none is, ask whoever runs the server to raise its limit."
+msgstr "Ce compte a épuisé son espace de stockage sur le serveur de synchronisation : les nouvelles modifications restent donc sur cet appareil jusqu'à ce qu'il y ait de la place. Rien n'est perdu. Un appareil entièrement synchronisé libère de l'espace lors de sa prochaine synchronisation ; s'il n'y en a aucun, demandez à l'administrateur du serveur de relever sa limite."
 
 
 msgid "3 to 32 characters: a-z or A-Z without accents, digits, dots, underscores or hyphens."

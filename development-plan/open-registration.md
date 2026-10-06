@@ -2,18 +2,23 @@
 
 Design for [#552](https://github.com/FrankFaulstich/TimeControl/issues/552). Nothing here is
 implemented, and nothing should be until the questions below have answers someone is willing
-to defend. Accounts are created by hand in `setup.php` today, and that is not an oversight.
+to defend. Accounts are created by the operator today &ndash; in `setup.php`, or by redeeming
+an invitation code the operator issued (#588) &ndash; and that is not an oversight.
 
 ## The question before the question
 
-The server exists so **one person** can keep their own machines in step. That sentence is the
-first line of `php-server/README.md` and it is what every decision in there was measured
-against: one global rate-limit counter, no admin account, an operator window that opens for
+The server was built so **one person** could keep their own machines in step. That sentence
+was the first line of `php-server/README.md`, and every decision in there was first measured
+against it: one global rate-limit counter, no admin account, an operator window that opens for
 minutes and closes again, a store sized for one document.
 
-Open registration does not add a feature to that server. It turns it into a multi-tenant
-service running on shared hosting, and most of the work below is the cost of that change
-rather than the cost of a registration form.
+Invitations have already ended that premise. `setup.php` could always make accounts for other
+people too, as long as the operator chose, and so knew, their passwords; since #588 somebody can
+be invited without that, and an installation shared by several people is a use it is meant for.
+The README's reasoning was rewritten for that case in #592 (*Who can do what*), including what
+does not hold any more. Open registration goes a step further: it turns a server
+shared by people the operator chose into one shared with anybody, on shared hosting, and most of
+the work below is the cost of that change rather than the cost of a registration form.
 
 **So the recommendation is invitation rather than open registration.** The operator generates
 a single-use code in `setup.php`; a client redeems it once and gets an account. This meets the
@@ -35,8 +40,10 @@ Any cleanup added here has to follow that pattern &ndash; lazy, bounded, on a pa
 going to touch the data anyway.
 
 **There is no standing admin surface.** `setup.php` is a bare 404 unless `setup.enable` exists,
-and the file is deleted after every change. The window is opened deliberately and lasts
-minutes. This matters more than it looks for the approval question below.
+and the file is deleted after every change. The window is opened deliberately, but only a change
+or the operator closes it: *Show status*, a wrong passphrase and a failed action leave the file
+where it is, and nothing counts passphrase attempts, so an operator who only looked keeps it open
+until they delete it. This matters more than it looks for the approval question below.
 
 **Password hashing is deliberately expensive.** `TC_BCRYPT_COST = 12`. That is right for
 protecting stored passwords and it is also a lever: anyone who can make the server hash can
@@ -45,7 +52,9 @@ make it work hard. The existing budget of 30 hashes a minute exists for exactly 
 **That budget is global, on purpose.** Per-IP counters let an attacker fill the filesystem with
 small files, since they choose the key; per-account counters let them lock out a named account.
 One counter can do neither. The cost accepted in exchange is that exhausting it denies
-*everyone* &ndash; which for one user, for one minute, was a fair trade.
+*everyone* &ndash; which for one user, for one minute, was a fair trade. Neither half holds any
+more: with several accounts, everyone is several people, and the budget refills each minute only
+to be spent again, so it stays shut for as long as somebody keeps spending it.
 
 **Usernames are not filenames.** A user's directory is named after the 32-hex `uid`, and the
 account record after the SHA-256 of the username (issue #587). Attacker-chosen usernames
@@ -53,16 +62,22 @@ therefore introduce no path handling, which is one worry that can be set aside.
 
 ## 1. Rate limiting that cannot lock out existing users
 
-This is the sharpest of the four requirements. For login it is now met, by issue #585: when
-`tc_hash_budget_take()` is spent, a device that has signed in to that same account before may
-still draw on a small reserve (`TC_HASH_RESERVE_PER_MINUTE`), decided before any password is
-hashed. The owner can therefore recover an expired or signed-out machine through a flood; only a
-machine signing in for the very first time has to wait it out. See `php-server/README.md`.
+This is the sharpest of the four requirements, and for login it is only half met. Issue #585
+added a reserve: when `tc_hash_budget_take()` is spent, a device that has signed in to that same
+account before may still draw on a small reserve (`TC_HASH_RESERVE_PER_MINUTE`), decided before
+any password is hashed. That lets a holder recover an expired or signed-out machine through a
+flood made by a stranger. It does not survive a flood made by an account holder: the reserve is
+one counter too, and recognition looks at name and device id before the password, so anybody
+with an account &ndash; or with one of its machines &ndash; can spend it by failing under their
+own name, and every other account waits. A reserve per account is still needed. See
+`php-server/README.md`, *Password checking*.
 
-What is left is the registration half below. With registration reachable by anyone, the thing to
-prevent is registration eating into the login budget at all &ndash; otherwise the reserve would
-be the only thing standing between the owner and a cheap, permanent denial of their own
-synchronisation, and it was sized for recovery, not for that.
+Two things are left: that reserve per account, and the registration half below. With
+registration reachable by anyone, the thing to prevent is registration eating into the login
+budget at all &ndash; otherwise each account's reserve would be the only thing standing between
+its holder and a cheap, permanent denial of signing in, and in time of synchronising, and it is
+sized for recovery, not for that. The reserve as it is built would not even be that: once anybody
+can register, an account of one's own is all it takes to spend it.
 
 **Registration must not draw on the login budget.** Two counters, and they must not be
 fungible:
@@ -117,8 +132,10 @@ standing admin surface by design. A queue that only moves when somebody re-uploa
 `setup.enable` is a queue that leaves people waiting days for an account, then floods the
 operator with a page full of names they cannot tell apart.
 
-The account record already carries `disabled`, and `tc_token_check()` already honours it, so
-the mechanism exists. The objection is not mechanical, it is that the operator is not there.
+The mechanism does not exist either, whatever it looked like. The code checks a `disabled`
+flag, but signing in reads it from the account record under `accounts/` and `tc_token_check()`
+from `users/<uid>/user.dat.php`, and nothing sets it in either; switching an account off would
+have to be built. And the objection would remain without that: the operator is not there.
 
 **Recommendation:** no queue. With invites, issuing the code *is* the approval, and it happens
 at a moment the operator has already chosen to be present.
@@ -150,10 +167,13 @@ and it is the one path whose frequency scales with the problem.
 ## 5. What the issue does not list, and should
 
 **Storage becomes attacker-controlled.** Shared hosting sells a few hundred megabytes. One
-account that pushes until the quota is gone takes the owner's synchronisation down with it, and
-the compaction that keeps a log bounded is per-account and client-driven &ndash; a hostile
+account that pushes until the quota is gone takes every account's synchronisation down with it,
+and the compaction that keeps a log bounded is per-account and client-driven &ndash; a hostile
 client simply does not run it. A per-account cap on store size, checked before an append, is a
-prerequisite rather than a refinement.
+prerequisite rather than a refinement, and since #586 it exists. It is not enough on its own: it
+bounds each account's log, not their sum, nor what signing in leaves behind, and with
+registration open the number of accounts is the attacker's to choose. A limit on the total, or on
+the number of accounts, and a check of the room that is left have to come with it.
 
 **`users.dat.php` was one JSON file**, read, decoded, modified and rewritten whole under a lock
 for every account change. That is right for a handful of accounts and wrong for a few thousand,
@@ -168,9 +188,10 @@ proved once at install. That does not weaken per-account isolation &ndash; the p
 uid-based &ndash; but the blast radius of a misconfiguration grows with the number of people on
 the installation.
 
-**The threat model in the README needs rewriting**, not amending. It currently reasons from
-"one person, their own machines, their own server". Almost every "acceptable for one user"
-in it has to be revisited against "anyone on the internet can create an account".
+**The threat model in the README needed rewriting**, not amending, and was rewritten in #592
+for an installation of invited people. Every "acceptable" in it has to be revisited once more
+against "anyone on the internet can create an account"; its *What nothing here defends against
+yet* is where to start.
 
 ## Order of work, if it is ever taken up
 
@@ -191,5 +212,7 @@ in it has to be revisited against "anyone on the internet can create an account"
    not demanded, and the client always sends one, so it is in use before anything depends on
    it. Open registration itself (#552) is not done.
 
-Steps 1&ndash;4 give a server that a second person can be added to. Step 5 is the one that
-changes what the thing is, and it should be a separate decision made on purpose.
+Steps 1&ndash;4 give a server that other people can be added to &ndash; as many as the operator
+invites, which already makes it a shared one, with the gaps listed under *What nothing here
+defends against yet* in `php-server/README.md` (#592). Those come before step 5. Step 5 is the
+one that changes what the thing is, and it should be a separate decision made on purpose.

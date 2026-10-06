@@ -244,7 +244,7 @@ def _open_incoming(ops, key, account):
     and it is refused - see below.
 
     The server stamps `s` and `dev` onto every entry as it stores it
-    (php-server/tc/lib/oplog.php:159-164), outside anything that was sealed.
+    (tc_log_append() in php-server/tc/lib/oplog.php), outside anything that was sealed.
     They are carried across onto the opened operation because the order and
     the recognition of this machine's own work both depend on them.
 
@@ -624,7 +624,19 @@ def _log_is_not_the_one_we_know(state, head):
     for ever while sending and receiving nothing at all.
 
     The credential belongs to somebody else. Signing in to a second account
-    leaves a cursor measured against the first one's log.
+    leaves a cursor measured against the first one's log. The reset below does
+    not make the two documents one, and it is not even symmetrical: this
+    machine's whole data.json goes to the second account without asking
+    (offer_document), but of the second account's log only what lies above the
+    old cursor comes here - nothing at all if that log is shorter - because
+    what is filed after the reset is still the reply to a push that asked from
+    the old cursor. Only an account that already has a snapshot arrives whole.
+    The same goes for an account that was deleted and re-created. End-to-end
+    encryption only delays it: the key belongs to the first account, so the
+    cycle stops with e2ee_stale, but the app answers that by asking for the
+    passphrase again, and from then on the document goes over sealed. Wrong
+    for somebody else's account and not dependable for one's own: one
+    installation is one account's.
 
     Both are rare, and both are indistinguishable from working correctly from
     the outside, which is exactly why they are worth detecting rather than
@@ -776,9 +788,12 @@ def _run_cycle_locked(outbox):
         return _record_failure(result.get('error') or 'unreachable')
 
     if _log_is_not_the_one_we_know(state, int(result.get('head', 0))):
-        # Start again from the beginning against this log. Everything below
-        # depends on `since` pointing into the same log the server is
-        # answering from, and it no longer does.
+        # Start again from zero against this log - for the cursor and the
+        # counters. Everything below depends on `since` pointing into the same
+        # log the server is answering from, and it no longer does. What is
+        # filed below is still this push's reply, though, which was asked for
+        # from the old `since`, so operations at or below it are not fetched
+        # (see _log_is_not_the_one_we_know).
         sync_log.log('reset', was=int(state.get('base_seq', 0)),
                      head=int(result.get('head', 0)),
                      why='head_behind_cursor' if int(result.get('head', 0)) <

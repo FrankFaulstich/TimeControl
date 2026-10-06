@@ -1,9 +1,8 @@
 """
-Talking to the sync server: where the credential lives, and signing in.
-
-This module deliberately holds no synchronisation logic yet - only the
-connection and the credential. Emitting operations and applying incoming ones
-come later and will use the session established here.
+Talking to the sync server: where the credential lives, signing in and
+registering, and the requests the sync engine makes with the session that
+leaves. What to send and what to do with the answers is not decided here;
+that is tt/sync_engine.py and tt/sync_apply.py.
 
 WHY THE CREDENTIAL IS NOT IN config.json
 ----------------------------------------
@@ -313,7 +312,7 @@ def address_changed(configured):
     return _canonical(configured) != _canonical(creds['base_url'])
 
 
-def _post(base_url, action, payload=None, token=None, params=None):
+def _post(base_url, action, payload=None, token=None, params=None, deadline=None):
     """
     Performs one request and converts every failure into a stable code.
 
@@ -325,6 +324,8 @@ def _post(base_url, action, payload=None, token=None, params=None):
     :param payload: Sent as a JSON body via POST. None makes it a GET.
     :param params: Extra query parameters beside the action, for the
                    endpoints that read them from the query string.
+    :param deadline: Seconds for the whole call, DEADLINE when not given -
+                     longer only for what is long to send or fetch.
     """
     headers = {'Content-Type': 'application/json'}
     if token:
@@ -366,7 +367,7 @@ def _post(base_url, action, payload=None, token=None, params=None):
         # solved it with a deadline around the whole call; a sync that hangs
         # would wedge the worker permanently, so it needs the same guard.
         if _call_with_deadline is not None:
-            response = _call_with_deadline(_send, DEADLINE)
+            response = _call_with_deadline(_send, deadline or DEADLINE)
         else:
             response = _send()
     except TimeoutError:
@@ -633,8 +634,10 @@ def status():
             'device_uid': result.get('device_uid'),
         }
     if result.get('error') == 'invalid_token':
-        # Expired, revoked from another machine, or the account was switched
-        # off. All three mean the same thing to the user: sign in again.
+        # Expired, revoked, the account switched off - or deleted by the
+        # operator, or removed as never used, and then signing in fails too
+        # and only the operator can say why. The server tells none of these
+        # apart, on purpose; to the user it means: sign in again.
         return {'state': 'rejected', 'username': creds.get('username')}
     return {'state': 'unreachable', 'error': result.get('error', 'unreachable')}
 
@@ -683,11 +686,12 @@ def fit_batch(operations, max_ops=None, max_bytes=None):
     return batch
 
 
-def _authenticated(action, payload=None, params=None):
+def _authenticated(action, payload=None, params=None, deadline=None):
     creds = load_credentials()
     if not creds:
         return {'ok': False, 'error': 'not_signed_in'}
-    return _post(creds['base_url'], action, payload, token=creds['token'], params=params)
+    return _post(creds['base_url'], action, payload, token=creds['token'], params=params,
+                 deadline=deadline)
 
 
 def head():
@@ -742,8 +746,22 @@ def pull(since, limit=MAX_OPS_PER_CALL):
 # The server's own ceiling on a snapshot upload (TC_SNAPSHOT_MAX_BYTES). A
 # document past this is refused, and nothing the client does will make it
 # smaller - so it is caught here rather than rediscovered as a 413 on every
-# cycle for the rest of the installation's life.
-MAX_SNAPSHOT_BYTES = 4 * 1024 * 1024
+# cycle for the rest of the installation's life. It was 4 MiB until a real
+# document of 5.3 MB was refused for a week and its account filled up behind
+# it; the server's comment has the arithmetic for 16.
+MAX_SNAPSHOT_BYTES = 16 * 1024 * 1024
+
+# A snapshot is the one thing this client moves that can take longer than
+# DEADLINE allows a call: 16 MiB over a slow uplink is minutes, not seconds.
+# Its call gets DEADLINE plus the time it would take at this rate - half a
+# megabit a second, an upload slower than most - so that only a connection
+# that has really stopped runs out of time.
+SNAPSHOT_MIN_RATE = 64 * 1024   # bytes a second
+
+
+def _snapshot_deadline(size):
+    """The time a snapshot of `size` bytes is allowed, start to finish."""
+    return DEADLINE + size / SNAPSHOT_MIN_RATE
 
 
 def get_snapshot():
@@ -753,7 +771,9 @@ def get_snapshot():
     :return: On success 'seq', 'head' and 'document'. 'no_snapshot' when the
              account has none, which is the ordinary state of a young server.
     """
-    return _authenticated('snapshot')
+    # How big it is is not known before it arrives, so the largest one the
+    # server would have accepted.
+    return _authenticated('snapshot', deadline=_snapshot_deadline(MAX_SNAPSHOT_BYTES))
 
 
 def put_snapshot(seq, document):
@@ -773,4 +793,5 @@ def put_snapshot(seq, document):
     size = len(json.dumps(document, ensure_ascii=False).encode('utf-8'))
     if size > MAX_SNAPSHOT_BYTES:
         return {'ok': False, 'error': 'snapshot_too_large', 'bytes': size}
-    return _authenticated('snapshot', document, params={'seq': int(seq)})
+    return _authenticated('snapshot', document, params={'seq': int(seq)},
+                          deadline=_snapshot_deadline(size))

@@ -50,7 +50,7 @@ The calendar tab draws the same stretch: a task appears on every day it runs, wi
 
 **Local Data Storage:** All project data and time entries are saved in a `data.json` file in the application's directory.
 
-**Synchronisation (optional):** Keep one person's `data.json` in step across their own two or three computers, via a small PHP server you host yourself. Off by default, and everything above works exactly the same without it — see [Synchronising Two Machines](#synchronising-two-machines-) below.
+**Synchronisation (optional):** Keep one person's `data.json` in step across their own two or three computers, via a small PHP server — your own, or one somebody has invited you to. Off by default, and everything above works exactly the same without it — see [Synchronising Two Machines](#synchronising-two-machines-) below.
 
 **Automatic Updates:** The app checks GitHub for a new version once per session and, if one is available, shows a notification right under the version number on every screen, with a one-click button next to it.
 
@@ -165,7 +165,7 @@ there to show the shape, not to be copied.
 - **`mcp_server_enabled`**: Whether `TimeTrackerSL_GUI.py` also starts the MCP server when `mcp_transport` is `"http"` (default: `false`). See [MCP Server](#mcp-server-).
 - **`mcp_transport`**: `"http"` or `"stdio"` (default: `"http"`). See [MCP Server](#mcp-server-).
 - **`mcp_port`**: The port on which the MCP server listens when using the `"http"` transport (default: 8700).
-- **`sync`**: Optional, and absent by default — which means off. `enabled` switches synchronisation on, `base_url` is the address of your own server, `interval_minutes` is how often it runs in the background (default: 5), and `log_enabled` turns on a diagnostic log (default: off). Changing `base_url` after signing in takes effect once you sign in again: the access token belongs to the server that issued it, so it is never sent to a different address. The settings screen shows which address is in use and says so when the two differ. See [Synchronising Two Machines](#synchronising-two-machines-).
+- **`sync`**: Optional, and absent by default — which means off. `enabled` switches synchronisation on, `base_url` is the address of the sync server, `interval_minutes` is how often it runs in the background (default: 5), and `log_enabled` turns on a diagnostic log (default: off). Changing `base_url` after signing in takes effect once you sign in again: the access token belongs to the server that issued it, so it is never sent to a different address. The settings screen shows which address is in use and says so when the two differ. See [Synchronising Two Machines](#synchronising-two-machines-).
 
 All of these MCP settings can also be changed from the GUI, under **Settings → MCP Server Settings**, and the sync settings under **Settings → Sync Server Settings**.
 
@@ -260,7 +260,7 @@ This is deliberately **not** a collaboration feature. There is one document per 
 
 ### What you need
 
-A `data.json` cannot simply be copied back and forth — whichever copy is written last would silently destroy the other machine's afternoon. So the machines exchange *intentions* ("set the priority of task X to 3") through a small server that you host, which keeps them in an append-only log and hands each machine whatever it has not seen yet.
+A `data.json` cannot simply be copied back and forth — whichever copy is written last would silently destroy the other machine's afternoon. So the machines exchange *intentions* ("set the priority of task X to 3") through a small server — your own, or one you were invited to — which keeps them in an append-only log and hands each machine whatever it has not seen yet.
 
 That server is in [`php-server/`](php-server/). It is plain PHP with no database and no dependencies, and it runs on ordinary shared web hosting — the kind with an FTP login and no shell access. Installation, the security model and the exact API are described in [php-server/README.md](php-server/README.md).
 
@@ -272,9 +272,11 @@ That server is in [`php-server/`](php-server/). It is plain PHP with no database
 4. Enter your **username** and **password** and press **Sign in**.
 5. Repeat steps 2–4 on the second machine.
 
-**Somebody else on the same server** — a partner, a colleague — gets an account of their own, with a document of their own, by invitation. The operator makes a code with *Invite someone* in `setup.php` and hands it over with the server address. The invitee does step 3, then opens **Create an account with an invitation code**, enters the code and chooses a username and password; that device is signed in straight away, and their other machines sign in as in step 4. A code works once and for seven days, and the operator never learns the password. An account made this way that nothing is ever stored in, and that no device uses for a month, is removed again at a later registration; the operator can see which accounts that would be.
+**Somebody else on the same server** — a partner, a colleague — gets an account of their own, with a document of their own, by invitation. The operator makes a code with *Invite someone* in `setup.php` and hands it over with the server address. The invitee does step 3, then opens **Create an account with an invitation code**, enters the code and chooses a username and password; that device is signed in straight away, and their other machines sign in as in step 4. A code works once and for seven days. The operator is never shown the password — but whoever runs the server holds its hash, and could change the server's code to see passwords as they arrive, so choose a long one that you use nowhere else. An account made this way that nothing is ever stored in, and that no device uses for a month, is removed again at a later registration; the operator can see which accounts that would be.
 
-Whichever machine reaches an empty server first offers what it already has. A machine joining later offers its own document too, so nothing built up before you switched synchronisation on is left behind.
+Each person needs a TimeControl of their own and, on a shared computer, a login of their own: one installation holds one person's data, but the sign-in belongs to the operating-system user, not to the installation. Signing an installation in to somebody else's account hands them its whole document, while it gets only part of theirs, or none. Whoever runs the server can read what is synchronised unless the account switches on end-to-end encryption (below), and is the one to ask about a forgotten password — the only remedy the server has for that is deleting the account, which is no clean start for your other machines either: one that synchronised with the deleted account fetches from a new one only what lies past the point it had reached in the old one. What the operator, the host and the other account holders can and cannot do is set out under *Who can do what* in [`php-server/README.md`](php-server/README.md#who-can-do-what).
+
+Whichever machine reaches an empty account first offers what it already has. A machine joining later offers its own document too, so nothing built up before you switched synchronisation on is left behind.
 
 ### How it behaves
 
@@ -308,7 +310,7 @@ Two failures have a cause that is not in the log, because it is in how the serve
 
 ### End-to-end encryption 🔐
 
-Off by default. Without it, everything the sync server holds — project and task names, notes, the times you worked — sits on its disk as readable JSON. File permissions and an `.htaccess` keep the web out, but not the hosting account, and not whoever runs the machine. On shared hosting that is a real audience.
+Off by default. Without it, everything the sync server holds — project and task names, notes, the times you worked — sits on its disk as readable JSON. File permissions and an `.htaccess` keep the web out, but not the hosting account, and not whoever runs the machine — on a server you were invited to, that is somebody other than you. On shared hosting that is a real audience.
 
 Switched on, the client seals every operation before it leaves, and the server stores and hands on something it cannot read. It never learns the passphrase and never could: the key is derived on your own machines.
 
@@ -320,9 +322,9 @@ For a second device: copy `config.json` across — it carries the salt, which is
 
 **There is no recovery.** Lose the passphrase and everything the server holds is lost with it. Nobody — not the server, not the hosting provider, not us — can get it back. Write it down somewhere safe before you switch this on.
 
-**What it does not hide.** The server still sees how many projects, tasks and time entries exist, and when you worked: the timestamps travel in the clear because the ordering depends on them. It sees which device did what and when each one last called in, and your device name and IP address. A curious host can reconstruct your working hours in detail — just not what you were working on.
+**What it does not hide.** The server still sees how many projects, tasks and time entries exist, and when you worked: the timestamps travel in the clear because the ordering depends on them. It sees which device did what and when each one last called in, and your device name and IP address. A curious host — or whoever runs the server — can reconstruct your working hours in detail — just not what you were working on.
 
-**What it holds the server to.** Encryption stops the server reading; it does not by itself stop it meddling. Two things it might try are caught. Each operation says inside its own ciphertext which device sealed it, so relabelling one machine's work as another's no longer passes. And each device's counter has to keep rising, so an operation played a second time, or two swapped round, are refused — the cycle stops without applying anything and without moving its cursor.
+**What it holds the server to.** Encryption stops the server reading; it does not by itself stop it meddling. Two things it might try are caught. Each operation says inside its own ciphertext which device sealed it, so relabelling one machine's work as another's no longer passes. And each device's counter has to keep rising, so an operation played a second time, or two swapped round, are refused — the cycle stops without applying anything and without moving its cursor. What it does not catch is an operation that arrives unencrypted. While an account is being switched over, a machine that has not been given the passphrase yet still sends plain text, and refusing that would lose its work — so plain operations are still applied, and so is anything written into the log in plain text by whoever can write to the server's store: the operator, or the host. Encryption guards what can be read, not what can be written.
 
 Two things are deliberately *not* treated as attacks. A gap in a device's counters is not one: the queue raises its number before writing the line, so a failed write burns one for good, and stopping the sync over a full disk would be worse than the withholding it would claim to detect. Gaps go to the diagnostic log and no further. And the order *between* devices is not checked at all, because there is nothing to check it against — which of two machines' edits wins is decided by the sequence number, and the server hands those out. A server that simply never passes another device's work on is likewise invisible: absence of something you were never told about leaves no trace.
 

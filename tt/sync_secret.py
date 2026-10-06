@@ -12,7 +12,9 @@ OFF BY DEFAULT, AND OFF MEANS OFF
 An account without an `e2ee` block, or with one that says otherwise, is not
 encrypted and behaves exactly as this application always has. That is not a
 formality: it is the state almost every installation is in, it is what every
-existing test exercises, and nothing here may change it.
+existing test exercises, and nothing here may change it. It also means that,
+unless the account holder switches this on, whoever runs the server - which
+for somebody invited to it is another person - can read everything they sync.
 
 WHY THE KEY IS ON DISK AND THE PASSPHRASE IS NOT
 ------------------------------------------------
@@ -130,7 +132,11 @@ def account_context():
 
     The username the credential was issued for. Both machines sign in to the
     same account, so both compute the same value; it is bound into every
-    sealed operation so that one cannot be moved to another account.
+    sealed operation so that one cannot be moved to another account. A name
+    is not forever, though: the operator can delete an account and the name
+    can be taken again. Different people derive different keys, so nothing
+    sealed for the old account opens in the new one - but the name alone does
+    not tell the two apart.
 
     None when this machine is not signed in - which is why encryption cannot
     be switched on before signing in, and why status() says so rather than

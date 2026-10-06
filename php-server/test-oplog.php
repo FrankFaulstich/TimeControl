@@ -680,8 +680,10 @@ tc_test('a typo in the setting does not lock everybody out', function () {
 // Signing in during a flood (issue #585).
 //
 // The password-checking allowance is one global counter, and whoever reaches
-// ?a=login can spend it. These are the pieces that keep the owner able to sign
-// in anyway: a reserve, and the one fact that decides who may draw on it.
+// ?a=login can spend it. These are the pieces that keep an account holder able
+// to sign in through a stranger's flood: a reserve, and the one fact that
+// decides who may draw on it. (Not through one made by another account holder,
+// who can spend the reserve too - see TC_HASH_RESERVE_PER_MINUTE.)
 // ---------------------------------------------------------------------------
 
 /**
@@ -1076,7 +1078,7 @@ tc_test('an old list that cannot be read is left exactly as it was', function ($
 });
 
 tc_test('while it cannot be converted, signing in works from the old list', function ($store, $uid) {
-    // A full disk, say. The owner must still be able to sign in, and nothing
+    // A full disk, say. Account holders must still be able to sign in, and nothing
     // may add or remove an account behind the list's back meanwhile.
     tc_legacy_accounts($store, ['frank' => ['uid' => 'uid-frank', 'pass' => 'x']]);
     file_put_contents(tc_accounts_dir($store), 'in the way');

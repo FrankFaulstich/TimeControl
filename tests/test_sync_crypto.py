@@ -112,7 +112,7 @@ class TestWhatTheServerGetsToSee(unittest.TestCase):
     def test_the_fields_stay_an_object(self):
         """
         The server refuses anything else with 'bad_fields'
-        (php-server/tc/lib/oplog.php:600-602), so this is what lets the
+        (tc_ops_validate() in php-server/tc/lib/oplog.php), so this is what lets the
         operation path work without a server change.
         """
         wire = sync_crypto.seal({'op': 'task.set', 'lc': 1}, self.key, ACCOUNT)
@@ -121,7 +121,7 @@ class TestWhatTheServerGetsToSee(unittest.TestCase):
     def test_the_envelope_uses_only_keys_the_server_keeps(self):
         """
         The server copies a fixed list of keys onto the entry it stores and
-        drops everything else without a word (php-server/tc/lib/oplog.php:165).
+        drops everything else without a word (tc_log_append() in php-server/tc/lib/oplog.php).
         A field added to the envelope later would therefore not be rejected -
         it would arrive nowhere, and only the other machine would notice, by
         failing to open what it was sent. Pinned here because the drop is
