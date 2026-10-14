@@ -194,6 +194,19 @@ class TestKeepingInStepDoesTheRightThing(unittest.TestCase):
         self.follow('w', None)
         self.assertEqual(self.streamlit.session_state['w'], 'typed')
 
+    def test_a_widget_whose_state_streamlit_dropped_is_seeded_again(self):
+        """
+        Issue #662. A run that ends in st.rerun() drops the state of every
+        widget it did not draw; the remembered value is no widget and stays.
+        Going by that alone, the field was left unseeded, came back empty,
+        and the form saved the empty value over the note.
+        tests/test_email_view.py runs the real thing.
+        """
+        self.follow('w', 'the note')
+        del self.streamlit.session_state['w']      # what Streamlit does
+        self.follow('w', 'the note')
+        self.assertEqual(self.streamlit.session_state['w'], 'the note')
+
     def test_the_first_pass_seeds_the_widget_whatever_the_value_is(self):
         """
         Where the sentinel actually earns its keep. Without it, "nothing seen

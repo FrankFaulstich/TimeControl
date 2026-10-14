@@ -9,10 +9,10 @@ import imaplib
 import re
 import uuid
 import email
-from email.header import decode_header
 from i18n import _
 from tt.filelock import locked, LockTimeout
-from tt.mail_subject import strip_prefixes
+from tt.mail_body import body_of
+from tt.mail_subject import read_subject, strip_prefixes
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta, date
 import calendar
@@ -67,7 +67,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.23"
+    VERSION = "4.24"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -1837,6 +1837,11 @@ class TimeTracker:
     def fetch_emails_to_tasks(self):
         """
         Fetches emails from the configured IMAP account and creates tasks in the 'hide' project.
+
+        Each mail becomes one task: its subject, without forwarding and reply
+        markers, the name (tt/mail_subject.py), and its text the note
+        (tt/mail_body.py) - plain text where the mail has any, otherwise its
+        HTML as text, and the text of any message forwarded as an attachment.
         """
         config_data = {}
         if os.path.exists('config.json'):
@@ -1880,34 +1885,27 @@ class TimeTracker:
                 status, data = mail.fetch(m_id, "(RFC822)")
                 if status != "OK": continue
                 
-                msg = email.message_from_bytes(data[0][1])
-                
-                # Decode Subject
-                subject_header = msg.get("Subject", _("No Subject"))
-                decoded_parts = decode_header(subject_header)
-                subject = ""
-                for part, encoding in decoded_parts:
-                    if isinstance(part, bytes):
-                        subject += part.decode(encoding or "utf-8", errors="replace")
-                    else: subject += part
+                # See tt/mail_subject.py and tt/mail_body.py for what is done
+                # with the two halves, and why neither of them may raise. The
+                # parser itself can: a mail nested a thousand levels deep
+                # exhausts the recursion limit. Such a mail is left in the
+                # mailbox rather than stopping the import half way, which
+                # would also leave every mail imported before it to be
+                # imported again next time.
+                try:
+                    msg = email.message_from_bytes(data[0][1])
 
-                # A task made by forwarding a mail arrives called "WG: AW:
-                # Angebot Halle 3". The markers record how the message
-                # travelled, not what the task is about, and in a list of
-                # today's work they are what you read first.
-                subject = strip_prefixes(subject)
+                    # A task made by forwarding a mail arrives called "WG:
+                    # AW: Angebot Halle 3". The markers record how the
+                    # message travelled, not what the task is about, and in a
+                    # list of today's work they are what you read first.
+                    subject = strip_prefixes(read_subject(msg) or _("No Subject"))
+                    note = body_of(msg)
+                except Exception:
+                    continue
 
-                # Extract Body
-                body = ""
-                if msg.is_multipart():
-                    for part in msg.walk():
-                        if part.get_content_type() == "text/plain":
-                            body = part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8', errors='replace')
-                            break
-                else:
-                    body = msg.get_payload(decode=True).decode(msg.get_content_charset() or 'utf-8', errors='replace')
-                
-                self.add_task(self.HIDDEN_PROJECT, subject, due_date=date.today().isoformat(), note=body)
+                self.add_task(self.HIDDEN_PROJECT, subject, due_date=date.today().isoformat(),
+                              note=note)
                 count += 1
                 mail.store(m_id, '+FLAGS', '\\Deleted')
             

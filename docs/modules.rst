@@ -33,6 +33,12 @@ Email Subjects
 .. automodule:: tt.mail_subject
    :members:
 
+Email Bodies
+~~~~~~~~~~~~
+
+.. automodule:: tt.mail_body
+   :members:
+
 The Notes Editor
 ~~~~~~~~~~~~~~~~
 
