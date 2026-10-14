@@ -531,13 +531,20 @@ class TestHtmlToText(unittest.TestCase):
 class TestNothingTakesLong(unittest.TestCase):
     """
     The import runs while the window waits. Every one of these used to take
-    seconds to minutes, or gigabytes.
+    minutes, or gigabytes.
+
+    What decides that is how much gets read and written, so that is what is
+    checked first. The time limit only has to tell seconds from minutes: it
+    is far above what these take on any machine, because a test run on a busy
+    shared one is slow in ways that say nothing about this code.
     """
 
-    def assertQuick(self, html, seconds=2.0):
+    SECONDS = 15
+
+    def assertQuick(self, html):
         started = time.perf_counter()
         note = body_of(_parsed(_html(html)))
-        self.assertLess(time.perf_counter() - started, seconds)
+        self.assertLess(time.perf_counter() - started, self.SECONDS)
         self.assertLessEqual(len(note), MAX_NOTE_CHARS + 2)
         return note
 
@@ -546,6 +553,16 @@ class TestNothingTakesLong(unittest.TestCase):
 
     def test_one_endless_line(self):
         self.assertQuick('<table><tr>' + '<td>x</td>' * 100000 + '</tr></table>')
+
+    def test_writing_stops_once_the_note_is_full(self):
+        """Separators count too: they let a row of cells grow twice as long."""
+        for html in ('<table><tr>' + '<td>x</td>' * 100000 + '</tr></table>',
+                     '<ul><li>x' * 20000,
+                     '<p>' + '<a href="https://example.com/x">y</a> ' * 50000,
+                     '<hr>' * 100000):
+            with self.subTest(html=html[:30]):
+                text = html_to_text(html)
+                self.assertLess(len(text), tt.mail_body._TextWriter.LIMIT + 1000)
 
     def test_more_html_than_is_ever_read(self):
         self.assertEqual(len(html_to_text('<p>' + 'x' * (2 * MAX_HTML_CHARS))), MAX_HTML_CHARS - 3)

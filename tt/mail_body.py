@@ -330,7 +330,10 @@ class _TextWriter(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self._lines = []        # finished lines
-        self._line = ''         # the one being written
+        # The line being written, in pieces, joined once when it ends. A
+        # string grown piece by piece is copied whole each time, which made a
+        # table row of a hundred thousand cells take seconds.
+        self._line = []
         self._prefix = ''       # what the current line starts with, e.g. "- "
         self._gap = 0           # blank lines owed before the next text
         self._skip = 0          # depth inside elements whose content is dropped
@@ -400,7 +403,7 @@ class _TextWriter(HTMLParser):
         if tag == 'a' and self._links:
             href, line, start = self._links.pop()
             # The link's own text, if it is still on the line being written.
-            shown = self._line[start:] if line == len(self._lines) else self._line
+            shown = ''.join(self._line[start:] if line == len(self._lines) else self._line)
             if href and href.lower() not in shown.lower():
                 self._write(' <%s>' % href if shown.strip() else '<%s>' % href)
         elif tag in ('ul', 'ol'):
@@ -437,8 +440,9 @@ class _TextWriter(HTMLParser):
         if not text.strip():
             # White space between two words of running text is a space, not
             # nothing - but at the start of a line it is nothing.
-            if self._line and not self._line.endswith(' '):
-                self._line += ' '
+            if self._line and not self._line[-1].endswith(' '):
+                self._line.append(' ')
+                self._size += 1
             return
         self._write(text)
 
@@ -454,36 +458,47 @@ class _TextWriter(HTMLParser):
                     return
             if self._lines and self._gap:
                 self._lines.extend([''] * self._gap)
+                self._size += self._gap
             self._gap = 0
-            self._line = self._prefix
+            self._line = [self._prefix] if self._prefix else []
             self._size += len(self._prefix)
             self._prefix = ''
             self._cell = False
         elif self._cell:
             # The first text of a further cell in the same row. A label that
             # ends in a colon reads as one with its value.
-            self._line = self._line.rstrip()
-            self._line += ' ' if self._line.endswith(':') else ' | '
+            while self._line and not self._line[-1].strip():
+                self._line.pop()
+            if self._line:
+                self._line[-1] = self._line[-1].rstrip()
+            separator = ' ' if self._line and self._line[-1].endswith(':') else ' | '
+            self._line.append(separator)
+            self._size += len(separator)
             text = text.lstrip()
             self._cell = False
-        self._line += text
+        self._line.append(text)
         self._written += 1
         self._size += len(text)
 
     def _emit_line(self, line):
+        if self._size > self.LIMIT:
+            return
         if self._lines and self._gap:
             self._lines.extend([''] * self._gap)
+            self._size += self._gap
         self._gap = 0
         self._lines.append(line)
-        self._size += len(line)
+        self._size += len(line) + 1
 
     def _end_line(self, force=False):
-        if self._line.strip():
-            self._lines.append(self._line.rstrip())
+        line = ''.join(self._line).rstrip()
+        if line.strip():
+            self._lines.append(line)
+            self._size += 1         # the line feed it will be joined with
         elif force and self._lines:
             # A <br> on an empty line is a blank line someone meant.
             self._gap = max(self._gap, 1)
-        self._line = ''
+        self._line = []
         self._cell = False
 
     def _block(self, spaced=False):
