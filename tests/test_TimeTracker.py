@@ -1,5 +1,6 @@
 import unittest
 import unittest.mock
+import email
 import io
 import json
 import os
@@ -1193,6 +1194,14 @@ class TestTimeTracker(unittest.TestCase):
         :param raw: The message, as RFC822 bytes.
         :return: What fetch_emails_to_tasks() returned.
         """
+        return self._import_emails(mock_imap_cls, mock_open, mock_exists, raw)
+
+    def _import_emails(self, mock_imap_cls, mock_open, mock_exists, *raws):
+        """
+        The same, against a fake server holding these messages in this order.
+
+        :return: What fetch_emails_to_tasks() returned.
+        """
         mock_exists.return_value = True
         real_open = io.open
 
@@ -1205,8 +1214,9 @@ class TestTimeTracker(unittest.TestCase):
         mock_open.side_effect = only_config
 
         mock_mail = mock_imap_cls.return_value
-        mock_mail.search.return_value = ("OK", [b"1"])
-        mock_mail.fetch.return_value = ("OK", [(None, raw)])
+        mock_mail.search.return_value = (
+            "OK", [b" ".join(str(n).encode() for n in range(1, len(raws) + 1))])
+        mock_mail.fetch.side_effect = [("OK", [(None, raw)]) for raw in raws]
 
         return self.tracker.fetch_emails_to_tasks()
 
@@ -1280,6 +1290,93 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIsNone(error)
         self.assertEqual([t['task_name'] for t in self._imported_tasks()],
                          ['Angebot Halle 3 für Prüfung'])
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_reads_a_folded_subject_and_an_html_body(self, mock_imap_cls, mock_open, mock_exists):
+        """
+        Issue #662. The fold of a long subject went into the task name, and
+        a mail with no plain-text part gave an empty note. tt/mail_subject.py
+        and tt/mail_body.py are tested on their own; this is that the import
+        uses them.
+        """
+        count, error = self._import_one_email(
+            mock_imap_cls, mock_open, mock_exists,
+            b"Subject: WG: Bugs | 4711 - Plastic RC\r\n Hinges fail\r\n"
+            b"Content-Type: text/html; charset=utf-8\r\n\r\n"
+            b"<html><head><style>p{}</style></head><body>"
+            b"<p>Bug 4711</p><p>Status: open</p></body></html>\r\n")
+
+        self.assertIsNone(error)
+        self.assertEqual(count, 1)
+        tasks = self._imported_tasks()
+        self.assertEqual(tasks[0]['task_name'], 'Bugs | 4711 - Plastic RC Hinges fail')
+        self.assertEqual(tasks[0]['note'], 'Bug 4711\nStatus: open')
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_an_empty_subject_is_named_anyway(self, mock_imap_cls, mock_open, mock_exists):
+        """A row with no name has nothing to click on."""
+        self._import_one_email(mock_imap_cls, mock_open, mock_exists,
+                               b"Subject: \r\n\r\nBody.")
+        self.assertEqual([t['task_name'] for t in self._imported_tasks()],
+                         [_("No Subject")])
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_one_odd_message_does_not_stop_the_rest(self, mock_imap_cls, mock_open, mock_exists):
+        """
+        A charset Python does not know raised, the import stopped half way,
+        and the messages it had already imported were never expunged - to be
+        imported again on the next run, and on every run after that.
+        """
+        odd = (b"Subject: =?x-unknown?Q?Gr=F6=DFe?=\r\n"
+               b"Content-Type: text/plain; charset=x-unknown\r\n"
+               b"Content-Transfer-Encoding: 8bit\r\n\r\nGr\xf6\xdfe")
+        plain = b"Subject: Second\r\n\r\nBody."
+
+        count, error = self._import_emails(mock_imap_cls, mock_open, mock_exists,
+                                           odd, plain)
+
+        self.assertIsNone(error)
+        self.assertEqual(count, 2)
+        self.assertTrue(mock_imap_cls.return_value.expunge.called)
+        tasks = self._imported_tasks()
+        self.assertEqual([(t['task_name'], t['note']) for t in tasks],
+                         [('Größe', 'Größe'), ('Second', 'Body.')])
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_a_mail_that_cannot_be_parsed_stays_in_the_mailbox(self, mock_imap_cls, mock_open, mock_exists):
+        """
+        Python's parser itself gives up on a mail nested a thousand levels
+        deep. That mail is left where it is; the others still come in, and
+        are still deleted from the mailbox afterwards.
+        """
+        real_parse = email.message_from_bytes
+
+        def parse(raw, *args, **kwargs):
+            if b'Subject: Deep' in raw:
+                raise RecursionError('maximum recursion depth exceeded')
+            return real_parse(raw, *args, **kwargs)
+
+        with unittest.mock.patch('tt.TimeTracker.email.message_from_bytes', side_effect=parse):
+            count, error = self._import_emails(
+                mock_imap_cls, mock_open, mock_exists,
+                b"Subject: First\r\n\r\nOne.", b"Subject: Deep\r\n\r\nx",
+                b"Subject: Last\r\n\r\nThree.")
+
+        self.assertIsNone(error)
+        self.assertEqual(count, 2)
+        self.assertEqual([t['task_name'] for t in self._imported_tasks()], ['First', 'Last'])
+        mock_mail = mock_imap_cls.return_value
+        deleted = [c.args[0] for c in mock_mail.store.call_args_list]
+        self.assertEqual(deleted, [b'1', b'3'])
+        self.assertTrue(mock_mail.expunge.called)
 
     def test_promote_task_to_project_name_conflict(self):
         """Tests that promoting fails if a main project with the same name already exists."""

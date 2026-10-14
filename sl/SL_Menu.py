@@ -698,6 +698,17 @@ def follow_stored_value(widget_key, stored):
     wins - a conflict either way, and taking what is on disk at least invents
     nothing.
 
+    The widget is also seeded again whenever its key has gone missing, and
+    that half matters as much as the other (issue #662). Streamlit throws away
+    the state of every widget a run did not get round to drawing - and a run
+    that ends in st.rerun() counts, so pressing anything in a list drops the
+    widgets of every entry below it. The remembered value is not a widget and
+    stays. Going by that alone, the field looked seen and up to date, was left
+    unseeded, and came back as its type's empty default; the form that saves
+    whatever differs then wrote that over the document. That is how imported
+    mails lost their notes: assigning one emptied the next, and only the first
+    in each session kept its text.
+
     Call it before creating the widget, and give the widget no `value=`.
 
     :param widget_key: The key the widget is created with.
@@ -705,10 +716,28 @@ def follow_stored_value(widget_key, stored):
     :return: `stored`, so the caller can compare the widget against it.
     """
     seen_key = widget_key + '__seen'
-    if st.session_state.get(seen_key, _NOT_SEEN_YET) != stored:
+    if (widget_key not in st.session_state
+            or st.session_state.get(seen_key, _NOT_SEEN_YET) != stored):
         st.session_state[seen_key] = stored
         st.session_state[widget_key] = stored
     return stored
+
+
+def clear_widget(widget_key):
+    """
+    Empties a widget, as a button's on_click callback.
+
+    A callback runs before the script draws anything, which is what this
+    needs twice over. Streamlit refuses to have a drawn widget's value set in
+    the same run - the email form's clear button raised exactly that once
+    follow_stored_value() took its date over. And it needs no st.rerun() of
+    its own: a rerun before the rest of the form is drawn drops whatever was
+    just typed into those fields, so a note edited a moment before the click
+    was lost. This way the cleared date and that edit are saved together.
+
+    :param widget_key: The key of the widget to empty.
+    """
+    st.session_state[widget_key] = None
 
 
 def render_encryption_settings(config):
@@ -2012,8 +2041,12 @@ def view_email_assignment():
     # Remember how many tasks there were when this view was opened, so the
     # progress bar below has a stable total to measure against even as
     # tasks are assigned or deleted (which shrinks hidden_tasks itself).
-    if 'email_task_total' not in st.session_state:
-        st.session_state.email_task_total = len(hidden_tasks)
+    # It can also grow: mails fetched through the MCP server, or arriving from
+    # the other machine, land here while the view is open, and measured
+    # against the old total they made the bar's value negative - which
+    # st.progress refuses, on every redraw, until Back was pressed.
+    st.session_state.email_task_total = max(
+        st.session_state.get('email_task_total', 0), len(hidden_tasks))
 
     total_tasks = st.session_state.email_task_total
     remaining_tasks = len(hidden_tasks)
@@ -2067,7 +2100,7 @@ def view_email_assignment():
             with st.expander(_("Edit Details"), expanded=True):
                 # Current values for pre-filling
                 current_due_date_str = task.get('due_date')
-                current_due_date_obj = datetime.fromisoformat(current_due_date_str).date() if current_due_date_str else datetime.now().date()
+                current_due_date_obj = datetime.fromisoformat(current_due_date_str).date() if current_due_date_str else None
                 current_today_flag = task.get('today', False)
                 current_task_name = task.get('task_name', '')
                 current_note = task.get('note', '')
@@ -2082,12 +2115,23 @@ def view_email_assignment():
                 today_key = f"email_task_today_{task['id']}"
                 note_key = f"email_task_note_{task['id']}"
 
+                # An emptied name is not an edit: a task has to be called
+                # something, and update_task() keeps the old name when given
+                # none. Saved as one all the same, it left the field still
+                # differing from the document, so the form saved again, and
+                # again, for as long as the field stayed empty. The field is
+                # put back instead.
+                if not str(st.session_state.get(name_key, current_task_name)).strip():
+                    st.session_state.pop(name_key + '__seen', None)
                 follow_stored_value(name_key, current_task_name)
                 new_task_name = st.text_input(_("Task Name"), key=name_key)
 
-                # A task with no due date shows today's, and saving it that
-                # way is what this form has always done. Left as it is: it is
-                # a decision about the form, not the fault being fixed here.
+                # A task with no due date shows an empty field. It used to
+                # show today's, which made the clear button below pointless:
+                # the date it had just removed came straight back as today's
+                # and was saved again. Opening this view still gives every
+                # task without a date today's (see above), so the only task
+                # that shows an empty field here is one somebody cleared.
                 follow_stored_value(date_key, current_due_date_obj)
 
                 col_date, col_clear_date, col_today = st.columns([5, 1, 2])
@@ -2099,12 +2143,12 @@ def view_email_assignment():
                     )
                 with col_clear_date:
                     st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-                    if st.button("×", key=f"clear_email_due_date_{task['id']}", use_container_width=True, help=_("Clear")):
-                        # Emptying the field is an edit like any other: the
-                        # widget is cleared and the save below sees it differ
-                        # from the stored date.
-                        st.session_state[date_key] = None
-                        st.rerun()
+                    # Emptying the field is an edit like any other: the
+                    # widget is cleared and the save below sees it differ
+                    # from the stored date. See clear_widget() for why in a
+                    # callback.
+                    st.button("×", key=f"clear_email_due_date_{task['id']}", use_container_width=True,
+                              help=_("Clear"), on_click=clear_widget, args=(date_key,))
                 with col_today:
                     st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
                     follow_stored_value(today_key, current_today_flag)
