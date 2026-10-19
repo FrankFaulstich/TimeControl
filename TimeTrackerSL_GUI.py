@@ -15,7 +15,8 @@ from tt.TimeTracker import TimeTracker
 try:
     from update import (check_for_updates, download_update, install_update,
                         clear_update_leftovers, install_exe_update,
-                        pending_exe_update, relaunch_frozen, RESTART_EXIT_CODE)
+                        pending_exe_update, relaunch_frozen, RESTART_EXIT_CODE,
+                        UPDATE_ZIP_FILE, is_declined, waiting_update_version)
     UPDATE_AVAILABLE = True
 except ImportError:
     UPDATE_AVAILABLE = False
@@ -174,6 +175,69 @@ def _safe_window_position(x, y, width, height):
         return None, None
     except Exception:
         return None, None
+
+def install_waiting_update():
+    """
+    Installs an update.zip left by an earlier session, unless it is the
+    version the user rolled back from.
+
+    A source checkout only. The update unpacks .py files over the checkout,
+    which is meaningless for a frozen build: it has none to overwrite and
+    would not pick up the change anyway.
+
+    The waiting zip is checked against the rollback because an update.zip
+    does not say who wanted it. One the user asked for - with the button -
+    comes with the note already taken away (see update.forget_declined_version),
+    so what is left matching it is one nobody asked for.
+
+    :return: True if an update was installed and the application has to be
+        started again to run it.
+    """
+    if not UPDATE_AVAILABLE or _is_frozen() or not os.path.exists(UPDATE_ZIP_FILE):
+        return False
+    version = waiting_update_version()
+    if is_declined(version):
+        print(f"Not installing version {version}: you rolled back from it. "
+              "The update button in the application still installs it.")
+        try:
+            os.remove(UPDATE_ZIP_FILE)
+        except OSError:
+            pass
+        return False
+    print("Update found. Installing...")
+    install_update()
+    return True
+
+
+def fetch_update_for_next_start(current_version):
+    """
+    Downloads a newer release on the way out, for install_waiting_update() to
+    install at the next start - unless it is the version the user rolled back
+    from. Then it is only reported; the notice in the application still
+    offers it.
+
+    A source checkout only, like the install. A frozen build never fetches
+    anything the user did not click.
+
+    :param current_version: The version this process is running.
+    """
+    if not UPDATE_AVAILABLE or _is_frozen():
+        return
+    print("Checking for updates...")
+    try:
+        is_update, new_version, url = check_for_updates(current_version)
+        if not (is_update and url):
+            return
+        if is_declined(new_version):
+            print(f"Version {new_version} is available, but you rolled back from it, "
+                  "so it is not downloaded. The update button in the application "
+                  "still installs it.")
+            return
+        print("New version " + new_version + " is available. Downloading...")
+        download_update(url)
+    except Exception as e:
+        print(f"Error checking for updates: {e}")
+
 
 def _asked_for_restart(exit_code):
     """
@@ -374,11 +438,8 @@ if __name__ == '__main__':
     # The update mechanism downloads and unpacks a source-code zip over the
     # existing .py files (see update.py) - meaningless for a frozen build,
     # which has no loose source files to overwrite and would not pick up
-    # the change anyway. Skip it entirely rather than have it silently do
-    # nothing (or write stray files next to the .exe).
-    if UPDATE_AVAILABLE and not _is_frozen() and os.path.exists("update.zip"):
-        print("Update found. Installing...")
-        install_update()
+    # the change anyway, so install_waiting_update() leaves it alone.
+    if install_waiting_update():
         print("Restarting application...")
         # execv replaces this process without flushing what Python has
         # buffered, so the line above would never reach the log it is
@@ -410,12 +471,4 @@ if __name__ == '__main__':
         sys.stdout.flush()   # execv does not - see above
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
-    if UPDATE_AVAILABLE and not _is_frozen():
-        print("Checking for updates...")
-        try:
-            is_update, unused_version, url = check_for_updates(tt.get_version())
-            if is_update and url:
-                print("New version " + unused_version + " is available. Downloading...")
-                download_update(url)
-        except Exception as e:
-            print(f"Error checking for updates: {e}")
+    fetch_update_for_next_start(tt.get_version())

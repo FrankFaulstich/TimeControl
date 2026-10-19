@@ -865,5 +865,216 @@ class TestRollingBackAsksForTheSameThing(unittest.TestCase):
         self.assertFalse(update.restore_previous_version())
 
 
+class TestRememberingARollback(unittest.TestCase):
+    """
+    Issue #597. A source checkout updates itself - downloads on the way out,
+    installs on the way in - and neither half knew about a rollback. The
+    version somebody had just rolled back from came back at the next start,
+    unasked. So the rollback now leaves a note, and both halves read it.
+
+    The note belongs to the installation, beside update.zip, so these tests
+    keep it in a scratch directory simply by working in one.
+    """
+
+    def setUp(self):
+        self.home = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.home, True)
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self.home)
+
+    def _backup(self):
+        with zipfile.ZipFile('prev-version.zip', 'w') as archive:
+            archive.writestr('TimeControl-old/marker.py', 'VERSION = "old"\n')
+
+    def test_a_rollback_remembers_what_it_rolled_back_from(self):
+        self._backup()
+        self.assertTrue(update.restore_previous_version(rolled_back_from='4.25'))
+        self.assertEqual(update.declined_version(), '4.25')
+        self.assertTrue(os.path.exists(os.path.join(self.home, update.DECLINED_UPDATE_FILE)))
+
+    def test_the_note_survives_the_next_update(self):
+        """
+        An update unpacks the release over the installation, and a rollback
+        unpacks the backup the update made. Neither may carry the note.
+        """
+        update.remember_declined_version('4.25')
+        with zipfile.ZipFile(update.UPDATE_ZIP_FILE, 'w') as archive:
+            archive.writestr('Owner-TimeControl-abc/tt/TimeTracker.py', '    VERSION = "4.26"\n')
+        update.install_update()
+        self.assertEqual(update.declined_version(), '4.25')
+        with zipfile.ZipFile('prev-version.zip') as backup:
+            self.assertNotIn(update.DECLINED_UPDATE_FILE,
+                             [os.path.basename(name) for name in backup.namelist()])
+
+    def test_and_is_never_committed(self):
+        with open(os.path.join(os.path.dirname(update.__file__), '.gitignore'),
+                  encoding='utf-8') as handle:
+            self.assertIn(update.DECLINED_UPDATE_FILE, handle.read().split())
+
+    def test_a_rollback_that_failed_declines_nothing(self):
+        self.assertFalse(update.restore_previous_version(rolled_back_from='4.25'))
+        self.assertIsNone(update.declined_version())
+        with open('prev-version.zip', 'wb') as handle:
+            handle.write(b'not a zip')
+        self.assertFalse(update.restore_previous_version(rolled_back_from='4.25'))
+        self.assertIsNone(update.declined_version())
+
+    def test_a_caller_that_does_not_say_declines_nothing(self):
+        self._backup()
+        self.assertTrue(update.restore_previous_version())
+        self.assertIsNone(update.declined_version())
+
+    def _frozen_installation(self, previous=True):
+        here = os.path.join(self.home, 'app')
+        os.makedirs(here)
+        files = [('TimeControl.exe', b'new')] + ([(update.PREVIOUS_EXE, b'old')] if previous else [])
+        for name, body in files:
+            with open(os.path.join(here, name), 'wb') as handle:
+                handle.write(body)
+        return os.path.join(here, 'TimeControl.exe')
+
+    def test_the_frozen_build_remembers_it_too(self):
+        target = self._frozen_installation()
+        self.assertTrue(update.restore_previous_exe(target, rolled_back_from='4.25'))
+        self.assertEqual(update.declined_version(), '4.25')
+
+    def test_but_not_when_its_rollback_failed(self):
+        self.assertFalse(update.restore_previous_exe(self._frozen_installation(previous=False),
+                                                     rolled_back_from='4.25'))
+        self.assertIsNone(update.declined_version())
+
+    def test_nor_when_the_second_rename_failed(self):
+        target = self._frozen_installation()
+        real = os.replace
+        calls = []
+
+        def second_fails(source, destination):
+            calls.append(source)
+            if len(calls) == 2:
+                raise OSError('locked')
+            return real(source, destination)
+        with unittest.mock.patch('update.os.replace', side_effect=second_fails):
+            self.assertFalse(update.restore_previous_exe(target, rolled_back_from='4.25'))
+        self.assertIsNone(update.declined_version())
+
+    def test_writing_the_note_says_whether_it_worked(self):
+        self.assertTrue(update.remember_declined_version('4.25'))
+        self.assertFalse(update.remember_declined_version(None))
+        self.assertFalse(update.remember_declined_version(''))
+        self.assertEqual(update.declined_version(), '4.25')
+
+    def test_a_note_half_written_leaves_the_last_one_standing(self):
+        update.remember_declined_version('4.25')
+
+        def interrupted(data, handle):
+            handle.write('{"vers')
+            raise OSError('disk full')
+        with unittest.mock.patch('update.json.dump', side_effect=interrupted):
+            self.assertFalse(update.remember_declined_version('4.26'))
+        self.assertEqual(update.declined_version(), '4.25')
+        self.assertFalse(os.path.exists(update.DECLINED_UPDATE_FILE + '.tmp'))
+
+    def test_only_the_last_rollback_counts(self):
+        update.remember_declined_version('4.25')
+        update.remember_declined_version('4.26')
+        self.assertFalse(update.is_declined('4.25'))
+        self.assertTrue(update.is_declined('4.26'))
+
+    def test_versions_are_compared_as_versions(self):
+        """The release is tagged v4.25; the application calls itself 4.25."""
+        update.remember_declined_version('4.25')
+        for same in ('4.25', 'v4.25', '4.25.0'):
+            with self.subTest(version=same):
+                self.assertTrue(update.is_declined(same))
+        for other in ('4.26', '4.2', '4.250', '4.25.1', None, ''):
+            with self.subTest(version=other):
+                self.assertFalse(update.is_declined(other))
+
+    def test_and_as_text_when_they_are_not_versions(self):
+        update.remember_declined_version('4.25-custom')
+        self.assertTrue(update.is_declined('v4.25-custom'))
+        self.assertFalse(update.is_declined('4.26-custom'))
+
+    def test_with_no_note_nothing_is_declined(self):
+        self.assertFalse(update.is_declined('4.25'))
+
+    def test_asking_for_it_takes_the_note_away(self):
+        update.remember_declined_version('4.25')
+        self.assertTrue(update.forget_declined_version())
+        self.assertFalse(update.is_declined('4.25'))
+        self.assertTrue(update.forget_declined_version(), 'nothing there is gone too')
+
+    def test_a_note_that_will_not_go_is_reported(self):
+        """Then the update the user asked for would be discarded at the restart."""
+        update.remember_declined_version('4.25')
+        with unittest.mock.patch('update.os.remove', side_effect=PermissionError('locked')):
+            self.assertFalse(update.forget_declined_version())
+
+    def test_a_note_that_cannot_be_written_does_not_fail_the_rollback(self):
+        """A rollback that worked must not be reported as one that failed."""
+        os.makedirs(update.DECLINED_UPDATE_FILE + '.tmp')
+        self.assertFalse(update.remember_declined_version('4.25'))
+        self._backup()
+        self.assertTrue(update.restore_previous_version(rolled_back_from='4.25'))
+
+    def test_a_note_that_cannot_be_read_declines_nothing(self):
+        """It is read at every start; whatever is in it, the start goes on."""
+        for body in ('not json', '[]', '{"version": 425}', '{"version": ""}',
+                     '[' * 100000 + ']' * 100000):
+            with self.subTest(body=body[:20]):
+                with open(update.DECLINED_UPDATE_FILE, 'w', encoding='utf-8') as handle:
+                    handle.write(body)
+                self.assertIsNone(update.declined_version())
+                self.assertFalse(update.is_declined('4.25'))
+
+
+class TestWhichVersionIsWaiting(unittest.TestCase):
+    """
+    An update.zip does not say who wanted it, so the launcher reads which
+    version it is from the source inside it.
+    """
+
+    def setUp(self):
+        self.home = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.home, True)
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self.home)
+
+    def _zip(self, files):
+        with zipfile.ZipFile(update.UPDATE_ZIP_FILE, 'w') as archive:
+            for name, body in files.items():
+                archive.writestr(name, body)
+
+    def test_the_version_the_snapshot_carries(self):
+        self._zip({'Owner-TimeControl-abc123/README.md': 'x',
+                   'Owner-TimeControl-abc123/tt/TimeTracker.py':
+                       'SCHEMA_VERSION = 2\nMIN_DATA_VERSION = "1.0"\n'
+                       'class TimeTracker:\n    VERSION = "4.25"  # see "CHANGELOG"\n'})
+        self.assertEqual(update.waiting_update_version(), '4.25')
+
+    def test_a_release_from_before_the_tt_package(self):
+        self._zip({'Owner-TimeControl-abc123/TimeTracker.py': "    VERSION = '3.9'\n"})
+        self.assertEqual(update.waiting_update_version(), '3.9')
+
+    def test_only_the_application_s_own_file_counts(self):
+        """Another TimeTracker.py, or a shim that says nothing, comes first in the archive."""
+        self._zip({'r/docs/legacy/TimeTracker.py': 'VERSION = "1.0"\n',
+                   'r/TimeTracker.py': 'from tt.TimeTracker import *\n',
+                   'r/tt/TimeTracker.py': 'VERSION = "4.25"\n'})
+        self.assertEqual(update.waiting_update_version(), '4.25')
+
+    def test_a_source_that_is_not_utf_8(self):
+        self._zip({'r/tt/TimeTracker.py': b'# caf\xe9\nVERSION = "4.25"\n'})
+        self.assertEqual(update.waiting_update_version(), '4.25')
+
+    def test_nobody_can_say(self):
+        self.assertIsNone(update.waiting_update_version(), 'no zip at all')
+        self._zip({'Owner-TimeControl-abc123/README.md': 'x'})
+        self.assertIsNone(update.waiting_update_version(), 'no version in it')
+        with open(update.UPDATE_ZIP_FILE, 'wb') as handle:
+            handle.write(b'not a zip')
+        self.assertIsNone(update.waiting_update_version(), 'not a zip')
+
+
 if __name__ == "__main__":
     unittest.main()
