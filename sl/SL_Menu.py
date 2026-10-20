@@ -30,7 +30,8 @@ from i18n import _
 try:
     from update import (restore_previous_version, check_for_updates, apply_update,
                         should_check_for_updates, download_exe_update,
-                        restore_previous_exe, request_restart, PREVIOUS_EXE)
+                        restore_previous_exe, request_restart, PREVIOUS_EXE,
+                        forget_declined_version, DECLINED_UPDATE_FILE)
     UPDATE_MODULE_AVAILABLE = True
 except (ImportError, ModuleNotFoundError):
     UPDATE_MODULE_AVAILABLE = False
@@ -588,9 +589,15 @@ def render_header(title=None, subtitle=None):
             help_text = (_("Download the update and install it at the next start")
                          if frozen else _("Restart and install the update"))
             if st.button("⟳", help=help_text, key="update_restart_btn"):
+                # The one way a version the user rolled back from comes back:
+                # by asking for it here. The note that keeps the launcher from
+                # installing it by itself goes once the update is on its way,
+                # or the launcher would discard what was just asked for.
                 if frozen:
                     with st.spinner(_("Downloading update...")):
                         downloaded = download_exe_update(update_check['url'])
+                    if downloaded:
+                        forget_declined_version()
                     set_feedback(
                         _("Update downloaded. It will be installed the next "
                           "time you start the application.") if downloaded
@@ -600,12 +607,19 @@ def render_header(title=None, subtitle=None):
                 else:
                     with st.spinner(_("Downloading update...")):
                         restart = apply_update(update_check['url'])
-                    if restart:
+                    if restart and forget_declined_version():
                         # Ends this process. The launcher installs the
                         # downloaded zip on its way back in and comes up on
                         # the new version - see update.request_restart().
                         request_restart()
-                    set_feedback(_("The update could not be downloaded."), 'error')
+                    if restart:
+                        # Downloaded, but the note is still there, and the
+                        # launcher would throw away what was just asked for.
+                        # Naming the file is the most useful thing to say.
+                        set_feedback(_("Error during update installation: {error}").format(
+                            error=os.path.abspath(DECLINED_UPDATE_FILE)), 'error')
+                    else:
+                        set_feedback(_("The update could not be downloaded."), 'error')
                     st.rerun()
     render_sync_notice()
     if title:
@@ -2396,7 +2410,8 @@ def view_settings():
                              "effect the next time you start the application."))
                 if st.button(_("Restore Previous Version"), type="primary",
                              use_container_width=True, key="settings_restore_btn"):
-                    restored = restore_previous_exe()
+                    restored = restore_previous_exe(
+                        rolled_back_from=st.session_state.tracker.get_version())
                     set_feedback(
                         _("Previous version restored. Please restart the application.")
                         if restored else _("The previous version could not be restored."),
@@ -2408,7 +2423,11 @@ def view_settings():
             st.warning(_("This will restore the application to the previously backed-up version. The application will then restart. You may need to manually refresh your browser if it does not reconnect automatically."))
             if st.button(_("Restore and Restart"), type="primary", use_container_width=True, key="settings_restore_btn"):
                 with st.spinner(_("Restoring and restarting...")):
-                    restored = restore_previous_version()
+                    # The version running now is the one rolled back from.
+                    # Remembered, so the launcher does not put it straight
+                    # back at the next start (issue #597).
+                    restored = restore_previous_version(
+                        rolled_back_from=st.session_state.tracker.get_version())
                 if restored:
                     # Ends this process; the launcher brings the restored
                     # version up. Nothing after this line runs.

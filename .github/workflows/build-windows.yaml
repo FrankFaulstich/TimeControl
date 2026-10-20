@@ -34,6 +34,34 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
+      # A source checkout updates itself, and leaves alone the version the
+      # user rolled back from (update.py, issue #597): by the release's tag
+      # before downloading it, by the VERSION in tt/TimeTracker.py before
+      # installing it. A release whose two disagree would be downloaded at
+      # every close and thrown away at every start - and without a rollback
+      # it is installed again at every start instead, because the running
+      # version never reaches the tag. Tag 3.31 shipped saying VERSION
+      # "3.30". So a tag that is not the version the code reports stops the
+      # release here.
+      - name: The tag is the version the application reports
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: python
+        run: |
+          import os, re, sys
+          from packaging.version import InvalidVersion, parse
+          tag = os.environ["GITHUB_REF_NAME"]
+          with open("tt/TimeTracker.py", encoding="utf-8") as handle:
+              found = re.search(r'^\s*VERSION\s*=\s*["\']([^"\']+)["\']', handle.read(), re.MULTILINE)
+          version = found.group(1) if found else None
+          try:
+              same = version is not None and parse(tag.lstrip("v")) == parse(version)
+          except InvalidVersion:
+              same = tag.lstrip("v") == version
+          if not same:
+              print(f"Tag {tag}, but tt/TimeTracker.py says VERSION = {version!r}.")
+              sys.exit(1)
+          print(f"Tag {tag} matches VERSION {version}.")
+
       - name: Build executable
         run: pyinstaller TimeControl.spec --noconfirm
 

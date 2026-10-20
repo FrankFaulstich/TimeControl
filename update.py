@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import os
@@ -50,7 +51,10 @@ WINDOWS_ASSET = "TimeControl.exe"       # release asset published by build-windo
 PENDING_EXE = "TimeControl.exe.new"     # verified download, waiting for the next start
 PREVIOUS_EXE = "TimeControl.exe.old"    # the image we replaced - our rollback
 PARTIAL_EXE = "TimeControl.exe.part"    # download in progress, never swapped in
-REJECTED_EXE = "TimeControl.exe.bad"    # a version rolled back by the user
+# Not a memory of the version rolled back from - only the name the running
+# executable is moved aside under during a rollback, deleted at the next
+# start. What the user declined is kept by remember_declined_version().
+REJECTED_EXE = "TimeControl.exe.bad"
 CHECKSUM_SUFFIX = ".sha256"
 
 # A onefile build of this application is tens of megabytes. Anything close to
@@ -512,16 +516,20 @@ def install_exe_update(target=None):
     return True
 
 
-def restore_previous_exe(target=None):
+def restore_previous_exe(target=None, rolled_back_from=None):
     """
     Rolls a frozen build back to the version it replaced.
 
     The same manoeuvre as the update, in reverse: the running executable is
     renamed aside and the copy kept from the last update takes its place.
     What was rolled back is kept under REJECTED_EXE rather than deleted,
-    because it is still running - discard_rejected_exe() clears it at the
+    because it is still running - clear_update_leftovers() clears it at the
     next start.
 
+    :param rolled_back_from: The version being rolled back from, remembered
+        as declined - see remember_declined_version(). A frozen build never
+        updates unasked, so nothing reads it there today; it is kept all the
+        same, so the two builds know the same thing.
     :return: True if the rollback happened.
     """
     running = os.path.abspath(target or sys.executable)
@@ -552,6 +560,8 @@ def restore_previous_exe(target=None):
         return False
 
     print(_("Previous version restored successfully."))
+    if rolled_back_from:
+        remember_declined_version(rolled_back_from)
     return True
 
 
@@ -596,6 +606,7 @@ def install_update():
     exclude_from_backup = [
         "data.json",          # User data should not be in the backup
         UPDATE_ZIP_FILE,      # The new update file itself
+        DECLINED_UPDATE_FILE, # This installation's own note, not its code
         backup_zip_file,      # The old backup file
         "__pycache__",        # Python cache files
         ".git",               # Git directory
@@ -655,11 +666,15 @@ def install_update():
             os.remove(UPDATE_ZIP_FILE)
 
 
-def restore_previous_version():
+def restore_previous_version(rolled_back_from=None):
     """
     Restores the application to the previous version from 'prev-version.zip'.
     'data.json' (user data) is explicitly NOT overwritten.
 
+    :param rolled_back_from: The version being rolled back from - the one
+        running now. Remembered as declined once the files are back, so that
+        the launcher does not install it again by itself at the next start
+        (issue #597). See remember_declined_version().
     :return: True if the files were restored and the application should
         restart to run them. The code now in memory is still the version that
         was just replaced, so until it does, nothing has visibly changed.
@@ -699,11 +714,137 @@ def restore_previous_version():
 
         print(_("Previous version restored successfully."))
         os.remove(backup_zip_file)
-        return True
     except Exception as e:
         print(_("Error during restoration: {error}").format(error=e))
         print(_("The backup file '{filename}' was not deleted.").format(filename=backup_zip_file))
         return False
+    if rolled_back_from:
+        remember_declined_version(rolled_back_from)
+    return True
+
+
+# --- What the user rolled back from -----------------------------------------
+#
+# A source checkout updates itself: on the way out the launcher downloads any
+# newer release, and on the way in it installs whatever update.zip is waiting.
+# Neither knew about a rollback, so the version somebody had just rolled back
+# from was fetched again as soon as they closed the application and installed
+# the next time they opened it - without a word (issue #597).
+#
+# So the rollback leaves a note, and both automatic steps leave that one
+# version alone. Nothing else is held back: a later release still comes in by
+# itself, and the notice still offers the declined one, so the button remains
+# the way to change one's mind - pressing it takes the note away.
+#
+# The note is a file of its own in the installation, beside update.zip and
+# prev-version.zip, and like them it belongs to that installation alone. Not
+# in the user's configuration directory: every installation of a user shares
+# that one, and a rollback in a development checkout would then hold back the
+# working one's updates - or an update asked for in one would undo another's
+# rollback. Not in config.json either, which a rollback restores from the
+# backup. Neither an update nor a rollback touches a file that is in neither
+# archive, and install_update() leaves this one out of the backup it makes.
+
+DECLINED_UPDATE_FILE = "declined_update.json"
+
+
+def remember_declined_version(version):
+    """
+    Records that the user rolled back from this version.
+
+    Written whole and then renamed into place, so a note is either there or
+    not. Never raises: a rollback that worked must not be reported as one
+    that failed because of a note about it.
+
+    :param version: The version rolled back from, as the application gives
+        it (TimeTracker.VERSION).
+    :return: True if the note was written.
+    """
+    if not version:
+        return False
+    partial = DECLINED_UPDATE_FILE + ".tmp"
+    try:
+        with open(partial, 'w', encoding='utf-8') as handle:
+            json.dump({"version": str(version)}, handle)
+        os.replace(partial, DECLINED_UPDATE_FILE)
+        return True
+    except (OSError, TypeError, ValueError):
+        _discard(partial)
+        return False
+
+
+def declined_version():
+    """The version the user last rolled back from, or None."""
+    try:
+        with open(DECLINED_UPDATE_FILE, encoding='utf-8') as handle:
+            version = json.load(handle).get("version")
+    except Exception:
+        # Missing, unreadable, or not what remember_declined_version()
+        # writes. Whatever it is, it runs at every start of the launcher,
+        # and the application must still start.
+        return None
+    return version if isinstance(version, str) and version else None
+
+
+def forget_declined_version():
+    """
+    Takes the note away - the user asked for the update after all.
+
+    :return: True if there is no note any more, False if it is still there
+        - then the launcher would discard the update just asked for, and the
+        caller must not restart into that.
+    """
+    _discard(DECLINED_UPDATE_FILE)
+    return not os.path.exists(DECLINED_UPDATE_FILE)
+
+
+def is_declined(version):
+    """
+    Whether this is the version the user rolled back from.
+
+    Compared as versions, not as text: the release is tagged "v4.25" and the
+    application calls itself "4.25", and either may one day say "4.25.0".
+
+    :param version: A version as check_for_updates() or waiting_update_version()
+        gives it. None is never declined.
+    """
+    declined = declined_version()
+    if not version or not declined:
+        return False
+    try:
+        return parse_version(str(version).lstrip('v')) == parse_version(declined.lstrip('v'))
+    except Exception:
+        return str(version).lstrip('v') == declined.lstrip('v')
+
+
+# The line that names the application's version, in its own source.
+_VERSION_LINE = re.compile(r'^\s*VERSION\s*=\s*["\']([^"\']+)["\']', re.MULTILINE)
+
+
+def waiting_update_version():
+    """
+    The version of the update.zip waiting to be installed, read from the
+    source inside it, or None if there is none or it does not say.
+
+    The download is a snapshot of the repository, so the version is the one
+    in tt/TimeTracker.py - or TimeTracker.py, in releases from before the
+    tt/ package existed.
+    """
+    try:
+        with zipfile.ZipFile(UPDATE_ZIP_FILE) as archive:
+            for name in archive.namelist():
+                parts = name.split('/')
+                if parts[-2:] == ['tt', 'TimeTracker.py'] or parts[1:] == ['TimeTracker.py']:
+                    found = _VERSION_LINE.search(
+                        archive.read(name).decode('utf-8', errors='replace'))
+                    if found:
+                        return found.group(1)
+    except Exception:
+        # Missing, truncated, not a zip, compressed in a way Python does not
+        # read: then nobody can say which version it is, and it is treated as
+        # any update.zip always was.
+        return None
+    return None
 
 if __name__ == "__main__":
     try:

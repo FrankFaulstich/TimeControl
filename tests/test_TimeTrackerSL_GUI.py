@@ -1,13 +1,18 @@
+import ast
 import unittest
 import unittest.mock
 import os
+import shutil
 import sys
+import tempfile
 import types
+import zipfile
 
 # Add parent directory to path to import modules from root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import TimeTrackerSL_GUI
+import update
 
 class TestStreamlitGUI(unittest.TestCase):
     """
@@ -396,6 +401,167 @@ class TestCarryingOutARestart(unittest.TestCase):
         with unittest.mock.patch.object(TimeTrackerSL_GUI,
                                         'RESTART_EXIT_CODE', None):
             self.assertFalse(TimeTrackerSL_GUI._asked_for_restart(None))
+
+
+class TestARollbackSticks(unittest.TestCase):
+    """
+    Issue #597. A source checkout updates itself, in two halves that run here:
+    on the way out it downloads a newer release, on the way in it installs
+    whatever update.zip is waiting. After Restore Previous Version both halves
+    put the version the user had just rolled back from straight back, at the
+    next start, without asking.
+    """
+
+    def setUp(self):
+        # The note and update.zip both live in the installation, which for
+        # these tests is a scratch directory to work in.
+        scratch = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, scratch, True)
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(scratch)
+        for name, value in (('_is_frozen', unittest.mock.MagicMock(return_value=False)),
+                            ('install_update', unittest.mock.MagicMock()),
+                            ('download_update', unittest.mock.MagicMock()),
+                            ('check_for_updates', unittest.mock.MagicMock(
+                                return_value=(True, '4.25', 'https://example.invalid/4.25.zip')))):
+            patcher = unittest.mock.patch.object(TimeTrackerSL_GUI, name, value)
+            setattr(self, name.strip('_'), patcher.start())
+            self.addCleanup(patcher.stop)
+
+    def _waiting(self, version):
+        with zipfile.ZipFile(update.UPDATE_ZIP_FILE, 'w') as archive:
+            archive.writestr('Owner-TimeControl-abc/tt/TimeTracker.py',
+                             '    VERSION = "%s"\n' % version)
+
+    def _roll_back_from(self, version):
+        with zipfile.ZipFile('prev-version.zip', 'w') as archive:
+            archive.writestr('Owner-TimeControl-old/marker.py', 'x')
+        self.assertTrue(update.restore_previous_version(rolled_back_from=version))
+
+    def test_the_whole_story_from_the_issue(self):
+        """
+        On 4.24 with 4.25 released: update, roll back, close, start again.
+        It has to stay on 4.24 - and the button must still bring 4.25 back.
+        """
+        self._roll_back_from('4.25')
+
+        TimeTrackerSL_GUI.fetch_update_for_next_start('4.24')
+        self.download_update.assert_not_called()
+
+        self._waiting('4.25')         # left by some earlier session
+        self.assertFalse(TimeTrackerSL_GUI.install_waiting_update())
+        self.install_update.assert_not_called()
+        self.assertFalse(os.path.exists(update.UPDATE_ZIP_FILE),
+                         'kept, it would be offered for install at every start')
+
+        update.forget_declined_version()          # what the button does
+        self._waiting('4.25')
+        self.assertTrue(TimeTrackerSL_GUI.install_waiting_update())
+        self.install_update.assert_called_once_with()
+
+    def test_a_later_release_still_comes_in_by_itself(self):
+        self._roll_back_from('4.25')
+        self.check_for_updates.return_value = (True, '4.26', 'https://example.invalid/4.26.zip')
+        TimeTrackerSL_GUI.fetch_update_for_next_start('4.24')
+        self.download_update.assert_called_once_with('https://example.invalid/4.26.zip')
+        self._waiting('4.26')
+        self.assertTrue(TimeTrackerSL_GUI.install_waiting_update())
+
+    def test_without_a_rollback_nothing_changes(self):
+        TimeTrackerSL_GUI.fetch_update_for_next_start('4.24')
+        self.download_update.assert_called_once_with('https://example.invalid/4.25.zip')
+        self._waiting('4.25')
+        self.assertTrue(TimeTrackerSL_GUI.install_waiting_update())
+
+    def test_a_waiting_zip_that_does_not_say_its_version_is_installed(self):
+        """As every update.zip always was: nobody can tell it is the declined one."""
+        self._roll_back_from('4.25')
+        with open(update.UPDATE_ZIP_FILE, 'wb') as handle:
+            handle.write(b'not readable')
+        self.assertTrue(TimeTrackerSL_GUI.install_waiting_update())
+
+    def test_nothing_waiting_installs_nothing(self):
+        self.assertFalse(TimeTrackerSL_GUI.install_waiting_update())
+        self.install_update.assert_not_called()
+
+    def test_nothing_for_a_frozen_build(self):
+        """It never fetches or installs anything the user did not click."""
+        self.is_frozen.return_value = True
+        self._waiting('4.25')
+        self.assertFalse(TimeTrackerSL_GUI.install_waiting_update())
+        TimeTrackerSL_GUI.fetch_update_for_next_start('4.24')
+        self.check_for_updates.assert_not_called()
+        self.install_update.assert_not_called()
+
+    def test_nor_without_the_update_module(self):
+        self._waiting('4.25')
+        with unittest.mock.patch.object(TimeTrackerSL_GUI, 'UPDATE_AVAILABLE', False):
+            self.assertFalse(TimeTrackerSL_GUI.install_waiting_update())
+            TimeTrackerSL_GUI.fetch_update_for_next_start('4.24')
+        self.check_for_updates.assert_not_called()
+
+    def test_no_release_means_no_download(self):
+        self.check_for_updates.return_value = (False, None, None)
+        TimeTrackerSL_GUI.fetch_update_for_next_start('4.25')
+        self.download_update.assert_not_called()
+
+    def test_a_failing_check_does_not_stop_the_application_closing(self):
+        self.check_for_updates.side_effect = RuntimeError('offline')
+        TimeTrackerSL_GUI.fetch_update_for_next_start('4.24')
+        self.download_update.assert_not_called()
+
+    def test_the_check_is_against_the_version_running(self):
+        TimeTrackerSL_GUI.fetch_update_for_next_start('4.24')
+        self.check_for_updates.assert_called_once_with('4.24')
+
+    def test_a_declined_zip_that_cannot_be_deleted_does_not_stop_the_start(self):
+        self._roll_back_from('4.25')
+        self._waiting('4.25')
+        with unittest.mock.patch('TimeTrackerSL_GUI.os.remove',
+                                 side_effect=PermissionError('locked')):
+            self.assertFalse(TimeTrackerSL_GUI.install_waiting_update())
+        self.install_update.assert_not_called()
+
+
+class TestTheLauncherUsesBothChecks(unittest.TestCase):
+    """
+    The two automatic steps of issue #597 run in the launcher's __main__,
+    which a test cannot import. Read from the source instead: put back the old
+    inline install or download there, and the rollback is undone again with
+    every test still passing.
+    """
+
+    def _main_block(self):
+        with open(TimeTrackerSL_GUI.__file__, encoding='utf-8') as handle:
+            tree = ast.parse(handle.read())
+        for node in tree.body:
+            if (isinstance(node, ast.If) and isinstance(node.test, ast.Compare)
+                    and isinstance(node.test.left, ast.Name)
+                    and node.test.left.id == '__name__'):
+                return node
+        self.fail('no __main__ block')
+
+    def _called(self, node):
+        return [call.func.id for call in ast.walk(node)
+                if isinstance(call, ast.Call) and isinstance(call.func, ast.Name)]
+
+    def test_both_steps_go_through_the_checks(self):
+        called = self._called(self._main_block())
+        self.assertIn('install_waiting_update', called)
+        self.assertIn('fetch_update_for_next_start', called)
+
+    def test_and_nothing_goes_round_them(self):
+        called = self._called(self._main_block())
+        for direct in ('install_update', 'download_update', 'check_for_updates'):
+            with self.subTest(call=direct):
+                self.assertNotIn(direct, called)
+
+    def test_the_running_version_is_what_it_checks_against(self):
+        main = self._main_block()
+        calls = [call for call in ast.walk(main) if isinstance(call, ast.Call)
+                 and isinstance(call.func, ast.Name)
+                 and call.func.id == 'fetch_update_for_next_start']
+        self.assertEqual([ast.unparse(call.args[0]) for call in calls], ['tt.get_version()'])
 
 
 if __name__ == '__main__':

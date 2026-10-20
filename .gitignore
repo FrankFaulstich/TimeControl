@@ -5,6 +5,10 @@ __pycache__/
 data.json
 config.json
 
+# The version this installation was rolled back from (update.py). It belongs
+# to the installation, like data.json.
+declined_update.json
+
 # PyInstaller build output (see TimeControl.spec)
 /build/
 /dist/

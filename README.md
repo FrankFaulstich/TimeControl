@@ -58,6 +58,8 @@ Running from source, that button downloads the new release, installs it over the
 
 The build it replaces is kept alongside as `TimeControl.exe.old`, and **Settings → Restore Previous Version** puts it back if a release turns out to disagree with your machine.
 
+Running from source, the application also updates without the button: when it is closed it downloads a newer release, and installs it the next time it starts. A version you have rolled back from with **Settings → Restore Previous Version** is left out of that — it is remembered in `declined_update.json` next to the application, separately for each installation, and not installed again by itself. The notification still offers it, and the button is how it comes back. A release newer than that one updates as usual. This needs the version you roll back *to* to know about it: a rollback restores that version's own launcher, and a launcher from before this was added still reinstalls the newer version at the next start.
+
 **Interface:**
 
 - **Streamlit GUI:** A graphical, browser-based user interface (`TimeTrackerSL_GUI.py`).
