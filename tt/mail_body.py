@@ -70,12 +70,23 @@ MAX_HTML_CHARS = 1000000
 SEPARATOR = '_' * 32
 
 # Characters that are not text: the C0 controls bar tab and line feed, DEL,
-# the invisible ones mail programs sprinkle about, the byte order mark, and
-# the two noncharacters XML refuses as firmly as the controls. The zero-width
-# joiner and non-joiner stay: emoji and Persian or Indic words need them.
-_NOT_TEXT = re.compile('[\x00-\x08\x0b-\x1f\x7f'
-                       '\N{ZERO WIDTH SPACE}\N{WORD JOINER}'
-                       '\N{ZERO WIDTH NO-BREAK SPACE}\ufffe\uffff]')
+# the invisible ones mail programs sprinkle about - zero-width space, word
+# joiner and the byte order mark - and the two noncharacters XML refuses as
+# firmly as the controls. The zero-width joiner and non-joiner stay: emoji
+# and Persian or Indic words need them.
+#
+# A table for str.translate() to delete them with, rather than a regular
+# expression: listed one by one, nothing is in it by accident. The character
+# class it replaces needed a range from vertical tab to unit separator, the
+# kind of range that is usually a slip, and CodeQL said so
+# (py/overly-large-range).
+_NOT_TEXT = dict.fromkeys(
+    [code for code in range(0x20) if chr(code) not in '\t\n']
+    + [0x7f,            # DEL
+       0x200b,          # ZERO WIDTH SPACE
+       0x2060,          # WORD JOINER
+       0xfeff,          # ZERO WIDTH NO-BREAK SPACE, the byte order mark
+       0xfffe, 0xffff])  # noncharacters
 
 # Labels a mail program writes without meaning them. What arrives under them
 # is UTF-8 or Windows-1252 at least as often, and browsers and Outlook read
@@ -288,7 +299,7 @@ def _decoded(part):
 
 def _visible(text):
     """The text, or nothing if all it holds is white space of some kind."""
-    return text if _NOT_TEXT.sub('', text).replace('\xa0', ' ').strip() else ''
+    return text if text.translate(_NOT_TEXT).replace('\xa0', ' ').strip() else ''
 
 
 def _tidy(text):
@@ -300,7 +311,7 @@ def _tidy(text):
     sent to the other machines - the first time somebody typed into it.
     """
     text = text.replace('\r\n', '\n').replace('\r', '\n')
-    text = _NOT_TEXT.sub('', text).replace('\xa0', ' ')
+    text = text.translate(_NOT_TEXT).replace('\xa0', ' ')
     # Lone surrogates come from bytes Python could not decode, and cannot be
     # written to a UTF-8 file at all.
     text = text.encode('utf-8', 'replace').decode('utf-8')

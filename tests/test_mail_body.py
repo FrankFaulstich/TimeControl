@@ -345,6 +345,23 @@ class TestWhatTheNoteLooksLike(unittest.TestCase):
                                       '\N{ZERO WIDTH NO-BREAK SPACE}f\x7fg\ufffeh\uffffi')))
         self.assertEqual(note, 'abcdefghi')
 
+    def test_exactly_these_characters_are_removed(self):
+        """
+        Character by character, so a change to how the set is written cannot
+        quietly change what is in it: every C0 control but tab and line feed,
+        DEL, the zero-width space, the word joiner, the byte order mark and
+        the two noncharacters. A carriage return becomes a line feed first.
+        """
+        removed = ({code for code in range(0x20)} - {0x09, 0x0a, 0x0d}
+                   | {0x7f, 0x200b, 0x2060, 0xfeff, 0xfffe, 0xffff})
+        becomes = {0x0d: '\n', 0xa0: ' '}
+        for code in list(range(0x80)) + [0xa0, 0x200b, 0x200c, 0x200d, 0x2060,
+                                         0xfeff, 0xfffe, 0xffff]:
+            with self.subTest(code=hex(code)):
+                expected = ('ab' if code in removed
+                            else 'a%sb' % becomes.get(code, chr(code)))
+                self.assertEqual(body_of(_parsed(_plain('a%sb' % chr(code)))), expected)
+
     def test_the_joiners_stay(self):
         """Emoji and Persian or Indic words need them; nothing refuses them."""
         text = 'a\N{ZERO WIDTH NON-JOINER}b\N{ZERO WIDTH JOINER}c'
