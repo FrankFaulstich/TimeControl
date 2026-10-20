@@ -191,7 +191,7 @@ class TestBothFormsUseIt(unittest.TestCase):
 
     def test_adding_and_editing_a_task_are_sized_the_same_way(self):
         tree = _tree()
-        for view, minimum in (('view_add_task_form', 250), ('view_edit_task_form', 200)):
+        for view, minimum in (('view_add_task_form', 250), ('view_edit_task_form', 250)):
             with self.subTest(view=view):
                 calls = [node for node in ast.walk(_function(tree, view))
                          if isinstance(node, ast.Call) and getattr(node.func, 'id', None) == 'render_note_area_css']
@@ -234,20 +234,19 @@ class TestTheDraggedSizeSurvivesARedraw(unittest.TestCase):
         The red border for a missing or out-of-order date: written empty when
         there is nothing wrong, not left out, so nothing below it moves.
         """
-        tree = _tree()
-        for view in ('view_add_task_form', 'view_edit_task_form'):
-            with self.subTest(view=view):
-                function = _function(tree, view)
-                for node in ast.walk(function):
-                    if isinstance(node, ast.If) and 'validation_error' in ast.unparse(node.test):
-                        written = [n for n in ast.walk(ast.Module(body=node.body, type_ignores=[]))
-                                   if isinstance(n, ast.Call) and ast.unparse(n.func) == 'st.markdown']
-                        self.assertEqual(written, [], "the style still comes and goes with the error")
-                guarded = [n for n in ast.walk(function)
-                           if isinstance(n, ast.Call) and ast.unparse(n.func) == 'st.markdown'
-                           and n.args and isinstance(n.args[0], ast.IfExp)
-                           and 'validation_error' in ast.unparse(n.args[0].test)]
-                self.assertEqual(len(guarded), 1, "the style is not written in place on every run")
+        # Both task forms draw their fields with render_task_fields() (issue
+        # #637), so that is where the style is written.
+        function = _function(_tree(), 'render_task_fields')
+        for node in ast.walk(function):
+            if isinstance(node, ast.If) and ast.unparse(node.test) == 'problem':
+                written = [n for n in ast.walk(ast.Module(body=node.body, type_ignores=[]))
+                           if isinstance(n, ast.Call) and ast.unparse(n.func) == 'st.markdown']
+                self.assertEqual(written, [], "the style still comes and goes with the error")
+        guarded = [n for n in ast.walk(function)
+                   if isinstance(n, ast.Call) and ast.unparse(n.func) == 'st.markdown'
+                   and n.args and isinstance(n.args[0], ast.IfExp)
+                   and ast.unparse(n.args[0].test) == 'problem']
+        self.assertEqual(len(guarded), 1, "the style is not written in place on every run")
 
     def test_the_editor_gives_a_redrawn_field_its_size_back(self):
         """
@@ -322,14 +321,18 @@ class TestThePreviewIsFramed(unittest.TestCase):
         self.assertNotIn('max-height', frame[0])
 
     def test_both_forms_show_their_note_that_way(self):
+        """They share their fields, the Preview tab among them (issue #637)."""
         tree = _tree()
-        for view, key in (('view_add_task_form', 'new_task_note'), ('view_edit_task_form', 'edit_task_note')):
+        tabs = [node for node in ast.walk(_function(tree, 'render_task_fields'))
+                if isinstance(node, ast.With) and ast.unparse(node.items[0].context_expr) == 'tab_preview']
+        self.assertEqual(len(tabs), 1)
+        self.assertEqual([ast.unparse(statement) for statement in tabs[0].body],
+                         ['render_note_preview(st.session_state[task_note_key])'])
+        for view in ('view_add_task_form', 'view_edit_task_form'):
             with self.subTest(view=view):
-                tabs = [node for node in ast.walk(_function(tree, view))
-                        if isinstance(node, ast.With) and ast.unparse(node.items[0].context_expr) == 'tab_preview']
-                self.assertEqual(len(tabs), 1)
-                self.assertEqual([ast.unparse(statement) for statement in tabs[0].body],
-                                 ['render_note_preview(st.session_state.%s)' % key])
+                calls = [node for node in ast.walk(_function(tree, view))
+                         if isinstance(node, ast.Call) and getattr(node.func, 'id', None) == 'render_task_fields']
+                self.assertEqual(len(calls), 1)
 
     def test_no_markdown_leaves_a_div_for_the_next_one_to_close(self):
         """

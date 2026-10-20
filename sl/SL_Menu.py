@@ -149,6 +149,8 @@ def render_icon_button_css():
         '[class*="st-key-clear_email_due_date_"] button',
         '[class*="st-key-edit_clear_due_date_btn"] button',
         '[class*="st-key-edit_clear_start_date_btn"] button',
+        '[class*="st-key-new_clear_due_date_btn"] button',
+        '[class*="st-key-new_clear_start_date_btn"] button',
         '[class*="st-key-close_inactive_"] button',
     ]
     icon_buttons = ",\n        ".join(button_selectors)
@@ -227,6 +229,8 @@ def render_icon_button_css():
         [data-testid="column"]:has([class*="st-key-clear_email_due_date_"]),
         [data-testid="column"]:has([class*="st-key-edit_clear_due_date_btn"]),
         [data-testid="column"]:has([class*="st-key-edit_clear_start_date_btn"]),
+        [data-testid="column"]:has([class*="st-key-new_clear_due_date_btn"]),
+        [data-testid="column"]:has([class*="st-key-new_clear_start_date_btn"]),
         [data-testid="column"]:has([class*="st-key-close_inactive_"]) {{
             flex: 0 0 44px !important;
             width: 44px !important;
@@ -248,6 +252,8 @@ def render_icon_button_css():
         [class*="st-key-clear_email_due_date_"],
         [class*="st-key-edit_clear_due_date_btn"],
         [class*="st-key-edit_clear_start_date_btn"],
+        [class*="st-key-new_clear_due_date_btn"],
+        [class*="st-key-new_clear_start_date_btn"],
         [class*="st-key-close_inactive_"] {{
             width: 40px !important;
             min-width: 40px !important;
@@ -3701,54 +3707,139 @@ def render_note_preview(note):
         st.markdown(note if note else f"*{_('No notes provided.')}*")
 
 
-def view_add_task_form():
-    """
-    Renders the second step of adding a task: entering the name.
-    """
-    main_project = st.session_state.context.get('selected_main')
-    return_to = st.session_state.context.get('return_to', 'task_mgmt')
-    if not main_project:
-        set_feedback(_("No project selected. Please start again."), "error")
-        navigate_to('add_task')
-        st.rerun()
-        return
+# How often a recurring task comes back, as stored, in the order offered.
+TASK_FREQUENCIES = ("daily", "on all business days", "weekly", "monthly", "userdefined")
 
-    render_header(_("Add Task"), f"{_('To Project:')} {main_project}")
-    
-    render_note_area_css(min_height=250)
+# The fields of the task forms. Their keys are "<kind>_task_<field>".
+TASK_FORM_FIELDS = ("name", "start_date", "due_date", "today", "done", "recurring",
+                    "frequency", "userdefined_days", "priority", "note")
 
-    name = st.text_input(_("Name of the new task"))
-    if "new_task_note" not in st.session_state:
-        st.session_state.new_task_note = ""
-    
-    # The two dates on a row of their own, and the flags below them. Squeezing
-    # the start date in beside the other three left "Recurring" wrapping onto
-    # a second line and the priority without its buttons.
-    col_start, col_date = st.columns(2)
+
+def _frequency_label(frequency):
+    """A frequency as the forms show it, in the interface's language."""
+    return {"daily": _("daily"), "on all business days": _("on all business days"),
+            "weekly": _("weekly"), "monthly": _("monthly"),
+            "userdefined": _("userdefined")}.get(frequency, frequency)
+
+
+def _whole(value, default, lowest, highest):
+    """A stored number as an int within bounds, or the default if it is not one."""
+    try:
+        return min(highest, max(lowest, int(value)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _as_date(value):
+    """A stored ISO date as a date, or None for no date or one that cannot be read."""
+    try:
+        return datetime.fromisoformat(value).date() if value else None
+    except (TypeError, ValueError):
+        return None
+
+
+def render_task_fields(kind, identity, task):
+    """
+    The fields of a task, drawn the same way for adding one and for editing one
+    (issue #637).
+
+    The two forms had grown apart: different labels for the same fields,
+    the dates side by side in one and below each other in the other, a
+    button to clear a date in only one of them, the flags in rows of
+    different widths, and a check for an empty name in only one. They share
+    this now, so a field added or changed here is added or changed in both.
+    What still differs is what has to: editing has a Done box, and each form
+    has its own heading and its own button to save.
+
+    Every field has a key and follows `task` the way follow_stored_value()
+    describes: one that has not been touched moves with a change made
+    elsewhere while the form is open - the MCP server, the other machine,
+    another tab - so saving does not put the old value back; one that has
+    been changed keeps what was typed. Opened for another task, the form
+    starts from that one. The edit form used to keep its two dates in keys
+    of their own that nothing cleared when the form was left any other way
+    than by Cancel, so the next task opened showed the dates of the last one,
+    and saving wrote them into it.
+
+    :param kind: "new" or "edit". The fields' keys start with it; the notes
+        field is "<kind>_task_note", which tt/markdown_editor.py is given.
+    :param identity: What the form is open for - the task, or the project a
+        task is being added to. A different one fills the fields in afresh.
+    :param task: The values to start from, shaped like a stored task.
+    :return: The values entered, as a dict, with "problem" holding the reason
+        they cannot be saved yet, or None.
+    """
+    keys = {field: "%s_task_%s" % (kind, field) for field in TASK_FORM_FIELDS}
+    frequency = task.get("frequency") if task.get("frequency") in TASK_FREQUENCIES else "daily"
+    starting = {
+        "name": task.get("task_name", ""),
+        "start_date": _as_date(task.get("start_date")),
+        "due_date": _as_date(task.get("due_date")),
+        "today": bool(task.get("today", False)),
+        "done": task.get("status") == "done",
+        "recurring": bool(task.get("recurring", False)),
+        "frequency": frequency,
+        "userdefined_days": _whole(task.get("userdefined_days"), 1, 1, 10 ** 6),
+        "priority": _whole(task.get("priority"), 0, 0, 9),
+        "note": task.get("note") or "",
+    }
+    opened_for = kind + "_task__for"
+    if st.session_state.get(opened_for) != identity:
+        # Another task, or another project to add one to: nothing the fields
+        # hold, nor what they remember having seen, belongs to it.
+        _forget_task_fields(kind)
+        st.session_state[opened_for] = identity
+    for field, key in keys.items():
+        follow_stored_value(key, starting[field])
+
+    st.text_input(_("Task Name"), key=keys["name"])
+
+    # The two dates on a row of their own, and the flags below them. Each
+    # date can be emptied: a start date is something you ask for, and a task
+    # without a due date is an ordinary one.
+    col_start, col_clear_start, col_due, col_clear_due = st.columns([5, 1, 5, 1])
     with col_start:
-        # Empty by default: a start date is something you ask for, and a task
-        # that only has a due date behaves exactly as it always did.
-        start_date = st.date_input(
-            _("Start date"), value=None, format="YYYY-MM-DD",
-            help=_("From this day until the due date the task is listed under Today's Tasks."))
-    with col_date:
-        due_date = st.date_input(_("Due date"), value=datetime.now().date(), format="YYYY-MM-DD")
+        st.date_input(_("Start Date"), format="YYYY-MM-DD", key=keys["start_date"],
+                      help=_("From this day until the due date the task is listed under Today's Tasks."))
+    with col_clear_start:
+        st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
+        st.button("×", use_container_width=True, help=_("Clear"), key="%s_clear_start_date_btn" % kind,
+                  on_click=clear_widget, args=(keys["start_date"],))
+    with col_due:
+        st.date_input(_("Due Date"), format="YYYY-MM-DD", key=keys["due_date"])
+    with col_clear_due:
+        st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
+        st.button("×", use_container_width=True, help=_("Clear"), key="%s_clear_due_date_btn" % kind,
+                  on_click=clear_widget, args=(keys["due_date"],))
 
-    col_today, col_rec, col_prio = st.columns(3)
+    # Four columns in both forms, so the flags sit in the same places; the
+    # checkboxes are pushed down to line up with the priority's field.
+    col_today, col_recurring, col_priority, col_done = st.columns(4)
     with col_today:
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-        today = st.checkbox(_("Today"))
-    with col_rec:
+        st.checkbox(_("Today"), key=keys["today"])
+    with col_recurring:
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-        is_recurring = st.checkbox(_("Recurring"))
-    with col_prio:
-        priority = st.number_input(_("Priority"), min_value=0, max_value=9, value=0, step=1, help=_("0 (lowest) to 9 (highest)"))
+        recurring = st.checkbox(_("Recurring"), key=keys["recurring"])
+    with col_priority:
+        st.number_input(_("Priority"), min_value=0, max_value=9, step=1, key=keys["priority"],
+                        help=_("0 (lowest) to 9 (highest)"))
+    with col_done:
+        if kind == "edit":
+            st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
+            st.checkbox(_("Done"), key=keys["done"])
+
+    values = {field: st.session_state[key] for field, key in keys.items()}
 
     # A start date after the due date describes a window that never opens,
     # and nothing would ever be flagged for it. Caught here rather than in
     # the tracker, because this is where the pair is chosen.
-    dates_out_of_order = bool(start_date and due_date and start_date > due_date)
-    validation_error = (is_recurring and not due_date) or dates_out_of_order
+    if values["start_date"] and values["due_date"] and values["start_date"] > values["due_date"]:
+        problem = _("The start date cannot be after the due date.")
+    elif recurring and not values["due_date"]:
+        problem = _("A due date is required for recurring tasks.")
+    else:
+        problem = None
     # Written on every run, empty when there is nothing wrong, rather than
     # only when there is: Streamlit 1.55 tells blocks apart by their position,
     # so an element that comes and goes up here makes everything below it new
@@ -3760,62 +3851,100 @@ def view_add_task_form():
             border: 2px solid red !important;
         }
         </style>
-    """ if validation_error else "", unsafe_allow_html=True)
+    """ if problem else "", unsafe_allow_html=True)
 
-    # Frequency options for recurring tasks
-    freq_options = ["daily", "on all business days", "weekly", "monthly", "userdefined"]
-    freq_labels = [_("daily"), _("on all business days"), _("weekly"), _("monthly"), _("userdefined")]
-    
-    col_freq, col_ud = st.columns([2, 1])
+    col_freq, col_days = st.columns([2, 1])
     with col_freq:
-        selected_label = st.selectbox(_("Frequency"), options=freq_labels, index=0, disabled=not is_recurring)
-        final_freq = freq_options[freq_labels.index(selected_label)]
-    with col_ud:
-        ud_days = st.number_input(
-            _("Days"), min_value=1, value=1, step=1, 
-            disabled=not (is_recurring and final_freq == "userdefined")
-        )
+        frequency = st.selectbox(_("Frequency"), options=TASK_FREQUENCIES, format_func=_frequency_label,
+                                 key=keys["frequency"], disabled=not recurring)
+    with col_days:
+        st.number_input(_("Days"), min_value=1, step=1, key=keys["userdefined_days"],
+                        disabled=not (recurring and frequency == "userdefined"))
 
+    task_note_key = f"{kind}_task_note"
     tab_edit, tab_preview = st.tabs([_("Edit"), _("Preview")])
     with tab_edit:
-        st.text_area(_("Notes (Markdown)"), key="new_task_note", label_visibility="collapsed")
-        render_markdown_editor("new_task_note")
+        st.text_area(_("Notes (Markdown)"), key=task_note_key, label_visibility="collapsed")
+        render_markdown_editor(task_note_key)
     with tab_preview:
-        render_note_preview(st.session_state.new_task_note)
-    
+        render_note_preview(st.session_state[task_note_key])
+
     st.divider()
-    if dates_out_of_order:
-        st.error(_("The start date cannot be after the due date."))
-    elif validation_error:
-        st.error(_("A due date is required for recurring tasks."))
+    if problem:
+        st.error(problem)
+
+    values = {field: st.session_state[key] for field, key in keys.items()}
+    values["problem"] = problem
+    return values
+
+
+def _forget_task_fields(kind):
+    """Drops what a task form's fields hold and what they last saw stored."""
+    for field in TASK_FORM_FIELDS:
+        key = "%s_task_%s" % (kind, field)
+        st.session_state.pop(key, None)
+        st.session_state.pop(key + "__seen", None)
+
+
+def close_task_form(kind):
+    """
+    Forgets what a task form held, once it is saved or cancelled, so the
+    next one opened starts from its task rather than from this.
+    """
+    _forget_task_fields(kind)
+    st.session_state.pop(kind + "_task__for", None)
+    st.session_state.context = {}
+
+
+def view_add_task_form():
+    """
+    Renders the second step of adding a task: the task's fields.
+    """
+    main_project = st.session_state.context.get('selected_main')
+    return_to = st.session_state.context.get('return_to', 'task_mgmt')
+    if not main_project:
+        set_feedback(_("No project selected. Please start again."), "error")
+        navigate_to('add_task')
+        st.rerun()
+        return
+
+    render_header(_("Add Task"), f"{_('To Project:')} {main_project}")
+    render_note_area_css(min_height=250)
+
+    values = render_task_fields("new", ("add", main_project),
+                                {"due_date": datetime.now().date().isoformat()})
 
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
         if st.button(_("Add Task"), type="primary", use_container_width=True):
-            if validation_error:
+            name = values["name"]
+            if values["problem"]:
                 pass
-            elif not name:
+            elif not name.strip():
                 st.error(_("Please enter a name."))
             elif st.session_state.tracker.add_task(
                 main_project,
                 name,
-                due_date.isoformat() if due_date else None,
-                today,
-                st.session_state.new_task_note,
-                recurring=is_recurring,
-                frequency=final_freq,
-                userdefined_days=ud_days,
-                priority=priority,
-                start_date=start_date.isoformat() if start_date else None
+                values["due_date"].isoformat() if values["due_date"] else None,
+                values["today"],
+                values["note"],
+                recurring=values["recurring"],
+                frequency=values["frequency"],
+                userdefined_days=values["userdefined_days"],
+                priority=values["priority"],
+                start_date=values["start_date"].isoformat() if values["start_date"] else None
             ):
                 set_feedback(_("Task '{sub_name}' added to '{main_name}'.").format(sub_name=name, main_name=main_project))
-                if "new_task_note" in st.session_state: del st.session_state.new_task_note
-                st.session_state.context = {}
+                close_task_form("new")
                 navigate_to(return_to)
+            else:
+                # The project went while the form was open - renamed or
+                # deleted elsewhere. Saying nothing left the user looking at
+                # a form that did not save, as the edit form already says.
+                st.error(_("Main project '{name}' not found.").format(name=main_project))
     with col_btn2:
-        if st.button(_("Cancel"), use_container_width=True): 
-            if "new_task_note" in st.session_state: del st.session_state.new_task_note
-            st.session_state.context = {}
+        if st.button(_("Cancel"), use_container_width=True):
+            close_task_form("new")
             navigate_to(return_to)
 
 def view_edit_task():
@@ -3862,136 +3991,47 @@ def view_edit_task_select_task():
         navigate_to('edit_task')
 
 def view_edit_task_form():
-    """Step 3 of editing a task: Change name and due date."""
+    """Step 3 of editing a task: the task's fields, as they are stored."""
     main_project = st.session_state.context.get('selected_main')
     task_name = st.session_state.context.get('selected_task')
     task_id = st.session_state.context.get('selected_task_id')
     return_to = st.session_state.context.get('return_to', 'task_mgmt')
-    
+
     # Find current details to pre-fill the form
     task_details = st.session_state.tracker._get_task(main_project, task_name, task_id)
     if not task_details:
         st.error(_("Task not found."))
         if st.button(_("Back"), use_container_width=True): navigate_to(return_to)
         return
-    
+
     render_header(_("Edit Task"), f"{main_project} / {task_name}")
-    
-    render_note_area_css(min_height=200)
+    render_note_area_css(min_height=250)
 
-    # Initialisiere Session-State für das Datum, um interaktives Leeren zu ermöglichen
-    if 'edit_due_date' not in st.session_state:
-        curr_due = task_details.get('due_date')
-        st.session_state.edit_due_date = datetime.fromisoformat(curr_due).date() if curr_due else None
-
-    if 'edit_start_date' not in st.session_state:
-        curr_start = task_details.get('start_date')
-        st.session_state.edit_start_date = datetime.fromisoformat(curr_start).date() if curr_start else None
-
-    if 'edit_task_note' not in st.session_state:
-        st.session_state.edit_task_note = task_details.get('note', '')
-
-    new_name = st.text_input(_("Task Name"), value=task_name)
-
-    col_start, col_clear_start = st.columns([5, 1])
-    with col_start:
-        new_start = st.date_input(
-            _("Start Date"), value=st.session_state.edit_start_date, format="YYYY-MM-DD",
-            help=_("From this day until the due date the task is listed under Today's Tasks."))
-        st.session_state.edit_start_date = new_start
-    with col_clear_start:
-        st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-        if st.button("×", use_container_width=True, help=_("Clear"), key="edit_clear_start_date_btn"):
-            st.session_state.edit_start_date = None
-            st.rerun()
-
-    col_date, col_clear = st.columns([5, 1])
-    with col_date:
-        new_due = st.date_input(_("Due Date"), value=st.session_state.edit_due_date, format="YYYY-MM-DD")
-        st.session_state.edit_due_date = new_due
-    with col_clear:
-        st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-        if st.button("×", use_container_width=True, help=_("Clear"), key="edit_clear_due_date_btn"):
-            st.session_state.edit_due_date = None
-            st.rerun()
-
-    col_today, col_done, col_rec, col_prio = st.columns(4)
-    with col_today:
-        is_today = st.checkbox(_("Today"), value=task_details.get('today', False))
-    with col_done:
-        is_done = st.checkbox(_("Done"), value=(task_details.get('status') == 'done'))
-    with col_rec:
-        is_recurring = st.checkbox(_("Recurring"), value=task_details.get('recurring', False))
-    with col_prio:
-        priority = st.number_input(_("Priority"), min_value=0, max_value=9, value=task_details.get('priority', 0), step=1, help=_("0 (lowest) to 9 (highest)"))
-
-    dates_out_of_order = bool(st.session_state.edit_start_date
-                              and st.session_state.edit_due_date
-                              and st.session_state.edit_start_date
-                              > st.session_state.edit_due_date)
-    validation_error = ((is_recurring and not st.session_state.edit_due_date)
-                        or dates_out_of_order)
-    # Written on every run, empty when there is nothing wrong, rather than
-    # only when there is: Streamlit 1.55 tells blocks apart by their position,
-    # so an element that comes and goes up here makes everything below it new
-    # - the notes field among them, which then loses the size it was dragged
-    # to and drops back to the Edit tab (issue #636).
-    st.markdown("""
-        <style>
-        div[data-testid="stDateInput"] > div {
-            border: 2px solid red !important;
-        }
-        </style>
-    """ if validation_error else "", unsafe_allow_html=True)
-
-    freq_options = ["daily", "on all business days", "weekly", "monthly", "userdefined"]
-    freq_labels = [_("daily"), _("on all business days"), _("weekly"), _("monthly"), _("userdefined")]
-    curr_freq = task_details.get('frequency', 'daily')
-    try:
-        freq_idx = freq_options.index(curr_freq)
-    except ValueError:
-        freq_idx = 0
-
-    col_freq, col_ud = st.columns([2, 1])
-    with col_freq:
-        selected_label = st.selectbox(_("Frequency"), options=freq_labels, index=freq_idx, disabled=not is_recurring)
-        final_freq = freq_options[freq_labels.index(selected_label)]
-    with col_ud:
-        ud_days = st.number_input(_("Days"), min_value=1, value=task_details.get('userdefined_days', 1), step=1, disabled=not (is_recurring and final_freq == "userdefined"))
-
-    tab_edit, tab_preview = st.tabs([_("Edit"), _("Preview")])
-    with tab_edit:
-        st.text_area(_("Notes (Markdown)"), key="edit_task_note", label_visibility="collapsed")
-        render_markdown_editor("edit_task_note")
-    with tab_preview:
-        render_note_preview(st.session_state.edit_task_note)
-    
-    st.divider()
-    if dates_out_of_order:
-        st.error(_("The start date cannot be after the due date."))
-    elif validation_error:
-        st.error(_("A due date is required for recurring tasks."))
+    values = render_task_fields("edit", ("edit", main_project, task_name, task_id), task_details)
 
     col_save, col_cancel = st.columns(2)
     with col_save:
         if st.button(_("Save Changes"), type="primary", use_container_width=True):
-            if not validation_error: # Proceed only if no validation error
-                final_due = st.session_state.edit_due_date.isoformat() if st.session_state.edit_due_date else None
-                final_start = st.session_state.edit_start_date.isoformat() if st.session_state.edit_start_date else None
-                new_status = 'done' if is_done else 'open'
-                
+            new_name = values["name"]
+            if values["problem"]:
+                pass
+            elif not new_name.strip():
+                st.error(_("Please enter a name."))
+            else:
+                final_due = values["due_date"].isoformat() if values["due_date"] else None
+                final_start = values["start_date"].isoformat() if values["start_date"] else None
                 if st.session_state.tracker.update_task(
                     main_project,
                     task_name,
                     new_name,
                     final_due,
-                    is_today,
-                    st.session_state.edit_task_note,
-                    new_status,
-                    recurring=is_recurring,
-                    frequency=final_freq,
-                    userdefined_days=ud_days,
-                    priority=priority,
+                    values["today"],
+                    values["note"],
+                    'done' if values["done"] else 'open',
+                    recurring=values["recurring"],
+                    frequency=values["frequency"],
+                    userdefined_days=values["userdefined_days"],
+                    priority=values["priority"],
                     task_id=task_id,
                     # The edit form submits every field at once, so an empty
                     # date field is the user removing the due date rather than
@@ -4001,20 +4041,14 @@ def view_edit_task_form():
                     clear_start_date=final_start is None,
                 ):
                     set_feedback(_("Task updated successfully."))
-                    if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
-                    if 'edit_start_date' in st.session_state: del st.session_state.edit_start_date
-                    if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
-                    st.session_state.context = {}
+                    close_task_form("edit")
                     navigate_to(return_to)
                 else:
                     st.error(_("Error: Could not update task."))
 
     with col_cancel:
         if st.button(_("Cancel"), use_container_width=True):
-            if 'edit_due_date' in st.session_state: del st.session_state.edit_due_date
-            if 'edit_start_date' in st.session_state: del st.session_state.edit_start_date
-            if 'edit_task_note' in st.session_state: del st.session_state.edit_task_note
-            st.session_state.context = {}
+            close_task_form("edit")
             navigate_to(return_to)
 
 def view_start_work():
