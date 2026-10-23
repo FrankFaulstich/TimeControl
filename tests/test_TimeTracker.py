@@ -17,6 +17,32 @@ from i18n import _
 # The temporary file path for tests
 TEST_FILE_PATH = 'test_data.json'
 
+
+# Every report ends in TimeTracker._copy_to_clipboard(), which puts the text
+# on the system clipboard and says so. The application should; a test run
+# should not - each report test replaced whatever the developer had copied
+# last. While this module runs, the step is a stand-in that only records what
+# it was given (_CLIPBOARD), so a new report test is covered without anyone
+# having to remember it. The tests whose subject is the step itself call the
+# real one (_COPY_TO_CLIPBOARD) with pyperclip mocked, and
+# TestReportsLeaveTheClipboardAlone is the guard.
+#
+# In setUpModule rather than at import, so the stand-in is gone again before
+# the other test modules run.
+_COPY_TO_CLIPBOARD = TimeTracker._copy_to_clipboard
+_CLIPBOARD_PATCH = unittest.mock.patch.object(TimeTracker, '_copy_to_clipboard', autospec=True)
+_CLIPBOARD = None
+
+
+def setUpModule():
+    global _CLIPBOARD
+    _CLIPBOARD = _CLIPBOARD_PATCH.start()
+
+
+def tearDownModule():
+    _CLIPBOARD_PATCH.stop()
+
+
 class TestTimeTracker(unittest.TestCase):
     """Unit tests for the TimeTracker class."""
 
@@ -371,23 +397,25 @@ class TestTimeTracker(unittest.TestCase):
         self.assertEqual(self.tracker._format_duration(duration3), "1,500 hours (0,038 DLP)")
 
     @unittest.mock.patch('tt.TimeTracker.pyperclip')
-    def test_copy_to_clipboard_success(self, mock_pyperclip):
+    @unittest.mock.patch('builtins.print')
+    def test_copy_to_clipboard_success(self, mock_print, mock_pyperclip):
         """Tests copying to clipboard when pyperclip is available."""
         # Setup mock
         mock_pyperclip.copy = unittest.mock.MagicMock()
-        
-        # Call method
+
+        # Call the real method, not the module's stand-in
         text = "Test Report"
-        self.tracker._copy_to_clipboard(text)
-        
+        _COPY_TO_CLIPBOARD(self.tracker, text)
+
         # Assert
         mock_pyperclip.copy.assert_called_with(text)
+        mock_print.assert_called_with(_("Info: Report content has been copied to the clipboard."))
 
     @unittest.mock.patch('tt.TimeTracker.pyperclip', None)
     @unittest.mock.patch('builtins.print')
     def test_copy_to_clipboard_not_installed(self, mock_print):
         """Tests behavior when pyperclip is not installed."""
-        self.tracker._copy_to_clipboard("Test")
+        _COPY_TO_CLIPBOARD(self.tracker, "Test")
         # Should print a warning
         args, _kwargs = mock_print.call_args
         expected_msg = _("Warning: Could not copy to clipboard. Please install 'pyperclip' (`pip install pyperclip`).")
@@ -2264,26 +2292,25 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIn(r"\b Bold\b0", rtf)
         self.assertIn("Line", rtf)
 
-    @unittest.mock.patch('tt.TimeTracker.pyperclip')
     @unittest.mock.patch('tt.TimeTracker.os.path.exists')
     @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
-    def test_format_and_copy_report_formats(self, mock_open, mock_exists, mock_pyperclip):
+    def test_format_and_copy_report_formats(self, mock_open, mock_exists):
         """Tests that reports are correctly formatted and copied to clipboard based on config."""
         md_text = "# Title"
-        
+
         # Test RTF
         mock_exists.return_value = True
         mock_open.return_value.__enter__.return_value.read.return_value = json.dumps({"report_format": "rtf"})
         res = self.tracker._format_and_copy_report(md_text)
         self.assertIn(r"{\rtf1", res)
-        mock_pyperclip.copy.assert_called_with(res)
-        
+        _CLIPBOARD.assert_called_with(self.tracker, res)
+
         # Test Markdown
         mock_open.return_value.__enter__.return_value.read.return_value = json.dumps({"report_format": "markdown"})
         res = self.tracker._format_and_copy_report(md_text)
         self.assertEqual(res, md_text)
-        mock_pyperclip.copy.assert_called_with(md_text)
-        
+        _CLIPBOARD.assert_called_with(self.tracker, md_text)
+
         # Test HTML (if markdown module is present)
         import tt.TimeTracker
         if tt.TimeTracker.markdown:
@@ -2291,7 +2318,7 @@ class TestTimeTracker(unittest.TestCase):
             res = self.tracker._format_and_copy_report(md_text)
             # Expect basic HTML wrapping for a header
             self.assertIn("<h1>Title</h1>", res)
-            mock_pyperclip.copy.assert_called_with(res)
+            _CLIPBOARD.assert_called_with(self.tracker, res)
 
 
 
@@ -2429,6 +2456,43 @@ class TestReportsReadTheClockNotTheList(unittest.TestCase):
         text = self.report()
         self.assertIn("2026-09-10 09:00:00", self.line(text, "First entry"))
         self.assertIn("2026-09-10 10:00:00", self.line(text, "Last activity"))
+
+
+class TestReportsLeaveTheClipboardAlone(unittest.TestCase):
+    """
+    The guard for setUpModule(): every report, made the way the tests above
+    make them, and pyperclip - the real clipboard - not reached once. Should
+    the stand-in go, or a report find another way to the clipboard, this
+    fails instead of the suite quietly overwriting it again.
+    """
+
+    FILE = 'test_report_clipboard.json'
+
+    def setUp(self):
+        self.tracker = TimeTracker(file_path=self.FILE)
+        for path in (self.FILE, self.FILE + '.lock'):
+            self.addCleanup(lambda p=path: os.path.exists(p) and os.remove(p))
+        self.tracker.add_main_project("Projekt")
+        self.tracker.add_task("Projekt", "Aufgabe")
+        # Without an entry some reports stop before the clipboard step, and
+        # the guard would pass without having guarded anything.
+        start = datetime.combine(date.today(), datetime.min.time()).replace(hour=9)
+        self.tracker._get_task("Projekt", "Aufgabe")["time_entries"] = [
+            {"start_time": start.isoformat(), "end_time": (start + timedelta(hours=1)).isoformat()}]
+
+    @unittest.mock.patch('tt.TimeTracker.pyperclip')
+    def test_no_report_reaches_the_system_clipboard(self, pyperclip):
+        _CLIPBOARD.reset_mock()
+        today = date.today()
+        reports = [
+            self.tracker.generate_daily_report(today),
+            self.tracker.generate_detailed_daily_report(today),
+            self.tracker.generate_date_range_report(today, today),
+            self.tracker.generate_task_report("Projekt", "Aufgabe"),
+            self.tracker.generate_main_project_report("Projekt"),
+        ]
+        pyperclip.copy.assert_not_called()
+        self.assertEqual([c.args[1] for c in _CLIPBOARD.call_args_list], reports)
 
 
 # Run the tests if the file is called directly

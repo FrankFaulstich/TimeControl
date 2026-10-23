@@ -23,10 +23,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # 3.14 for the speed of saving: from 3.14 on, json.dumps with indent
+      # runs in the C encoder, several times faster than the pure-Python one
+      # older versions fall back to (issue #639). The .exe it produces needs
+      # Windows 10 or later.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Install Dependencies
         run: |

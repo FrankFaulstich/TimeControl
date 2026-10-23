@@ -151,14 +151,19 @@ class TestWhatTheLockDoesAndDoesNot(unittest.TestCase):
 
     def test_a_nested_call_does_not_deadlock_on_itself(self):
         """
-        start_work() stops whatever was running, and stop_work() writes too.
-        Without the depth count the inner call would queue behind the outer
-        one for the whole timeout and then raise.
+        A caller holding the document calls methods that write it too.
+        Without the depth count each inner call would queue behind the outer
+        one for the whole timeout and then raise. (start_work() used to be
+        the example, stopping the running session through stop_work(); since
+        issue #639 it no longer nests, so the nesting is made here.)
         """
+        self.tracker.SAVE_LOCK_TIMEOUT = 0.5
         self.tracker.add_task("P", "A")
         self.tracker.add_task("P", "B")
-        self.tracker.start_work("P", "A")
-        self.tracker.start_work("P", "B")     # stops A on the way
+        with self.tracker.exclusive():
+            self.tracker.start_work("P", "A")
+            self.tracker.stop_work()
+            self.tracker.start_work("P", "B")
         running = [t for t in self.tracker.data["projects"][0]["tasks"]
                    for e in t["time_entries"] if "end_time" not in e]
         self.assertEqual([t["task_name"] for t in running], ["B"])

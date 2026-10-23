@@ -67,7 +67,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.26"
+    VERSION = "4.27"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -244,10 +244,11 @@ class TimeTracker:
         prevent them, because each writer would still be saving a document it
         read before the others changed it.
 
-        Nested calls do not re-lock or re-read - start_work() stops whatever
-        was running, and the inner call must not discard what the outer one
-        has done so far. The depth is per thread, so two threads sharing one
-        TimeTracker cannot mistake each other's nesting for their own.
+        Nested calls do not re-lock or re-read - a caller already holding the
+        document may call a method that writes it, and the inner call must
+        not discard what the outer one has done so far. The depth is per
+        thread, so two threads sharing one TimeTracker cannot mistake each
+        other's nesting for their own.
 
         Reading alone does not need this. os.replace() already means a reader
         sees either the whole old file or the whole new one, and reload_data()
@@ -556,12 +557,26 @@ class TimeTracker:
         exact moment would see a truncated, invalid JSON file and crash.
         os.replace() has no such window: readers always see either the
         complete old file or the complete new one.
+
+        The document is turned into text in one piece and written in one call
+        (issue #639). json.dump() streams it instead, through the pure-Python
+        encoder and in many small writes, and on a large document that was
+        most of a second of every save - and all of it with the lock held,
+        so every other writer waited too. json.dumps() uses the C encoder
+        where Python has one that knows `indent` (3.14 on), and writes the
+        same text either way. The file it ends up in is byte for byte what
+        json.dump() wrote, line endings included: it goes through the same
+        text-mode file, which on Windows still turns each line feed into
+        CR LF. The price is the document held twice in memory for a moment.
         """
+        # Before the temporary file exists: a document that cannot be
+        # written out leaves nothing behind to clean up.
+        text = json.dumps(self.data, indent=2)
         directory = os.path.dirname(os.path.abspath(self.file_path)) or '.'
         fd, tmp_path = tempfile.mkstemp(dir=directory, prefix='.tmp_data_', suffix='.json')
         try:
             with os.fdopen(fd, 'w', encoding='utf-8') as f:
-                json.dump(self.data, f, indent=2)
+                f.write(text)
             self._replace_when_windows_lets_go(tmp_path)
         except BaseException:
             if os.path.exists(tmp_path):
@@ -1792,8 +1807,10 @@ class TimeTracker:
         if task and main_project:
             # Only stop the previous session once we know a new one can
             # actually be started - otherwise a typo'd/unknown task would
-            # silently end whatever was running without replacing it.
-            self.stop_work()
+            # silently end whatever was running without replacing it. Ended
+            # without saving: the save below covers both, where stop_work()
+            # used to save once more on its own (issue #639).
+            self._close_running_entry()
 
             # Add the new time entry. The uid is what lets a specific entry be
             # referred to at all - "the last element of some array" stops
@@ -1919,10 +1936,28 @@ class TimeTracker:
     @_exclusive
     def stop_work(self):
         """
-        Stops the currently active time tracking session by adding the end time 
+        Stops the currently active time tracking session by adding the end time
         to the most recently started entry.
 
         :return: True if a session was stopped successfully, otherwise False.
+        :rtype: bool
+        """
+        if self._close_running_entry():
+            self._save_data()
+            return True
+        return False
+
+    def _close_running_entry(self):
+        """
+        Ends the session that is running, if one is, without saving.
+
+        stop_work() saves straight after; start_work() first starts the next
+        session and saves the two together. It used to call stop_work() for
+        this, and a task switch saved the whole document twice - on a large
+        one, twice the time with the lock held (issue #639). The change sent
+        to the other machines is the same either way, and sent first.
+
+        :return: True if a session was ended.
         :rtype: bool
         """
         for project in reversed(self.data["projects"]):
@@ -1942,7 +1977,6 @@ class TimeTracker:
                         end_time = start_time
                     entry["end_time"] = end_time
                     self._emit('entry.close', uid=entry.get("uid"), end=end_time)
-                    self._save_data()
                     return True
         return False
 
