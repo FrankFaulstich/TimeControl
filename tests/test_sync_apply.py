@@ -648,6 +648,14 @@ class TestTheResultIsUsable(unittest.TestCase):
 
     PATH = 'test_apply_data.json'
 
+    def setUp(self):
+        # A report also lands on the system clipboard. That is the
+        # application's business, not a test run's - see setUpModule() in
+        # test_TimeTracker.
+        clipboard = unittest.mock.patch('tt.TimeTracker.TimeTracker._copy_to_clipboard')
+        clipboard.start()
+        self.addCleanup(clipboard.stop)
+
     def tearDown(self):
         if os.path.exists(self.PATH):
             os.remove(self.PATH)
