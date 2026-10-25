@@ -4,13 +4,15 @@ import re
 import subprocess
 import sys
 import os
-import threading
 from i18n import _
 import requests
 import zipfile
 import shutil
 from packaging.version import parse as parse_version
 from i18n import _ # Import translation function
+# The deadline every network call here runs under - see tt/deadline.py.
+# Kept under this name: tt/sync_client.py imports it from here.
+from tt.deadline import call_with_deadline as _call_with_deadline
 
 UPDATE_ZIP_FILE = "update.zip"
 CONFIG_FILE = "config.json"
@@ -103,38 +105,6 @@ def request_restart():
     sys.stdout.flush()
     sys.stderr.flush()
     os._exit(RESTART_EXIT_CODE)
-
-
-def _call_with_deadline(func, deadline, *args, **kwargs):
-    """
-    Runs func(*args, **kwargs) in a daemon thread and waits at most
-    `deadline` seconds for it. Raises TimeoutError if it's still running
-    after that.
-
-    A daemon thread - not concurrent.futures.ThreadPoolExecutor - is
-    deliberate: ThreadPoolExecutor registers its worker threads to be
-    joined at interpreter exit, so a call that's genuinely stuck (e.g. DNS
-    resolution that never gets a response) would still hang the whole app
-    at shutdown even though we stopped waiting for it here. A daemon
-    thread is hard-killed by the interpreter on exit instead, so a stuck
-    lookup can never block the app from closing.
-    """
-    result = {}
-
-    def _target():
-        try:
-            result['value'] = func(*args, **kwargs)
-        except BaseException as exc:
-            result['error'] = exc
-
-    worker = threading.Thread(target=_target, daemon=True)
-    worker.start()
-    worker.join(deadline)
-    if worker.is_alive():
-        raise TimeoutError(f"Operation timed out after {deadline}s")
-    if 'error' in result:
-        raise result['error']
-    return result.get('value')
 
 
 def should_check_for_updates(session_state, current_menu):

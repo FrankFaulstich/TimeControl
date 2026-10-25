@@ -3191,3 +3191,6 @@ msgstr "Zapomenout toto přihlášení na tomto zařízení"
 
 msgid "This device has forgotten its sign-in."
 msgstr "Toto zařízení zapomnělo své přihlášení."
+
+msgid "The mail server did not answer in time. Check the server address and the internet connection."
+msgstr "Poštovní server neodpověděl včas. Zkontrolujte adresu serveru a připojení k internetu."

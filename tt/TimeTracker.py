@@ -10,6 +10,7 @@ import re
 import uuid
 import email
 from i18n import _
+from tt.deadline import call_with_deadline
 from tt.filelock import locked, LockTimeout
 from tt.mail_body import body_of
 from tt.mail_subject import read_subject, strip_prefixes
@@ -67,7 +68,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.27"
+    VERSION = "4.28"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -107,6 +108,15 @@ class TimeTracker:
     # same answer comes back while a virus scanner is looking at the file
     # just written. Neither lasts; both used to lose the save outright.
     REPLACE_RETRY_SECONDS = 1.0
+    # How long the e-mail import may take to open its connection, the name
+    # lookup included - which imaplib's own timeout does not cover, see
+    # tt/deadline.py. Ample for a mail server at the other end of the world,
+    # short enough that nobody stares at a spinner wondering (issue #667).
+    IMAP_CONNECT_DEADLINE = 15
+    # How long the mail server may stay silent once connected, on any single
+    # read or write. Per operation, not for the whole import: a large inbox
+    # takes as long as it takes, as long as it keeps answering.
+    IMAP_SOCKET_TIMEOUT = 30
 
     # The task attributes that mean the same thing on every machine. Deliberately
     # excluded: 'uid' (it is the address, not a field), 'id' (a local counter that
@@ -1879,22 +1889,30 @@ class TimeTracker:
         if not all([server, user, password]):
             return 0, _("Email settings are incomplete.")
 
+        mail = None
+        count = 0
         try:
-            if use_ssl:
-                mail = imaplib.IMAP4_SSL(server, port)
-            else:
-                mail = imaplib.IMAP4(server, port)
-                
+            # Opening the connection runs under a hard deadline, the name
+            # lookup included, and everything after it under a socket
+            # timeout: with neither, a mail server that cannot be reached -
+            # or answers and then falls silent - left this waiting for good,
+            # and the window or the MCP tool waiting with it (issue #667).
+            connect = imaplib.IMAP4_SSL if use_ssl else imaplib.IMAP4
+            mail = call_with_deadline(connect, self.IMAP_CONNECT_DEADLINE, server, port,
+                                      timeout=self.IMAP_SOCKET_TIMEOUT)
+
             mail.login(user, password)
             mail.select("inbox")
-            
-            status, messages = mail.search(None, "ALL")
+
+            # Not ALL: a mail this flagged for deletion in a run that then
+            # broke off - a timeout half way - is still in the inbox until
+            # the next expunge, and would be imported a second time.
+            status, messages = mail.search(None, "UNDELETED")
             if status != "OK":
                 return 0, _("Error searching emails.")
-                
+
             mail_ids = messages[0].split()
-            count = 0
-            
+
             if not self._get_project(self.HIDDEN_PROJECT):
                 self.add_main_project(self.HIDDEN_PROJECT)
 
@@ -1929,7 +1947,19 @@ class TimeTracker:
             mail.expunge()
             mail.logout()
             return count, None
-            
+
+        except TimeoutError:
+            # The connection may be the thing that hangs, so it is closed
+            # rather than logged out of. The mails imported before the
+            # timeout stay imported; they are flagged, and the search above
+            # leaves them out next time.
+            if mail is not None:
+                try:
+                    mail.shutdown()
+                except Exception:
+                    pass
+            return count, _("The mail server did not answer in time. Check the server "
+                            "address and the internet connection.")
         except Exception as e:
             return 0, str(e)
 

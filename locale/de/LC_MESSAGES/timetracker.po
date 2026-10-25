@@ -3249,3 +3249,6 @@ msgstr "Anmeldung auf diesem Gerät vergessen"
 
 msgid "This device has forgotten its sign-in."
 msgstr "Dieses Gerät hat seine Anmeldung vergessen."
+
+msgid "The mail server did not answer in time. Check the server address and the internet connection."
+msgstr "Der Mailserver hat nicht rechtzeitig geantwortet. Bitte die Serveradresse und die Internetverbindung prüfen."

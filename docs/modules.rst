@@ -27,6 +27,12 @@ File Locking
 .. automodule:: tt.filelock
    :members:
 
+Network Deadlines
+~~~~~~~~~~~~~~~~~
+
+.. automodule:: tt.deadline
+   :members:
+
 Email Subjects
 ~~~~~~~~~~~~~~
 
