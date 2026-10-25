@@ -3388,3 +3388,6 @@ msgstr "Olvidar este inicio de sesión en este dispositivo"
 
 msgid "This device has forgotten its sign-in."
 msgstr "Este dispositivo ha olvidado su inicio de sesión."
+
+msgid "The mail server did not answer in time. Check the server address and the internet connection."
+msgstr "El servidor de correo no respondió a tiempo. Compruebe la dirección del servidor y la conexión a Internet."

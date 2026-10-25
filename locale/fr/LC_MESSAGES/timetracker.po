@@ -3347,3 +3347,6 @@ msgstr "Oublier cette connexion sur cet appareil"
 
 msgid "This device has forgotten its sign-in."
 msgstr "Cet appareil a oublié sa connexion."
+
+msgid "The mail server did not answer in time. Check the server address and the internet connection."
+msgstr "Le serveur de messagerie n'a pas répondu à temps. Vérifiez l'adresse du serveur et la connexion Internet."

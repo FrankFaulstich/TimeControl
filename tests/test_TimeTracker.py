@@ -6,6 +6,8 @@ import json
 import os
 import subprocess
 import sys
+import threading
+import time
 from datetime import datetime, timedelta, date
 
 # Add parent directory to path to import modules from root
@@ -1405,6 +1407,97 @@ class TestTimeTracker(unittest.TestCase):
         deleted = [c.args[0] for c in mock_mail.store.call_args_list]
         self.assertEqual(deleted, [b'1', b'3'])
         self.assertTrue(mock_mail.expunge.called)
+
+    # --- issue #667: a mail server that does not answer ---------------------
+
+    TIMED_OUT = _("The mail server did not answer in time. Check the server "
+                  "address and the internet connection.")
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_a_connection_that_never_opens_gives_up(self, mock_imap_cls, mock_open, mock_exists):
+        """
+        A name lookup that never answers - no network, or DNS packets
+        dropped - is not covered by imaplib's own timeout, and left the
+        window waiting for good behind its spinner.
+        """
+        released = threading.Event()
+        self.addCleanup(released.set)      # lets the abandoned thread finish
+        # Bounded, so that without the deadline this fails rather than hangs.
+        mock_imap_cls.side_effect = lambda *args, **kwargs: released.wait(10)
+        started = time.monotonic()
+        with unittest.mock.patch.object(TimeTracker, 'IMAP_CONNECT_DEADLINE', 0.3):
+            count, error = self._import_emails(mock_imap_cls, mock_open, mock_exists,
+                                               b"Subject: Never fetched\r\n\r\nx")
+        self.assertLess(time.monotonic() - started, 3)
+        self.assertEqual((count, error), (0, self.TIMED_OUT))
+        self.assertEqual(self._imported_tasks(), [])
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_every_read_after_it_is_bounded_too(self, mock_imap_cls, mock_open, mock_exists):
+        """A server that answers and then falls silent: imaplib's timeout covers that."""
+        self._import_emails(mock_imap_cls, mock_open, mock_exists, b"Subject: One\r\n\r\nx")
+        mock_imap_cls.assert_called_once_with('imap.example.com', 993,
+                                              timeout=TimeTracker.IMAP_SOCKET_TIMEOUT)
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4')
+    def test_fetch_emails_to_tasks_without_ssl_as_well(self, mock_imap_cls, mock_open, mock_exists):
+        self.EMAIL_CONFIG = json.dumps({"email": {
+            "enabled": True, "imap_server": "imap.example.com", "imap_port": 143,
+            "user": "user@example.com", "password": "secret", "use_ssl": False}})
+        released = threading.Event()
+        self.addCleanup(released.set)
+        # Bounded, so that without the deadline this fails rather than hangs.
+        mock_imap_cls.side_effect = lambda *args, **kwargs: released.wait(10)
+        started = time.monotonic()
+        with unittest.mock.patch.object(TimeTracker, 'IMAP_CONNECT_DEADLINE', 0.3):
+            count, error = self._import_emails(mock_imap_cls, mock_open, mock_exists,
+                                               b"Subject: Never fetched\r\n\r\nx")
+        self.assertLess(time.monotonic() - started, 3)
+        self.assertEqual((count, error), (0, self.TIMED_OUT))
+        mock_imap_cls.assert_called_once_with('imap.example.com', 143,
+                                              timeout=TimeTracker.IMAP_SOCKET_TIMEOUT)
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_a_server_that_falls_silent_half_way(self, mock_imap_cls, mock_open, mock_exists):
+        """
+        What was imported stays imported and is counted; the dead connection
+        is closed rather than logged out of, which could hang again.
+        """
+        mock_mail = mock_imap_cls.return_value
+        first = b"Subject: First\r\n\r\nOne."
+        self._import_emails(mock_imap_cls, mock_open, mock_exists, first)   # sets up the mocks
+        self.tracker.delete_task(self.tracker.HIDDEN_PROJECT, 'First')
+        mock_mail.reset_mock()
+        mock_mail.search.return_value = ("OK", [b"1 2"])
+        mock_mail.fetch.side_effect = [("OK", [(None, first)]), TimeoutError('timed out')]
+
+        count, error = self.tracker.fetch_emails_to_tasks()
+
+        self.assertEqual((count, error), (1, self.TIMED_OUT))
+        self.assertEqual([t['task_name'] for t in self._imported_tasks()], ['First'])
+        self.assertEqual([c.args[0] for c in mock_mail.store.call_args_list], [b'1'])
+        mock_mail.shutdown.assert_called_once_with()
+        mock_mail.expunge.assert_not_called()
+        mock_mail.logout.assert_not_called()
+
+    @unittest.mock.patch('tt.TimeTracker.os.path.exists')
+    @unittest.mock.patch('builtins.open', new_callable=unittest.mock.mock_open)
+    @unittest.mock.patch('tt.TimeTracker.imaplib.IMAP4_SSL')
+    def test_fetch_emails_to_tasks_leaves_out_what_a_broken_off_run_flagged(self, mock_imap_cls, mock_open, mock_exists):
+        """
+        A run that broke off flagged what it had imported, but never got to
+        expunge it. Searching for everything would import those again.
+        """
+        self._import_emails(mock_imap_cls, mock_open, mock_exists, b"Subject: One\r\n\r\nx")
+        mock_imap_cls.return_value.search.assert_called_once_with(None, "UNDELETED")
 
     def test_promote_task_to_project_name_conflict(self):
         """Tests that promoting fails if a main project with the same name already exists."""
