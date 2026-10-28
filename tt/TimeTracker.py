@@ -51,9 +51,10 @@ def _exclusive(method):
     for readers, which is a different promise: nobody sees half a file, and
     everybody's changes but one are still gone, with no error anywhere.
 
-    So the whole read-alter-write runs under one lock, and begins by reading
-    the file again - taking the lock without that would only put the losing
-    writes in order, not prevent them.
+    So the whole read-alter-write runs under one lock, and begins with the
+    document as the file holds it now - read again unless it is known not to
+    have changed, see TimeTracker.is_current(). Taking the lock without that
+    would only put the losing writes in order, not prevent them.
     """
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
@@ -108,6 +109,19 @@ class TimeTracker:
     # same answer comes back while a virus scanner is looking at the file
     # just written. Neither lasts; both used to lose the save outright.
     REPLACE_RETRY_SECONDS = 1.0
+    # How long a read of the document is taken on trust (issue #640).
+    #
+    # The interface used to read the whole file on every click, and every
+    # writer read it once more under the lock, whether anything had changed
+    # or not: at a few tens of megabytes that was a fifth of a second each
+    # time. Now the file's identity, size and times are noted when it is read
+    # and looked at again before the next read, and an unchanged file is not
+    # read again. That is only as good as the file system's answers, and some
+    # answer poorly: FAT and exFAT keep times to the second or two and make up
+    # their inode numbers. So a read is trusted for this long at most, and
+    # after that the file is read again whatever it looks like - the longest
+    # a change the comparison cannot see can go unseen.
+    TRUST_UNCHANGED_SECONDS = 30.0
     # How long the e-mail import may take to open its connection, the name
     # lookup included - which imaplib's own timeout does not cover, see
     # tt/deadline.py. Ample for a mail server at the other end of the world,
@@ -223,13 +237,29 @@ class TimeTracker:
         # other's nesting as their own. See exclusive().
         self._nesting = threading.local()
 
-        self.data = self._load_data()
-        if self._migrate_data_structure():
-            # Migration is not a user action - it changes the shape of the
-            # document, not its content - so it is deliberately not recorded
-            # as operations. The other machine performs the same migration on
-            # its own copy.
-            self._save_data()
+        # What the file looked like when it was last read or written here,
+        # and when it was last read - see is_current(). Nothing yet.
+        self._signature = None
+        self._read_at = 0.0
+
+        # Held while the document in this object is read in or changed: by
+        # reload_data(), exclusive() and the Today sweeps. One object can be
+        # in use by two threads at once. Streamlit answers a click during a
+        # redraw by starting the next redraw straight away, and the one it
+        # interrupted carries on until its next call into Streamlit - so a
+        # write the first one began can still be under way while the second
+        # reloads. Unheld, that reload could put the document from before
+        # the write in place just as the write noted the file as matching
+        # memory, and the next write would save the old document over the
+        # new one. Within this process only: the file lock in exclusive() is
+        # what holds the other processes off.
+        self._in_use = threading.RLock()
+
+        # Migration is not a user action - it changes the shape of the
+        # document, not its content - so it is deliberately not recorded as
+        # operations. The other machine performs the same migration on its
+        # own copy.
+        self._read_document()
 
     def _lock_path(self):
         """
@@ -249,10 +279,22 @@ class TimeTracker:
         """
         Holds the document against every other writer for the block.
 
-        Reads the file again on the way in. That is the point: taking a lock
-        only around the save would put the losing writes in order rather than
-        prevent them, because each writer would still be saving a document it
-        read before the others changed it.
+        Starts from the document as the file holds it now. That is the point:
+        taking a lock only around the save would put the losing writes in
+        order rather than prevent them, because each writer would still be
+        saving a document it read before the others changed it. The file is
+        read again unless is_current() can vouch that the copy in memory is
+        what it holds - it used to be read every time, which on a large
+        document was a fifth of a second spent arriving at what was already
+        there (issue #640).
+
+        Inside the block the copy in memory is taken to differ from the file
+        until it has been saved. A block that returns without saving, or
+        raises, leaves the next reader to go to the file - and so whatever it
+        changed and did not save is dropped, as it always was when every read
+        went to the file. Nothing else may change the document: a change
+        made outside a block would stay in memory unseen and be written out
+        by the next save.
 
         Nested calls do not re-lock or re-read - a caller already holding the
         document may call a method that writes it, and the inner call must
@@ -260,28 +302,108 @@ class TimeTracker:
         thread, so two threads sharing one TimeTracker cannot mistake each
         other's nesting for their own.
 
-        Reading alone does not need this. os.replace() already means a reader
-        sees either the whole old file or the whole new one, and reload_data()
-        is called on every redraw - putting a lock there would make the
-        interface fail whenever a writer was slow.
+        Reading alone does not need the file lock. os.replace() already means
+        a reader sees either the whole old file or the whole new one, and
+        reload_data() is called on every redraw - putting the file lock there
+        would make the interface fail whenever a writer was slow. It only
+        waits for another thread using this same object (see __init__), and
+        so for one write at most.
 
         :raises LockTimeout: if another writer held it past the deadline. Not
             caught anywhere on purpose: the alternative is carrying on and
             overwriting their work, which is the failure this exists to end.
         """
         if getattr(self._nesting, 'depth', 0):
-            yield
+            try:
+                yield
+            except BaseException:
+                # What it got as far as changing is in memory and not in the
+                # file, and the outer block may catch this and carry on.
+                self._signature = None
+                raise
             return
-        with locked(self._lock_path(), timeout=self.SAVE_LOCK_TIMEOUT
-                    if timeout is None else timeout):
+        # Not below zero: the lock of this object would take -1 as no limit
+        # at all and anything else below zero as an error.
+        timeout = max(0.0, self.SAVE_LOCK_TIMEOUT if timeout is None else timeout)
+        deadline = time.monotonic() + timeout
+        with self._holding(timeout), \
+                locked(self._lock_path(), timeout=max(0.0, deadline - time.monotonic())):
             self._nesting.depth = 1
             try:
-                self.data = self._load_data()
-                if self._migrate_data_structure():
-                    self._save_data()
+                if not self.is_current():
+                    self._read_document()
+                self._signature = None
                 yield
+            except BaseException:
+                # Needed although it was cleared above: the block may have
+                # saved, and then changed more before it raised.
+                self._signature = None
+                raise
             finally:
                 self._nesting.depth = 0
+
+    @contextmanager
+    def _holding(self, timeout=None):
+        """
+        Holds this object's document against the other threads of this
+        process for the block - see the lock's description in __init__.
+
+        :raises LockTimeout: if another thread kept it past the deadline.
+        """
+        if not self._in_use.acquire(timeout=self.SAVE_LOCK_TIMEOUT
+                                    if timeout is None else timeout):
+            raise LockTimeout("another thread kept the document of %s too long"
+                              % self.file_path)
+        try:
+            yield
+        finally:
+            self._in_use.release()
+
+    def is_current(self):
+        """
+        Whether the document in memory is still what the file holds, as far
+        as can be told without reading it (issue #640).
+
+        Compares the file's identity, size and times with what they were when
+        it was last read or written here. Every writer in this application
+        puts a new file in place rather than writing into the old one, so a
+        change by any of them comes with a new identity; the size and the
+        times catch whatever else might write it. The answer is no - read it
+        again - whenever that cannot be relied on: nothing noted, a file
+        system without real inode numbers (they come back as 0), a last read
+        more than TRUST_UNCHANGED_SECONDS ago, or a file that cannot be
+        looked at.
+
+        :return: True if reading the file would give what is in memory already.
+        :rtype: bool
+        """
+        signature = self._signature
+        if signature is None or not signature[1]:
+            return False
+        if time.monotonic() - self._read_at > self.TRUST_UNCHANGED_SECONDS:
+            return False
+        try:
+            return self._file_signature() == signature
+        except OSError:
+            return False
+
+    def _file_signature(self):
+        """
+        What is_current() compares: which file it is, how long, and when it
+        last changed.
+
+        st_ctime is the time of any change at all on POSIX, so it catches a
+        writer that sets the modification time back; on Windows it is the
+        time the file was created, which a replace carries over, and there
+        the identity has to do that work.
+
+        Always os.stat() on the path, never os.fstat() on an open file. The
+        signature is compared with one taken by os.stat() later, and on
+        Windows the two are filled in by different system calls that need
+        not agree field for field.
+        """
+        st = os.stat(self.file_path)
+        return (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
 
     def _emit(self, op, **fields):
         """
@@ -372,14 +494,92 @@ class TimeTracker:
         Loads the project data from the configured JSON file.
         If the file does not exist, an empty data dictionary is returned.
 
+        Notes what the file looked like for is_current() - looked at before
+        the read, not after. A file replaced or rewritten while it is being
+        read then no longer matches what was noted, whichever version the
+        read came back with, and the next look reads it again.
+
         :return: A dictionary containing the loaded project data.
         :rtype: dict
         """
         if os.path.exists(self.file_path):
+            read_at = time.monotonic()
+            signature = self._file_signature()
             with open(self.file_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+            self._signature = signature
+            self._read_at = read_at
+            return data
         else:
+            self._signature = None
             return {"projects": []}
+
+    def _read_document(self):
+        """
+        Reads the file into self.data and brings it up to the current schema.
+
+        If any of it fails, nothing about the file is remembered any more:
+        memory then holds the previous document or a half-migrated one, and
+        in neither case what the file holds.
+
+        A migration that changed something is saved under the file lock -
+        directly inside exclusive(), otherwise see _save_migration().
+        """
+        try:
+            self.data = self._load_data()
+            if self._migrate_data_structure():
+                if getattr(self._nesting, 'depth', 0):
+                    self._save_data()
+                else:
+                    self._save_migration()
+        except BaseException:
+            self._signature = None
+            raise
+
+    def _save_migration(self):
+        """
+        Saves a document a plain read has just migrated - __init__, which the
+        MCP/REST/SOAP servers run on every call, or reload_data() - but only
+        under the file lock, and only if the file is still the one read.
+
+        It used to be saved straight away, without the lock. A writer that
+        saved in between, holding the lock as every writer does, then had its
+        change replaced by the migrated document from before it, and nobody
+        was told. Expired tombstones are enough to set that off: one reaches
+        TOMBSTONE_RETENTION_DAYS 90 days after every deletion.
+
+        So under the lock the file is compared with what it looked like
+        before the read. Unchanged - or still absent, for a new document - the
+        migrated document is saved. Changed, it is read and migrated again,
+        now under the lock, and saved from there.
+
+        Does not wait for the lock. Reading must not depend on it (see
+        exclusive()), and nothing is lost by letting it go: memory is then
+        marked as differing from the file, so the next reload reads and
+        migrates again and tries once more, and any write brings the file up
+        to date anyway, because exclusive() reads it again and migrates it
+        under the lock.
+        """
+        noted = self._signature
+        # Memory differs from the file until this has gone through.
+        self._signature = None
+        try:
+            with self._holding(0), locked(self._lock_path(), timeout=0):
+                self._nesting.depth = 1
+                try:
+                    try:
+                        current = self._file_signature()
+                    except FileNotFoundError:
+                        current = None
+                    if current == noted:
+                        self._save_data()
+                    elif current is not None:
+                        self._read_document()
+                    # Gone since the read: left to whoever removed it.
+                finally:
+                    self._nesting.depth = 0
+        except LockTimeout:
+            pass
 
     def reload_data(self):
         """
@@ -398,10 +598,24 @@ class TimeTracker:
         If the file cannot be read the exception propagates and the previously
         loaded data is left untouched, so a caller can treat a transient
         failure as "keep what we have".
+
+        Reads nothing when is_current() says the file has not changed since
+        it was last read or written here (issue #640). The interface calls
+        this on every click, and on a large document a read took a fifth of
+        a second and a few hundred megabytes for the moment, only to arrive
+        at what was in memory already.
+
+        Waits for another thread of this process that is reading or writing
+        this same object (see __init__) - so that what it finds is that
+        thread's finished work, not the document from before it.
+
+        :raises LockTimeout: if that thread kept it past SAVE_LOCK_TIMEOUT.
+            The previously loaded data is left untouched then, too.
         """
-        self.data = self._load_data()
-        if self._migrate_data_structure():
-            self._save_data()
+        with self._holding():
+            if self.is_current():
+                return
+            self._read_document()
 
     def _migrate_data_structure(self):
         """
@@ -578,7 +792,12 @@ class TimeTracker:
         json.dump() wrote, line endings included: it goes through the same
         text-mode file, which on Windows still turns each line feed into
         CR LF. The price is the document held twice in memory for a moment.
+
+        Afterwards the new file is noted as matching memory, for
+        is_current() - but only if it still is the file this wrote.
         """
+        # Memory differs from the file until this has gone through.
+        self._signature = None
         # Before the temporary file exists: a document that cannot be
         # written out leaves nothing behind to clean up.
         text = json.dumps(self.data, indent=2)
@@ -587,11 +806,33 @@ class TimeTracker:
         try:
             with os.fdopen(fd, 'w', encoding='utf-8') as f:
                 f.write(text)
+            written = os.stat(tmp_path)
             self._replace_when_windows_lets_go(tmp_path)
         except BaseException:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
             raise
+        self._note_own_file(written)
+
+    def _note_own_file(self, written):
+        """
+        Notes the file just saved as the one memory matches - if it still is
+        that file. Something outside this application may have put another in
+        its place in the meantime; then nothing is noted, and the next look
+        reads whatever is there.
+
+        Compared without st_ctime, which the move into place changes on
+        POSIX, and noted with it as it is now.
+
+        :param written: os.stat() of the file as it was written, before the move.
+        """
+        try:
+            signature = self._file_signature()
+        except OSError:
+            return
+        if signature[:4] == (written.st_dev, written.st_ino,
+                             written.st_size, written.st_mtime_ns):
+            self._signature = signature
 
     def _replace_when_windows_lets_go(self, tmp_path):
         """
@@ -1093,7 +1334,6 @@ class TimeTracker:
                 })
         return results
 
-    @_exclusive
     def cleanup_overdue_today_tasks(self):
         """
         Removes the 'today' flag (⭐) from tasks that have a due date in the past.
@@ -1119,22 +1359,45 @@ class TimeTracker:
         rule wants, so a machine that has just been told the answer changes
         nothing and says nothing.
 
+        LOOKS BEFORE IT LOCKS
+        ---------------------
+        The Today and Planning views run this on every redraw, and nearly
+        always there is nothing to do. So when the document in memory is
+        known to be current, it is looked through first, and the lock - with
+        everything that comes with it - is taken only if a flag has to change
+        (issue #640). Under the lock it is looked through once more, and that
+        look is the one that counts.
+
         :return: True if any task was updated and saved.
         :rtype: bool
         """
+        # Held across the look as well: another thread may be in the middle
+        # of changing the document it looks through.
+        with self._holding():
+            if self.is_current() and next(self._overdue_today_tasks(), None) is None:
+                return False
+            return self._clear_overdue_today_flags()
+
+    def _overdue_today_tasks(self):
+        """The tasks still marked for today although their due date has passed."""
         today_str = date.today().isoformat()
-        changed = False
         for project in self.data.get("projects", []):
             for task in project.get("tasks", []):
                 if task.get('today') and task.get('due_date') and task.get('due_date') < today_str:
-                    task['today'] = False
-                    self._emit('task.set', uid=task.get("uid"), f={'today': False})
-                    changed = True
+                    yield task
+
+    @_exclusive
+    def _clear_overdue_today_flags(self):
+        """cleanup_overdue_today_tasks() once it has found something to do."""
+        changed = False
+        for task in list(self._overdue_today_tasks()):
+            task['today'] = False
+            self._emit('task.set', uid=task.get("uid"), f={'today': False})
+            changed = True
         if changed:
             self._save_data()
         return changed
 
-    @_exclusive
     def set_today_flag_for_due_tasks(self):
         """
         Sets the 'today' flag (⭐) for every open task that is current.
@@ -1151,20 +1414,36 @@ class TimeTracker:
         same conclusion on their own, because this sweep reads a task's status
         as well as its dates and each machine runs it at a different moment.
 
+        Looks before it locks, as cleanup_overdue_today_tasks() does and for
+        the same reason.
+
         :return: True if any task was updated and saved.
         :rtype: bool
         """
+        with self._holding():
+            if self.is_current() and next(self._unmarked_current_tasks(), None) is None:
+                return False
+            return self._set_today_flags()
+
+    def _unmarked_current_tasks(self):
+        """The open tasks that belong in today's work and are not marked for it."""
         today_str = date.today().isoformat()
-        changed = False
         for project in self.data.get("projects", []):
             for task in project.get("tasks", []):
                 # Only consider open tasks
                 if task.get('status') != self.STATUS_OPEN or task.get('today'):
                     continue
                 if self._is_current(task, today_str):
-                    task['today'] = True
-                    self._emit('task.set', uid=task.get("uid"), f={'today': True})
-                    changed = True
+                    yield task
+
+    @_exclusive
+    def _set_today_flags(self):
+        """set_today_flag_for_due_tasks() once it has found something to do."""
+        changed = False
+        for task in list(self._unmarked_current_tasks()):
+            task['today'] = True
+            self._emit('task.set', uid=task.get("uid"), f={'today': True})
+            changed = True
         if changed:
             self._save_data()
         return changed

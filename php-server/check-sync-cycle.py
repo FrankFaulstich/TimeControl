@@ -216,10 +216,11 @@ def run(user, password, root):
     a.tracker.delete_task("Website", "Doomed")
     b.tracker.start_work("Website", "Doomed")
     b.tracker.stop_work()
-    # Read again rather than through `doomed`. Since issue #558 every mutator
-    # re-reads the document under the lock, so a dict held across one of them
-    # points into the copy that was replaced - and its time_entries is still
-    # the empty list it was before the hour was booked.
+    # Read again rather than through `doomed`. Every mutator re-reads the
+    # document under the lock whenever the file has changed (issues #558,
+    # #640), so a dict held across one of them may point into a copy that has
+    # since been replaced - its time_entries still the empty list it was
+    # before the hour was booked.
     discarded_uid = task_of(b, "Doomed")['time_entries'][0]['uid']
 
     a.sync()
