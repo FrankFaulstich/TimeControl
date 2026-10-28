@@ -207,9 +207,9 @@ class TestTimeTracker(unittest.TestCase):
     def test_new_entities_get_a_uid_without_a_restart(self):
         """Projects, tasks and time entries are born with a uid, not given one later."""
         # Fetched again after each change rather than held across it: a
-        # method that writes the document reads it back first (see
-        # TimeTracker.exclusive()), so anything looked up beforehand is a
-        # copy of how things were.
+        # method that writes the document reads it back first whenever the
+        # file has changed (see TimeTracker.exclusive()), so anything looked
+        # up beforehand may be a copy of how things were.
         self.tracker.add_main_project("Fresh Project")
         project = self.tracker.data["projects"][0]
         self.assertTrue(project.get("uid"))

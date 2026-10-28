@@ -13,6 +13,7 @@ import shutil
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from tt.TimeTracker import TimeTracker
+from tt.filelock import LockTimeout
 from tt.task_order import (
     TASK_ORDER_NONE,
     TASK_ORDER_PRIORITY,
@@ -369,19 +370,24 @@ if 'tracker' not in st.session_state:
     st.session_state.tracker.set_today_flag_for_due_tasks() # Set 'today' flag for tasks due today
     st.session_state.update_check = {'available': False}
 else:
-    # Reload from disk on every rerun (i.e. on every click/navigation), so
-    # changes made by another process sharing the same data file - the SOAP
-    # server, or the optional MCP server used by Claude - show up here too,
-    # without needing to restart the whole GUI session. _save_data() writes
+    # Checked against the disk on every rerun (i.e. on every click/navigation),
+    # so changes made by another process sharing the same data file - the
+    # SOAP server, or the optional MCP server used by Claude - show up here
+    # too, without needing to restart the whole GUI session. The file is only
+    # read again when it has changed since this session last read or wrote
+    # it (issue #640, see TimeTracker.is_current()). _save_data() writes
     # atomically (temp file + os.replace), but this stays wrapped as a
     # defensive fallback: if the reload ever lands on an unreadable file
     # (e.g. a transient OS/antivirus lock), keep the previously loaded data
     # for this run instead of crashing the whole script - which, since this
     # runs on every auto-refresh tick too, used to reset the visible view
     # back to the main menu once the user reloaded after such a crash.
+    # LockTimeout belongs here too: reload_data() waits for an earlier redraw
+    # of this session still writing, and one that will not finish is no
+    # reason to fail this one.
     try:
         st.session_state.tracker.reload_data()
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError, LockTimeout):
         pass
 
 if 'menu' not in st.session_state:
@@ -398,9 +404,10 @@ if 'menu' not in st.session_state:
 # nothing until the app was restarted - and the settings screen never said so.
 #
 # Then applying, on this thread, into the document this thread has just
-# reloaded and is about to draw. That is deliberate: the interface keeps its
-# document in memory between redraws, so a background thread writing the file
-# would be silently overwritten by the next thing the user did.
+# brought up to date with the disk and is about to draw. That is deliberate:
+# the interface keeps its document in memory between redraws, so a background
+# thread writing the file would be silently overwritten by the next thing the
+# user did.
 if SYNC_AVAILABLE:
     try:
         # Rebound before the sequence below, and only here: this tracker
@@ -1333,7 +1340,11 @@ def _task_planning_body():
     planning_filter = filter_map.get(selected_filter)
 
     if planning_filter == 'today':
-        st.session_state.tracker.cleanup_overdue_today_tasks()
+        # Housekeeping, see view_today().
+        try:
+            st.session_state.tracker.cleanup_overdue_today_tasks()
+        except LockTimeout:
+            pass
 
     st.header(_("Tasks"))
 
@@ -1775,7 +1786,13 @@ def _today_tasks_body():
     tabs inside view_work(), which draws both once for all of them.
     """
 
-    st.session_state.tracker.cleanup_overdue_today_tasks()
+    # The sweep waits for an earlier redraw of this session still writing,
+    # as reload_data() does (issue #640). It is housekeeping that the next
+    # redraw repeats, so one that cannot run now is no reason to fail this one.
+    try:
+        st.session_state.tracker.cleanup_overdue_today_tasks()
+    except LockTimeout:
+        pass
     current_work = st.session_state.tracker.get_current_work()
 
     # The tasks explicitly marked as 'today' (⭐). Read up here, before the

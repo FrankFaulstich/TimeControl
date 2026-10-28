@@ -1271,9 +1271,10 @@ def apply_pending(tracker):
     Applies everything fetched so far to the tracker's document and saves it.
 
     Must be called on the thread that owns the document - in the interface,
-    the one drawing it, immediately after it has reloaded from disk. It works
-    on that thread's own document object, so the change is visible to the
-    rest of the redraw and cannot be overwritten by it.
+    the one drawing it, immediately after it has been brought up to date with
+    the disk (reload_data()). It works on that thread's own document object,
+    so the change is visible to the rest of the redraw and cannot be
+    overwritten by it.
 
     :raises OSError: if the document cannot be saved. Nothing is consumed in
                      that case, so the next call tries again - which is why
