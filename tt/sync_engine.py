@@ -24,11 +24,11 @@ nothing: the operations are on disk and are applied on the next start.
 
 WHY NOT SIMPLY CALL IT WHEN THE VIEW CHANGES
 --------------------------------------------
-That is how the update check works, and for a once-per-view version check a
-pause is tolerable. Here it is not: a sync runs every few minutes, and a
-server that has gone away would stall every navigation for the length of the
-timeout. Hence a thread, and hence nothing in the interface ever waiting on
-it.
+That is how the update check used to work, until its pauses added up as well
+and it moved into a thread of its own too (issue #641). Here they would never
+have been tolerable: a sync runs every few minutes, and a server that has
+gone away would stall every navigation for the length of the timeout. Hence
+a thread, and hence nothing in the interface ever waiting on it.
 
 ONE CYCLE AT A TIME, ACROSS PROCESSES
 -------------------------------------

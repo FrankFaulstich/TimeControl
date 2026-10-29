@@ -8,6 +8,7 @@ import sys
 import tempfile
 import threading
 import time
+import types
 import zipfile
 
 # Add parent directory to path to import modules from root
@@ -137,36 +138,382 @@ class TestUpdate(unittest.TestCase):
         self.assertFalse(result)
 
     # --- should_check_for_updates() ---
+    #
+    # It used to say yes on every change of view, and the interface waited
+    # for GitHub each time (issue #641). Now it asks whether the last answer
+    # has run out, and a change of view has nothing to do with it.
 
-    def test_should_check_for_updates_first_time_for_a_menu(self):
-        """No prior check recorded at all - a fresh session_state - must check."""
-        self.assertTrue(update.should_check_for_updates({}, "today_view"))
+    def test_should_check_for_updates_when_github_has_never_been_asked(self):
+        self.assertTrue(update.should_check_for_updates(None, 1000.0))
 
-    def test_should_check_for_updates_same_menu_as_last_check_skips(self):
-        """
-        Regression test: rerunning the *same* view (a keystroke, a periodic
-        auto-refresh tick, ...) must NOT re-trigger a check - only an actual
-        view change should.
-        """
-        session_state = {"_update_checked_for_menu": "today_view"}
-        self.assertFalse(update.should_check_for_updates(session_state, "today_view"))
+    def test_should_check_for_updates_not_while_the_answer_is_fresh(self):
+        self.assertFalse(update.should_check_for_updates(1000.0, 1000.0))
+        self.assertFalse(update.should_check_for_updates(
+            1000.0, 1000.0 + update.UPDATE_CHECK_INTERVAL - 1))
 
-    def test_should_check_for_updates_different_menu_triggers_recheck(self):
-        """Navigating to a different view than the one last checked must check again."""
-        session_state = {"_update_checked_for_menu": "today_view"}
-        self.assertTrue(update.should_check_for_updates(session_state, "reporting"))
+    def test_should_check_for_updates_once_the_interval_is_up(self):
+        self.assertTrue(update.should_check_for_updates(
+            1000.0, 1000.0 + update.UPDATE_CHECK_INTERVAL))
+        self.assertTrue(update.should_check_for_updates(
+            1000.0, 1000.0 + 3 * update.UPDATE_CHECK_INTERVAL))
 
-    def test_should_check_for_updates_returning_to_a_previous_menu_rechecks(self):
+    def test_should_check_for_updates_takes_the_interval_it_is_given(self):
+        self.assertFalse(update.should_check_for_updates(1000.0, 1009.0, interval=10))
+        self.assertTrue(update.should_check_for_updates(1000.0, 1010.0, interval=10))
+
+    def test_an_hour_is_how_long_an_answer_is_good_for(self):
+        self.assertEqual(update.UPDATE_CHECK_INTERVAL, 60 * 60)
+
+
+class TestTheInterfaceNeverWaitsForGitHub(unittest.TestCase):
+    """
+    known_update(), which the interface calls on every run (issue #641).
+
+    It used to ask GitHub on every change of view and wait for the answer -
+    76-96 ms a time, and up to UPDATE_CHECK_DEADLINE on a bad network - with
+    an unauthenticated request GitHub allows sixty times an hour. Now the
+    answer is kept for an hour and fetched by a thread.
+
+    Each test starts with nothing known, and check_for_updates() replaced:
+    nothing here reaches the network.
+    """
+
+    VERSION = "1.0"
+
+    def setUp(self):
+        fresh = unittest.mock.patch.object(update, '_release_check', update._ReleaseCheck())
+        fresh.start()
+        self.addCleanup(fresh.stop)
+        asking = unittest.mock.patch.object(
+            update, 'check_for_updates',
+            unittest.mock.MagicMock(return_value=(True, "99.0", "http://x/z")))
+        self.asked = asking.start()
+        self.addCleanup(asking.stop)
+        # Run before the two above are undone: a thread still under way would
+        # otherwise ask the real GitHub, or leave its answer for the next test.
+        self.addCleanup(self._wait_for_the_threads)
+
+    @staticmethod
+    def _wait_for_the_threads():
+        for thread in threading.enumerate():
+            if thread.name == 'update-check':
+                thread.join(5)
+
+    def _answer(self, version=None):
+        """What known_update() says once the thread it started is done."""
+        version = version or self.VERSION
+        update.known_update(version)
+        self._wait_for_the_threads()
+        return update.known_update(version)
+
+    def _an_hour_later(self):
+        update._release_check.asked_at -= update.UPDATE_CHECK_INTERVAL
+
+    def _five_minutes_later(self):
+        update._release_check.asked_at -= update.UPDATE_RETRY_INTERVAL
+
+    def _held_up(self):
         """
-        Only the single most-recently-checked menu is remembered (not a set
-        of every menu ever visited this session) - navigating back to a view
-        checked earlier, but not immediately before this one, must check
-        again too. This matches "check on every view change" literally,
-        including revisits, while still skipping repeated reruns of the
-        view you're currently on.
+        Makes check_for_updates() wait until released, as GitHub does on a bad
+        network, and returns (asked, release) - asked is set once it is called.
         """
-        session_state = {"_update_checked_for_menu": "reporting"}
-        self.assertTrue(update.should_check_for_updates(session_state, "today_view"))
+        asked, release = threading.Event(), threading.Event()
+        answer = self.asked.return_value
+
+        def slow(version, **unused):
+            asked.set()
+            release.wait(5)
+            return answer
+        self.asked.side_effect = slow
+        self.addCleanup(release.set)
+        return asked, release
+
+    def test_it_does_not_wait_for_the_answer(self):
+        asked, release = self._held_up()
+        started = time.monotonic()
+        self.assertIsNone(update.known_update(self.VERSION))
+        self.assertLess(time.monotonic() - started, 0.5)
+        self.assertTrue(asked.wait(5), "nobody asked GitHub")
+        release.set()
+
+    def test_a_later_call_has_the_answer(self):
+        self.assertEqual(self._answer(),
+                         {'available': True, 'version': "99.0", 'url': "http://x/z"})
+        self.asked.assert_called_once_with(self.VERSION, unanswered=None)
+
+    def test_and_says_so_when_there_is_nothing_new(self):
+        self.asked.return_value = (False, None, None)
+        self.assertEqual(self._answer(), {'available': False})
+
+    def test_changing_views_asks_nobody(self):
+        """Every run of the interface calls it - a click, a tab, the 5 s tick."""
+        self._answer()
+        for _ in range(50):
+            update.known_update(self.VERSION)
+        self._wait_for_the_threads()
+        self.assertEqual(self.asked.call_count, 1)
+
+    def test_nor_does_anything_before_the_hour_is_up(self):
+        self._answer()
+        update._release_check.asked_at -= update.UPDATE_CHECK_INTERVAL - 60
+        self._answer()
+        self.assertEqual(self.asked.call_count, 1)
+
+    def test_after_it_github_is_asked_again(self):
+        """And so a new release shows within the hour of its coming out."""
+        self.asked.return_value = (False, None, None)
+        self.assertEqual(self._answer(), {'available': False})
+        self.asked.return_value = (True, "99.1", "http://x/y")
+        self._an_hour_later()
+        self.assertEqual(self._answer(),
+                         {'available': True, 'version': "99.1", 'url': "http://x/y"})
+        self.assertEqual(self.asked.call_count, 2)
+
+    def test_meanwhile_the_last_answer_still_stands(self):
+        self._answer()
+        asked, release = self._held_up()
+        self._an_hour_later()
+        self.assertEqual(update.known_update(self.VERSION)['version'], "99.0")
+        self.assertTrue(asked.wait(5))
+        release.set()
+
+    def test_one_request_at_a_time(self):
+        asked, release = self._held_up()
+        update.known_update(self.VERSION)
+        self.assertTrue(asked.wait(5))
+        for _ in range(5):
+            self._an_hour_later()
+            self.assertIsNone(update.known_update(self.VERSION))
+        release.set()
+        self._wait_for_the_threads()
+        self.assertEqual(self.asked.call_count, 1)
+
+    def test_an_answer_for_another_version_is_not_handed_out(self):
+        self._answer()
+        self.asked.return_value = (False, None, None)
+        self.assertIsNone(update.known_update("2.0"))
+        self.assertEqual(self._answer("2.0"), {'available': False})
+        self.assertEqual(self.asked.call_args_list,
+                         [unittest.mock.call(self.VERSION, unanswered=None),
+                          unittest.mock.call("2.0", unanswered=None)])
+
+    def test_nor_one_that_arrives_after_the_version_changed(self):
+        asked, release = self._held_up()
+        update.known_update(self.VERSION)
+        self.assertTrue(asked.wait(5))
+        self.assertIsNone(update.known_update("2.0"))
+        release.set()
+        self._wait_for_the_threads()
+        self.asked.side_effect = None
+        self.asked.return_value = (False, None, None)
+        self.assertIsNone(update.known_update("2.0"))
+        self._wait_for_the_threads()
+        self.assertEqual(update.known_update("2.0"), {'available': False})
+
+    def test_one_request_however_many_ask_at_once(self):
+        """Each browser tab runs the interface in a thread of its own."""
+        rounds, callers = 10, 16
+        for _ in range(rounds):
+            together = threading.Barrier(callers)
+
+            def run():
+                together.wait(5)
+                update.known_update(self.VERSION)
+            threads = [threading.Thread(target=run) for _ in range(callers)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(5)
+            self._wait_for_the_threads()
+            self._an_hour_later()
+        self.assertEqual(self.asked.call_count, rounds)
+
+    def test_the_thread_does_not_keep_the_process_alive(self):
+        """Quitting must not wait for GitHub."""
+        asked, release = self._held_up()
+        update.known_update(self.VERSION)
+        self.assertTrue(asked.wait(5))
+        threads = [t for t in threading.enumerate() if t.name == 'update-check']
+        self.assertTrue(threads)
+        self.assertTrue(all(thread.daemon for thread in threads))
+        release.set()
+
+    # --- when GitHub gives no answer ---
+    #
+    # check_for_updates() hands back None then, which is what known_update()
+    # asks it for - its usual (False, None, None) would read as "nothing new",
+    # and would be kept as that for the hour.
+
+    def test_no_answer_is_not_news_that_there_is_nothing_new(self):
+        self.asked.return_value = None
+        self.assertIsNone(self._answer())
+
+    def test_nor_does_it_take_away_the_answer_before_it(self):
+        """Or a notice already showing would go from every tab for the hour."""
+        self._answer()
+        self.asked.return_value = None
+        self._an_hour_later()
+        self.assertEqual(self._answer()['version'], "99.0")
+
+    def test_github_is_asked_again_five_minutes_later(self):
+        self.asked.return_value = None
+        self._answer()
+        self.asked.return_value = (True, "99.0", "http://x/z")
+        update._release_check.asked_at -= update.UPDATE_RETRY_INTERVAL - 1
+        self.assertIsNone(self._answer())
+        update._release_check.asked_at -= 1
+        self.assertTrue(self._answer()['available'])
+        self.assertEqual(self.asked.call_count, 2)
+
+    def test_and_once_it_answers_the_hour_applies_again(self):
+        self.asked.return_value = None
+        self._answer()
+        self.asked.return_value = (True, "99.0", "http://x/z")
+        self._five_minutes_later()
+        self._answer()
+        self._five_minutes_later()
+        self._answer()
+        self.assertEqual(self.asked.call_count, 2)
+
+    def test_five_minutes_is_how_soon(self):
+        self.assertEqual(update.UPDATE_RETRY_INTERVAL, 5 * 60)
+
+    def test_a_check_that_fails_leaves_the_way_open_for_the_next(self):
+        """Something check_for_updates() does not catch is no answer either."""
+        self.asked.side_effect = RuntimeError("not what check_for_updates() raises")
+        with unittest.mock.patch('builtins.print'):
+            self.assertIsNone(self._answer())
+        self.asked.side_effect = None
+        self._five_minutes_later()
+        self.assertTrue(self._answer()['available'])
+
+    def test_and_the_answer_before_it_stands(self):
+        self._answer()
+        self.asked.side_effect = RuntimeError("not what check_for_updates() raises")
+        self._an_hour_later()
+        with unittest.mock.patch('builtins.print'):
+            self.assertEqual(self._answer()['version'], "99.0")
+
+    def test_no_thread_to_be_had_is_no_error(self):
+        thread = unittest.mock.MagicMock()
+        thread.return_value.start.side_effect = RuntimeError("can't start new thread")
+        # update's own name for the module, not the module: other threads of
+        # this process must still get theirs.
+        with unittest.mock.patch.object(update, 'threading', types.SimpleNamespace(Thread=thread)):
+            self.assertIsNone(update.known_update(self.VERSION))
+        self.assertFalse(update._release_check.asking)
+        self._five_minutes_later()
+        self.assertTrue(self._answer()['available'])
+
+    def test_what_it_hands_out_is_a_copy(self):
+        """Each session keeps what it is given in its own session state."""
+        self._answer()['available'] = False
+        self.assertTrue(update.known_update(self.VERSION)['available'])
+
+    def test_the_thread_cannot_reach_the_session_state(self):
+        """Streamlit's session state belongs to the script run, not to a thread."""
+        with open(update.__file__, encoding='utf-8') as handle:
+            tree = ast.parse(handle.read())
+        imported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.split('.')[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported.add(node.module.split('.')[0])
+        self.assertNotIn('streamlit', imported)
+
+
+class TestWhenGitHubCannotBeReached(unittest.TestCase):
+    """
+    known_update() through the real check_for_updates(), with only the network
+    replaced.
+
+    check_for_updates() catches what the network throws at it, so a failure
+    reaches the thread as what it returns. It has to reach it as no answer, not
+    as "nothing new": that was kept for the hour, and a moment without Wi-Fi
+    took a notice already showing away from every tab until it was up.
+    """
+
+    VERSION = "1.0"
+
+    def setUp(self):
+        for patcher in (
+                unittest.mock.patch.object(update, '_release_check', update._ReleaseCheck()),
+                unittest.mock.patch.object(update, '_get_github_repo_from_config',
+                                           return_value="someuser/somerepo"),
+                unittest.mock.patch('builtins.print')):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        getting = unittest.mock.patch('update.requests.get')
+        self.get = getting.start()
+        self.addCleanup(getting.stop)
+        self.get.return_value = self._release("v99.0")
+        self.addCleanup(TestTheInterfaceNeverWaitsForGitHub._wait_for_the_threads)
+
+    @staticmethod
+    def _release(tag, zipball_url="http://x/z"):
+        response = unittest.mock.MagicMock()
+        response.json.return_value = {"tag_name": tag, "zipball_url": zipball_url}
+        return response
+
+    def _answer(self):
+        update.known_update(self.VERSION)
+        TestTheInterfaceNeverWaitsForGitHub._wait_for_the_threads()
+        return update.known_update(self.VERSION)
+
+    def _later(self, seconds):
+        update._release_check.asked_at -= seconds
+
+    def test_a_dropped_connection_takes_nothing_away(self):
+        self.assertEqual(self._answer()['version'], "99.0")
+        self.get.side_effect = requests.exceptions.ConnectionError("no route to host")
+        self._later(update.UPDATE_CHECK_INTERVAL)
+        self.assertEqual(self._answer()['version'], "99.0")
+        self.get.side_effect = None
+        self._later(update.UPDATE_RETRY_INTERVAL)
+        self.assertEqual(self._answer()['version'], "99.0")
+        self.assertEqual(self.get.call_count, 3)
+
+    def test_nor_does_a_refusal_from_github(self):
+        """403 is what GitHub says once the sixty requests of an hour are spent."""
+        self._answer()
+        refused = self._release("v99.0")
+        refused.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "403 rate limit exceeded")
+        self.get.return_value = refused
+        self._later(update.UPDATE_CHECK_INTERVAL)
+        self.assertEqual(self._answer()['version'], "99.0")
+
+    def test_offline_at_the_start_means_asking_again_five_minutes_later(self):
+        self.get.side_effect = requests.exceptions.ConnectionError("no route to host")
+        self.assertIsNone(self._answer())
+        self.get.side_effect = None
+        self._later(update.UPDATE_RETRY_INTERVAL)
+        self.assertEqual(self._answer()['version'], "99.0")
+
+    def test_so_does_a_release_without_a_download_yet(self):
+        """Its files are uploaded after the release itself is published."""
+        self.get.return_value = self._release("v99.0", zipball_url=None)
+        self.assertIsNone(self._answer())
+        self.get.return_value = self._release("v99.0")
+        self._later(update.UPDATE_RETRY_INTERVAL)
+        self.assertEqual(self._answer()['version'], "99.0")
+
+    def test_nothing_new_is_an_answer_and_kept_for_the_hour(self):
+        self.get.return_value = self._release("v0.5")
+        self.assertEqual(self._answer(), {'available': False})
+        self._later(update.UPDATE_RETRY_INTERVAL)
+        self._answer()
+        self.assertEqual(self.get.call_count, 1)
+
+    def test_so_is_a_check_switched_off(self):
+        """An empty github_repo in config.json - asking again would change nothing."""
+        update._get_github_repo_from_config.return_value = None
+        self.assertEqual(self._answer(), {'available': False})
+        self._later(update.UPDATE_RETRY_INTERVAL)
+        self._answer()
+        self.get.assert_not_called()
+        self.assertEqual(update._release_check.ask_again_after, update.UPDATE_CHECK_INTERVAL)
 
 
 def _fake_github(exe_bytes=b"", checksum=None, checksum_status=200):
