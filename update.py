@@ -4,6 +4,8 @@ import re
 import subprocess
 import sys
 import os
+import threading
+import time
 from i18n import _
 import requests
 import zipfile
@@ -107,25 +109,124 @@ def request_restart():
     os._exit(RESTART_EXIT_CODE)
 
 
-def should_check_for_updates(session_state, current_menu):
-    """
-    True iff we haven't already checked for updates for this exact
-    menu/view since it was last navigated to - i.e. once per view change,
-    not once per rerun of the *same* view (a keystroke, a periodic
-    auto-refresh tick, ...), which would hit GitHub far more often than
-    the view itself actually changes.
+# --- The check the interface makes ------------------------------------------
+#
+# The interface used to ask GitHub on every change of view and wait for the
+# answer: 76-96 ms a time, some 640 ms the first, and up to the whole
+# UPDATE_CHECK_DEADLINE on a bad network. The request is unauthenticated too,
+# which GitHub allows sixty times an hour - nine steps through the menus spent
+# six of them (issue #641).
+#
+# So the answer is kept for UPDATE_CHECK_INTERVAL and fetched by a thread of
+# its own, and a view only ever reads what is already there. It is kept here
+# and not in sl/SL_Menu.py: Streamlit runs that script as a new module on
+# every run, so whatever it kept at module level would be gone by the next,
+# while this module stays imported for the life of the process. That also
+# makes it one answer for every browser tab, and so one request an hour
+# however many are open.
+#
+# The thread never touches st.session_state - this module does not even
+# import Streamlit. The interface copies the answer across on its next run,
+# and render_header() reads it from there.
+#
+# A request that fails is no answer, and is not kept as one: "no update" for
+# an hour would take a notice already showing away from every tab, because
+# the Wi-Fi dropped for a moment. The last answer stands, and GitHub is asked
+# again after UPDATE_RETRY_INTERVAL - twelve times an hour at most while it
+# cannot be reached, still well within the sixty.
 
-    Takes session_state/current_menu as plain arguments (rather than a
-    caller reaching into a global session object itself) purely so this
-    decision stays testable without any UI framework running - session_state
-    only needs a .get(key, default) method, so a Streamlit session_state or
-    a plain dict both work.
+UPDATE_CHECK_INTERVAL = 60 * 60   # seconds - how long an answer is good for
+UPDATE_RETRY_INTERVAL = 5 * 60    # seconds - how soon to ask again when there was none
 
-    :param session_state: mapping-like object with .get(key, default)
-    :param current_menu: identifier of the view currently being shown
-    :return: True if check_for_updates() should be (re-)run now
+
+class _ReleaseCheck:
+    """The last answer about new releases, shared by every session of this process."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.version = None     # the running version the answer is for
+        self.asked_at = None    # time.monotonic() when GitHub was last asked
+        self.ask_again_after = UPDATE_CHECK_INTERVAL    # seconds after asked_at
+        self.answer = None      # what known_update() hands out
+        self.asking = False     # a thread is waiting for GitHub
+
+
+_release_check = _ReleaseCheck()
+
+
+def should_check_for_updates(asked_at, now, interval=UPDATE_CHECK_INTERVAL):
     """
-    return session_state.get('_update_checked_for_menu') != current_menu
+    Whether the last answer about new releases has run out.
+
+    Kept apart from known_update() so that the decision can be tested without
+    a thread or a clock.
+
+    :param asked_at: time.monotonic() when GitHub was last asked, or None if
+        it never has been
+    :param now: time.monotonic() now
+    :param interval: how long an answer is good for, in seconds
+    :return: True if it is time to ask again
+    """
+    return asked_at is None or now - asked_at >= interval
+
+
+def known_update(current_version_str):
+    """
+    What is known about a new release - without ever waiting for GitHub.
+
+    Returns at once with the last answer for this version, in the form the
+    interface keeps as ``update_check``: ``{'available': True, 'version': ...,
+    'url': ...}`` or ``{'available': False}``. None while there has not been
+    one yet. If the answer has run out, or there is none, a thread is started
+    first to ask again, and a later call returns what it brings. There is
+    never more than one request under way, and never more than one per
+    UPDATE_CHECK_INTERVAL - or per UPDATE_RETRY_INTERVAL while GitHub gives
+    no answer, in which case the last one stands.
+
+    :param current_version_str: The version this process is running.
+    :return: The last answer, or None.
+    """
+    check = _release_check
+    with check.lock:
+        if check.version != current_version_str:
+            check.version, check.asked_at, check.answer = current_version_str, None, None
+        now = time.monotonic()
+        if not check.asking and should_check_for_updates(check.asked_at, now,
+                                                         check.ask_again_after):
+            check.asking, check.asked_at = True, now
+            try:
+                threading.Thread(target=_ask_in_background, args=(check, current_version_str),
+                                 name='update-check', daemon=True).start()
+            except RuntimeError:
+                # No thread to be had. Nothing is under way, then, and the
+                # next try comes as after a request that failed.
+                check.asking, check.ask_again_after = False, UPDATE_RETRY_INTERVAL
+        return dict(check.answer) if check.answer is not None else None
+
+
+def _ask_in_background(check, version):
+    """known_update()'s thread: asks GitHub once and keeps the answer in `check`."""
+    answer = None
+    try:
+        found = check_for_updates(version, unanswered=None)
+        if found is not None:
+            is_available, new_version, url = found
+            answer = ({'available': True, 'version': new_version, 'url': url} if is_available
+                      else {'available': False})
+    except Exception as e:
+        # check_for_updates() catches what the network throws at it, and this
+        # is for anything else - which would otherwise end the thread with a
+        # traceback on a console nobody reads.
+        print(_("An unexpected error occurred while checking for updates: {error}").format(error=e))
+    finally:
+        with check.lock:
+            check.asking = False
+            # Not if the version running is no longer the one asked about.
+            if check.version == version:
+                if answer is not None:
+                    check.answer, check.ask_again_after = answer, UPDATE_CHECK_INTERVAL
+                else:
+                    check.ask_again_after = UPDATE_RETRY_INTERVAL
 
 def _get_github_repo_from_config():
     """
@@ -155,12 +256,17 @@ def _get_github_repo_from_config():
     configured = update_section.get("github_repo")
     return configured.strip() or None if isinstance(configured, str) else None
 
-def check_for_updates(current_version_str):
+def check_for_updates(current_version_str, unanswered=(False, None, None)):
     """
     Checks GitHub for a new release.
 
     :param current_version_str: The current version of the application (e.g., "1.4").
-    :return: A tuple (is_update_available, new_version, download_url) or (False, None, None).
+    :param unanswered: What to return when GitHub could not be asked, or what
+        it said could not be used. The launcher only wants to know whether to
+        download, and "no" does for that; known_update() passes None, so that
+        it can keep the answer it had and ask again soon.
+    :return: A tuple (is_update_available, new_version, download_url),
+        (False, None, None) if there is nothing new, or `unanswered`.
     """
     github_repo = _get_github_repo_from_config()
     if not github_repo:
@@ -188,14 +294,15 @@ def check_for_updates(current_version_str):
                 if asset_url:
                     return True, latest_version_str, asset_url
                 print(_("Error: Download URL for the new version not found."))
-                return False, None, None
+                return unanswered
             # Find the asset for the source code zip
             zip_url = latest_release.get("zipball_url")
             if zip_url:
                 return True, latest_version_str, zip_url
             else:
                 print(_("Error: Download URL for the new version not found."))
-                return False, None, None
+                return unanswered
+        return False, None, None
 
     except TimeoutError:
         print(_("Warning: Update check timed out (no internet connection?). Skipping."))
@@ -204,7 +311,7 @@ def check_for_updates(current_version_str):
     except Exception as e:
         print(_("An unexpected error occurred while checking for updates: {error}").format(error=e))
 
-    return False, None, None
+    return unanswered
 
 def download_update(url):
     """

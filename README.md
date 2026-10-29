@@ -52,7 +52,7 @@ The calendar tab draws the same stretch: a task appears on every day it runs, wi
 
 **Synchronisation (optional):** Keep one person's `data.json` in step across their own two or three computers, via a small PHP server — your own, or one somebody has invited you to. Off by default, and everything above works exactly the same without it — see [Synchronising Two Machines](#synchronising-two-machines-) below.
 
-**Automatic Updates:** The app checks GitHub for a new version once per session and, if one is available, shows a notification right under the version number on every screen, with a one-click button next to it.
+**Automatic Updates:** The app checks GitHub for a new version in the background, at most once an hour (five minutes after a check that could not reach GitHub), and if one is available, shows a notification right under the version number on every screen, with a one-click button next to it.
 
 Running from source, that button downloads the new release, installs it over the existing files and restarts into it. The Windows executable takes one step more, because Windows will not let a running program be overwritten: the button downloads the new build next to the current one and leaves it there, and the swap happens the next time you start the application — so a click is followed by one restart rather than none. The download is checked against the SHA-256 published with each release before anything is replaced.
 

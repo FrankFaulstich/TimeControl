@@ -18,6 +18,10 @@ where the note is kept - it belongs to the installation, beside update.zip.
 The update module's network and restart functions are replaced, and
 TC_CONFIG_DIR points into the scratch directory too, for the synchronisation
 state every run of the interface reads.
+
+The notice comes from an answer the interface asks for in the background and
+keeps for an hour (issue #641). Each test starts with none, and _open() waits
+for it before the first run, as a user would by clicking on.
 """
 
 import json
@@ -25,6 +29,7 @@ import os
 import shutil
 import sys
 import tempfile
+import threading
 import unittest
 import zipfile
 from unittest import mock
@@ -43,6 +48,13 @@ from tt.TimeTracker import TimeTracker
 
 RUNNING = TimeTracker.VERSION
 NEWER = '999.0'
+
+
+def _wait_for_the_update_check():
+    """Until the thread update.known_update() started, if any, is done."""
+    for thread in threading.enumerate():
+        if thread.name == 'update-check':
+            thread.join(10)
 
 
 @unittest.skipIf(AppTest is None, 'streamlit is not installed')
@@ -76,9 +88,19 @@ class TestTheButtonsKeepTheNote(unittest.TestCase):
             patcher = mock.patch.object(update, name, mock.MagicMock(return_value=value))
             self.patched[name] = patcher.start()
             self.addCleanup(patcher.stop)
+        # Nothing known about releases yet - an answer is kept for an hour,
+        # and the one an earlier test was given would do for this one.
+        fresh = mock.patch.object(update, '_release_check', update._ReleaseCheck())
+        fresh.start()
+        self.addCleanup(fresh.stop)
+        # Before the two above are undone, or a thread still asking would ask
+        # the real GitHub, and keep its answer for the tests that follow.
+        self.addCleanup(_wait_for_the_update_check)
 
     def _open(self, menu):
         self.assertTrue(os.environ['TC_CONFIG_DIR'].startswith(self.scratch))
+        update.known_update(RUNNING)
+        _wait_for_the_update_check()
         app = AppTest.from_file(VIEW, default_timeout=20)
         app.session_state['menu'] = menu
         app.session_state['context'] = {'return_to': 'today_view'}
@@ -89,6 +111,59 @@ class TestTheButtonsKeepTheNote(unittest.TestCase):
     def _click(self, app, key):
         app.button(key=key).click()
         app.run()
+
+    @staticmethod
+    def _notice(app):
+        return any(button.key == 'update_restart_btn' for button in app.button)
+
+    # --- asking GitHub (issue #641) -----------------------------------------
+
+    def test_changing_views_does_not_ask_github(self):
+        app = self._open('today_view')
+        for menu in ('task_planning', 'calendar', 'reporting', 'settings', 'today_view'):
+            app.session_state['menu'] = menu
+            app.run()
+            self.assertFalse(app.exception, [e.value for e in app.exception])
+        _wait_for_the_update_check()
+        self.patched['check_for_updates'].assert_called_once_with(RUNNING, unanswered=None)
+
+    def test_the_first_run_does_not_wait_for_the_answer_and_a_later_one_shows_it(self):
+        asked, release = threading.Event(), threading.Event()
+        newer = self.patched['check_for_updates'].return_value
+
+        def slow(version, **unused):
+            asked.set()
+            release.wait(10)
+            return newer
+        self.patched['check_for_updates'].side_effect = slow
+        self.addCleanup(release.set)
+
+        app = AppTest.from_file(VIEW, default_timeout=20)
+        app.session_state['menu'] = 'settings'
+        app.session_state['context'] = {'return_to': 'today_view'}
+        app.run()
+        self.assertFalse(app.exception, [e.value for e in app.exception])
+        self.assertTrue(asked.wait(5), 'the interface did not ask')
+        self.assertFalse(self._notice(app), 'the run waited for GitHub')
+
+        release.set()
+        _wait_for_the_update_check()
+        app.run()
+        self.assertTrue(self._notice(app))
+        self.patched['check_for_updates'].assert_called_once_with(RUNNING, unanswered=None)
+
+    def test_a_check_that_gets_no_answer_leaves_the_notice_where_it_is(self):
+        """A moment without Wi-Fi at the hourly check, and GitHub fine again."""
+        app = self._open('today_view')
+        self.assertTrue(self._notice(app))
+        self.patched['check_for_updates'].return_value = None
+        update._release_check.asked_at -= update.UPDATE_CHECK_INTERVAL
+        for menu in ('task_planning', 'settings'):
+            app.session_state['menu'] = menu
+            app.run()
+            _wait_for_the_update_check()
+            self.assertTrue(self._notice(app), menu)
+        self.assertEqual(self.patched['check_for_updates'].call_count, 2)
 
     # --- Restore Previous Version -------------------------------------------
 

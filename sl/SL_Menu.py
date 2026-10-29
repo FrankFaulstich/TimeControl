@@ -29,8 +29,8 @@ from tt.markdown_editor import editor_html
 from i18n import _
 
 try:
-    from update import (restore_previous_version, check_for_updates, apply_update,
-                        should_check_for_updates, download_exe_update,
+    from update import (restore_previous_version, known_update, apply_update,
+                        download_exe_update,
                         restore_previous_exe, request_restart, PREVIOUS_EXE,
                         forget_declined_version, DECLINED_UPDATE_FILE)
     UPDATE_MODULE_AVAILABLE = True
@@ -450,25 +450,20 @@ if SYNC_AVAILABLE:
         # application from starting or a view from drawing.
         pass
 
-# Re-check for a new release whenever the view changes (navigating to a
-# different menu than the one this ran for last time) - not on every rerun
-# of the *same* view, e.g. not on every keystroke or the 5s auto-refresh
-# tick, which would hit GitHub far more often than the view itself changes.
+# Whether there is a new release, as far as is known. This used to ask GitHub
+# on every change of view and wait for the answer (issue #641). known_update()
+# never waits: it answers from what update.py last heard, which is kept there
+# for an hour for every session of this process, and once that has run out
+# it asks again in a thread of its own - the answer comes with a later run.
+# Nothing here reaches the network, so a dead connection cannot hold up a run.
 # A frozen build used to be excluded here, having no loose source files to
 # overwrite. It now updates by replacing its own executable instead, so the
 # check applies to it as well - what differs is only what the button below
-# does with the answer. check_for_updates() is itself immune to a dead
-# network - it runs under a hard deadline and never raises (see update.py) -
-# so a flaky connection just means this silently stays skipped instead of
-# hanging the view change or crashing.
-if (UPDATE_MODULE_AVAILABLE
-        and should_check_for_updates(st.session_state, st.session_state.menu)):
-    st.session_state._update_checked_for_menu = st.session_state.menu
-    is_available, new_version, url = check_for_updates(st.session_state.tracker.get_version())
-    st.session_state.update_check = (
-        {'available': True, 'version': new_version, 'url': url} if is_available
-        else {'available': False}
-    )
+# does with the answer.
+if UPDATE_MODULE_AVAILABLE:
+    _release = known_update(st.session_state.tracker.get_version())
+    if _release is not None:
+        st.session_state.update_check = _release
 
 if 'feedback' not in st.session_state:
     st.session_state.feedback = None
