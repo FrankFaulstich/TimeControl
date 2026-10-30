@@ -333,6 +333,56 @@ class TestStreamlitGUI(unittest.TestCase):
             TimeTrackerSL_GUI._set_macos_dock_icon()  # must not raise
 
 
+class TestStreamlitGathersNoUsageStatistics(unittest.TestCase):
+    """
+    Issue #642: the gathering wrapped every st.* call, 10-27% of building a
+    page. Switched off on the command line, on both ways Streamlit is started.
+    """
+
+    OPTION = ['--browser.gatherUsageStats', 'false']
+
+    def _started_with(self, frozen):
+        """The command line start_streamlit_server() hands to Popen."""
+        with unittest.mock.patch.object(TimeTrackerSL_GUI, '_is_frozen', return_value=frozen), \
+             unittest.mock.patch('TimeTrackerSL_GUI.os.path.exists', return_value=False), \
+             unittest.mock.patch('TimeTrackerSL_GUI.subprocess.Popen') as popen, \
+             unittest.mock.patch('TimeTrackerSL_GUI.webview.create_window'), \
+             unittest.mock.patch('TimeTrackerSL_GUI.webview.start'), \
+             unittest.mock.patch('TimeTrackerSL_GUI.time.sleep'):
+            TimeTrackerSL_GUI.start_streamlit_server()
+        return popen.call_args_list[0].args[0]
+
+    def _passes_the_option(self, command):
+        pairs = [command[i:i + 2] for i in range(len(command) - 1)]
+        self.assertIn(self.OPTION, pairs, command)
+
+    def test_a_source_checkout(self):
+        command = self._started_with(frozen=False)
+        self.assertEqual(command[1:4], ['-m', 'streamlit', 'run'])
+        self._passes_the_option(command)
+
+    def test_the_windows_build(self):
+        """It starts itself again, and that run hands Streamlit its command line."""
+        self.assertIn('--tc-streamlit-subprocess', self._started_with(frozen=True))
+        with unittest.mock.patch.object(sys, 'argv', ['TimeControl.exe']), \
+             unittest.mock.patch.dict(os.environ), \
+             unittest.mock.patch('streamlit.web.cli.main') as streamlit_main:
+            TimeTrackerSL_GUI._run_streamlit_subprocess('8501', 'true')
+            command = list(sys.argv)
+        streamlit_main.assert_called_once_with()
+        self.assertEqual(command[:2], ['streamlit', 'run'])
+        self._passes_the_option(command)
+
+    def test_each_option_is_one_streamlit_knows(self):
+        """A misspelt one would stop Streamlit starting at all."""
+        from streamlit import config
+        options = TimeTrackerSL_GUI.STREAMLIT_OPTIONS
+        self.assertEqual(len(options) % 2, 0)
+        for name in options[::2]:
+            self.assertTrue(name.startswith('--'), name)
+            config.get_option(name[2:])     # raises for an unknown one
+
+
 class TestCarryingOutARestart(unittest.TestCase):
     """
     The half of issue #572 that lives here.

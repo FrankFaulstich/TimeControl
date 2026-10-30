@@ -139,6 +139,12 @@ Graphical Interface
 .. automodule:: TimeTrackerSL_GUI
    :members:
 
+Garbage Collection in the Interface
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: tt.gc_freeze
+   :members:
+
 MCP Server
 ~~~~~~~~~~
 

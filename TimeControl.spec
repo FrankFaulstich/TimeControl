@@ -51,6 +51,7 @@ hiddenimports = [
     'tt.sync_crypto',
     'tt.sync_secret',
     'tt.filelock',
+    'tt.gc_freeze',
     'tt.markdown_editor',
     'tt.task_calendar',
     'tt.task_order',
