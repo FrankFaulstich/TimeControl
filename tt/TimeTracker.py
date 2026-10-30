@@ -69,7 +69,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.29"
+    VERSION = "4.30"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -241,6 +241,9 @@ class TimeTracker:
         # and when it was last read - see is_current(). Nothing yet.
         self._signature = None
         self._read_at = 0.0
+        # How many documents have been read into self.data. The interface
+        # freezes each new one for the garbage collector - see tt/gc_freeze.py.
+        self.read_count = 0
 
         # Held while the document in this object is read in or changed: by
         # reload_data(), exclusive() and the Today sweeps. One object can be
@@ -527,6 +530,7 @@ class TimeTracker:
         """
         try:
             self.data = self._load_data()
+            self.read_count += 1
             if self._migrate_data_structure():
                 if getattr(self._nesting, 'depth', 0):
                     self._save_data()

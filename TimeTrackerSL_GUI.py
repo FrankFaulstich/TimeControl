@@ -28,6 +28,19 @@ except ImportError:
 CONFIG_FILE = 'config.json'
 ICON_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sl', 'icon.png')
 
+# Passed to Streamlit by both ways of starting it below (issue #642).
+#
+# Usage statistics are gathered by default, and the gathering wraps every
+# st.* call: 10-27% of the time spent building the page - at the large test
+# size 86 ms of a Today run, 118 ms of going back.
+#
+# On the command line, where this one list reaches both, rather than in a
+# .streamlit/config.toml: Streamlit looks for that in the user's home, in the
+# working directory and beside the script it runs - which in the Windows build
+# is inside the .exe, so TimeControl.spec would have to bundle it as one more
+# file.
+STREAMLIT_OPTIONS = ['--browser.gatherUsageStats', 'false']
+
 
 def _is_frozen():
     """Whether this is running as a PyInstaller-bundled executable."""
@@ -81,7 +94,7 @@ def _run_streamlit_subprocess(port, headless):
     sys.argv = [
         'streamlit', 'run', os.path.join(base_dir, 'sl', 'SL_Menu.py'),
         '--server.port', port, '--server.headless', headless,
-    ]
+    ] + STREAMLIT_OPTIONS
     stcli.main()
 
 def _set_macos_dock_icon():
@@ -309,7 +322,7 @@ def start_streamlit_server():
     if _is_frozen():
         cmd = [sys.executable, '--tc-streamlit-subprocess', str(port), headless_mode]
     else:
-        cmd = [sys.executable, "-m", "streamlit", "run", os.path.join("sl", "SL_Menu.py"), "--server.port", str(port), "--server.headless", headless_mode]
+        cmd = [sys.executable, "-m", "streamlit", "run", os.path.join("sl", "SL_Menu.py"), "--server.port", str(port), "--server.headless", headless_mode] + STREAMLIT_OPTIONS
 
     process = subprocess.Popen(cmd)
 

@@ -23,6 +23,7 @@ from tt.task_order import (
 )
 from tt.task_progress import completion_counts, completion_ratio
 from tt.task_calendar import month_grid, shift_month
+from tt.gc_freeze import freeze_after_read
 from tt.sync_messages import (register_error_message, sign_in_error_message,
                               sync_error_message)
 from tt.markdown_editor import editor_html
@@ -389,6 +390,12 @@ else:
         st.session_state.tracker.reload_data()
     except (json.JSONDecodeError, OSError, LockTimeout):
         pass
+
+# Out of the sight of the collection Streamlit runs after every run, once it
+# has been read (issue #642). Here rather than at the end, so that this run's
+# collection already skips it - and a document read later in a run, by a
+# write that found the file changed, is frozen by the next.
+freeze_after_read(st.session_state.tracker)
 
 if 'menu' not in st.session_state:
     st.session_state.menu = 'today_view'
