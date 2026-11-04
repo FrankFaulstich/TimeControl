@@ -464,6 +464,25 @@ def write_state(changes, required=False):
         return read_state()
 
 
+def failure_on_record():
+    """
+    The failure the last cycle recorded and how many there have been in a
+    row: (code, count), or (None, 0). Never raises.
+
+    What the interface's notice that synchronisation is paused is drawn
+    from, and so what its automatic refresh compares (issue #643). Not the
+    whole state: every cycle writes that, a quiet one included, and the
+    interface asks for a cycle on every change of view - a redraw for each
+    would be one more full run after every click, with nothing new to show.
+    """
+    state = read_state()
+    try:
+        failures = int(state.get('failures') or 0)
+    except (TypeError, ValueError):
+        failures = 0
+    return state.get('last_error'), failures
+
+
 # ---------------------------------------------------------------------------
 # The inbox: fetched operations waiting to be applied to the document.
 #
@@ -481,13 +500,17 @@ def _inbox_lock_path():
 def _read_inbox_unlocked():
     out = []
     try:
-        with open(inbox_path(), 'r', encoding='utf-8') as f:
+        # Each line decoded by itself: one that a full disk or a crash cut
+        # off half way through a character is skipped like any other line
+        # that cannot be read, rather than ending the read with an error
+        # that every tick of the automatic refresh would show (issue #643).
+        with open(inbox_path(), 'rb') as f:
             for line in f:
                 line = line.strip()
                 if not line:
                     continue
                 try:
-                    record = json.loads(line)
+                    record = json.loads(line.decode('utf-8'))
                 except ValueError:
                     continue
                 if isinstance(record, dict) and 'ops' in record:
@@ -500,6 +523,21 @@ def _read_inbox_unlocked():
 def read_inbox():
     """Returns the pending records, oldest first. Never raises."""
     return _read_inbox_unlocked()
+
+
+def inbox_waiting():
+    """
+    Whether there is anything for apply_pending() to apply. Never raises.
+
+    For the interface's automatic refresh, which asks every five seconds
+    whether a full redraw has anything to do (issue #643). Waiting, not new
+    since the last look: a redraw that could not save what it applied leaves
+    the inbox as it was, and the next tick has to try again. And what
+    apply_pending() would find, not merely a file that is not empty - a line
+    that cannot be read is skipped there, and would otherwise ask for a
+    redraw every five seconds for ever.
+    """
+    return bool(_read_inbox_unlocked())
 
 
 def _append_inbox(record):
