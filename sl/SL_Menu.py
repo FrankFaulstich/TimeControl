@@ -446,6 +446,10 @@ if SYNC_AVAILABLE:
                     st.session_state.get('sync_discarded', 0)
                     + _sync['applied']['discarded_time'])
 
+        # What the automatic refresh compares with on its next tick, noted
+        # now that this run has applied what there was (issue #643).
+        st.session_state._sync_failure_seen = sync_engine.failure_on_record()
+
         # A change of view is the moment the user is most likely to want
         # current figures, so ask for a cycle then. It only wakes the
         # worker - nothing here blocks on the answer.
@@ -529,16 +533,57 @@ def _settings_section(section_key, label):
         finally:
             st.session_state.settings_expanded_sections[section_key] = st.session_state[widget_key]
 
+# Views the automatic refresh redraws on every tick, whatever else has
+# happened: they show a clock that runs.
+_MENUS_REDRAWN_ON_EVERY_TICK = {'show_current_work'}
+
+def _tick_has_something_to_show():
+    """
+    Whether a tick of the automatic refresh has anything new to draw (issue
+    #643) - one of four things:
+
+    - the view shows a running clock;
+    - the data file has changed, which is what the refresh is for: another
+      process wrote it, the MCP server most often;
+    - something synchronisation fetched is waiting to be applied, which only
+      a full run does;
+    - the failure on record is not the one the last full run saw, and the
+      notice that synchronisation is paused is drawn from it.
+
+    The last two only while this session synchronises. The inbox counts for
+    as long as it is not empty, not only when it changed: a run that could
+    not save what it applied leaves it as it was, and has to try again. And
+    the data file is compared with what was noted, without the time limit of
+    is_current() - see TimeTracker.looks_unchanged().
+    """
+    if st.session_state.menu in _MENUS_REDRAWN_ON_EVERY_TICK:
+        return True
+    tracker = st.session_state.tracker
+    if not tracker.looks_unchanged():
+        return True
+    if SYNC_AVAILABLE and tracker.op_outbox is not None:
+        if sync_engine.inbox_waiting():
+            return True
+        if sync_engine.failure_on_record() != st.session_state.get('_sync_failure_seen'):
+            return True
+    return False
+
 @st.fragment(run_every=5)
 def _auto_refresh_on_external_changes():
     """
     Periodically triggers a full rerun so changes made by another process
     sharing the same data file (in particular the optional MCP server used
     by Claude) become visible on their own, without the user needing to
-    click or navigate first. Only called while MCP is in use in some form
-    (see the call site below) - with the stdio transport this is always,
-    since an MCP client can be spawning that process independently of what
-    this app's own config says, so there's no reliable way to know it isn't.
+    click or navigate first - but only when there is something to show, see
+    _tick_has_something_to_show(). It used to on every tick: a whole run of
+    the script every five seconds, a tenth to nearly half a second of the
+    server's time at the large test size, and a redraw in the browser, all
+    for a screen that looked the same afterwards (issue #643).
+
+    Only called while MCP is in use in some form (see the call site below) -
+    with the stdio transport this is always, since an MCP client can be
+    spawning that process independently of what this app's own config says,
+    so there's no reliable way to know it isn't.
 
     This function is invoked two different ways: inline, as a normal part of
     every full script run (a click anywhere in the app, navigate_to(), ...),
@@ -563,7 +608,7 @@ def _auto_refresh_on_external_changes():
     """
     ctx = get_script_run_ctx() if get_script_run_ctx else None
     if ctx is not None:
-        if ctx.fragment_ids_this_run:
+        if ctx.fragment_ids_this_run and _tick_has_something_to_show():
             st.rerun()
         return
 
@@ -573,7 +618,7 @@ def _auto_refresh_on_external_changes():
     now = time.monotonic()
     last_refresh = st.session_state.get("_last_auto_refresh")
     st.session_state["_last_auto_refresh"] = now
-    if last_refresh is not None and (now - last_refresh) >= 4:
+    if last_refresh is not None and (now - last_refresh) >= 4 and _tick_has_something_to_show():
         st.rerun()
 
 # --- UI Components ---
@@ -4405,9 +4450,10 @@ menu_map = {
 # immediate rerun anyway, which then shows whatever changed while it was
 # suppressed.
 _MENUS_TO_SKIP_AUTOREFRESH = {
-    # Both halves of the working screen: a rerun underneath the user closes
-    # popovers and can undo an edit in progress.
-    'today_view', 'task_planning',
+    # All three tabs of the working screen: a rerun underneath the user
+    # closes the toolbar's popovers and can undo an edit in progress. The
+    # calendar was left out when it became the third (issue #643).
+    'today_view', 'task_planning', 'calendar',
     'email_assignment', 'settings', 'add_main_project',
     'rename_main_project', 'list_inactive_main', 'add_task_form',
     'edit_task_form', 'rename_task', 'list_inactive_tasks',

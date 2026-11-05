@@ -69,7 +69,7 @@ class TimeTracker:
     
     The data is loaded from and saved to a JSON file.
     """
-    VERSION = "4.30"
+    VERSION = "4.31"
     STATUS_OPEN = "open"
     STATUS_CLOSED = "closed"
     STATUS_DONE = "done"
@@ -380,10 +380,29 @@ class TimeTracker:
         :return: True if reading the file would give what is in memory already.
         :rtype: bool
         """
+        if time.monotonic() - self._read_at > self.TRUST_UNCHANGED_SECONDS:
+            return False
+        return self.looks_unchanged()
+
+    def looks_unchanged(self):
+        """
+        Whether the file still looks as it did when it was last read or
+        written here - is_current() without its time limit.
+
+        For the interface's automatic refresh, which asks every five seconds
+        whether there is anything new to show (issue #643). The time limit is
+        there for what this comparison cannot see, and is for a redraw that is
+        about to read anyway; a redraw only to find that out would bring back
+        what that refresh was changed to stop - a full run every half minute
+        with nothing new to draw.
+
+        :return: True unless the file is known or likely to have changed: it
+            looks different, nothing was noted, the file system has no inode
+            numbers, or the file cannot be looked at.
+        :rtype: bool
+        """
         signature = self._signature
         if signature is None or not signature[1]:
-            return False
-        if time.monotonic() - self._read_at > self.TRUST_UNCHANGED_SECONDS:
             return False
         try:
             return self._file_signature() == signature
