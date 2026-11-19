@@ -110,6 +110,27 @@ def save_config(config):
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4)
 
+# Themes whose file was renamed, by their old name. A config.json written
+# before the rename still names the old file. A new installation does not
+# have it, so without this local_css() would find nothing and the app would
+# lose its theme, and the settings would show a current file that is not in
+# their list. An installation updated from source still has it: an update
+# unpacks the new release over the old files and removes none. So the
+# settings leave the old file out of their list as well.
+_RENAMED_CSS_FILES = {'style_claude.css': 'style_warm.css'}
+
+
+def css_file_from_config(config):
+    """
+    The theme config.json chooses, under the name its file has now.
+
+    :param config: The configuration dictionary.
+    :return: The name of the CSS file in the sl directory.
+    """
+    name = config.get('css_file', 'style.css')
+    return _RENAMED_CSS_FILES.get(name, name)
+
+
 def local_css(file_name):
     """
     Loads a local CSS file and injects it into the Streamlit app.
@@ -278,7 +299,7 @@ def render_icon_button_css():
         }}
 
         /* The inline priority spinner in the today_view task list (see
-           view_today_tasks()) only ever holds a single digit (0-9) - narrow
+           _today_tasks_body()) only ever holds a single digit (0-9) - narrow
            its number field down from the default width so the +/- steppers
            it needs (which only render at all once their column has enough
            width - too narrow and Streamlit silently falls back to a bare,
@@ -360,7 +381,7 @@ def render_icon_button_css():
     """, unsafe_allow_html=True)
 
 config = get_config()
-local_css(config.get('css_file', 'style.css'))
+local_css(css_file_from_config(config))
 render_icon_button_css()
 
 # --- State Management ---
@@ -373,8 +394,8 @@ if 'tracker' not in st.session_state:
 else:
     # Checked against the disk on every rerun (i.e. on every click/navigation),
     # so changes made by another process sharing the same data file - the
-    # SOAP server, or the optional MCP server used by Claude - show up here
-    # too, without needing to restart the whole GUI session. The file is only
+    # SOAP server, or the optional MCP server - show up here too, without
+    # needing to restart the whole GUI session. The file is only
     # read again when it has changed since this session last read or wrote
     # it (issue #640, see TimeTracker.is_current()). _save_data() writes
     # atomically (temp file + os.replace), but this stays wrapped as a
@@ -506,15 +527,23 @@ def set_feedback(message, type='success'):
 @contextlib.contextmanager
 def _settings_section(section_key, label):
     """
-    A collapsible settings section, using the same persisted-expand/collapse
-    pattern as the project groups in view_today_tasks(): on_change="rerun"
-    is required for st.expander to track its state in st.session_state[key]
-    at all (the default, "ignore", makes it a purely client-side toggle
-    Python never learns about), and that state is then mirrored into a
-    plain session-state dict because the expander's own (key-bound) state
-    would otherwise reset to collapsed every time a different top-level
-    view is shown (e.g. navigating to "Main Menu") and this one is
-    returned to.
+    A collapsible settings section, with its open or closed state kept the
+    way the project groups in _today_tasks_body() keep theirs:
+    on_change="rerun" is required for st.expander to track its state in
+    st.session_state[key] at all (the default, "ignore", makes it a purely
+    client-side toggle Python never learns about), and that state is then
+    mirrored into a plain session-state dict because the expander's own
+    (key-bound) state would otherwise reset to collapsed every time a
+    different top-level view is shown (e.g. navigating to "Main Menu") and
+    this one is returned to.
+
+    Unlike the project groups, a section still gets its remembered state
+    as expanded=, which is part of the element's identity: the run after a
+    click on its header draws it as a different element, so the next click
+    on that header goes to the element that is gone and is lost, unless
+    some other run came in between. Nothing reruns this view by itself, so
+    that is every second click on the same header, however long the user
+    waits (see _settle_group_states()).
 
     The mirror-update has to run in a `finally`: saving a section's form
     calls st.rerun() while still inside the `with` block below (to show the
@@ -572,8 +601,8 @@ def _tick_has_something_to_show():
 def _auto_refresh_on_external_changes():
     """
     Periodically triggers a full rerun so changes made by another process
-    sharing the same data file (in particular the optional MCP server used
-    by Claude) become visible on their own, without the user needing to
+    sharing the same data file (in particular the optional MCP server)
+    become visible on their own, without the user needing to
     click or navigate first - but only when there is something to show, see
     _tick_has_something_to_show(). It used to on every tick: a whole run of
     the script every five seconds, a tenth to nearly half a second of the
@@ -1365,7 +1394,7 @@ def _task_planning_body():
         _("Unplanned tasks"), 
         _("All")
     ]
-    # See the comment in view_today_tasks() for why the persisted index is
+    # See the comment in _today_tasks_body() for why the persisted index is
     # tracked separately from the widget's own (key-bound) session state.
     if "task_planning_filter_index" not in st.session_state:
         st.session_state.task_planning_filter_index = 0
@@ -1470,32 +1499,40 @@ def _task_planning_body():
             # Group tasks by main project and show each group inside a
             # collapsible expander, so projects with many tasks don't crowd
             # out the rest of the list - same pattern (and same reasoning)
-            # as view_today_tasks(): on_change="rerun" is required for
+            # as _today_tasks_body(): on_change="rerun" is required for
             # st.expander to track its state in session_state at all, and
             # that state is mirrored into a plain session-state dict because
             # the expander's own (key-bound) state would otherwise reset to
             # expanded every time this view is left (e.g. to edit a task)
-            # and returned to.
+            # and returned to. Handed back through the key, for all groups
+            # before any is drawn, as _settle_group_states() explains, and
+            # only an open group's rows built, as the today view explains
+            # (issue #644).
             tasks_grouped = {}
             for task in tasks:
                 tasks_grouped.setdefault(task['main_project_name'], []).append(task)
 
             if "task_planning_expanded_projects" not in st.session_state:
                 st.session_state.task_planning_expanded_projects = {}
+            expander_prefix = "task_planning_expander_"
+            group_states = _settle_group_states(
+                tasks_grouped, expander_prefix, st.session_state.task_planning_expanded_projects)
 
             for main_proj_name, sub_tasks in tasks_grouped.items():
-                expander_key = f"task_planning_expander_{main_proj_name}"
-                is_expanded = st.session_state.task_planning_expanded_projects.get(main_proj_name, True)
-                with st.expander(f"{main_proj_name} ({len(sub_tasks)})", expanded=is_expanded, key=expander_key, on_change="rerun"):
-                    # The mirror-update in the `finally` below has to run even
-                    # when a button below calls st.rerun() (or navigate_to(),
-                    # which does the same) - that raises an exception to
-                    # unwind the script right here, which would otherwise
-                    # skip the mirror-update and snap this project's group
-                    # shut instead of leaving it open on the way to/from
-                    # editing a task.
+                expander_key = expander_prefix + main_proj_name
+                is_expanded = group_states[main_proj_name]
+                with st.expander(f"{main_proj_name} ({len(sub_tasks)})", expanded=True, key=expander_key, on_change="rerun"):
+                    # The mirror is updated in a `finally` for the same
+                    # reason as in the today view: the run can end inside
+                    # this group - a row's st.rerun() or navigate_to(), or a
+                    # newer click interrupting it - and if that run opened
+                    # or closed the group, the new state would otherwise be
+                    # lost once this view is left and returned to. The
+                    # today view's comment says what this leaves out: the
+                    # groups below one a navigate_to() ends the run in.
                     try:
-                        for t_idx, task in enumerate(sub_tasks):
+                        drawn = sub_tasks if is_expanded else ()
+                        for t_idx, task in enumerate(drawn):
                             col_task, col_start_btn, col_edit_btn, col_today_btn, col_done_btn = st.columns([10, 1, 1, 1, 1])
                             with col_task:
                                 name = task['task_name']
@@ -1824,6 +1861,105 @@ def _calendar_body():
                         navigate_to('edit_task_form')
 
 
+def _settle_group_states(group_names, key_prefix, mirror):
+    """
+    The open or closed state of every project group in a tab, handed back
+    to each group's expander through its key before any group is drawn
+    (issue #644).
+
+    A group's state is its expander's own, under the key, or the mirror's
+    once the key is gone because the tab was left and returned to - and open
+    when neither knows it. It goes back to the expander through the key, not
+    as expanded=: that argument is part of the element's identity, so a
+    group given its own state that way was drawn as a different element in
+    the run after each click on its header. The next click on that header
+    went to the element that was gone and was lost, unless some other run
+    had come in between - and on these tabs nothing reruns by itself, so
+    that was every second click, however long the user waited.
+
+    All groups before any is drawn, because a row can end the run with
+    st.rerun() before the groups below it are reached. Streamlit 1.55 then
+    drops the click that opened one of those as stale, and with only an open
+    group's rows built, the group would stay open in the browser with nothing
+    in it. Once in the key, the click outlasts that run, and the run the
+    row's st.rerun() starts draws the group the way it was clicked.
+
+    :param group_names: The groups' project names, in any iterable.
+    :param key_prefix: What each group's expander key starts with.
+    :param mirror: The tab's dict of remembered states, by project name.
+    :return: The state of each group, by project name.
+    """
+    states = {}
+    for name in group_names:
+        key = key_prefix + name
+        states[name] = st.session_state.get(key, mirror.get(name, True))
+        st.session_state[key] = states[name]
+    return states
+
+
+def _today_priority_key(task, t_idx):
+    """
+    The key of a today-view row's priority field, built in one place for
+    the field and for _keep_priorities_typed_into_closed_groups().
+
+    The project name's length comes first, so that no other project and
+    task name can add up to the same key where they meet at an
+    underscore: 'a' with task 'b_c' and 'a_b' with task 'c' would both be
+    a_b_c without it. The rescue reads the keys of rows it never built,
+    and a key shared with another project's field would hand it that
+    field's value to store.
+    """
+    project = task['main_project_name']
+    return f"today_priority_{len(project)}_{project}_{task['task_name']}_{t_idx}"
+
+
+def _save_today_priority(task, priority):
+    """Stores a priority entered in a today-view row's priority field."""
+    st.session_state.tracker.update_task(
+        task['main_project_name'],
+        task['task_name'],
+        recurring=task.get('recurring'),
+        frequency=task.get('frequency'),
+        userdefined_days=task.get('userdefined_days'),
+        priority=priority,
+        task_id=task.get('id'),
+    )
+
+
+def _keep_priorities_typed_into_closed_groups(groups, states, mirror):
+    """
+    Stores a priority that reaches the server in the run that closes its
+    group (issue #644).
+
+    A priority field hands in its value when it loses focus - which a click
+    on the group's header makes it do - or straight from its +/- buttons. If
+    that run and the click's are one, because the click came while the run
+    was still on its way or a tap sent both at once, the group is closed by
+    the time its rows would be built, and its fields are never built with
+    them. For that one run the value is still in session state under the
+    field's key, so it is taken from there; in any later run a row that was
+    not built has nothing there, and nothing is stored.
+
+    So only the groups that are closed now but were open when last drawn
+    are looked through. This is called before any group is drawn, so the
+    mirror still holds the state each group was last drawn with, and a
+    group whose fields were built was drawn open.
+
+    :param groups: The today view's tasks, by project name, in the order
+        they are drawn in.
+    :param states: Each group's state, from _settle_group_states().
+    :param mirror: The tab's dict of remembered states, not yet updated
+        by this run.
+    """
+    for name, sub_tasks in groups.items():
+        if states[name] or not mirror.get(name, True):
+            continue
+        for t_idx, task in enumerate(sub_tasks):
+            typed = st.session_state.get(_today_priority_key(task, t_idx))
+            if typed is not None and typed != task.get('priority', 0):
+                _save_today_priority(task, typed)
+
+
 def _today_tasks_body():
     """
     Everything marked for today, plus the current work session and the Exit
@@ -1998,22 +2134,43 @@ def _today_tasks_body():
         # collapsed state is then mirrored into a plain session-state dict for
         # the same reason as today_show_only_open_value above: the expander's
         # own (key-bound) state would otherwise reset to expanded every time
-        # this view is left (e.g. to edit a task) and returned to.
+        # this view is left (e.g. to edit a task) and returned to. How the
+        # state is handed back to the expander, and why for all groups
+        # before any is drawn, is explained in _settle_group_states()
+        # (issue #644).
         if "today_view_expanded_projects" not in st.session_state:
             st.session_state.today_view_expanded_projects = {}
+        expander_prefix = "today_expander_"
+        group_states = _settle_group_states(
+            today_tasks_grouped, expander_prefix, st.session_state.today_view_expanded_projects)
+        _keep_priorities_typed_into_closed_groups(
+            today_tasks_grouped, group_states, st.session_state.today_view_expanded_projects)
 
         for main_proj_name, sub_tasks in today_tasks_grouped.items(): # Grouped by main project
-            expander_key = f"today_expander_{main_proj_name}"
-            is_expanded = st.session_state.today_view_expanded_projects.get(main_proj_name, True)
-            with st.expander(f"{main_proj_name} ({len(sub_tasks)})", expanded=is_expanded, key=expander_key, on_change="rerun"):
-                # The mirror-update in the `finally` below has to run even
-                # when a button below calls st.rerun() (or navigate_to(),
-                # which does the same) - that raises an exception to unwind
-                # the script right here, which would otherwise skip the
-                # mirror-update and snap this project's group shut instead
-                # of leaving it open on the way to/from editing a task.
+            expander_key = expander_prefix + main_proj_name
+            is_expanded = group_states[main_proj_name]
+            with st.expander(f"{main_proj_name} ({len(sub_tasks)})", expanded=True, key=expander_key, on_change="rerun"):
+                # The mirror is updated in a `finally` because the run can
+                # end inside this group: a row's st.rerun() or navigate_to()
+                # raises to unwind the script, and so does a newer click
+                # that interrupts the run while it is still drawing the
+                # rows. If that run was the one that opened or closed the
+                # group, skipping the update would bring the group back in
+                # its old state once this view is left and returned to.
+                # The groups below the one the run ends in are not reached
+                # at all. After a st.rerun() the next run draws and records
+                # them; after a navigate_to() a group below that was opened
+                # or closed in that same run comes back as it was, as it
+                # did before issue #644.
                 try:
-                    for t_idx, task in enumerate(sub_tasks): # Iterate through tasks in the group
+                    # The rows of a closed group are not built at all. The
+                    # expander would only hide them - every widget, some 94
+                    # nodes in the page and one to three milliseconds of the
+                    # run for each task at the large test size (issue #644).
+                    # Opening the group is a run of its own, on_change="rerun"
+                    # above, and that run draws them.
+                    drawn = sub_tasks if is_expanded else ()
+                    for t_idx, task in enumerate(drawn): # Iterate through tasks in the group
                         col_task, col_priority, col_start_btn, col_edit_btn, col_done_btn = st.columns([7, 3, 1, 1, 1])
                         with col_task:
                             name = task['task_name']
@@ -2031,19 +2188,11 @@ def _today_tasks_body():
                             new_priority = st.number_input(
                                 _("Priority"), min_value=0, max_value=9,
                                 value=task.get('priority', 0), step=1,
-                                key=f"today_priority_{task['main_project_name']}_{task['task_name']}_{t_idx}",
+                                key=_today_priority_key(task, t_idx),
                                 label_visibility="collapsed", help=_("0 (lowest) to 9 (highest)"),
                             )
                             if new_priority != task.get('priority', 0):
-                                st.session_state.tracker.update_task(
-                                    task['main_project_name'],
-                                    task['task_name'],
-                                    recurring=task.get('recurring'),
-                                    frequency=task.get('frequency'),
-                                    userdefined_days=task.get('userdefined_days'),
-                                    priority=new_priority,
-                                    task_id=task.get('id'),
-                                )
+                                _save_today_priority(task, new_priority)
                                 st.rerun()
                         with col_start_btn:
                             if st.button("▶", key=f"start_today_task_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Start work on task"), disabled=is_active or status == 'done'):
@@ -2611,11 +2760,15 @@ def view_settings():
                 st.rerun()
 
     with _settings_section("css", _("Change CSS Style")):
-        current_css = config.get('css_file', 'style.css')
+        current_css = css_file_from_config(config)
         st.markdown(f"**{_('Current CSS file')}:** `{current_css}`")
 
-        # Find .css files in the current directory
-        css_files = [f for f in os.listdir(SL_DIR) if f.endswith('.css')]
+        # The .css files beside this script, sorted so that the order does
+        # not depend on the file system. A renamed theme's old file is left
+        # out: it can only be a leftover of an update, and choosing it would
+        # lead back to the new one (see _RENAMED_CSS_FILES).
+        css_files = sorted(f for f in os.listdir(SL_DIR)
+                           if f.endswith('.css') and f not in _RENAMED_CSS_FILES)
         if not css_files:
             css_files = ['style.css']
 
@@ -2665,7 +2818,7 @@ def view_settings():
     with _settings_section("mcp", _("MCP Server Settings")):
         transport_options = {
             'http': _("HTTP (Streamable HTTP)"),
-            'stdio': _("stdio (recommended for Claude Desktop)"),
+            'stdio': _("stdio (recommended)"),
         }
         transport_keys = list(transport_options.keys())
         transport_labels = list(transport_options.values())
@@ -2684,8 +2837,8 @@ def view_settings():
         is_stdio = selected_transport == 'stdio'
 
         with st.form("mcp_settings_form"):
-            # With stdio, the MCP client (e.g. Claude Desktop) starts and
-            # stops the server itself - "Enable MCP server" has no effect at
+            # With stdio, the MCP client starts and stops the server
+            # itself - "Enable MCP server" has no effect at
             # all in that mode (see the GUI-launch and auto-refresh checks
             # that key off mcp_transport instead), so it's disabled rather
             # than left as a checkbox that silently does nothing.
@@ -2704,8 +2857,7 @@ def view_settings():
             )
             st.caption(_(
                 "With stdio, the app does not start the MCP server itself - the "
-                "MCP client (e.g. Claude Desktop) launches it directly, and the "
-                "port is ignored."
+                "MCP client launches it directly, and the port is ignored."
             ))
 
             submitted = st.form_submit_button(_("Save"), use_container_width=True)

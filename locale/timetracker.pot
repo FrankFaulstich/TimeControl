@@ -1003,7 +1003,7 @@ msgid "HTTP (Streamable HTTP)"
 msgstr ""
 
 #: sl/SL_Menu.py:2604
-msgid "stdio (recommended for Claude Desktop)"
+msgid "stdio (recommended)"
 msgstr ""
 
 #: sl/SL_Menu.py:2618
@@ -1026,7 +1026,7 @@ msgstr ""
 #: sl/SL_Menu.py:2642
 msgid ""
 "With stdio, the app does not start the MCP server itself - the MCP client "
-"(e.g. Claude Desktop) launches it directly, and the port is ignored."
+"launches it directly, and the port is ignored."
 msgstr ""
 
 #: sl/SL_Menu.py:2653

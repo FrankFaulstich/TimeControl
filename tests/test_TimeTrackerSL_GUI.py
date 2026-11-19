@@ -255,7 +255,7 @@ class TestStreamlitGUI(unittest.TestCase):
     @unittest.mock.patch('TimeTrackerSL_GUI.time.sleep')
     def test_start_streamlit_server_skips_mcp_server_for_stdio_transport(self, mock_sleep, mock_webview_start, mock_create_window, mock_popen, mock_json_load, mock_exists):
         """
-        With the stdio transport, an MCP client (e.g. Claude Desktop) spawns
+        With the stdio transport, the MCP client spawns
         TimeTrackerMCP_Server.py itself and talks to it over stdin/stdout, so
         the GUI must not also launch it as a background subprocess - even if
         'mcp_server_enabled' is true.

@@ -12,13 +12,13 @@ from datetime import datetime
 # the new stateless MCP protocol revision finalized 2026-07-28. For our
 # purposes the two are close enough to bridge directly rather than pin to
 # the older v1.x line forever: @mcp.tool() has the same signature in both,
-# and stdio - what Claude Desktop actually uses to launch this script - needs
+# and stdio - what an MCP client typically uses to launch this script - needs
 # no version-specific handling either way (see MCP_MAJOR_VERSION's other use
 # below for the one place that does differ). Trying both import paths here,
 # instead of pinning, also means this script keeps working unmodified in
 # whichever mcp major version happens to be installed wherever it actually
 # runs - our own requirements.txt/requirements-ci.txt, or an end user's own
-# system Python that Claude Desktop's stdio config points at directly - not
+# system Python that an MCP client's stdio config points at directly - not
 # just the one this repo happens to pin at any given time.
 try:
     from mcp.server.fastmcp import FastMCP as _MCPServerClass
@@ -37,8 +37,8 @@ except ImportError:
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SCRIPT_DIR)
 
-# MCP clients (Claude Desktop in particular) launch this script with an
-# undefined, unpredictable working directory rather than the repo root, and
+# MCP clients launch this script with an undefined, unpredictable
+# working directory rather than the repo root, and
 # do not reliably honor a `cwd` override in their server config even though
 # some setups suggest one. Every relative path used here and inside
 # TimeTracker itself (config.json, data.json, ...) resolves against the
@@ -654,8 +654,8 @@ def get_version() -> str:
 def main():
     if _STDIO_MODE:
         # No prints here: stdout is the JSON-RPC channel for this transport,
-        # and Claude Desktop (the typical client) spawns this process itself
-        # and reads its stdout directly.
+        # and the MCP client spawns this process itself and reads its
+        # stdout directly.
         mcp.run(transport="stdio")
     else:
         print(f"Starting TimeControl MCP server on http://{_MCP_HOST}:{_MCP_PORT}{_MCP_STREAMABLE_HTTP_PATH} ...")

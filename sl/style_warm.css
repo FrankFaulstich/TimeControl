@@ -1,9 +1,9 @@
 /* ==========================================================================
-   TimeControl - Claude Style
+   TimeControl - Warm Style
    ==========================================================================
-   Warm, editorial palette inspired by the Claude Desktop app: a soft cream
-   page background, a warm charcoal ink for text, and a terracotta/clay
-   accent for interactive elements, in place of the usual cool blues/grays.
+   Warm, editorial palette: a soft cream page background, a warm charcoal
+   ink for text, and a terracotta/clay accent for interactive elements, in
+   place of the usual cool blues/grays.
 
    Custom properties live on :root (not .stApp) because several Streamlit
    components (popover panels, select/date dropdowns) render into a portal
@@ -136,8 +136,7 @@ h5, h6 {
 }
 
 /* Primary-type buttons (e.g. "Add Task") get the terracotta treatment to
-   read as the clear call-to-action, matching Claude's own send/primary
-   button color. */
+   read as the clear call-to-action. */
 [data-testid="stBaseButton-primary"] {
     background-color: var(--tc-accent) !important;
     border-color: var(--tc-accent) !important;

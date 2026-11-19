@@ -304,7 +304,7 @@ class TestTheInterfaceFreezesWhatItReads(unittest.TestCase):
 
     def test_until_another_process_has_written(self):
         self._run()
-        TimeTracker('data.json', op_outbox=NoOutbox()).add_main_project('From Claude')
+        TimeTracker('data.json', op_outbox=NoOutbox()).add_main_project('From the MCP server')
         self.assertEqual(self._run(), 2)
         self.assertEqual(self._run(), 2)
 
