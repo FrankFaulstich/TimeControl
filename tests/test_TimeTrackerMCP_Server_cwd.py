@@ -6,17 +6,17 @@ Covers two things:
 1. The server must resolve config.json/data.json relative to its OWN
    location on disk, not the process's current working directory.
 
-   Why this matters: MCP clients (Claude Desktop in particular) launch this
-   script with an undefined, unpredictable working directory - not the repo
-   root - and do not reliably honor a `cwd` override in their server config
-   even though some setups suggest one. Without the fix, every relative path
+   Why this matters: MCP clients launch this script with an undefined,
+   unpredictable working directory - not the repo root - and do not
+   reliably honor a `cwd` override in their server config even though
+   some setups suggest one. Without the fix, every relative path
    here and inside TimeTracker/i18n (config.json, data.json, ...) resolves
    against that undefined cwd instead, so config.json is silently "not
    found" and the server falls back to defaults - including the wrong
    transport (streamable-http instead of the configured stdio) - which
-   breaks the handshake with a stdio-based client like Claude Desktop
-   without any visible error. See TimeTrackerMCP_Server.py's
-   SCRIPT_DIR/os.chdir() comment for the fix itself.
+   breaks the handshake with a stdio-based client without any visible
+   error. See TimeTrackerMCP_Server.py's SCRIPT_DIR/os.chdir() comment for
+   the fix itself.
 
 2. The server must work correctly against BOTH major versions of the mcp
    Python SDK - v1.x (mcp.server.fastmcp.FastMCP) and v2.x
@@ -26,7 +26,7 @@ Covers two things:
    incompatible constructor and no backwards-compatible import shim, which
    once already broke this server outright (see TimeTrackerMCP_Server.py's
    import-time comment). Neither this repo's own requirements pin nor an end
-   user's own system Python (which is what Claude Desktop's stdio config
+   user's own system Python (which is what an MCP client's stdio config
    often actually points at) is guaranteed to have one SDK major version
    over the other, so both need to keep working - and a future mcp release
    could silently break either code path again without a test exercising it.

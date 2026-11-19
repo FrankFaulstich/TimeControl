@@ -68,7 +68,7 @@ Running from source, the application also updates without the button: when it is
 
 **REST API:** A REST web service (`TimeTrackerREST_Server.py`) covering the same operations as the SOAP API, for tools or dashboards that prefer JSON over SOAP/XML. See [examples/REST](examples/REST) for runnable client examples.
 
-**MCP Server (optional):** An [MCP](https://modelcontextprotocol.io/) server (`TimeTrackerMCP_Server.py`) that exposes the app's entire functionality — project/task management, time tracking, reporting, and email import — to an MCP client such as Claude Desktop, so you can manage TimeControl in natural language while keeping the GUI in sync — see [MCP Server](#mcp-server-) below.
+**MCP Server (optional):** An [MCP](https://modelcontextprotocol.io/) server (`TimeTrackerMCP_Server.py`) that exposes the app's entire functionality — project/task management, time tracking, reporting, and email import — to an MCP client, so you can manage TimeControl in natural language while keeping the GUI in sync — see [MCP Server](#mcp-server-) below.
 
 **Unit Testing:** Includes comprehensive unit tests in `tests/test_TimeTracker.py` for feature reliability.
 
@@ -194,12 +194,12 @@ python3 TimeTrackerSL_GUI.py
 
 ## MCP Server 🤖
 
-TimeControl can optionally run a [Model Context Protocol](https://modelcontextprotocol.io/) server (`TimeTrackerMCP_Server.py`), letting an MCP client such as **Claude Desktop** talk to it directly — e.g. *"start work on task X"*, *"create a new project called Y"*, or *"stop what I'm working on"* — while you keep using the GUI at the same time. Both sides read and write the same `data.json`, and the GUI reloads its data on every interaction. It also refreshes itself automatically every few seconds — whenever `mcp_server_enabled` is `true`, and always when `mcp_transport` is `"stdio"` (since a stdio client can be talking to the server independently of that flag, see below) — so you can freely switch back and forth between Claude and the GUI.
+TimeControl can optionally run a [Model Context Protocol](https://modelcontextprotocol.io/) server (`TimeTrackerMCP_Server.py`), letting an MCP client talk to it directly — e.g. *"start work on task X"*, *"create a new project called Y"*, or *"stop what I'm working on"* — while you keep using the GUI at the same time. Both sides read and write the same `data.json`, and the GUI reloads its data on every interaction. It also refreshes itself automatically every few seconds — whenever `mcp_server_enabled` is `true`, and always when `mcp_transport` is `"stdio"` (since a stdio client can be talking to the server independently of that flag, see below) — so you can freely switch back and forth between the MCP client and the GUI.
 
 It supports two transports, chosen via `mcp_transport` in `config.json`:
 
 - **`http`** (default): a Streamable HTTP server the GUI starts and stops for you as a background process, the same way it already can run the SOAP server. Multiple clients can connect to it at once.
-- **`stdio`**: the MCP client (e.g. Claude Desktop) launches `TimeTrackerMCP_Server.py` itself and talks to it over its stdin/stdout - nothing needs to be running beforehand. This is the transport Claude Desktop supports most reliably, so prefer it when connecting Claude Desktop.
+- **`stdio`**: the MCP client launches `TimeTrackerMCP_Server.py` itself and talks to it over its stdin/stdout - nothing needs to be running beforehand. Prefer it whenever the client can launch a local command.
 
 **Enabling it:** install the extra dependency and configure it either through the GUI (**Settings → MCP Server Settings**) or directly in `config.json` (see [Configuration](#configuration-️)):
 
@@ -236,7 +236,7 @@ python TimeTrackerMCP_Server.py
 
 > ⚠️ **Destructive tools:** `delete_task`, `delete_all_closed_tasks`, and `delete_main_project` permanently delete data and cannot be undone. An MCP client should always confirm with you before calling them.
 
-**Connecting Claude Desktop:** the recommended way is the **stdio** transport - set `"mcp_transport": "stdio"` (via the GUI or `config.json`) and add an entry to Claude Desktop's MCP server configuration that launches the script directly:
+**Connecting an MCP client:** the recommended way is the **stdio** transport - set `"mcp_transport": "stdio"` (via the GUI or `config.json`) and add an entry to the client's MCP server configuration that launches the script directly:
 
 ```json
 {
@@ -249,9 +249,9 @@ python TimeTrackerMCP_Server.py
 }
 ```
 
-Use the absolute path to the script - Claude Desktop (like most MCP clients) launches it with an undefined working directory, not necessarily the repo root, and does not reliably support a `cwd` override for that even though some setups suggest one. The server accounts for this itself: it always resolves `config.json`/`data.json` relative to its own location on disk, not the process's working directory, so no `cwd` entry is needed.
+Use the absolute path to the script - most MCP clients launch it with an undefined working directory, not necessarily the repo root, and do not reliably support a `cwd` override for that even though some setups suggest one. The server accounts for this itself: it always resolves `config.json`/`data.json` relative to its own location on disk, not the process's working directory, so no `cwd` entry is needed.
 
-Claude Desktop then starts and stops the server itself - it does not need to be running beforehand, and the GUI does not start a second copy of it (see above). Alternatively, with `"mcp_transport": "http"` and the server running (either via the GUI or stand-alone), point Claude Desktop at the Streamable HTTP endpoint, `http://127.0.0.1:8700/mcp` (adjust the port to match `mcp_port`), instead. Consult Claude Desktop's current documentation for the exact configuration steps, since these have changed between versions.
+The client then starts and stops the server itself - it does not need to be running beforehand, and the GUI does not start a second copy of it (see above). Alternatively, with `"mcp_transport": "http"` and the server running (either via the GUI or stand-alone), point the client at the Streamable HTTP endpoint, `http://127.0.0.1:8700/mcp` (adjust the port to match `mcp_port`), instead. Consult the client's current documentation for the exact configuration steps, since these have changed between versions.
 
 ## Synchronising Two Machines 🔄
 
@@ -341,7 +341,7 @@ Starting over with a *forgotten* passphrase is a different thing and means remov
 
 ### Limitations worth knowing
 
-All four entry points drive synchronisation now — the GUI, and the MCP, REST and SOAP servers. Each brings the document up to date and starts the background worker when it loads the document for a request, so a machine driven only through Claude Desktop no longer waits for somebody to open the GUI before its changes leave.
+All four entry points drive synchronisation now — the GUI, and the MCP, REST and SOAP servers. Each brings the document up to date and starts the background worker when it loads the document for a request, so a machine driven only through an MCP client no longer waits for somebody to open the GUI before its changes leave.
 
 Once the log has run far enough past its last snapshot, whichever machine is fully caught up offers the server its document as a new one, and the server sets aside the operations that snapshot now speaks for. A machine joining later takes the snapshot and then only what came after it, instead of replaying the whole history. This happens on its own; there is nothing to switch on.
 

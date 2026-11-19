@@ -148,7 +148,7 @@ so the background worker exists only in the GUI process. Changes made through
 the MCP, REST or SOAP interfaces are recorded into the outgoing queue correctly
 — but they leave the machine only once the GUI is running.
 
-For someone who drives TimeControl mainly through Claude Desktop and rarely
+For someone who drives TimeControl mainly through an MCP client and rarely
 opens the GUI, their work reaches the second machine hours late or not at all.
 
 **Suggested fix:** start the worker from the three server entry points too. The

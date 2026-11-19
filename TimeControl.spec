@@ -21,7 +21,7 @@ datas = [
     ('sl/SL_Menu.py', 'sl'),
     ('sl/style.css', 'sl'),
     ('sl/style_dark.css', 'sl'),
-    ('sl/style_claude.css', 'sl'),
+    ('sl/style_warm.css', 'sl'),
     ('sl/style_blue.css', 'sl'),
     ('sl/icon.png', 'sl'),
     ('locale', 'locale'),

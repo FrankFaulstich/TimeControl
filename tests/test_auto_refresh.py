@@ -65,7 +65,7 @@ class _InAScratchDirectory(unittest.TestCase):
         os.makedirs(os.path.join(self.scratch, 'config'))
 
     @staticmethod
-    def _written_elsewhere(name='From Claude'):
+    def _written_elsewhere(name='From the MCP server'):
         """What the MCP server does: its own tracker, its own save."""
         TimeTracker('data.json', op_outbox=NoOutbox()).add_main_project(name)
 
@@ -255,10 +255,10 @@ class TestAnIdleViewIsLeftAlone(_Ticking):
 class TestAChangeIsShownAtTheNextTick(_Ticking):
 
     def test_another_process_writing_the_file(self):
-        self._written_elsewhere('From Claude')
+        self._written_elsewhere('From the MCP server')
         self._tick()
         self.assertEqual(self.full_runs.call_count, 2)
-        self.assertTrue(self._shown('From Claude'))
+        self.assertTrue(self._shown('From the MCP server'))
 
     def test_and_after_that_it_is_quiet_again(self):
         self._written_elsewhere()
@@ -309,11 +309,11 @@ class TestWithoutStreamlitsRunContext(_Ticking):
         self.assertEqual(self.full_runs.call_count, 1)
 
     def test_a_change_is_shown(self):
-        self._written_elsewhere('From Claude')
+        self._written_elsewhere('From the MCP server')
         self._five_seconds_on()
         self._tick()
         self.assertEqual(self.full_runs.call_count, 2)
-        self.assertTrue(self._shown('From Claude'))
+        self.assertTrue(self._shown('From the MCP server'))
 
 
 class TestTheRunningClock(_Ticking):
