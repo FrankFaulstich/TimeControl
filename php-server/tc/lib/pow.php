@@ -112,12 +112,17 @@ function tc_pow_key($store)
         $hex  = is_array($data) ? ($data['key'] ?? null) : null;
         return is_string($hex) && preg_match('/^[a-f0-9]{64}$/D', $hex) ? hex2bin($hex) : null;
     };
-    $key = $read();
-    if ($key !== null || file_exists($dir)) {
+    // Looked for before it is read, not after: the directory only ever
+    // appears whole, renamed into place with the key already in it, so once
+    // it is found it can be read. The other way round, another request's
+    // rename could land between a read that found nothing and the look that
+    // then finds the directory, and this request would take a key that is
+    // there for one that cannot be read, and hand out no challenge.
+    if (file_exists($dir)) {
         // There but unreadable is not mended by making another: a new key
         // would quietly void every challenge in flight, and the reason it
         // cannot be read would still be there.
-        return $key;
+        return $read();
     }
     $tmp = $store . '/.tmp-pow-key-' . bin2hex(random_bytes(6));
     if (tc_secure_mkdir($tmp, false)
