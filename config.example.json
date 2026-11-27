@@ -6,6 +6,10 @@
     "data_file": "data.json",
     "css_file": "style.css",
     "view_mode": "webview",
+    "collapse_groups": {
+        "enabled": false,
+        "above": 20
+    },
     "streamlit_port": 8501,
     "window_width": 800,
     "window_height": 600,

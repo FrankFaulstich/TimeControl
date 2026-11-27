@@ -3252,3 +3252,18 @@ msgstr "Dieses Gerät hat seine Anmeldung vergessen."
 
 msgid "The mail server did not answer in time. Check the server address and the internet connection."
 msgstr "Der Mailserver hat nicht rechtzeitig geantwortet. Bitte die Serveradresse und die Internetverbindung prüfen."
+
+msgid "Project Groups"
+msgstr "Projektgruppen"
+
+msgid "Collapse project groups by default"
+msgstr "Projektgruppen standardmäßig zuklappen"
+
+msgid "When the number of tasks in a list exceeds"
+msgstr "Wenn die Anzahl der Aufgaben in einer Liste größer ist als"
+
+msgid "Applies to Today's Tasks and Task Planning. The group with the running task stays open, and a group you open or close yourself stays that way until the page is reloaded or the app is restarted."
+msgstr "Gilt für „Heutige Aufgaben“ und „Aufgabenplanung“. Die Gruppe mit der laufenden Aufgabe bleibt offen, und eine selbst auf- oder zugeklappte Gruppe bleibt so, bis die Seite neu geladen oder die Anwendung neu gestartet wird."
+
+msgid "Project group settings saved."
+msgstr "Einstellungen für Projektgruppen gespeichert."

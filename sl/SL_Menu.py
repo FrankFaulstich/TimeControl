@@ -527,11 +527,11 @@ def set_feedback(message, type='success'):
 @contextlib.contextmanager
 def _settings_section(section_key, label):
     """
-    A collapsible settings section, with its open or closed state kept the
-    way the project groups in _today_tasks_body() keep theirs:
-    on_change="rerun" is required for st.expander to track its state in
-    st.session_state[key] at all (the default, "ignore", makes it a purely
-    client-side toggle Python never learns about), and that state is then
+    A collapsible settings section whose open or closed state is remembered:
+    an on_change other than the default, "ignore", is required for
+    st.expander to track its state in st.session_state[key] at all
+    ("ignore" makes it a purely client-side toggle Python never learns
+    about) - here on_change="rerun" - and that state is then
     mirrored into a plain session-state dict because the expander's own
     (key-bound) state would otherwise reset to collapsed every time a
     different top-level view is shown (e.g. navigating to "Main Menu") and
@@ -1353,6 +1353,7 @@ def view_work():
     # below it can never show different tabs.
     st.session_state[_WORK_TABS_KEY] = labels[active]
     st.session_state['_work_tab_route'] = active
+    _note_screen(active)
     # Settled before anything is drawn, so the toolbar's "return here"
     # target and the rest of the run all agree on which tab this is.
     st.session_state.menu = active
@@ -1426,6 +1427,11 @@ def _task_planning_body():
 
     current_work = st.session_state.tracker.get_current_work()
     tasks = st.session_state.tracker.list_tasks(planning_filter=planning_filter)
+    # Noted on every run, not only on those that draw project groups: a
+    # filter shown in between that has none - the Weekly overview, or one
+    # with no tasks - is a list of its own too, and coming back from it is
+    # coming back to the groups (issue #645).
+    groups_drawn = _group_visit("task_planning_group_visit", planning_filter)
 
     if tasks:
         if planning_filter == 'weekly':
@@ -1499,37 +1505,44 @@ def _task_planning_body():
             # Group tasks by main project and show each group inside a
             # collapsible expander, so projects with many tasks don't crowd
             # out the rest of the list - same pattern (and same reasoning)
-            # as _today_tasks_body(): on_change="rerun" is required for
-            # st.expander to track its state in session_state at all, and
-            # that state is mirrored into a plain session-state dict because
-            # the expander's own (key-bound) state would otherwise reset to
-            # expanded every time this view is left (e.g. to edit a task)
-            # and returned to. Handed back through the key, for all groups
-            # before any is drawn, as _settle_group_states() explains, and
-            # only an open group's rows built, as the today view explains
-            # (issue #644).
+            # as _today_tasks_body(): an on_change other than the default,
+            # "ignore", is required for st.expander to track its state in
+            # session_state at all - here a callback that notes the state the
+            # user clicked (issue #645) - and the state each group was drawn
+            # with is mirrored into a plain session-state dict for when
+            # Streamlit drops an expander's key in the middle of a visit.
+            # Handed back through the key, for all groups before any is
+            # drawn, as _settle_group_states() explains, and only an open
+            # group's rows built, as the today view explains (issue #644).
+            # Each filter is a list of its own, and its groups take their
+            # defaults afresh when it is picked (issue #645).
             tasks_grouped = {}
             for task in tasks:
                 tasks_grouped.setdefault(task['main_project_name'], []).append(task)
 
             if "task_planning_expanded_projects" not in st.session_state:
                 st.session_state.task_planning_expanded_projects = {}
+            if "task_planning_group_choices" not in st.session_state:
+                st.session_state.task_planning_group_choices = {}
             expander_prefix = "task_planning_expander_"
             group_states = _settle_group_states(
-                tasks_grouped, expander_prefix, st.session_state.task_planning_expanded_projects)
+                tasks_grouped, expander_prefix, st.session_state.task_planning_expanded_projects,
+                st.session_state.task_planning_group_choices,
+                _default_group_states(tasks_grouped, current_work),
+                groups_drawn)
 
             for main_proj_name, sub_tasks in tasks_grouped.items():
                 expander_key = expander_prefix + main_proj_name
                 is_expanded = group_states[main_proj_name]
-                with st.expander(f"{main_proj_name} ({len(sub_tasks)})", expanded=True, key=expander_key, on_change="rerun"):
+                with st.expander(f"{main_proj_name} ({len(sub_tasks)})", expanded=True, key=expander_key,
+                                 on_change=_note_group_choice,
+                                 args=("task_planning_group_choices", main_proj_name, expander_key)):
                     # The mirror is updated in a `finally` for the same
                     # reason as in the today view: the run can end inside
                     # this group - a row's st.rerun() or navigate_to(), or a
-                    # newer click interrupting it - and if that run opened
-                    # or closed the group, the new state would otherwise be
-                    # lost once this view is left and returned to. The
-                    # today view's comment says what this leaves out: the
-                    # groups below one a navigate_to() ends the run in.
+                    # newer click interrupting it - and the mirror is what
+                    # _settle_group_states() falls back to when Streamlit
+                    # drops this expander's key later in the visit.
                     try:
                         drawn = sub_tasks if is_expanded else ()
                         for t_idx, task in enumerate(drawn):
@@ -1861,15 +1874,145 @@ def _calendar_body():
                         navigate_to('edit_task_form')
 
 
-def _settle_group_states(group_names, key_prefix, mirror):
+# Above how many tasks a list counts as long, when the settings say to
+# collapse the project groups of a long list but give no number (issue #645),
+# and the largest number they can give.
+COLLAPSE_GROUPS_ABOVE = 20
+COLLAPSE_GROUPS_ABOVE_MAX = 100000
+
+
+def collapse_groups_setting(config):
+    """
+    Whether the project groups of a long list start collapsed, and above how
+    many tasks a list is long, as config.json has them (issue #645).
+
+    Off unless config.json says true in so many words. A number that is not
+    a whole number from 0 to COLLAPSE_GROUPS_ABOVE_MAX is taken as
+    COLLAPSE_GROUPS_ABOVE - the settings' number field could not show it.
+
+    :param config: The configuration dictionary.
+    :return: (enabled, above).
+    """
+    setting = config.get('collapse_groups')
+    if not isinstance(setting, dict):
+        return False, COLLAPSE_GROUPS_ABOVE
+    above = setting.get('above', COLLAPSE_GROUPS_ABOVE)
+    if (isinstance(above, bool) or not isinstance(above, int)
+            or not 0 <= above <= COLLAPSE_GROUPS_ABOVE_MAX):
+        above = COLLAPSE_GROUPS_ABOVE
+    return setting.get('enabled') is True, above
+
+
+def _default_group_states(groups, current_work):
+    """
+    The state of each project group the user has not opened or closed
+    (issue #645).
+
+    Open, unless the settings say to collapse the groups of a long list and
+    this one has more tasks than they allow. Then all start closed but the
+    one that holds the running task, so that its row is still to be seen.
+
+    A group takes it the first time it is drawn in a visit to its tab, see
+    _group_visit(). For the rest of the visit it stays as it was drawn: a
+    list that grows past the number, a change in the settings or the running
+    task stopping shows at the next visit.
+
+    :param groups: The tab's tasks, by project name.
+    :param current_work: What get_current_work() answered, or None.
+    :return: The state of each group, by project name.
+    """
+    enabled, above = collapse_groups_setting(config)
+    if not enabled or sum(len(tasks) for tasks in groups.values()) <= above:
+        return dict.fromkeys(groups, True)
+    running = None
+    if current_work:
+        project = current_work['main_project_name']
+        if any(task['task_name'] == current_work['task_name']
+               for task in groups.get(project, ())):
+            running = project
+    return {name: name == running for name in groups}
+
+
+def _note_screen(screen):
+    """
+    Counts the visits to the screens (issue #645).
+
+    Called for every run with the screen it shows - for the working screen,
+    the tab. The count goes up whenever that differs from the screen of the
+    last run that showed one, so a trip to a form and back, or to another
+    tab, starts a new visit. A run that st.rerun() ends before the screen is
+    drawn still belongs to its visit.
+
+    :param screen: The menu the run shows, or the working screen's tab.
+    """
+    if st.session_state.get('_screen') != screen:
+        st.session_state._screen = screen
+        st.session_state._screen_visits = st.session_state.get('_screen_visits', 0) + 1
+
+
+def _group_visit(name, shown):
+    """
+    The project groups a tab has drawn in the current visit to it (issue
+    #645), for _settle_group_states().
+
+    A visit begins with a run that shows the tab after another screen or tab
+    (see _note_screen()), and with a run in which the tab lists something
+    else: another Planning filter, or Today with or without its done tasks.
+    The tab calls this on every run, whether or not it draws any groups, so
+    that a list without them - the Weekly overview, an empty one - counts
+    as another list too. Those runs come from the toolbar, a form or the
+    filter, never with a click on a group's row, so no row is lost to a
+    group that takes its default there.
+
+    :param name: Where the tab keeps the record in session state.
+    :param shown: What the tab lists, as far as that can change while it is up.
+    :return: The set of project names drawn so far, which the settle adds to.
+    """
+    visit = (st.session_state.get('_screen_visits'), shown)
+    record = st.session_state.get(name)
+    if record is None or record['visit'] != visit:
+        record = {'visit': visit, 'drawn': set()}
+        st.session_state[name] = record
+    return record['drawn']
+
+
+def _note_group_choice(choices_key, project, expander_key):
+    """
+    Notes the state the user gave a project group by clicking its header
+    (issue #645).
+
+    The expander's on_change: Streamlit calls it before the run that the
+    click starts, and only for a click - not for the state that
+    _settle_group_states() hands the expander through its key. From then on
+    the group keeps that state, whatever its default.
+
+    :param choices_key: Where the tab's dict of such states is in session state.
+    :param project: The group's project name.
+    :param expander_key: The key of the group's expander, which holds the
+        state clicked.
+    """
+    state = st.session_state.get(expander_key)
+    if state is not None:
+        st.session_state.setdefault(choices_key, {})[project] = state
+
+
+def _settle_group_states(group_names, key_prefix, mirror, choices, defaults, drawn):
     """
     The open or closed state of every project group in a tab, handed back
     to each group's expander through its key before any group is drawn
     (issue #644).
 
-    A group's state is its expander's own, under the key, or the mirror's
-    once the key is gone because the tab was left and returned to - and open
-    when neither knows it. It goes back to the expander through the key, not
+    A group the user opened or closed has the state they gave it. Any other
+    group has its default the first time it is drawn in a visit to the tab,
+    and after that the state it was drawn with: its expander's own, under
+    the key, or the mirror's once Streamlit has dropped the key - 1.55 does
+    after a run that st.rerun() ended before the groups were reached, as the
+    toolbar's Stop does. A default that changes during the visit is left for
+    the next one (issue #645): a group that closed under the user's hand
+    would take the click on one of its rows with it, since a closed group's
+    rows are not built.
+
+    The state goes back to the expander through the key, not
     as expanded=: that argument is part of the element's identity, so a
     group given its own state that way was drawn as a different element in
     the run after each click on its header. The next click on that header
@@ -1881,19 +2024,32 @@ def _settle_group_states(group_names, key_prefix, mirror):
     st.rerun() before the groups below it are reached. Streamlit 1.55 then
     drops the click that opened one of those as stale, and with only an open
     group's rows built, the group would stay open in the browser with nothing
-    in it. Once in the key, the click outlasts that run, and the run the
-    row's st.rerun() starts draws the group the way it was clicked.
+    in it. Noted in the choices before the run, the click outlasts that run,
+    and the run the row's st.rerun() starts draws the group the way it was
+    clicked.
 
     :param group_names: The groups' project names, in any iterable.
     :param key_prefix: What each group's expander key starts with.
-    :param mirror: The tab's dict of remembered states, by project name.
+    :param mirror: The tab's dict of the states its groups were last drawn
+        with, by project name.
+    :param choices: The states the user gave groups, by project name, see
+        _note_group_choice().
+    :param defaults: Each group's state for when the user gave it none, from
+        _default_group_states().
+    :param drawn: The groups drawn in this visit, from _group_visit().
     :return: The state of each group, by project name.
     """
     states = {}
     for name in group_names:
         key = key_prefix + name
-        states[name] = st.session_state.get(key, mirror.get(name, True))
+        if name in choices:
+            states[name] = choices[name]
+        elif name in drawn:
+            states[name] = st.session_state.get(key, mirror.get(name, defaults[name]))
+        else:
+            states[name] = defaults[name]
         st.session_state[key] = states[name]
+        drawn.add(name)
     return states
 
 
@@ -2109,6 +2265,10 @@ def _today_tasks_body():
         st.session_state.today_task_order_value = task_order
 
     today_tasks = [t for t in today_tasks_all if t.get('status') != 'done'] if show_only_open else today_tasks_all
+    # Noted on every run, not only on those that draw project groups, as in
+    # _task_planning_body(): only the open tasks, shown in between with none
+    # of them left, are a list of its own too (issue #645).
+    groups_drawn = _group_visit("today_view_group_visit", show_only_open)
 
     if today_tasks:
         # Group tasks by main project for better organization
@@ -2128,47 +2288,55 @@ def _today_tasks_body():
 
         # Each project's tasks are shown inside a collapsible expander so
         # projects with many tasks don't crowd out the rest of the list.
-        # on_change="rerun" is required for st.expander to track its state in
-        # st.session_state[key] at all (the default, "ignore", makes it a
-        # purely client-side toggle Python never learns about). The expanded/
-        # collapsed state is then mirrored into a plain session-state dict for
-        # the same reason as today_show_only_open_value above: the expander's
-        # own (key-bound) state would otherwise reset to expanded every time
-        # this view is left (e.g. to edit a task) and returned to. How the
-        # state is handed back to the expander, and why for all groups
-        # before any is drawn, is explained in _settle_group_states()
-        # (issue #644).
+        # An on_change other than the default, "ignore", is required for
+        # st.expander to track its state in st.session_state[key] at all
+        # ("ignore" makes it a purely client-side toggle Python never learns
+        # about). The callback given here notes the state the user clicked
+        # (issue #645), which the group keeps from then on; the others take
+        # their default at the start of each visit. The state each group was
+        # drawn with is mirrored into a plain session-state dict, for the
+        # priority rescue below and for when Streamlit drops an expander's
+        # key in the middle of a visit. How the state is handed back to the
+        # expander, and why for all groups before any is drawn, is explained
+        # in _settle_group_states() (issues #644 and #645).
         if "today_view_expanded_projects" not in st.session_state:
             st.session_state.today_view_expanded_projects = {}
+        if "today_view_group_choices" not in st.session_state:
+            st.session_state.today_view_group_choices = {}
         expander_prefix = "today_expander_"
         group_states = _settle_group_states(
-            today_tasks_grouped, expander_prefix, st.session_state.today_view_expanded_projects)
+            today_tasks_grouped, expander_prefix, st.session_state.today_view_expanded_projects,
+            st.session_state.today_view_group_choices,
+            _default_group_states(today_tasks_grouped, current_work),
+            groups_drawn)
         _keep_priorities_typed_into_closed_groups(
             today_tasks_grouped, group_states, st.session_state.today_view_expanded_projects)
 
         for main_proj_name, sub_tasks in today_tasks_grouped.items(): # Grouped by main project
             expander_key = expander_prefix + main_proj_name
             is_expanded = group_states[main_proj_name]
-            with st.expander(f"{main_proj_name} ({len(sub_tasks)})", expanded=True, key=expander_key, on_change="rerun"):
+            with st.expander(f"{main_proj_name} ({len(sub_tasks)})", expanded=True, key=expander_key,
+                             on_change=_note_group_choice,
+                             args=("today_view_group_choices", main_proj_name, expander_key)):
                 # The mirror is updated in a `finally` because the run can
                 # end inside this group: a row's st.rerun() or navigate_to()
                 # raises to unwind the script, and so does a newer click
                 # that interrupts the run while it is still drawing the
-                # rows. If that run was the one that opened or closed the
-                # group, skipping the update would bring the group back in
-                # its old state once this view is left and returned to.
-                # The groups below the one the run ends in are not reached
-                # at all. After a st.rerun() the next run draws and records
-                # them; after a navigate_to() a group below that was opened
-                # or closed in that same run comes back as it was, as it
-                # did before issue #644.
+                # rows. It has to hold the state each group was drawn with
+                # all the same, for its two readers: _settle_group_states(),
+                # which falls back to it when Streamlit drops this
+                # expander's key later in the visit, and the priority
+                # rescue above, which tells by it which groups were open.
+                # A state the user clicked does not depend on it - that is
+                # in today_view_group_choices before the run (issue #645).
                 try:
                     # The rows of a closed group are not built at all. The
                     # expander would only hide them - every widget, some 94
                     # nodes in the page and one to three milliseconds of the
                     # run for each task at the large test size (issue #644).
-                    # Opening the group is a run of its own, on_change="rerun"
-                    # above, and that run draws them.
+                    # Opening the group is a run of its own - a widget with
+                    # an on_change callback starts one - and that run draws
+                    # them.
                     drawn = sub_tasks if is_expanded else ()
                     for t_idx, task in enumerate(drawn): # Iterate through tasks in the group
                         col_task, col_priority, col_start_btn, col_edit_btn, col_done_btn = st.columns([7, 3, 1, 1, 1])
@@ -2813,6 +2981,31 @@ def view_settings():
                 config['view_mode'] = new_mode
                 save_config(config)
                 set_feedback(_("View mode updated. Please restart the application for the changes to take effect."))
+                st.rerun()
+
+    with _settings_section("project_groups", _("Project Groups")):
+        collapse_enabled, collapse_above = collapse_groups_setting(config)
+
+        with st.form("project_groups_form"):
+            enabled = st.checkbox(_("Collapse project groups by default"), value=collapse_enabled)
+            above = st.number_input(
+                _("When the number of tasks in a list exceeds"),
+                min_value=0,
+                max_value=COLLAPSE_GROUPS_ABOVE_MAX,
+                value=collapse_above,
+                step=1,
+                key="settings_collapse_groups_above",
+            )
+            st.caption(_(
+                "Applies to Today's Tasks and Task Planning. The group with the "
+                "running task stays open, and a group you open or close yourself "
+                "stays that way until the page is reloaded or the app is restarted."
+            ))
+            submitted = st.form_submit_button(_("Save"), use_container_width=True)
+            if submitted:
+                config['collapse_groups'] = {'enabled': enabled, 'above': int(above)}
+                save_config(config)
+                set_feedback(_("Project group settings saved."))
                 st.rerun()
 
     with _settings_section("mcp", _("MCP Server Settings")):
@@ -4616,6 +4809,10 @@ if mcp_in_use and st.session_state.menu not in _MENUS_TO_SKIP_AUTOREFRESH:
     _auto_refresh_on_external_changes()
 
 if st.session_state.menu in menu_map:
+    # The working screen notes its tab itself, once it knows which one the
+    # user clicked (issue #645).
+    if st.session_state.menu not in _WORK_ROUTES:
+        _note_screen(st.session_state.menu)
     menu_map[st.session_state.menu]()
 else:
     st.error(f"Menu '{st.session_state.menu}' not found.")
