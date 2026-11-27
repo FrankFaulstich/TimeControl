@@ -3391,3 +3391,18 @@ msgstr "Este dispositivo ha olvidado su inicio de sesión."
 
 msgid "The mail server did not answer in time. Check the server address and the internet connection."
 msgstr "El servidor de correo no respondió a tiempo. Compruebe la dirección del servidor y la conexión a Internet."
+
+msgid "Project Groups"
+msgstr "Grupos de proyectos"
+
+msgid "Collapse project groups by default"
+msgstr "Contraer los grupos de proyectos de forma predeterminada"
+
+msgid "When the number of tasks in a list exceeds"
+msgstr "Cuando el número de tareas de una lista supera"
+
+msgid "Applies to Today's Tasks and Task Planning. The group with the running task stays open, and a group you open or close yourself stays that way until the page is reloaded or the app is restarted."
+msgstr "Se aplica a «Tareas de hoy» y «Planificación de tareas». El grupo de la tarea en curso permanece abierto, y un grupo abierto o contraído a mano se queda así hasta que se recargue la página o se reinicie la aplicación."
+
+msgid "Project group settings saved."
+msgstr "Configuración de grupos de proyectos guardada."

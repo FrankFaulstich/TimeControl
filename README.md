@@ -161,6 +161,7 @@ there to show the shape, not to be copied.
 
 - **`update.github_repo`**: The GitHub repository (username/reponame) to check for new versions. Optional: left out, the application asks about its own releases, which is what the Windows build needs — it ships as a single `.exe` and writes itself a `config.json` that has no repository in it. Set it to point a fork somewhere else, or to `""` to switch the update check off entirely.
 - **`language`**: The user interface language ("en", "de", "fr", "es", "cs").
+- **`collapse_groups`**: Optional, and off when absent. With `enabled` set to `true`, the project groups in *Today's Tasks* and *Task Planning* start collapsed once the list has more than `above` tasks (default: 20), all but the group with the running task. A group you open or close yourself stays that way until the page is reloaded or the app is restarted. The others take this default whenever you come to the tab or pick another list in it (a Planning filter, *Show only open tasks*), so a list that grows past the number while you are on it changes nothing until then. It can also be set under **Settings → Project Groups**.
 - **`soap_port`**: The port on which the SOAP server listens (default: 8600).
 - **`rest_port`**: The port on which the REST server listens (default: 8800). See [examples/REST](examples/REST) for runnable client examples.
 - **`mcp_server_enabled`**: Whether `TimeTrackerSL_GUI.py` also starts the MCP server when `mcp_transport` is `"http"` (default: `false`). See [MCP Server](#mcp-server-).

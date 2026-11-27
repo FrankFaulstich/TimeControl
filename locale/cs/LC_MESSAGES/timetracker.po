@@ -3194,3 +3194,18 @@ msgstr "Toto zařízení zapomnělo své přihlášení."
 
 msgid "The mail server did not answer in time. Check the server address and the internet connection."
 msgstr "Poštovní server neodpověděl včas. Zkontrolujte adresu serveru a připojení k internetu."
+
+msgid "Project Groups"
+msgstr "Skupiny projektů"
+
+msgid "Collapse project groups by default"
+msgstr "Ve výchozím stavu sbalit skupiny projektů"
+
+msgid "When the number of tasks in a list exceeds"
+msgstr "Když počet úkolů v seznamu přesáhne"
+
+msgid "Applies to Today's Tasks and Task Planning. The group with the running task stays open, and a group you open or close yourself stays that way until the page is reloaded or the app is restarted."
+msgstr "Platí pro „Dnešní úkoly“ a „Plánování úkolů“. Skupina s právě probíhajícím úkolem zůstane otevřená. Skupina, kterou sami rozbalíte nebo sbalíte, zůstane v tomto stavu, dokud znovu nenačtete stránku nebo znovu nespustíte aplikaci."
+
+msgid "Project group settings saved."
+msgstr "Nastavení skupin projektů bylo uloženo."
