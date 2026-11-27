@@ -31,7 +31,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 **Task Priorities:** Every task carries a priority from 0 (lowest, the default) to 9 (highest). Set it when adding or editing a task, adjust it inline right from the Today's Tasks list, and sort that list by priority with a single checkbox.
 
-**Today's Tasks:** The app's default view. Shows every task marked for today, grouped by project, alongside the currently active work session with quick "done"/"edit" actions - no separate main menu to go through first.
+**Today's Tasks:** The app's default view. Shows every task marked for today, grouped by project, alongside the currently active work session with quick "done"/"edit" actions - no separate main menu to go through first. A task whose due date has passed drops out of it again by itself, so marking an overdue task with the ★ in Task Planning makes it due today as well; a recurring one then continues its series from today.
 
 **Start Dates:** A task can carry a start date as well as a due date. From that day until the due date it is listed under Today's Tasks by itself, which is how work that has to be picked up somewhere inside a stretch of days stops having to be either remembered or parked in today's list from the moment it is written down. A start date given on its own becomes the due date too, so the stretch always has both ends. When a recurring task rolls over, the start date moves with the due date and keeps the same gap.
 

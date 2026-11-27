@@ -1416,12 +1416,16 @@ def _task_planning_body():
     }
     planning_filter = filter_map.get(selected_filter)
 
-    if planning_filter == 'today':
-        # Housekeeping, see view_today().
-        try:
-            st.session_state.tracker.cleanup_overdue_today_tasks()
-        except LockTimeout:
-            pass
+    # Housekeeping, see _today_tasks_body(). For every filter, not only
+    # Today's: a list of overdue tasks would otherwise show the mark on a task
+    # that has been given one since the last sweep - by the edit form, by the
+    # MCP server, or the day before - and the star, which cannot be pressed on
+    # a marked task, could not then make it due today (issue #676). The sweep
+    # looks before it locks, so a redraw with nothing to clear writes nothing.
+    try:
+        st.session_state.tracker.cleanup_overdue_today_tasks()
+    except LockTimeout:
+        pass
 
     st.header(_("Tasks"))
 
@@ -1479,15 +1483,13 @@ def _task_planning_body():
                                 navigate_to('edit_task_form')
                         with col_today_btn:
                             if st.button("★", key=f"today_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Today"), disabled=task.get('today', False)):
-                                st.session_state.tracker.update_task(
-                                    task['main_project_name'],
-                                    task['task_name'],
-                                    today=not task.get('today', False),
-                                    recurring=task.get('recurring'),
-                                    frequency=task.get('frequency'),
-                                    userdefined_days=task.get('userdefined_days'),
-                                    task_id=task.get('id'),
-                                )
+                                # The same call as the grouped list's star
+                                # below, so that both follow one rule. This
+                                # list holds no overdue task - its tasks are
+                                # due from today to six days on - so here
+                                # the call only sets the mark.
+                                st.session_state.tracker.mark_task_for_today(
+                                    task['main_project_name'], task['task_name'], task_id=task.get('id'))
                                 st.rerun()
                         with col_done_btn:
                             if st.button("✓", key=f"done_task_planning_weekly_{task['main_project_name']}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):
@@ -1573,15 +1575,15 @@ def _task_planning_body():
                                     navigate_to('edit_task_form')
                             with col_today_btn:
                                 if st.button("★", key=f"today_task_planning_{main_proj_name}_{task['task_name']}_{t_idx}", help=_("Today"), disabled=task.get('today', False)):
-                                    st.session_state.tracker.update_task(
-                                        task['main_project_name'],
-                                        task['task_name'],
-                                        today=not task.get('today', False),
-                                        recurring=task.get('recurring'),
-                                        frequency=task.get('frequency'),
-                                        userdefined_days=task.get('userdefined_days'),
-                                        task_id=task.get('id'),
-                                    )
+                                    # An overdue open task - the Overdue
+                                    # filter lists them, and so does All - is
+                                    # made due today as well, or the sweep
+                                    # that clears overdue marks would take
+                                    # the star off again (issue #676). All
+                                    # lists finished tasks too; their due
+                                    # dates stay as they are.
+                                    st.session_state.tracker.mark_task_for_today(
+                                        task['main_project_name'], task['task_name'], task_id=task.get('id'))
                                     st.rerun()
                             with col_done_btn:
                                 if st.button("✓", key=f"done_task_planning_{main_proj_name}_{task['task_name']}_{t_idx}", help=_("Done"), disabled=is_done):

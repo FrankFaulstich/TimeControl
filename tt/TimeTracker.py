@@ -1357,6 +1357,60 @@ class TimeTracker:
                 })
         return results
 
+    @_exclusive
+    def mark_task_for_today(self, main_project_name, task_name, task_id=None):
+        """
+        Marks a task for today (⭐), as the star in Task Planning does.
+
+        An open task whose due date has passed is made due today as well
+        (issue #676). Marked and left overdue, it would lose the mark again
+        at the next redraw of Today's Tasks: cleanup_overdue_today_tasks()
+        takes it off every task whose due date is in the past, which is right
+        for a mark left over from an earlier day. A mark set today on purpose
+        says that the task is today's work, and so does a due date of today.
+
+        A task that is done or closed only gets the mark, as before: its due
+        date is the one it was finished against, and is not rewritten by a
+        click on a finished task in the list of all.
+
+        A recurring task is moved too, and the series then counts from today,
+        the due date it is completed with: a weekly task keeps the weekday it
+        was marked on, a monthly one its day of the month. An instance the old
+        rhythm would have brought first does not come - a monthly task due on
+        31 October and marked on 27 November is next due on 27 December, not
+        on 30 November. Its start date
+        moves by the same number of days, because the gap between the two is
+        handed on to every later instance (see _shift_start_date()), and a
+        gap stretched by the days the task was overdue would make each of
+        them current that much earlier. The start date of a task that does
+        not recur is left as it is: it only says since when the task has
+        been current, and today is still inside its stretch.
+
+        The task is looked at here, under the lock, rather than taken from
+        what the caller last showed: it may have been changed elsewhere
+        since, and a due date moved to the future in the meantime stays
+        where it is.
+
+        :param main_project_name: The name of the main project.
+        :param task_name: The name of the task.
+        :param task_id: The unique ID of the task (optional, preferred).
+        :return: True if the task was found.
+        :rtype: bool
+        """
+        task = self._get_task(main_project_name, task_name, task_id)
+        if not task:
+            return False
+        today_str = date.today().isoformat()
+        due_date = task.get('due_date')
+        overdue = (task.get('status', self.STATUS_OPEN) == self.STATUS_OPEN
+                   and bool(due_date) and due_date < today_str)
+        start_date = None
+        if overdue and task.get('recurring'):
+            start_date = self._shift_start_date(task.get('start_date'), due_date, today_str)
+        return self.update_task(main_project_name, task_name, today=True,
+                                due_date=today_str if overdue else None,
+                                start_date=start_date, task_id=task_id)
+
     def cleanup_overdue_today_tasks(self):
         """
         Removes the 'today' flag (⭐) from tasks that have a due date in the past.
