@@ -213,7 +213,8 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         self.mock_tracker.get_current_work.return_value = {
             'main_project_name': 'M',
             'task_name': 'S',
-            'start_time': '2023-01-01'
+            'start_time': '2023-01-01',
+            'id': 7,
         }
         
         result = self.soap_server.TimeControlService.get_current_work(self.ctx)
@@ -221,6 +222,7 @@ class TestTimeTrackerSOAP_Server(unittest.TestCase):
         self.assertIsInstance(result, self.soap_server.CurrentWorkModel)
         self.assertEqual(result.main_project_name, 'M')
         self.assertEqual(result.task_name, 'S')
+        self.assertEqual(result.id, 7)
 
     def test_get_current_work_none(self):
         self.mock_tracker.get_current_work.return_value = None

@@ -1205,7 +1205,7 @@ msgstr "Nebyly nalezeny žádné otevřené projekty. Nejprve přidejte jednu."
 
 #: sl/SL_Menu.py:2691 sl/SL_Menu.py:2823 sl/SL_Menu.py:3056
 msgid "Project"
-msgstr "Project"
+msgstr "Projekt"
 
 #: sl/SL_Menu.py:2693 sl/SL_Menu.py:2824 sl/SL_Menu.py:2848 sl/SL_Menu.py:3128
 msgid "Next"

@@ -64,6 +64,9 @@ class CurrentWork(BaseModel):
     main_project_name: str
     task_name: str
     start_time: str
+    # The task's id, which tells it apart from another of the same name in
+    # its project. Optional, for a caller that leaves it out.
+    id: Optional[int] = None
 
 
 class OperationResult(BaseModel):

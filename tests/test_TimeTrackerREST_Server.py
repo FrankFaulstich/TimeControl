@@ -367,11 +367,12 @@ class TestTimeTrackerREST_Server(unittest.TestCase):
 
     def test_get_current_work_active(self):
         self.mock_tracker.get_current_work.return_value = {
-            'main_project_name': 'M', 'task_name': 'S', 'start_time': '2023-01-01',
+            'main_project_name': 'M', 'task_name': 'S', 'start_time': '2023-01-01', 'id': 7,
         }
         r = self.client.get("/work/current")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()['main_project_name'], 'M')
+        self.assertEqual(r.json()['id'], 7)
 
     def test_get_current_work_none(self):
         self.mock_tracker.get_current_work.return_value = None
