@@ -25,7 +25,7 @@ A simple, object-oriented Python application for tracking time spent on projects
 
 ## Features 🚀
 
-**Project Management:** Create, list, rename, delete, close, re-open, move, promote, and demote main projects and tasks.
+**Project Management:** Create, list, rename, delete, close, re-open, move, promote, and demote main projects and tasks. A task can also be moved to another project straight from its edit form, together with whatever else is changed there.
 
 **Time Tracking:** Start, stop, and view the current work session. Automatically stops the previous session when a new one begins.
 

@@ -1461,7 +1461,7 @@ def _task_planning_body():
                         col_task, col_start_btn, col_edit_btn, col_today_btn, col_done_btn = st.columns([10, 1, 1, 1, 1])
                         with col_task:
                             name = task['task_name']
-                            is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
+                            is_active = _is_running(current_work, task)
                             is_done = task.get('status') == 'done'
                             display_name = f"{name} (done)" if is_done else name
                             if is_active: display_name = f"**{display_name}**"
@@ -1553,7 +1553,7 @@ def _task_planning_body():
                                 name = task['task_name']
                                 status = task.get('status')
                                 is_done = status == 'done'
-                                is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
+                                is_active = _is_running(current_work, task)
                                 display_name = f"{name} (done)" if is_done else name
                                 if is_active: display_name = f"**{display_name}**"
                                 due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
@@ -2150,7 +2150,11 @@ def _today_tasks_body():
     is_done = False
     if current_work:
         all_tasks = st.session_state.tracker.list_tasks(main_project_name=current_work['main_project_name'], status_filter='all')
-        task_details = next((t for t in all_tasks if t['task_name'] == current_work['task_name']), {})
+        # By its id: a project can hold another task of the same name - one
+        # moved there from the edit form, say (issue #674) - and the buttons
+        # below would act on that one.
+        task_details = next((t for t in all_tasks if t.get('id') == current_work.get('id')), None) \
+            or next((t for t in all_tasks if t['task_name'] == current_work['task_name']), {})
         is_done = task_details.get('status') == 'done'
 
     # Weighted 11 rather than 10 so the three buttons sit at the spacing of
@@ -2211,6 +2215,7 @@ def _today_tasks_body():
         if st.button("✎", help=_("Edit current task"), disabled=not current_work, key="main_edit_button"):
             st.session_state.context['selected_main'] = current_work['main_project_name']
             st.session_state.context['selected_task'] = current_work['task_name']
+            st.session_state.context['selected_task_id'] = task_details.get('id')
             st.session_state.context['return_to'] = 'today_view'
             navigate_to('edit_task_form')
 
@@ -2346,7 +2351,7 @@ def _today_tasks_body():
                             name = task['task_name']
                             status = task.get('status')
                             is_done = status == 'done'
-                            is_active = current_work and current_work['main_project_name'] == task['main_project_name'] and current_work['task_name'] == task['task_name']
+                            is_active = _is_running(current_work, task)
                             display_name = f"{name} (done)" if is_done else name
                             if is_active: display_name = f"**{display_name}**"
                             due_info = f" ({_('Due')}: {task['due_date']})" if task.get('due_date') else ""
@@ -4122,7 +4127,7 @@ def render_note_preview(note):
 TASK_FREQUENCIES = ("daily", "on all business days", "weekly", "monthly", "userdefined")
 
 # The fields of the task forms. Their keys are "<kind>_task_<field>".
-TASK_FORM_FIELDS = ("name", "start_date", "due_date", "today", "done", "recurring",
+TASK_FORM_FIELDS = ("project", "name", "start_date", "due_date", "today", "done", "recurring",
                     "frequency", "userdefined_days", "priority", "note")
 
 
@@ -4149,7 +4154,7 @@ def _as_date(value):
         return None
 
 
-def render_task_fields(kind, identity, task):
+def render_task_fields(kind, identity, task, projects=None):
     """
     The fields of a task, drawn the same way for adding one and for editing one
     (issue #637).
@@ -4159,8 +4164,10 @@ def render_task_fields(kind, identity, task):
     button to clear a date in only one of them, the flags in rows of
     different widths, and a check for an empty name in only one. They share
     this now, so a field added or changed here is added or changed in both.
-    What still differs is what has to: editing has a Done box, and each form
-    has its own heading and its own button to save.
+    What still differs is what has to: editing has a Done box and a choice
+    of project (issue #674) - a task being added goes to the project picked
+    before the form opens - and each form has its own heading and its own
+    button to save.
 
     Every field has a key and follows `task` the way follow_stored_value()
     describes: one that has not been touched moves with a change made
@@ -4176,13 +4183,17 @@ def render_task_fields(kind, identity, task):
         field is "<kind>_task_note", which tt/markdown_editor.py is given.
     :param identity: What the form is open for - the task, or the project a
         task is being added to. A different one fills the fields in afresh.
-    :param task: The values to start from, shaped like a stored task.
+    :param task: The values to start from, shaped like a stored task, with
+        the project it is in under "main_project_name".
+    :param projects: The project names to offer, the task's own among them,
+        or None to offer no choice of project.
     :return: The values entered, as a dict, with "problem" holding the reason
         they cannot be saved yet, or None.
     """
     keys = {field: "%s_task_%s" % (kind, field) for field in TASK_FORM_FIELDS}
     frequency = task.get("frequency") if task.get("frequency") in TASK_FREQUENCIES else "daily"
     starting = {
+        "project": task.get("main_project_name"),
         "name": task.get("task_name", ""),
         "start_date": _as_date(task.get("start_date")),
         "due_date": _as_date(task.get("due_date")),
@@ -4203,6 +4214,8 @@ def render_task_fields(kind, identity, task):
     for field, key in keys.items():
         follow_stored_value(key, starting[field])
 
+    if projects is not None:
+        st.selectbox(_("Project"), projects, key=keys["project"])
     st.text_input(_("Task Name"), key=keys["name"])
 
     # The two dates on a row of their own, and the flags below them. Each
@@ -4401,6 +4414,43 @@ def view_edit_task_select_task():
         # Return context is kept, Step 1 will handle final cancel
         navigate_to('edit_task')
 
+def _is_running(current_work, task):
+    """
+    Whether a listed task is the one being worked on. By id: a project can
+    hold two tasks of one name - a task moved there from the edit form, or a
+    recurring task's next instance beside the finished one (issue #674) -
+    and by name both would look running, with neither start button usable.
+    """
+    return bool(current_work) and current_work.get('id') is not None \
+        and current_work.get('id') == task.get('id')
+
+
+def _project_statuses():
+    """
+    Each project name with the status of the project it leads to. A move
+    goes by name, to the first project of that name, so that is the one
+    whose status counts.
+    """
+    statuses = {}
+    for project in st.session_state.tracker.list_main_projects(status_filter='all'):
+        statuses.setdefault(project['main_project_name'], project['status'])
+    return statuses
+
+
+def _projects_to_move_to(current):
+    """
+    The projects the edit form offers a task (issue #674): the open ones, and
+    the task's own even when that is closed, so the choice starts where the
+    task is. Each name once, and only where the first project of that name is
+    open: an open project behind a closed one of the same name could not be
+    reached by it.
+    """
+    names = [name for name, status in _project_statuses().items() if status == 'open']
+    if current not in names:
+        names.insert(0, current)
+    return names
+
+
 def view_edit_task_form():
     """Step 3 of editing a task: the task's fields, as they are stored."""
     main_project = st.session_state.context.get('selected_main')
@@ -4414,11 +4464,28 @@ def view_edit_task_form():
         st.error(_("Task not found."))
         if st.button(_("Back"), use_container_width=True): navigate_to(return_to)
         return
+    # From here on the task the form shows, by its id, whatever led here.
+    # Found by name - the current-work box used to open the form that way -
+    # the move and the save would each look it up by name again, and with
+    # two tasks of one name in play they need not find the same one, nor
+    # this one (issue #674).
+    task_id = task_details.get('id', task_id)
 
     render_header(_("Edit Task"), f"{main_project} / {task_name}")
     render_note_area_css(min_height=250)
 
-    values = render_task_fields("edit", ("edit", main_project, task_name, task_id), task_details)
+    identity = ("edit", main_project, task_name, task_id)
+    projects = _projects_to_move_to(main_project)
+    chosen = st.session_state.get("edit_task_project")
+    if st.session_state.get("edit_task__for") == identity and chosen and chosen not in projects:
+        # Chosen here, and then renamed, deleted or closed elsewhere before
+        # the save. Kept on offer, so that the save says it cannot move the
+        # task there - the move finds no such project, or the check before it
+        # finds it closed. Streamlit would otherwise put the choice back to
+        # the first project without a word, and the task would stay put.
+        projects.append(chosen)
+    values = render_task_fields("edit", identity, dict(task_details, main_project_name=main_project),
+                                projects=projects)
 
     col_save, col_cancel = st.columns(2)
     with col_save:
@@ -4431,31 +4498,58 @@ def view_edit_task_form():
             else:
                 final_due = values["due_date"].isoformat() if values["due_date"] else None
                 final_start = values["start_date"].isoformat() if values["start_date"] else None
-                if st.session_state.tracker.update_task(
-                    main_project,
-                    task_name,
-                    new_name,
-                    final_due,
-                    values["today"],
-                    values["note"],
-                    'done' if values["done"] else 'open',
-                    recurring=values["recurring"],
-                    frequency=values["frequency"],
-                    userdefined_days=values["userdefined_days"],
-                    priority=values["priority"],
-                    task_id=task_id,
-                    # The edit form submits every field at once, so an empty
-                    # date field is the user removing the due date rather than
-                    # declining to change it.
-                    clear_due_date=final_due is None,
-                    start_date=final_start,
-                    clear_start_date=final_start is None,
-                ):
-                    set_feedback(_("Task updated successfully."))
+                tracker = st.session_state.tracker
+                target = values["project"] or main_project
+                problem = None
+                # Moved first, in one hold on the document with the rest, and
+                # written with the rest in one save (issue #674). The fields
+                # are then saved where the task now is - which is where a
+                # recurring task that this save completes starts its next
+                # instance - and a move that fails, or a save that fails,
+                # leaves data.json and the form as they were, never the task
+                # moved without its fields. (With sync on, what was already
+                # queued for the server still goes out, as it does for every
+                # change whose save fails.) Only to an open project: one
+                # closed since it was chosen is refused here.
+                with tracker.exclusive():
+                    if target != main_project:
+                        if _project_statuses().get(target, 'open') != 'open':
+                            moved, problem = False, _("Project '{name}' has been closed.").format(name=target)
+                        else:
+                            moved, problem = tracker._move_task_unsaved(main_project, task_name, target,
+                                                                        task_id=task_id)
+                        if not moved:
+                            target = None
+                    saved = target is not None and tracker.update_task(
+                        target,
+                        task_name,
+                        new_name,
+                        final_due,
+                        values["today"],
+                        values["note"],
+                        'done' if values["done"] else 'open',
+                        recurring=values["recurring"],
+                        frequency=values["frequency"],
+                        userdefined_days=values["userdefined_days"],
+                        priority=values["priority"],
+                        task_id=task_id,
+                        # The edit form submits every field at once, so an
+                        # empty date field is the user removing the due date
+                        # rather than declining to change it.
+                        clear_due_date=final_due is None,
+                        start_date=final_start,
+                        clear_start_date=final_start is None,
+                    )
+                if saved:
+                    if target != main_project:
+                        set_feedback(_("Task '{sub}' moved from '{src}' to '{dst}'.").format(
+                            sub=new_name, src=main_project, dst=target))
+                    else:
+                        set_feedback(_("Task updated successfully."))
                     close_task_form("edit")
                     navigate_to(return_to)
                 else:
-                    st.error(_("Error: Could not update task."))
+                    st.error(problem if target is None else _("Error: Could not update task."))
 
     with col_cancel:
         if st.button(_("Cancel"), use_container_width=True):

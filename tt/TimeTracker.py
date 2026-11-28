@@ -1880,6 +1880,30 @@ class TimeTracker:
         :return: A tuple (bool, str) indicating success and a message.
         :rtype: tuple(bool, str)
         """
+        result = self._move_task_unsaved(old_main_project_name, task_name, new_main_project_name, task_id)
+        if result[0]:
+            self._save_data()
+        return result
+
+    def _move_task_unsaved(self, old_main_project_name, task_name, new_main_project_name, task_id=None):
+        """
+        move_task() without the save, for a caller that holds the document
+        with exclusive() and saves it once with more changes of its own: the
+        task edit form, which moves a task and saves its fields in one write
+        (issue #674), so that a save that fails leaves data.json with
+        neither rather than with the task moved without them. (The changes
+        sent to the sync queue before the save are not taken back; that holds
+        for every writer here.)
+
+        Refuses to run outside exclusive(): the move would stay in memory
+        unseen and be written out by whatever saved next.
+
+        :return: A tuple (bool, str) indicating success and a message.
+        :rtype: tuple(bool, str)
+        :raises RuntimeError: when the document is not held.
+        """
+        if not getattr(self._nesting, 'depth', 0):
+            raise RuntimeError("_move_task_unsaved() must be called inside exclusive()")
         source_project = self._get_project(old_main_project_name)
         dest_project = self._get_project(new_main_project_name)
 
@@ -1902,7 +1926,6 @@ class TimeTracker:
             # time entries travel with it untouched.
             self._emit('task.move', uid=task_to_move.get("uid"),
                        project=dest_project.get("uid"))
-            self._save_data()
             return True, _("Task '{task_name}' moved successfully.").format(task_name=task_name)
         return False, _("Task '{task_name}' not found in '{main_name}'.").format(task_name=task_name, main_name=old_main_project_name)
 
@@ -2372,8 +2395,10 @@ class TimeTracker:
 
         An active sub-project is one with a time entry that has a 'start_time' but no 'end_time'.
 
-        :return: A dictionary containing 'main_project_name', 'sub_project_name', and 'start_time'
-                 of the active session, or None if no session is active.
+        :return: A dictionary containing 'main_project_name', 'task_name', 'start_time' and the
+                 task's 'id' for the active session, or None if no session is active. The id is
+                 what tells the task apart from another of the same name in its project - one
+                 moved there from elsewhere, say (issue #674).
         :rtype: dict or None
         """
         for project in reversed(self.data["projects"]):
@@ -2382,7 +2407,8 @@ class TimeTracker:
                     return {
                         "main_project_name": project["main_project_name"],
                         "task_name": task.get("task_name", task.get("sub_project_name", _("Unknown Task"))),
-                        "start_time": task["time_entries"][-1]["start_time"]
+                        "start_time": task["time_entries"][-1]["start_time"],
+                        "id": task.get("id"),
                     }
         return None
 

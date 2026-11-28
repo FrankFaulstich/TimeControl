@@ -143,14 +143,20 @@ class TaskFormTestCase(unittest.TestCase):
 class TestTheTwoFormsAreTheSame(TaskFormTestCase):
 
     def test_the_same_fields_with_the_same_labels(self):
-        """What differs is what has to: only an existing task can be done."""
+        """
+        What differs is what has to: only an existing task can be done, and
+        only an existing task is given a choice of project - a new one goes
+        to the project picked before the form opens (issue #674).
+        """
         self.open_add()
         adding = self.labels()
         self.leave_by_the_toolbar()
         self.open_edit('Alpha')
         editing = self.labels()
-        self.assertEqual([field for field in editing if field[0] != 'done'], adding)
-        self.assertEqual([field for field in editing if field[0] == 'done'], [('done', 'Done')])
+        own = ('done', 'project')
+        self.assertEqual([field for field in editing if field[0] not in own], adding)
+        self.assertEqual([field for field in editing if field[0] in own],
+                         [('done', 'Done'), ('project', 'Project')])
         self.assertEqual([label for _field, label in adding],
                          ['Task Name', 'Start Date', 'Due Date', 'Today', 'Recurring',
                           'Priority', 'Days', 'Frequency', 'Notes (Markdown)'])
@@ -469,7 +475,7 @@ class TestTheChecks(TaskFormTestCase):
 
 class TestWhereEachFormLeadsBack(TaskFormTestCase):
 
-    FIELDS = ('name', 'start_date', 'due_date', 'today', 'done', 'recurring', 'frequency',
+    FIELDS = ('project', 'name', 'start_date', 'due_date', 'today', 'done', 'recurring', 'frequency',
               'userdefined_days', 'priority', 'note')
 
     def _form_keys_left(self, kind):
@@ -650,6 +656,354 @@ class TestAChangeMadeElsewhereWhileTheFormIsOpen(TaskFormTestCase):
         self.change_elsewhere('Beta', today=True)
         self.click('Save Changes')
         self.assertEqual((self.stored('Beta')['priority'], self.stored('Beta')['today']), (3, True))
+
+
+class TestMovingATaskWhileEditingIt(TaskFormTestCase):
+    """The edit form's choice of project (issue #674)."""
+
+    def setUp(self):
+        super().setUp()
+        tracker = TimeTracker('data.json', op_outbox=None)
+        tracker.add_main_project('Home')
+        tracker.add_main_project('Archive')
+        tracker.close_main_project('Archive')
+        tracker.add_task('Archive', 'Old', due_date='2031-03-03')
+        self.ids['Old'] = [t for t in tracker.list_tasks('Archive') if t['task_name'] == 'Old'][0]['id']
+
+    def project(self):
+        return self.field('edit', 'project', 'selectbox')
+
+    def shown(self):
+        """
+        The messages the view the form went back to shows at the top - in the
+        page the click hands back, on 1.55 and 1.67 alike, since that run goes
+        on through the st.rerun() of the save.
+        """
+        return [element.value for element in self.app.success]
+
+    def named(self, name):
+        """Every stored task of that name, with the project it is in."""
+        with open('data.json', encoding='utf-8') as handle:
+            return [(p['main_project_name'], t) for p in json.load(handle)['projects']
+                    for t in p['tasks'] if t['task_name'] == name]
+
+    def where(self, name):
+        """The projects that hold a task of that name, with its id."""
+        with open('data.json', encoding='utf-8') as handle:
+            return sorted((p['main_project_name'], t['id']) for p in json.load(handle)['projects']
+                          for t in p['tasks'] if t['task_name'] == name)
+
+    def open_edit_in(self, project, name):
+        self.app.session_state['context'] = {'selected_main': project, 'selected_task': name,
+                                             'selected_task_id': self.ids[name],
+                                             'return_to': 'task_mgmt'}
+        self.app.session_state['menu'] = 'edit_task_form'
+        self._run()
+
+    def test_the_choice_starts_at_the_task_s_project_and_offers_the_open_ones(self):
+        self.open_edit('Beta')
+        self.assertEqual(self.project().value, 'Work')
+        self.assertEqual(list(self.project().options), ['Work', 'Home'])
+
+    def test_a_closed_project_is_offered_only_to_its_own_task(self):
+        """So the choice can start where the task is; it is not a place to move others to."""
+        self.open_edit_in('Archive', 'Old')
+        self.assertEqual(self.project().value, 'Archive')
+        self.assertEqual(list(self.project().options), ['Archive', 'Work', 'Home'])
+
+    def test_choosing_another_project_moves_the_task_and_saves_the_rest(self):
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        self.field('edit', 'priority', 'number_input').set_value(5)
+        self.click('Save Changes')
+        self.assertEqual(self.where('Beta'), [('Home', self.ids['Beta'])])
+        self.assertEqual(self.stored('Beta')['priority'], 5)
+        self.assertIn("Task 'Beta' moved from 'Work' to 'Home'.", self.shown())
+        self.assertEqual(self.app.session_state['menu'], 'task_mgmt')
+
+    def test_and_takes_its_time_with_it(self):
+        """A move, not a copy: the same task, its time entries and its running session along."""
+        tracker = TimeTracker('data.json', op_outbox=None)
+        tracker.start_work('Work', 'Beta', task_id=self.ids['Beta'])
+        uid = self.stored('Beta')['uid']
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        self.click('Save Changes')
+        self.assertEqual(self.stored('Beta')['uid'], uid)
+        self.assertEqual(len(self.stored('Beta')['time_entries']), 1)
+        current = TimeTracker('data.json', op_outbox=None).get_current_work()
+        self.assertEqual((current['main_project_name'], current['task_name']), ('Home', 'Beta'))
+
+    def test_a_renamed_task_is_moved_under_its_new_name(self):
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        self.field('edit', 'name', 'text_input').input('Gamma')
+        self.click('Save Changes')
+        self.assertEqual(self.where('Gamma'), [('Home', self.ids['Beta'])])
+        self.assertEqual(self.where('Beta'), [])
+        self.assertIn("Task 'Gamma' moved from 'Work' to 'Home'.", self.shown())
+
+    def test_what_is_sent_to_the_other_machines(self):
+        """The move first, then the fields, each once."""
+        sent = []
+        with mock.patch.object(TimeTracker, '_emit', lambda tracker, op, **fields: sent.append((op, fields))):
+            self.open_edit('Beta')
+            sent.clear()
+            self.project().set_value('Home')
+            self.field('edit', 'priority', 'number_input').set_value(5)
+            self.click('Save Changes')
+        self.assertEqual([op for op, _fields in sent], ['task.move', 'task.set'])
+        self.assertEqual(sent[1][1]['f'], {'priority': 5})
+
+    def test_the_move_and_the_save_hold_the_document_together(self):
+        """
+        Taken around both, the lock keeps every other writer out between the
+        move and the fields saved in the new project.
+        """
+        held = []
+
+        def noting(method):
+            def wrapper(tracker, *args, **kwargs):
+                held.append((method.__name__, getattr(tracker._nesting, 'depth', 0)))
+                return method(tracker, *args, **kwargs)
+            return wrapper
+
+        with mock.patch.object(TimeTracker, '_move_task_unsaved', noting(TimeTracker._move_task_unsaved)), \
+                mock.patch.object(TimeTracker, 'update_task', noting(TimeTracker.update_task)):
+            self.open_edit('Beta')
+            self.project().set_value('Home')
+            self.click('Save Changes')
+        self.assertEqual(held, [('_move_task_unsaved', 1), ('update_task', 1)])
+
+    def test_and_are_written_in_one_save(self):
+        saves = []
+        original = TimeTracker._save_data
+
+        def counting(tracker, *args, **kwargs):
+            saves.append(1)
+            return original(tracker, *args, **kwargs)
+
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        with mock.patch.object(TimeTracker, '_save_data', counting):
+            self.click('Save Changes')
+        self.assertEqual(len(saves), 1)
+        self.assertEqual(self.where('Beta'), [('Home', self.ids['Beta'])])
+
+    def test_so_a_save_that_fails_leaves_the_task_where_it_was(self):
+        """
+        In data.json, not moved without its fields: the form is still there,
+        with what was chosen and typed, and saving again does both.
+        """
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        self.field('edit', 'priority', 'number_input').set_value(5)
+        with mock.patch.object(TimeTracker, '_save_data', side_effect=OSError(28, 'No space left on device')):
+            [button] = [b for b in self.app.button if b.label == 'Save Changes']
+            button.click().run()
+        self.assertTrue(self.app.exception)
+        self.assertEqual(self.where('Beta'), [('Work', self.ids['Beta'])])
+        self._run()
+        self.assertEqual(self.app.session_state['menu'], 'edit_task_form')
+        self.assertEqual((self.project().value, self.field('edit', 'priority', 'number_input').value), ('Home', 5))
+        self.click('Save Changes')
+        self.assertEqual(self.where('Beta'), [('Home', self.ids['Beta'])])
+        self.assertEqual(self.stored('Beta')['priority'], 5)
+
+    def test_the_task_opened_is_the_one_moved_when_two_share_a_name(self):
+        """A recurring task finished leaves a done and an open one of its name behind."""
+        tracker = TimeTracker('data.json', op_outbox=None)
+        tracker.update_task('Work', 'Alpha', status='done', task_id=self.ids['Alpha'])
+        done = self.ids['Alpha']
+        [self.ids['Alpha']] = [t['id'] for t in tracker.list_tasks('Work')
+                               if t['task_name'] == 'Alpha' and t['id'] != done]
+        self.open_edit('Alpha')
+        self.project().set_value('Home')
+        self.click('Save Changes')
+        self.assertEqual(self.where('Alpha'), [('Home', self.ids['Alpha']), ('Work', done)])
+
+    def test_opened_from_the_current_work_the_running_task_is_the_one_moved(self):
+        """
+        Home has a task of the same name. Opened from the box above Today's
+        list, the form moves the task it shows and saves into that one alone.
+        """
+        tracker = TimeTracker('data.json', op_outbox=None)
+        tracker.add_task('Home', 'Beta', due_date='2032-01-01', note='Home note')
+        tracker.start_work('Work', 'Beta', task_id=self.ids['Beta'])
+        self.app.session_state['menu'] = 'today_view'
+        self._run()
+        self.click(key='main_edit_button')
+        self.assertEqual(self.app.session_state['menu'], 'edit_task_form')
+        self.project().set_value('Home')
+        self.field('edit', 'priority', 'number_input').set_value(5)
+        self.click('Save Changes')
+        betas = {t['id']: (project, t['priority'], t['note']) for project, t in self.named('Beta')}
+        self.assertEqual(betas[self.ids['Beta']], ('Home', 5, 'Beta note'))
+        self.assertEqual([v for k, v in betas.items() if k != self.ids['Beta']], [('Home', 0, 'Home note')])
+
+    def test_opened_by_name_alone_it_is_still_the_task_shown_that_is_saved(self):
+        """
+        Every way into the form passes the task's id now; one that did not
+        - as the current-work box used to - must not save into a namesake.
+        """
+        TimeTracker('data.json', op_outbox=None).add_task('Home', 'Beta', due_date='2032-01-01', note='Home note')
+        self.app.session_state['context'] = {'selected_main': 'Work', 'selected_task': 'Beta',
+                                             'return_to': 'task_mgmt'}
+        self.app.session_state['menu'] = 'edit_task_form'
+        self._run()
+        self.project().set_value('Home')
+        self.field('edit', 'priority', 'number_input').set_value(5)
+        self.click('Save Changes')
+        betas = {t['id']: (project, t['priority'], t['note']) for project, t in self.named('Beta')}
+        self.assertEqual(betas.pop(self.ids['Beta']), ('Home', 5, 'Beta note'))
+        self.assertEqual(list(betas.values()), [('Home', 0, 'Home note')])
+
+    def test_and_the_lists_mark_it_as_running_and_not_its_namesake(self):
+        """Both of one name in one project: only the moved one is running, the other can be started."""
+        tracker = TimeTracker('data.json', op_outbox=None)
+        soon = (TODAY + timedelta(days=2)).isoformat()
+        tracker.update_task('Work', 'Beta', due_date=soon, today=True, task_id=self.ids['Beta'])
+        tracker.add_task('Home', 'Beta', due_date=soon, today=True)
+        tracker.start_work('Work', 'Beta', task_id=self.ids['Beta'])
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        self.click('Save Changes')
+
+        def starts(prefix):
+            return sorted(button.disabled for button in self.app.button
+                          if button.key and button.key.startswith(prefix + 'Home_Beta_'))
+
+        self.app.session_state['menu'] = 'today_view'
+        self._run()
+        self.assertEqual(starts('start_today_task_'), [False, True])
+        self.app.session_state['menu'] = 'task_planning'
+        self._run()
+        for choice in ('All', 'Weekly overview'):
+            with self.subTest(filter=choice):
+                self.app.selectbox(key='task_planning_filter_select').set_value(choice).run()
+                prefix = 'start_task_planning_weekly_' if choice == 'Weekly overview' else 'start_task_planning_'
+                self.assertEqual(starts(prefix), [False, True])
+
+    def test_the_unsaved_move_is_refused_outside_the_lock(self):
+        """Left in memory unsaved, it would go out with whatever saved next."""
+        tracker = TimeTracker('data.json', op_outbox=None)
+        with self.assertRaises(RuntimeError):
+            tracker._move_task_unsaved('Work', 'Beta', 'Home', task_id=self.ids['Beta'])
+        self.assertEqual(self.where('Beta'), [('Work', self.ids['Beta'])])
+        with tracker.exclusive():
+            self.assertTrue(tracker._move_task_unsaved('Work', 'Beta', 'Home', task_id=self.ids['Beta'])[0])
+
+    def test_and_after_the_move_the_box_acts_on_it_and_not_on_its_namesake(self):
+        tracker = TimeTracker('data.json', op_outbox=None)
+        tracker.add_task('Home', 'Beta', due_date='2032-01-01')
+        tracker.start_work('Work', 'Beta', task_id=self.ids['Beta'])
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        self.click('Save Changes')
+        self.app.session_state['menu'] = 'today_view'
+        self._run()
+        self.click(key='main_done_button')
+        statuses = {t['id']: t['status'] for _project, t in self.named('Beta')}
+        self.assertEqual(statuses.pop(self.ids['Beta']), 'done')
+        self.assertEqual(list(statuses.values()), ['open'])
+
+    def test_left_where_it_is_nothing_is_moved(self):
+        sent = []
+        with mock.patch.object(TimeTracker, '_emit', lambda tracker, op, **fields: sent.append((op, fields))):
+            self.open_edit('Beta')
+            sent.clear()
+            self.field('edit', 'priority', 'number_input').set_value(5)
+            self.click('Save Changes')
+        self.assertEqual([op for op, _fields in sent], ['task.set'])
+        self.assertEqual(self.where('Beta'), [('Work', self.ids['Beta'])])
+        self.assertIn('Task updated successfully.', self.shown())
+
+    def test_a_recurring_task_finished_as_it_moves_comes_round_in_the_new_project(self):
+        self.open_edit('Alpha')
+        self.project().set_value('Home')
+        self.field('edit', 'done', 'checkbox').check()
+        self.click('Save Changes')
+        with open('data.json', encoding='utf-8') as handle:
+            alphas = sorted((p['main_project_name'], t['status']) for p in json.load(handle)['projects']
+                            for t in p['tasks'] if t['task_name'] == 'Alpha')
+        self.assertEqual(alphas, [('Home', 'done'), ('Home', 'open')])
+
+    def test_a_project_that_went_while_the_form_was_open_is_said_and_nothing_is_saved(self):
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        self.field('edit', 'priority', 'number_input').set_value(5)
+        self._run()
+        TimeTracker('data.json', op_outbox=None).rename_main_project('Home', 'House')
+        self.click('Save Changes')
+        self.assertIn("Destination main project 'Home' not found.", self.errors())
+        self.assertEqual(self.where('Beta'), [('Work', self.ids['Beta'])])
+        self.assertEqual(self.stored('Beta')['priority'], 0)
+        self.assertEqual(self.app.session_state['menu'], 'edit_task_form')
+
+    def test_a_project_closed_while_the_form_was_open_is_said_and_nothing_is_saved(self):
+        """Only open projects take tasks from here; one closed since it was chosen is refused."""
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        self.field('edit', 'priority', 'number_input').set_value(5)
+        self._run()
+        TimeTracker('data.json', op_outbox=None).close_main_project('Home')
+        self.click('Save Changes')
+        self.assertIn("Project 'Home' has been closed.", self.errors())
+        self.assertEqual(self.where('Beta'), [('Work', self.ids['Beta'])])
+        self.assertEqual(self.stored('Beta')['priority'], 0)
+        self.assertEqual(self.app.session_state['menu'], 'edit_task_form')
+
+    def test_the_choice_is_not_carried_over_to_the_next_task(self):
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        self._run()
+        self.click('Cancel')
+        self.open_edit('Alpha')
+        self.assertEqual(self.project().value, 'Work')
+        self.click('Save Changes')
+        self.assertEqual(self.where('Alpha'), [('Work', self.ids['Alpha'])])
+
+    def test_nor_when_the_form_switches_straight_to_another_task(self):
+        """
+        With no other view in between, the last task's choice is still in the
+        session: it is not the next one's.
+        """
+        self.open_edit('Beta')
+        self.project().set_value('Home')
+        self._run()
+        self.open_edit('Alpha')
+        self.assertEqual(self.project().value, 'Work')
+        self.click('Save Changes')
+        self.assertEqual(self.where('Alpha'), [('Work', self.ids['Alpha'])])
+
+    def test_nor_is_a_closed_project_offered_to_the_next_task(self):
+        """The one the last task was in, offered to it alone."""
+        self.open_edit_in('Archive', 'Old')
+        self.open_edit('Beta')
+        self.assertEqual(list(self.project().options), ['Work', 'Home'])
+        self.assertEqual(self.project().value, 'Work')
+
+    def test_each_name_is_offered_once(self):
+        """Two projects of one name cannot be told apart by it, and the move goes by name."""
+        with open('data.json', encoding='utf-8') as handle:
+            data = json.load(handle)
+        twin = dict(data['projects'][1], uid='twin-of-home', tasks=[])
+        data['projects'].append(twin)
+        with open('data.json', 'w', encoding='utf-8') as handle:
+            json.dump(data, handle)
+        self.open_edit('Beta')
+        self.assertEqual(list(self.project().options), ['Work', 'Home'])
+
+    def test_nor_one_behind_a_closed_project_of_its_name(self):
+        """The move would find the closed one first; the open one cannot be reached by name."""
+        with open('data.json', encoding='utf-8') as handle:
+            data = json.load(handle)
+        closed = dict(data['projects'][1], uid='closed-home', status='closed', tasks=[])
+        data['projects'].insert(1, closed)
+        with open('data.json', 'w', encoding='utf-8') as handle:
+            json.dump(data, handle)
+        self.open_edit('Beta')
+        self.assertEqual(list(self.project().options), ['Work'])
 
 
 if __name__ == '__main__':

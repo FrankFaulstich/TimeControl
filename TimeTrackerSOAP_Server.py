@@ -136,6 +136,8 @@ class CurrentWorkModel(ComplexModel):
     main_project_name = Unicode
     task_name = Unicode
     start_time = Unicode
+    # The task's id, as the REST server's CurrentWork has it.
+    id = Integer(min_occurs=0, nillable=True)
 
 class OperationResultModel(ComplexModel):
     success = Boolean
